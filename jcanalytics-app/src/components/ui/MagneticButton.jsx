@@ -1,9 +1,11 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
+
+const _MOTION = motion;
 
 const MagneticButton = ({ children, className = "", onClick, ...props }) => {
   const ref = useRef(null);
-  const [isHovered, setIsHovered] = useState(false);
+  const [isInteractive, setIsInteractive] = useState(true);
   
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -12,7 +14,18 @@ const MagneticButton = ({ children, className = "", onClick, ...props }) => {
   const xSpring = useSpring(x, springConfig);
   const ySpring = useSpring(y, springConfig);
 
-  const handleMouseMove = (e) => {
+  useEffect(() => {
+    const hoverQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const updateInteractionMode = () => setIsInteractive(hoverQuery.matches);
+
+    updateInteractionMode();
+    hoverQuery.addEventListener("change", updateInteractionMode);
+
+    return () => hoverQuery.removeEventListener("change", updateInteractionMode);
+  }, []);
+
+  const handlePointerMove = (e) => {
+    if (!isInteractive) return;
     if (!ref.current) return;
     const { left, top, width, height } = ref.current.getBoundingClientRect();
     const centerX = left + width / 2;
@@ -27,8 +40,7 @@ const MagneticButton = ({ children, className = "", onClick, ...props }) => {
     y.set(distanceY * 0.3);
   };
 
-  const handleMouseLeave = () => {
-    setIsHovered(false);
+  const handlePointerLeave = () => {
     x.set(0);
     y.set(0);
   };
@@ -36,15 +48,14 @@ const MagneticButton = ({ children, className = "", onClick, ...props }) => {
   return (
     <motion.button
       ref={ref}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={handleMouseLeave}
+    onPointerMove={handlePointerMove}
+    onPointerLeave={handlePointerLeave}
       onClick={onClick}
       style={{
         x: xSpring,
         y: ySpring,
       }}
-      whileHover={{ scale: 1.05 }}
+      whileHover={isInteractive ? { scale: 1.05 } : undefined}
       whileTap={{ scale: 0.95 }}
       className={`relative z-10 ${className}`}
       {...props}

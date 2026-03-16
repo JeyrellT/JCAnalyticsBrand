@@ -1,7 +1,10 @@
 import React, { useEffect } from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 
+const _MOTION = motion;
+
 const CustomCursor = () => {
+  const hasFinePointer = typeof window !== 'undefined' && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   const cursorX = useMotionValue(-100);
   const cursorY = useMotionValue(-100);
   
@@ -10,6 +13,8 @@ const CustomCursor = () => {
   const cursorYSpring = useSpring(cursorY, springConfig);
 
   useEffect(() => {
+    if (!hasFinePointer) return;
+
     const moveCursor = (e) => {
       cursorX.set(e.clientX - 16);
       cursorY.set(e.clientY - 16);
@@ -17,7 +22,11 @@ const CustomCursor = () => {
 
     window.addEventListener('mousemove', moveCursor);
     return () => window.removeEventListener('mousemove', moveCursor);
-  }, []);
+  }, [cursorX, cursorY, hasFinePointer]);
+
+  if (!hasFinePointer) {
+    return null;
+  }
 
   return (
     <>

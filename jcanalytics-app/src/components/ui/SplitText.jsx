@@ -1,7 +1,21 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
+const _MOTION = motion;
+
 const SplitText = ({ text, className = "", delay = 0 }) => {
+  const [isCompactMotion, setIsCompactMotion] = useState(false);
+
+  useEffect(() => {
+    const compactMotionQuery = window.matchMedia('(max-width: 767px), (prefers-reduced-motion: reduce)');
+    const updateMotionMode = () => setIsCompactMotion(compactMotionQuery.matches);
+
+    updateMotionMode();
+    compactMotionQuery.addEventListener('change', updateMotionMode);
+
+    return () => compactMotionQuery.removeEventListener('change', updateMotionMode);
+  }, []);
+
   if (!text) return null;
 
   // Split text into words, then characters to allow wrapping
@@ -11,7 +25,7 @@ const SplitText = ({ text, className = "", delay = 0 }) => {
     hidden: { opacity: 0 },
     visible: (i = 1) => ({
       opacity: 1,
-      transition: { staggerChildren: 0.05, delayChildren: delay * i },
+      transition: { staggerChildren: isCompactMotion ? 0.02 : 0.05, delayChildren: delay * i },
     }),
   };
 
@@ -21,13 +35,13 @@ const SplitText = ({ text, className = "", delay = 0 }) => {
       y: 0,
       transition: {
         type: "spring",
-        damping: 12,
-        stiffness: 100,
+        damping: isCompactMotion ? 16 : 12,
+        stiffness: isCompactMotion ? 85 : 100,
       },
     },
     hidden: {
       opacity: 0,
-      y: 120,
+      y: isCompactMotion ? 40 : 120,
     },
   };
 

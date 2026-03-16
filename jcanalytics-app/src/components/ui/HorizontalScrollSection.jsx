@@ -12,10 +12,25 @@ const HorizontalScrollSection = () => {
   const sectionRef = useRef(null);
   const scrollRef = useRef(null);
   const [activeModalId, setActiveModalId] = useState(null);
+  const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
+    const desktopQuery = window.matchMedia('(min-width: 1024px)');
+    const updateDesktopMode = () => setIsDesktop(desktopQuery.matches);
+
+    updateDesktopMode();
+    desktopQuery.addEventListener('change', updateDesktopMode);
+
+    return () => desktopQuery.removeEventListener('change', updateDesktopMode);
+  }, []);
+
+  useEffect(() => {
+    if (!isDesktop) return;
+
     let ctx = gsap.context(() => {
       const scrollContainer = scrollRef.current;
+      if (!scrollContainer) return;
+
       const cards = gsap.utils.toArray('.horizontal-panel');
       
       const tl = gsap.timeline({
@@ -46,7 +61,7 @@ const HorizontalScrollSection = () => {
     }, sectionRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [isDesktop]);
 
   const cardData = [
     {
@@ -89,16 +104,28 @@ const HorizontalScrollSection = () => {
 
   return (
     <>
-      <div id="servicios" ref={sectionRef} className="h-screen w-full flex items-center overflow-hidden bg-slate-50 relative border-t border-slate-200">
-        <div ref={scrollRef} className="flex h-3/4 items-center w-max pl-6 md:pl-[min(10vw,8rem)] pr-[10vw] gap-10 md:gap-20 mt-16 md:mt-0">
+      <div
+        id="servicios"
+        ref={sectionRef}
+        className={`w-full bg-slate-50 relative border-t border-slate-200 ${isDesktop ? 'h-screen flex items-center overflow-hidden' : 'py-14 overflow-visible'}`}
+      >
+        <div
+          ref={scrollRef}
+          className={isDesktop
+            ? 'flex h-3/4 items-center w-max pl-6 md:pl-[min(10vw,8rem)] pr-[10vw] gap-10 md:gap-20 mt-16 md:mt-0'
+            : 'flex flex-nowrap overflow-x-auto snap-x snap-mandatory gap-6 w-full px-4 sm:px-6 pb-8 no-scrollbar'}
+        >
           
-          <div className="w-[85vw] md:w-[35vw] max-w-md shrink-0 mb-20 md:mb-0">
+          <div className={`${isDesktop ? 'w-[85vw] md:w-[35vw] max-w-md shrink-0 mb-20 md:mb-0' : 'w-[85vw] snap-center shrink-0 pr-6'}`}>
             <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-slate-900 tracking-normal">Soluciones con Precios Transparentes</h2>
-            <p className="font-sans text-lg text-slate-600">Del catálogo genérico a un menú con precios orientativos para PYMEs. Entregables claros, costos fijos.</p>
+            <p className="font-sans text-base sm:text-lg text-slate-600">Del catálogo genérico a un menú con precios orientativos para PYMEs. Entregables claros, costos fijos.</p>
           </div>
 
           {cardData.map((card, idx) => (
-            <div key={idx} className="horizontal-panel w-[85vw] md:w-[35vw] h-full max-h-[600px] flex items-center justify-center shrink-0">
+            <div
+              key={idx}
+              className={`horizontal-panel flex items-center justify-center ${isDesktop ? 'w-[85vw] md:w-[35vw] h-full max-h-[600px] shrink-0' : 'w-[85vw] snap-center shrink-0 h-auto'}`}
+            >
               <TiltCard className="w-full h-full max-w-md">
                 <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-xl shadow-slate-200/50 transition-all duration-300 group flex flex-col h-full overflow-hidden relative">
                   <div className="h-56 md:h-64 overflow-hidden relative">
@@ -106,7 +133,7 @@ const HorizontalScrollSection = () => {
                       src={card.img} 
                       alt={card.title} 
                       className="distortion-img w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                      style={{ clipPath: 'polygon(0 100%, 100% 100%, 100% 100%, 0 100%)' }}
+                      style={isDesktop ? { clipPath: 'polygon(0 100%, 100% 100%, 100% 100%, 0 100%)' } : { clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)' }}
                     />
                     <div className="absolute top-0 inset-x-0 h-full bg-gradient-to-t from-slate-900/90 via-transparent to-transparent pointer-events-none z-10"></div>
                   </div>

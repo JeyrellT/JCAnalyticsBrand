@@ -16,6 +16,8 @@ import {
   Layers, Settings, MonitorSmartphone, Clock
 } from 'lucide-react';
 
+const _MOTION = motion;
+
 // Fade In Up Reusable Component
 const FadeInUp = ({ children, delay = 0, className = "" }) => (
   <motion.div
@@ -57,6 +59,9 @@ const ParallaxImage = ({ src, alt, className = "" }) => {
 
 const App = () => {
   const [activePhase, setActivePhase] = useState(0);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   // States for ROI Calculator
   const [calcPeople, setCalcPeople] = useState(2);
@@ -66,10 +71,36 @@ const App = () => {
   const [calcErrors, setCalcErrors] = useState(1.2); // 1 = Nunca, 1.2 = A veces, 1.4 = Frecuente
 
   const vfxImgRef = useRef(null);
+
+  useEffect(() => {
+    const mobileQuery = window.matchMedia("(max-width: 767px)");
+    const touchQuery = window.matchMedia("(hover: none), (pointer: coarse)");
+    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    const syncDeviceState = () => {
+      setIsMobileViewport(mobileQuery.matches);
+      setIsTouchDevice(touchQuery.matches);
+      setPrefersReducedMotion(reducedMotionQuery.matches);
+    };
+
+    syncDeviceState();
+
+    mobileQuery.addEventListener("change", syncDeviceState);
+    touchQuery.addEventListener("change", syncDeviceState);
+    reducedMotionQuery.addEventListener("change", syncDeviceState);
+
+    return () => {
+      mobileQuery.removeEventListener("change", syncDeviceState);
+      touchQuery.removeEventListener("change", syncDeviceState);
+      reducedMotionQuery.removeEventListener("change", syncDeviceState);
+    };
+  }, []);
   
   // Custom cursor is enabled, hide default
   useEffect(() => {
-    document.body.classList.add('hide-cursor');
+    if (!isMobileViewport && !isTouchDevice) {
+      document.body.classList.add('hide-cursor');
+    }
     
     // Initialize Lenis
     const lenis = new Lenis({
@@ -87,7 +118,7 @@ const App = () => {
       document.body.classList.remove('hide-cursor');
       lenis.destroy();
     };
-  }, []);
+  }, [isMobileViewport, isTouchDevice]);
 
   // Navbar & Hero Scroll logic
   const { scrollY } = useScroll();
@@ -133,12 +164,13 @@ const App = () => {
 
   const currentMonthlyCost = Math.round((calcPeople * calcHours * calcFreq * calcErrors) * (calcSalary / 160));
   const currentYearlyCost = currentMonthlyCost * 12;
+  const chartMargins = isMobileViewport ? { top: 8, right: 0, left: -24, bottom: 0 } : { top: 10, right: 10, left: -20, bottom: 0 };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-500 selection:text-white overflow-x-hidden">
-      <CustomCursor />
+      {!isTouchDevice && !isMobileViewport && <CustomCursor />}
       <div className="fixed inset-0 noise-overlay pointer-events-none z-50 mix-blend-overlay" />
-      <Background3D />
+      <Background3D isMobile={isMobileViewport || isTouchDevice || prefersReducedMotion} />
       
       {/* Navigation - Dynamic Glassmorphism */}
       <motion.nav  
@@ -153,7 +185,7 @@ const App = () => {
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="fixed w-full z-50 transition-colors duration-300"
       >
-        <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 h-20 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 group cursor-pointer">
             <motion.img
               whileHover={{ scale: 1.05 }}
@@ -176,20 +208,29 @@ const App = () => {
               <ArrowRight size={18} />
             </a>
           </div>
+          <a
+            href="https://wa.me/50670330596"
+            target="_blank"
+            rel="noreferrer"
+            className="md:hidden inline-flex items-center justify-center gap-2 bg-emerald-500/25 hover:bg-emerald-500/35 border border-emerald-500/40 text-emerald-300 px-4 py-3 rounded-full font-bold text-sm transition-all backdrop-blur-md min-h-11"
+          >
+            WhatsApp
+            <ArrowRight size={16} />
+          </a>
         </div>
       </motion.nav>
 
       {/* Hero Section - Animated Gradient Blobs + Parallax */}
-      <header ref={heroRef} className="relative pt-32 pb-24 lg:pt-40 lg:pb-32 overflow-hidden bg-slate-950 text-white animate-gradient-mesh" style={{ backgroundImage: "linear-gradient(-45deg, #0a0e27, #0d1b4b, #1a1066, #0f0628)" }}>
+      <header ref={heroRef} className="relative pt-28 pb-16 sm:pt-32 sm:pb-24 lg:pt-40 lg:pb-32 overflow-hidden bg-slate-950 text-white animate-gradient-mesh" style={{ backgroundImage: "linear-gradient(-45deg, #0a0e27, #0d1b4b, #1a1066, #0f0628)" }}>
         
         {/* Animated Gradient Background CSS Blobs */}
         <div className="absolute top-0 right-0 w-full h-full overflow-hidden pointer-events-none opacity-40">
-           <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-gradient-to-tr from-blue-600 to-cyan-400 blur-[80px] animate-blob mix-blend-screen" />
-           <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-gradient-to-br from-indigo-600 to-purple-600 blur-[100px] animate-blob mix-blend-screen" style={{ animationDelay: '2s' }} />
+           <div className="absolute top-[-10%] right-[-15%] w-[280px] h-[280px] sm:w-[420px] sm:h-[420px] lg:w-[600px] lg:h-[600px] bg-gradient-to-tr from-blue-600 to-cyan-400 blur-[60px] sm:blur-[80px] animate-blob mix-blend-screen" />
+           <div className="absolute bottom-[-10%] left-[-20%] w-[240px] h-[240px] sm:w-[340px] sm:h-[340px] lg:w-[500px] lg:h-[500px] bg-gradient-to-br from-indigo-600 to-purple-600 blur-[70px] sm:blur-[100px] animate-blob mix-blend-screen" style={{ animationDelay: '2s' }} />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 relative z-10">
-          <div className="flex flex-col lg:flex-row items-center gap-16">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 relative z-10">
+          <div className="flex flex-col lg:flex-row items-center gap-8 sm:gap-12 lg:gap-16">
             <motion.div 
               style={{ opacity: heroOpacity }}
               className="lg:w-1/2"
@@ -200,7 +241,7 @@ const App = () => {
                 </div>
               </FadeInUp>
               <FadeInUp delay={0.2}>
-                <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-[1.1] mb-6 tracking-normal">
+                <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-[1.1] mb-6 tracking-normal">
                   <SplitText text="¿Cuánto tiempo pierde tu equipo " delay={0.1} />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 inline-block overflow-hidden">
                     <SplitText text="generando reportes?" delay={0.6} />
@@ -208,10 +249,10 @@ const App = () => {
                 </h1>
               </FadeInUp>
               <FadeInUp delay={0.3}>
-                <p className="text-xl text-slate-300 mb-6 leading-relaxed max-w-xl font-sans">
+                <p className="text-lg sm:text-xl text-slate-300 mb-6 leading-relaxed max-w-xl font-sans">
                   El tiempo que tu equipo dedica hoy a llenar Excels, podrías estar invirtiéndolo en analizar dashboards <strong>en tiempo real</strong>.
                 </p>
-                <div className="text-lg text-emerald-300 mb-10 font-medium max-w-xl font-sans border-l-2 border-emerald-400 pl-4 py-1">
+                <div className="text-base sm:text-lg text-emerald-300 mb-8 sm:mb-10 font-medium max-w-xl font-sans border-l-2 border-emerald-400 pl-4 py-1">
                   Firma de analítica enfocada en PYMEs de la Gran Área Metropolitana. Resultados visibles en 14 días o no cobramos.
                 </div>
               </FadeInUp>
@@ -221,7 +262,7 @@ const App = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     href="#roi"
-                    className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all shadow-[0_0_40px_rgba(37,99,235,0.4)]"
+                    className="bg-blue-600 hover:bg-blue-500 text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-bold text-base sm:text-lg flex items-center justify-center gap-3 transition-all shadow-[0_0_40px_rgba(37,99,235,0.4)] min-h-11"
                   >
                     <Calculator size={20} />
                     Ver mi ROI estimado
@@ -231,7 +272,7 @@ const App = () => {
                     href="https://wa.me/50670330596"
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center justify-center gap-2 px-8 py-4 text-emerald-400 font-bold hover:text-emerald-300 rounded-xl transition-all border border-emerald-500/30 glass-card-dark"
+                    className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 text-emerald-400 font-bold hover:text-emerald-300 rounded-xl transition-all border border-emerald-500/30 glass-card-dark min-h-11"
                   >
                     <MessageSquare size={20} />
                     Agendar 30 min gratis
@@ -243,7 +284,7 @@ const App = () => {
             {/* Hero Parallax Image */}
             <motion.div 
               style={{ y: heroImageY, opacity: heroOpacity }}
-              className="lg:w-1/2 relative w-full perspective-1000 mt-12 lg:mt-0"
+              className="lg:w-1/2 relative w-full perspective-1000 mt-8 sm:mt-12 lg:mt-0"
             >
               <FadeInUp delay={0.5}>
                 <TiltCard className="relative rounded-2xl overflow-hidden shadow-[0_20px_60px_-15px_rgba(37,99,235,0.5)] border border-slate-700/50">
@@ -251,7 +292,7 @@ const App = () => {
                        ref={vfxImgRef}
                        src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1200"
                        alt="Data Analytics Dashboard"
-                       className="w-full h-[500px] lg:h-[600px] object-cover opacity-90 transition-opacity duration-700" 
+                         className="w-full h-[260px] sm:h-[360px] md:h-[500px] lg:h-[600px] object-cover opacity-90 transition-opacity duration-700" 
                   />
                 </TiltCard>
               </FadeInUp>
@@ -383,7 +424,7 @@ const App = () => {
 
           {/* Cierre Unificador y CTA */}
           <FadeInUp delay={0.4}>
-            <div className="max-w-4xl mx-auto text-center bg-white rounded-[2rem] border border-slate-200 p-8 md:p-12 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] relative overflow-hidden">
+            <div className="max-w-4xl mx-auto text-center bg-white rounded-[2rem] border border-slate-200 p-5 sm:p-8 md:p-12 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] relative overflow-hidden">
                <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full blur-[40px] pointer-events-none"></div>
                <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/5 rounded-full blur-[40px] pointer-events-none"></div>
                
@@ -446,7 +487,7 @@ const App = () => {
       <section id="roi" className="py-24 bg-slate-950 text-white relative overflow-hidden z-20">
         {/* Decorative background grids */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.05] mix-blend-overlay"></div>
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-0 right-0 w-[340px] h-[340px] sm:w-[520px] sm:h-[520px] lg:w-[800px] lg:h-[800px] bg-emerald-500/10 rounded-full blur-[100px] sm:blur-[120px] pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
@@ -454,11 +495,11 @@ const App = () => {
               <div className="inline-flex items-center gap-2 px-6 py-2 bg-white/5 border border-white/10 rounded-full text-sm font-bold mb-6 backdrop-blur-md text-emerald-300">
                 <Calculator size={16} /> Evaluación Transparete
               </div>
-              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-black mb-6 tracking-tight">
+              <h2 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-6 tracking-tight">
                 Antes de contratarnos, <br className="hidden md:block"/>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">calculá si te conviene.</span>
               </h2>
-              <p className="font-sans text-xl text-slate-300 max-w-3xl mx-auto font-light leading-relaxed">
+              <p className="font-sans text-lg sm:text-xl text-slate-300 max-w-3xl mx-auto font-light leading-relaxed">
                 La mayoría de empresas en Costa Rica pierde entre ₡400,000 y ₡2,000,000 al mes en procesos que se podrían automatizar. En 2 minutos sabés si ese es tu caso.
               </p>
             </FadeInUp>
@@ -466,14 +507,14 @@ const App = () => {
 
           <div className="flex flex-col lg:flex-row gap-12 items-center">
             {/* Sliders Form */}
-            <div className="lg:w-1/2 w-full space-y-8 glass-card-dark p-8 md:p-10 rounded-[2rem] border border-slate-800">
+            <div className="lg:w-1/2 w-full space-y-8 glass-card-dark p-5 sm:p-8 md:p-10 rounded-[2rem] border border-slate-800">
               <FadeInUp delay={0.1}>
                 <div>
                   <div className="flex justify-between mb-3">
                     <label className="text-sm font-bold text-slate-300">¿Cuántas personas generan reportes?</label>
                     <span className="text-emerald-400 font-black">{calcPeople}</span>
                   </div>
-                  <input type="range" min="1" max="20" value={calcPeople} onChange={(e) => setCalcPeople(parseInt(e.target.value))} className="w-full accent-emerald-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
+                  <input type="range" min="1" max="20" value={calcPeople} onChange={(e) => setCalcPeople(parseInt(e.target.value))} className="w-full touch-slider h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
                 </div>
               </FadeInUp>
               <FadeInUp delay={0.2}>
@@ -482,7 +523,7 @@ const App = () => {
                     <label className="text-sm font-bold text-slate-300">Horas dedicadas por proceso (por persona)</label>
                     <span className="text-emerald-400 font-black">{calcHours} h</span>
                   </div>
-                  <input type="range" min="1" max="40" value={calcHours} onChange={(e) => setCalcHours(parseInt(e.target.value))} className="w-full accent-emerald-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
+                  <input type="range" min="1" max="40" value={calcHours} onChange={(e) => setCalcHours(parseInt(e.target.value))} className="w-full touch-slider h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
                 </div>
               </FadeInUp>
               <FadeInUp delay={0.3}>
@@ -491,7 +532,7 @@ const App = () => {
                     <label className="text-sm font-bold text-slate-300">Salario promedio mensual (₡)</label>
                     <span className="text-emerald-400 font-black">₡{(calcSalary / 1000).toFixed(0)}K</span>
                   </div>
-                  <input type="range" min="300000" max="2000000" step="50000" value={calcSalary} onChange={(e) => setCalcSalary(parseInt(e.target.value))} className="w-full accent-emerald-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
+                  <input type="range" min="300000" max="2000000" step="50000" value={calcSalary} onChange={(e) => setCalcSalary(parseInt(e.target.value))} className="w-full touch-slider h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
                 </div>
               </FadeInUp>
               <FadeInUp delay={0.4}>
@@ -621,7 +662,7 @@ const App = () => {
 
       {/* Casos de Uso Reales / Portfolio */}
       <section id="portfolio" className="py-24 bg-slate-50 relative overflow-hidden border-t border-slate-200 z-10">
-        <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-slate-100 to-transparent pointer-events-none" />
+        <div className="absolute top-0 left-0 w-full h-[320px] sm:h-[420px] lg:h-[500px] bg-gradient-to-b from-slate-100 to-transparent pointer-events-none" />
         <div className="max-w-7xl mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
             <FadeInUp>
@@ -682,7 +723,7 @@ const App = () => {
           </div>
 
           <FadeInUp delay={0.4}>
-            <div className="max-w-4xl mx-auto bg-slate-900 rounded-3xl p-8 md:p-12 text-center shadow-xl border border-slate-800/80 relative overflow-hidden">
+            <div className="max-w-4xl mx-auto bg-slate-900 rounded-3xl p-5 sm:p-8 md:p-12 text-center shadow-xl border border-slate-800/80 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px]"></div>
               <p className="font-sans text-xl md:text-2xl text-white font-medium mb-10 leading-relaxed italic relative z-10 text-balance">
                 "Si tu calculadora mostró más de ₡500,000 al mes, tiene sentido que hablemos 30 minutos. Sin compromiso, sin presentación de ventas — solo revisamos si los números son reales con tus datos."
@@ -723,8 +764,8 @@ const App = () => {
                 >
                   <div className="absolute top-0 right-10 w-24 h-1.5 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-b-lg"></div>
                   <div className="h-80 w-full mt-4" style={{ position: 'relative', width: '100%', height: 320 }}>
-                    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-                      <AreaChart data={forecastData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={220}>
+                      <AreaChart data={forecastData} margin={chartMargins}>
                         <defs>
                           <linearGradient id="colorRealLight" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
@@ -807,7 +848,7 @@ const App = () => {
           <FadeInUp delay={0.2}>
             <div className="bg-slate-50 rounded-[2rem] p-2 md:p-6 shadow-sm border border-slate-200 mb-8">
               {/* Tab Selector */}
-              <div className="flex flex-col md:flex-row justify-between mb-8 gap-2 relative">
+              <div className="flex overflow-x-auto snap-x snap-mandatory flex-nowrap md:flex-row justify-between mb-8 gap-3 relative pb-4 md:pb-0 no-scrollbar">
                 <div className="hidden md:block absolute top-1/2 left-0 w-full h-1 bg-slate-200 -translate-y-1/2 z-0"></div>
                 {[
                   { id: "D1", title: "DEFINE", tagline: "Primero entendemos.", icon: <Target className="w-6 h-6" /> },
@@ -818,9 +859,9 @@ const App = () => {
                   <button
                     key={idx}
                     onClick={() => setActivePhase(idx)}
-                    className={`relative z-10 flex-1 flex flex-row md:flex-col items-center gap-4 p-4 rounded-2xl transition-all duration-300 ${
+                    className={`relative z-10 w-[75vw] sm:w-[45vw] md:w-auto shrink-0 snap-center md:flex-1 flex flex-row md:flex-col items-center gap-4 p-4 rounded-2xl transition-all duration-300 ${
                       activePhase === idx
-                        ? 'bg-blue-600 text-white shadow-lg scale-105'
+                        ? 'bg-blue-600 text-white shadow-lg md:scale-105 scale-[1.02]'
                         : 'bg-white text-slate-500 hover:bg-blue-50 hover:text-blue-600 border border-slate-200'
                     }`}
                   >
@@ -977,8 +1018,8 @@ const App = () => {
       {/* Equipo / Sobre Nosotros */}
       <section className="py-32 bg-slate-950 relative z-20 overflow-hidden">
         {/* Ambient Glow Effects */}
-        <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen" />
-        <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[150px] pointer-events-none mix-blend-screen" />
+        <div className="absolute top-0 right-1/4 w-[220px] h-[220px] sm:w-[300px] sm:h-[300px] lg:w-[400px] lg:h-[400px] bg-blue-600/10 rounded-full blur-[90px] sm:blur-[120px] pointer-events-none mix-blend-screen" />
+        <div className="absolute bottom-0 left-1/4 w-[260px] h-[260px] sm:w-[360px] sm:h-[360px] lg:w-[500px] lg:h-[500px] bg-cyan-500/10 rounded-full blur-[100px] sm:blur-[150px] pointer-events-none mix-blend-screen" />
         
         <div className="max-w-7xl mx-auto px-4 relative z-10 border-t border-slate-800/50 pt-20">
           <div className="text-center mb-20 relative">
@@ -989,7 +1030,7 @@ const App = () => {
               >
                 <Users size={16} className="text-cyan-400" /> Liderazgo
               </motion.div>
-              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 tracking-tight">
+              <h2 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 tracking-tight">
                 Nuestro <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">Equipo</span>
               </h2>
             </FadeInUp>
@@ -1163,14 +1204,16 @@ const App = () => {
       </footer>
 
       {/* Floating WhatsApp Button */}
-      <a 
+      <motion.a 
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
         href="https://wa.me/50670330596" 
         target="_blank" 
         rel="noreferrer"
-        className="fixed bottom-6 right-6 z-50 bg-emerald-500 hover:bg-emerald-400 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center justify-center border-4 border-emerald-500/30"
+        className="fixed bottom-6 right-6 z-50 bg-emerald-500 hover:bg-emerald-400 text-white p-4 rounded-full shadow-2xl flex items-center justify-center border-4 border-emerald-500/30"
       >
         <MessageSquare size={32} />
-      </a>
+      </motion.a>
     </div>
   );
 };

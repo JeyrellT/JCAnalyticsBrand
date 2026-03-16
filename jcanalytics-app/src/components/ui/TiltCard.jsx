@@ -1,26 +1,40 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
+
+const _MOTION = motion;
 
 const TiltCard = ({ children, className = "" }) => {
   const ref = useRef(null);
+  const [tiltEnabled, setTiltEnabled] = useState(true);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
   const rotateX = useTransform(y, [-0.5, 0.5], ["7deg", "-7deg"]);
   const rotateY = useTransform(x, [-0.5, 0.5], ["-7deg", "7deg"]);
 
-  const handleMouseMove = (event) => {
+  useEffect(() => {
+    const hoverQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const updateTiltMode = () => setTiltEnabled(hoverQuery.matches);
+
+    updateTiltMode();
+    hoverQuery.addEventListener("change", updateTiltMode);
+
+    return () => hoverQuery.removeEventListener("change", updateTiltMode);
+  }, []);
+
+  const handlePointerMove = (event) => {
+    if (!tiltEnabled) return;
     if (!ref.current) return;
     const rect = ref.current.getBoundingClientRect();
     const width = rect.width;
     const height = rect.height;
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-    x.set(mouseX / width - 0.5);
-    y.set(mouseY / height - 0.5);
+    const pointerX = event.clientX - rect.left;
+    const pointerY = event.clientY - rect.top;
+    x.set(pointerX / width - 0.5);
+    y.set(pointerY / height - 0.5);
   };
 
-  const handleMouseLeave = () => {
+  const handlePointerLeave = () => {
     x.set(0);
     y.set(0);
   };
@@ -28,9 +42,9 @@ const TiltCard = ({ children, className = "" }) => {
   return (
     <motion.div
       ref={ref}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+      style={{ rotateX: tiltEnabled ? rotateX : "0deg", rotateY: tiltEnabled ? rotateY : "0deg", transformStyle: "preserve-3d" }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
       className={`perspective-1000 ${className}`}
     >

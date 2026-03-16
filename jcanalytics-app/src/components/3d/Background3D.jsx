@@ -61,7 +61,11 @@ const Scene = () => {
   );
 };
 
-const Background3D = () => {
+const Background3D = ({ isMobile = false }) => {
+  if (isMobile) {
+    return null;
+  }
+
   return (
     <div className="fixed inset-0 z-0 pointer-events-none mix-blend-screen opacity-60">
       <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
