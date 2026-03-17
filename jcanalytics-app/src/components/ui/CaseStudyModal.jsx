@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle, ArrowRight, Layers, Target, Database, ShieldCheck } from 'lucide-react';
 
@@ -21,9 +22,9 @@ const CaseStudyModal = ({ isOpen, onClose, categoryId, casesData }) => {
   const category = casesData[categoryId];
   const Icon = category.icon;
 
-  return (
+  return ReactDOM.createPortal(
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-3 sm:p-6 overflow-y-auto" data-lenis-prevent>
+      <div className="fixed inset-0 z-[9998] flex items-start sm:items-center justify-center p-3 sm:p-6 overflow-y-auto" data-lenis-prevent>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -167,7 +168,8 @@ const CaseStudyModal = ({ isOpen, onClose, categoryId, casesData }) => {
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 

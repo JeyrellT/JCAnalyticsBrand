@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
-import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
 import Lenis from 'lenis';
 import CustomCursor from './components/ui/CustomCursor';
 import MagneticButton from './components/ui/MagneticButton';
@@ -13,7 +13,7 @@ import Background3D from './components/3d/Background3D';
 import {
   TrendingUp, Target, CheckCircle, Database, Cpu, BarChart3,
   ArrowRight, ShieldCheck, Zap, Users, Calculator, MessageSquare, ChevronRight,
-  Layers, Settings, MonitorSmartphone, Clock
+  Layers, Settings, MonitorSmartphone, Clock, X, AlertTriangle, TrendingDown, Lightbulb
 } from 'lucide-react';
 
 const _MOTION = motion;
@@ -57,8 +57,192 @@ const ParallaxImage = ({ src, alt, className = "" }) => {
   );
 };
 
+// ── Contenido de los modales de "El Problema Oculto" ──────────────────────────
+const PROBLEM_MODAL_CONTENT = {
+  reportes: {
+    icon: <Clock size={28} />,
+    color: 'red',
+    tag: 'Impacto Oculto · ₡1.2M+ perdidos',
+    title: '"Tus reportes llegan 3 días después de que ya no sirven"',
+    caseName: 'Mayorista en Alajuela',
+    intro: 'Este es el ciclo más común que vemos en PYMEs del GAM:',
+    steps: [
+      { label: 'Lunes', text: 'El equipo exporta datos del sistema a CSV.' },
+      { label: 'Martes', text: 'Se limpia y consolida en Excel (4–6 horas).' },
+      { label: 'Miércoles', text: 'Se envía el reporte por correo a gerencia.' },
+      { label: 'Jueves', text: 'Gerencia toma decisiones... sobre datos de la semana pasada.' },
+    ],
+    symptoms: [
+      '¿Tus reuniones de lunes empiezan con "esperen que actualizo el Excel"?',
+      '¿Detectas problemas de inventario o cartera cuando ya es tarde?',
+      '¿Tienes más de 3 versiones del mismo archivo con distintas fechas?',
+    ],
+    solution: 'Con un dashboard conectado a tu sistema, la información fluye en tiempo real. La decisión que antes tardaba 3 días, la tomas en 3 minutos.',
+    result: 'El mayorista en Alajuela redujo su ciclo de reporte de 4 días a 0 — los datos aparecen solos cada mañana.',
+  },
+  excel: {
+    icon: <Database size={28} />,
+    color: 'orange',
+    tag: 'Fuga de Capital · ₡2.4M al año',
+    title: '"Tu equipo dedica 40+ horas al mes a Excel"',
+    caseName: 'Ferretería en Heredia',
+    intro: 'Hagamos el cálculo que nadie se atreve a hacer en voz alta:',
+    steps: [
+      { label: 'Personas', text: '2 empleados dedicando ~20 horas mensuales a reportes manuales.' },
+      { label: 'Costo hora', text: 'Con un salario de ₡600K/mes, cada hora vale ~₡3,500.' },
+      { label: 'Costo mensual', text: '2 × 20h × ₡3,500 = ₡140,000 solo en tiempo.' },
+      { label: 'Costo anual', text: '₡1.68M + errores corregidos + decisiones tardías = ₡2.4M reales.' },
+    ],
+    symptoms: [
+      '¿Tienes archivos "Reporte_FINAL_v3_BUENO_este_si.xlsx"?',
+      '¿Un error de fórmula ha afectado alguna vez una decisión de compra?',
+      '¿Tus colaboradores dicen que "no da tiempo" para analizar, solo para reportar?',
+    ],
+    solution: 'La automatización libera ese tiempo para que tu equipo haga lo que realmente importa: analizar, proponer y crecer.',
+    result: 'La ferretería en Heredia eliminó 38 horas mensuales de trabajo manual en 3 semanas. Ese tiempo ahora va a gestión de proveedores.',
+  },
+  rentabilidad: {
+    icon: <BarChart3 size={28} />,
+    color: 'blue',
+    tag: 'Riesgo Financiero · 30% capital estancado',
+    title: '"No sabes quién genera el 80% del margen"',
+    caseName: 'Distribuidora en el GAM',
+    intro: 'El Principio de Pareto es brutal en ventas PYME:',
+    steps: [
+      { label: 'Clientes', text: 'El 20% de tus clientes genera el 80% de tu margen bruto.' },
+      { label: 'Productos', text: 'El 20% de tu catálogo mueve el 80% de tu capital de trabajo.' },
+      { label: 'Riesgo', text: 'El 20% de tu cartera puede representar el 80% de tu riesgo de incobrables.' },
+      { label: 'El problema', text: 'Sin visibilidad, tratas igual a todos — y financias inventario muerto.' },
+    ],
+    symptoms: [
+      '¿Tienes productos con más de 90 días sin movimiento en bodega?',
+      '¿Sabes exactamente cuál cliente tiene el mayor riesgo de atraso en este momento?',
+      '¿Tu margen neto real varía más de un 5% según quién haga el cálculo?',
+    ],
+    solution: 'Un dashboard de rentabilidad por cliente, producto y canal te muestra exactamente dónde enfocar esfuerzo de ventas y dónde liberar capital.',
+    result: 'La distribuidora en el GAM identificó ₡8M en inventario estancado y ₡3.2M en cuentas de alto riesgo — en su primera semana con el dashboard.',
+  },
+};
+
+// Modal de Problema
+const ProblemModal = ({ modalKey, onClose }) => {
+  const data = PROBLEM_MODAL_CONTENT[modalKey];
+  if (!data) return null;
+
+  const colorMap = {
+    red:    { bg: 'bg-red-50',    border: 'border-red-200',    icon: 'bg-red-100 text-red-500',    tag: 'bg-red-100 text-red-700',    btn: 'bg-red-500 hover:bg-red-600' },
+    orange: { bg: 'bg-orange-50', border: 'border-orange-200', icon: 'bg-orange-100 text-orange-500', tag: 'bg-orange-100 text-orange-700', btn: 'bg-orange-500 hover:bg-orange-600' },
+    blue:   { bg: 'bg-blue-50',   border: 'border-blue-200',   icon: 'bg-blue-100 text-blue-500',   tag: 'bg-blue-100 text-blue-700',   btn: 'bg-blue-500 hover:bg-blue-600' },
+  };
+  const c = colorMap[data.color];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      {/* backdrop */}
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.92, y: 24 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+        className="relative bg-white rounded-[2rem] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className={`${c.bg} ${c.border} border-b px-6 pt-6 pb-5 rounded-t-[2rem]`}>
+          <div className="flex items-start justify-between gap-4">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${c.icon}`}>
+              {data.icon}
+            </div>
+            <button
+              onClick={onClose}
+              className="w-9 h-9 rounded-full bg-white/80 hover:bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors shrink-0"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mt-3 mb-2 ${c.tag}`}>
+            <AlertTriangle size={11} /> {data.tag}
+          </div>
+          <h3 className="font-display text-lg sm:text-xl font-bold text-slate-900 leading-snug">{data.title}</h3>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-6 space-y-6">
+          {/* Pasos / ciclo */}
+          <div>
+            <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{data.intro}</p>
+            <div className="space-y-2">
+              {data.steps.map((step, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className={`mt-0.5 shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black ${c.icon}`}>
+                    {i + 1}
+                  </div>
+                  <p className="text-sm text-slate-700"><strong>{step.label}:</strong> {step.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Síntomas */}
+          <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <TrendingDown size={13} /> ¿Lo reconoces en tu empresa?
+            </p>
+            <ul className="space-y-2">
+              {data.symptoms.map((s, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                  <span className="text-red-400 mt-0.5 shrink-0">▸</span> {s}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Solución */}
+          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
+            <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Lightbulb size={13} /> Cómo lo resolvemos
+            </p>
+            <p className="text-sm text-slate-700">{data.solution}</p>
+          </div>
+
+          {/* Caso real */}
+          <div className="flex items-start gap-3 p-4 bg-slate-900 rounded-2xl">
+            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+              <Target size={14} className="text-white" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Caso real · {data.caseName}</p>
+              <p className="text-sm text-slate-200">{data.result}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer CTA */}
+        <div className="px-6 pb-6">
+          <a
+            href="#contacto"
+            onClick={onClose}
+            className={`flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-white font-bold text-sm transition-colors ${c.btn}`}
+          >
+            Quiero resolver esto en mi empresa <ArrowRight size={16} />
+          </a>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 const App = () => {
   const [activePhase, setActivePhase] = useState(0);
+  const [activeModal, setActiveModal] = useState(null);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -186,6 +370,13 @@ const App = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-500 selection:text-white overflow-x-hidden">
       {!isTouchDevice && !isMobileViewport && <CustomCursor />}
+
+      {/* Modal Problema Oculto */}
+      <AnimatePresence>
+        {activeModal && (
+          <ProblemModal modalKey={activeModal} onClose={() => setActiveModal(null)} />
+        )}
+      </AnimatePresence>
 
       {/* Scroll Progress Bar */}
       <motion.div
@@ -377,6 +568,12 @@ const App = () => {
                     </div>
                     <span><strong>Solución en:</strong> 14 días</span>
                   </div>
+                  <button
+                    onClick={() => setActiveModal('reportes')}
+                    className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 text-sm font-semibold transition-colors"
+                  >
+                    Entender este problema <ChevronRight size={15} />
+                  </button>
                 </div>
               </div>
             </FadeInUp>
@@ -409,6 +606,12 @@ const App = () => {
                     </div>
                     <span><strong>Automatizado en:</strong> 3 semanas</span>
                   </div>
+                  <button
+                    onClick={() => setActiveModal('excel')}
+                    className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 text-sm font-semibold transition-colors"
+                  >
+                    Entender este problema <ChevronRight size={15} />
+                  </button>
                 </div>
               </div>
             </FadeInUp>
@@ -441,6 +644,12 @@ const App = () => {
                     </div>
                     <span><strong>Dashboard en:</strong> 2 semanas</span>
                   </div>
+                  <button
+                    onClick={() => setActiveModal('rentabilidad')}
+                    className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 text-sm font-semibold transition-colors"
+                  >
+                    Entender este problema <ChevronRight size={15} />
+                  </button>
                 </div>
               </div>
             </FadeInUp>
