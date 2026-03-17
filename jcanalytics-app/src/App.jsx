@@ -166,10 +166,16 @@ const App = () => {
     window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}`;
   };
 
-  const currentMonthlyCost = Math.round((calcPeople * calcHours * calcFreq * calcErrors) * (calcSalary / 160));
+  const formatCRC = (value) => new Intl.NumberFormat('es-CR').format(Math.round(value));
+  const hourlyCost = calcSalary / 160;
+  const monthlyProcessHours = calcPeople * calcHours * calcFreq;
+  const monthlyTotalHours = monthlyProcessHours * calcErrors;
+  const recoverableHours = Math.round(monthlyTotalHours * 0.9);
+  const recoverableCostEquivalent = Math.round(recoverableHours * hourlyCost);
+  const halfTimeHoursPerMonth = 80;
+  const halfTimePeopleEquivalent = (recoverableHours / halfTimeHoursPerMonth).toFixed(1);
+  const currentMonthlyCost = Math.round(monthlyTotalHours * hourlyCost);
   const currentYearlyCost = currentMonthlyCost * 12;
-  const monthlyHoursSpent = calcPeople * calcHours * calcFreq;
-  const halfTimeSalaryCost = Math.round(calcSalary * 0.5);
   const netflixMonthlyReference = 12000;
   const netflixMonthsEquivalent = Math.max(1, Math.round(currentMonthlyCost / netflixMonthlyReference));
   const netflixEquivalentLabel = netflixMonthsEquivalent >= 12
@@ -623,7 +629,7 @@ const App = () => {
                   </div>
                   <div className="glass-card-dark border-l-4 border-l-emerald-500 p-3 sm:p-5 md:p-6 rounded-xl border border-slate-800/50">
                     <div className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 sm:mb-2">Horas Recuperables</div>
-                    <div className="font-display text-base sm:text-xl md:text-2xl lg:text-3xl font-black text-white leading-tight">{Math.round(calcPeople * calcHours * calcFreq * 0.9)}<span className="text-xs sm:text-sm text-slate-400 font-normal ml-1">h/mes</span></div>
+                    <div className="font-display text-base sm:text-xl md:text-2xl lg:text-3xl font-black text-white leading-tight">{recoverableHours}<span className="text-xs sm:text-sm text-slate-400 font-normal ml-1">h/mes</span></div>
                   </div>
                   <div className="glass-card-dark border-l-4 border-l-cyan-500 p-3 sm:p-5 md:p-6 rounded-xl border border-slate-800/50">
                     <div className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 sm:mb-2">Payback Estimado</div>
@@ -654,8 +660,8 @@ const App = () => {
                    <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 shadow-inner border border-blue-500/20">
                      <Users size={28} className="text-blue-400" />
                    </div>
-                   <p className="text-lg font-medium text-slate-300">Cubrir {monthlyHoursSpent} horas/mes en trabajo manual (casi medio tiempo)</p>
-                   <p className="text-sm text-slate-500 mt-2">Eso equivale a ~₡{new Intl.NumberFormat('es-CR').format(halfTimeSalaryCost)} mensuales.</p>
+                   <p className="text-lg font-medium text-slate-300">Cubrir {recoverableHours} horas/mes recuperables de trabajo manual</p>
+                   <p className="text-sm text-slate-500 mt-2">Equivale a {halfTimePeopleEquivalent} personas de medio tiempo (~₡{formatCRC(recoverableCostEquivalent)}/mes).</p>
                  </div>
                </FadeInUp>
                <FadeInUp delay={0.2}>
@@ -664,7 +670,7 @@ const App = () => {
                      <MonitorSmartphone size={28} className="text-orange-400" />
                    </div>
                    <p className="text-lg font-medium text-slate-300">Pagar <strong className="text-orange-300">{netflixEquivalentLabel}</strong> de Netflix empresarial sin ver nada util</p>
-                   <p className="text-sm text-slate-500 mt-2">Calculado con {calcHours}h por proceso y frecuencia actual.</p>
+                   <p className="text-sm text-slate-500 mt-2">{netflixMonthsEquivalent} meses al valor de referencia de ₡{formatCRC(netflixMonthlyReference)}/mes.</p>
                  </div>
                </FadeInUp>
                <FadeInUp delay={0.3}>
