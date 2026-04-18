@@ -6,7 +6,6 @@ import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'fra
 import Lenis from 'lenis';
 import CustomCursor from './components/ui/CustomCursor';
 import MagneticButton from './components/ui/MagneticButton';
-import SplitText from './components/ui/SplitText';
 import HorizontalScrollSection from './components/ui/HorizontalScrollSection';
 import TiltCard from './components/ui/TiltCard';
 import Background3D from './components/3d/Background3D';
@@ -245,7 +244,9 @@ const App = () => {
   const [activeModal, setActiveModal] = useState(null);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  // Mantenemos el state de "reduced motion" para futuras animaciones que lo respeten;
+  // hoy no se consume directamente porque el hero retiró Background3D.
+  const [_prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   // States for ROI Calculator
   const [calcPeople, setCalcPeople] = useState(2);
@@ -385,7 +386,7 @@ const App = () => {
       />
 
       <div className="fixed inset-0 noise-overlay pointer-events-none z-50 mix-blend-overlay" />
-      <Background3D isMobile={isMobileViewport || isTouchDevice || prefersReducedMotion} />
+      {/* Background3D retirado del hero (abr-26) — reducir capas visuales simultáneas. Se mantiene el import para futura reutilización en otra sección. */}
       
       {/* Navigation - Dynamic Glassmorphism */}
       <motion.nav  
@@ -435,13 +436,13 @@ const App = () => {
         </div>
       </motion.nav>
 
-      {/* Hero Section - Animated Gradient Blobs + Parallax */}
-      <header ref={heroRef} className="relative pt-28 pb-16 sm:pt-32 sm:pb-24 lg:pt-40 lg:pb-32 overflow-hidden bg-slate-950 text-white animate-gradient-mesh" style={{ backgroundImage: "linear-gradient(-45deg, #0a0e27, #0d1b4b, #1a1066, #0f0628)" }}>
+      {/* Hero Section — refinado: 1 acento (azul brand), claim declarativo, prueba arriba del fold */}
+      <header ref={heroRef} className="relative pt-28 pb-16 sm:pt-32 sm:pb-24 lg:pt-40 lg:pb-32 overflow-hidden bg-slate-950 text-white">
         
-        {/* Animated Gradient Background CSS Blobs */}
-        <div className="absolute top-0 right-0 w-full h-full overflow-hidden pointer-events-none opacity-40">
-           <div className="absolute top-[-10%] right-[-15%] w-[280px] h-[280px] sm:w-[420px] sm:h-[420px] lg:w-[600px] lg:h-[600px] bg-gradient-to-tr from-blue-600 to-cyan-400 blur-[60px] sm:blur-[80px] animate-blob mix-blend-screen" />
-           <div className="absolute bottom-[-10%] left-[-20%] w-[240px] h-[240px] sm:w-[340px] sm:h-[340px] lg:w-[500px] lg:h-[500px] bg-gradient-to-br from-indigo-600 to-purple-600 blur-[70px] sm:blur-[100px] animate-blob mix-blend-screen" style={{ animationDelay: '2s' }} />
+        {/* Gradient blobs sutiles — única animación protagonista del hero */}
+        <div className="absolute top-0 right-0 w-full h-full overflow-hidden pointer-events-none opacity-30">
+           <div className="absolute top-[-10%] right-[-15%] w-[280px] h-[280px] sm:w-[420px] sm:h-[420px] lg:w-[600px] lg:h-[600px] bg-blue-600 blur-[60px] sm:blur-[80px] animate-blob mix-blend-screen" />
+           <div className="absolute bottom-[-10%] left-[-20%] w-[240px] h-[240px] sm:w-[340px] sm:h-[340px] lg:w-[500px] lg:h-[500px] bg-indigo-700 blur-[70px] sm:blur-[100px] animate-blob mix-blend-screen" style={{ animationDelay: '2s' }} />
         </div>
 
         <div className="max-w-7xl mx-auto px-3 sm:px-4 relative z-10">
@@ -451,47 +452,59 @@ const App = () => {
               className="lg:w-1/2"
             >
               <FadeInUp delay={0.1}>
-                <div className="inline-flex items-center gap-2 px-5 py-2 glass-card-dark rounded-full text-sm font-bold mb-8 text-emerald-300 border-emerald-500/30">
-                  <Zap size={16} className="text-emerald-400" /> Analítica para tu PYME
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-mono font-medium mb-7 text-slate-300 border border-white/10 bg-white/5 backdrop-blur-sm uppercase tracking-[0.18em]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                  JC Analytics · Analítica · Automatización · GAM
                 </div>
               </FadeInUp>
               <FadeInUp delay={0.2}>
-                <h1 className="font-display text-[1.75rem] sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-[1.15] sm:leading-[1.1] mb-5 sm:mb-6 tracking-normal">
-                  <SplitText text="¿Cuánto tiempo pierde tu equipo " delay={0.1} />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 inline-block overflow-hidden">
-                    <SplitText text="generando reportes?" delay={0.6} />
-                  </span>
+                <h1 className="font-display text-[2rem] sm:text-5xl md:text-[3.5rem] lg:text-[4rem] font-extrabold text-white leading-[1.05] mb-5 sm:mb-6 tracking-[-0.02em]">
+                  Reportes en tiempo real.<br />
+                  <span className="italic font-semibold text-slate-300">Decisiones en minutos, no en días.</span>
                 </h1>
               </FadeInUp>
               <FadeInUp delay={0.3}>
-                <p className="text-base sm:text-lg md:text-xl text-slate-300 mb-5 sm:mb-6 leading-relaxed max-w-xl font-sans">
-                  El tiempo que tu equipo dedica hoy a llenar Excels, podrías estar invirtiéndolo en analizar dashboards <strong>en tiempo real</strong>.
+                <p className="text-base sm:text-lg text-slate-400 mb-7 sm:mb-9 leading-relaxed max-w-xl font-sans">
+                  Firma de analítica enfocada en PYMEs de la Gran Área Metropolitana. Dashboards Power BI, pipelines Python y automatización con Power Automate. <span className="text-white font-medium">Resultados visibles en 14 días o no cobramos.</span>
                 </p>
-                <div className="text-sm sm:text-base md:text-lg text-emerald-300 mb-7 sm:mb-10 font-medium max-w-xl font-sans border-l-2 border-emerald-400 pl-4 py-1">
-                  Firma de analítica enfocada en PYMEs de la Gran Área Metropolitana. Resultados visibles en 14 días o no cobramos.
-                </div>
               </FadeInUp>
               <FadeInUp delay={0.4}>
-                <div className="flex flex-col sm:flex-row gap-5">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-8">
                   <motion.a 
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
                     href="#roi"
-                    className="bg-blue-600 hover:bg-blue-500 text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-bold text-base sm:text-lg flex items-center justify-center gap-3 transition-all shadow-[0_0_40px_rgba(37,99,235,0.4)] min-h-11"
+                    className="bg-blue-600 hover:bg-blue-500 text-white px-6 sm:px-7 py-3.5 rounded-xl font-semibold text-base flex items-center justify-center gap-2.5 transition-colors shadow-[0_0_30px_rgba(37,99,235,0.35)] min-h-11"
                   >
-                    <Calculator size={20} />
+                    <Calculator size={18} />
                     Ver mi ROI estimado
                   </motion.a>
-                  <motion.a 
-                    whileHover={{ scale: 1.05, backgroundColor: "rgba(34,197,94,0.1)" }}
+                  <a 
                     href="https://wa.me/50670330596"
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 text-emerald-400 font-bold hover:text-emerald-300 rounded-xl transition-all border border-emerald-500/30 glass-card-dark min-h-11"
+                    className="inline-flex items-center justify-center gap-2 text-slate-300 hover:text-white font-medium text-sm transition-colors group min-h-11"
                   >
-                    <MessageSquare size={20} />
-                    Agendar 30 min gratis
-                  </motion.a>
+                    Agendar 30 min
+                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                  </a>
+                </div>
+              </FadeInUp>
+              <FadeInUp delay={0.5}>
+                {/* Prueba arriba del fold — cifras duras en mono */}
+                <div className="grid grid-cols-3 gap-4 sm:gap-6 pt-6 border-t border-white/10 max-w-xl">
+                  <div>
+                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300 leading-none">99.4%</div>
+                    <div className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">reducción tiempo auditoría</div>
+                  </div>
+                  <div>
+                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300 leading-none">3h → 30s</div>
+                    <div className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">cierre financiero</div>
+                  </div>
+                  <div>
+                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300 leading-none">174</div>
+                    <div className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">SKUs / 24 tiendas live</div>
+                  </div>
                 </div>
               </FadeInUp>
             </motion.div>
@@ -539,119 +552,104 @@ const App = () => {
             </FadeInUp>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-8 mb-12 sm:mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 mb-12 sm:mb-16">
+            {/* Card 1 — Reportes tardíos */}
             <FadeInUp delay={0.1}>
-              <div className="bg-slate-50 p-5 sm:p-8 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-xl transition-all h-full flex flex-col">
-                <div className="flex items-start justify-between mb-5 sm:mb-6">
-                  <div className="w-11 h-11 sm:w-14 sm:h-14 bg-red-100/50 rounded-2xl flex items-center justify-center text-red-500 font-black text-2xl border border-red-200">
-                    <Clock size={22} />
+              <button
+                onClick={() => setActiveModal('reportes')}
+                className="text-left w-full bg-white p-6 sm:p-8 rounded-[1.5rem] border border-slate-200 hover:border-slate-300 hover:shadow-[0_20px_40px_-20px_rgba(15,23,42,0.15)] transition-all h-full flex flex-col group"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                    <Clock size={14} className="text-[var(--brand-bad)]" />
+                    <span>CASE_01 / REPORTS</span>
                   </div>
-                  <div className="text-right">
-                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Impacto Oculto</div>
-                    <div className="text-xl font-black text-red-500">₡1.2M+</div>
-                    <div className="text-xs text-red-400 font-medium">perdidos en ineficiencia</div>
+                  <div className="text-[11px] font-mono text-slate-400">Mayorista · Alajuela</div>
+                </div>
+                <h3 className="font-display text-base sm:text-lg font-semibold text-slate-900 mb-3 leading-snug">
+                  "Tus reportes llegan 3 días después de que ya no sirven"
+                </h3>
+                <p className="text-slate-500 mb-8 text-sm leading-relaxed flex-grow">
+                  El equipo invierte horas exportando y consolidando datos. Las decisiones críticas se toman a ciegas o por intuición.
+                </p>
+                <div className="pt-6 border-t border-slate-100">
+                  <div className="font-display text-[3rem] sm:text-[3.5rem] font-extrabold text-[var(--brand-bad)] leading-none tracking-tight">
+                    −₡1.2M
+                  </div>
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-slate-500 mt-2">
+                    Pérdida anual estimada · ineficiencia operativa
+                  </div>
+                  <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-slate-700 border-b border-slate-300 group-hover:border-[var(--brand-bad)] group-hover:text-[var(--brand-bad)] pb-0.5 transition-colors">
+                    Entender este problema <ChevronRight size={14} />
                   </div>
                 </div>
-                <h3 className="font-bold text-base sm:text-xl text-slate-900 mb-3 sm:mb-4 tracking-tight">"Tus reportes llegan 3 días después de que ya no sirven"</h3>
-                <p className="text-slate-600 mb-6 sm:mb-8 font-medium text-sm flex-grow">El equipo invierte horas en exportar, limpiar y consolidar datos mientras las decisiones críticas se toman a ciegas o basadas en intuición, perdiendo ventas diarias.</p>
-                
-                <div className="space-y-3 pt-6 border-t border-slate-200/60 mt-auto">
-                  <div className="flex items-center gap-3 text-sm text-slate-600 font-medium">
-                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
-                      <Target size={14} className="text-slate-500" />
-                    </div>
-                    <span><strong>Caso real:</strong> Mayorista en Alajuela</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-slate-600 font-medium">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                      <Zap size={14} className="text-blue-600" />
-                    </div>
-                    <span><strong>Solución en:</strong> 14 días</span>
-                  </div>
-                  <button
-                    onClick={() => setActiveModal('reportes')}
-                    className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 text-sm font-semibold transition-colors"
-                  >
-                    Entender este problema <ChevronRight size={15} />
-                  </button>
-                </div>
-              </div>
-            </FadeInUp>
-            
-            <FadeInUp delay={0.2}>
-              <div className="bg-slate-50 p-5 sm:p-8 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-[0_20px_40px_-15px_rgba(249,115,22,0.15)] transition-all h-full flex flex-col">
-                <div className="flex items-start justify-between mb-5 sm:mb-6">
-                  <div className="w-11 h-11 sm:w-14 sm:h-14 bg-orange-100/50 rounded-2xl flex items-center justify-center text-orange-500 font-black text-2xl border border-orange-200">
-                    <Database size={22} />
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Fuga de Capital</div>
-                    <div className="text-xl font-black text-orange-500">₡2.4M</div>
-                    <div className="text-xs text-orange-400 font-medium">en horas-hombre al año</div>
-                  </div>
-                </div>
-                <h3 className="font-bold text-base sm:text-xl text-slate-900 mb-3 sm:mb-4 tracking-tight">"Tu equipo dedica 40+ horas al mes a Excel"</h3>
-                <p className="text-slate-600 mb-6 sm:mb-8 font-medium text-sm flex-grow">Tu talento humano más caro está siendo desaprovechado en tareas robóticas de copiar y pegar, ahogando la innovación y exponiendo a la empresa a errores manuales costosos.</p>
-                
-                <div className="space-y-3 pt-6 border-t border-slate-200/60 mt-auto">
-                  <div className="flex items-center gap-3 text-sm text-slate-600 font-medium">
-                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
-                      <Target size={14} className="text-slate-500" />
-                    </div>
-                    <span><strong>Caso real:</strong> Ferretería en Heredia</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-slate-600 font-medium">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                      <Zap size={14} className="text-blue-600" />
-                    </div>
-                    <span><strong>Automatizado en:</strong> 3 semanas</span>
-                  </div>
-                  <button
-                    onClick={() => setActiveModal('excel')}
-                    className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 text-sm font-semibold transition-colors"
-                  >
-                    Entender este problema <ChevronRight size={15} />
-                  </button>
-                </div>
-              </div>
+              </button>
             </FadeInUp>
 
+            {/* Card 2 — Excel manual */}
+            <FadeInUp delay={0.2}>
+              <button
+                onClick={() => setActiveModal('excel')}
+                className="text-left w-full bg-white p-6 sm:p-8 rounded-[1.5rem] border border-slate-200 hover:border-slate-300 hover:shadow-[0_20px_40px_-20px_rgba(15,23,42,0.15)] transition-all h-full flex flex-col group"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                    <Database size={14} className="text-[var(--brand-bad)]" />
+                    <span>CASE_02 / EXCEL</span>
+                  </div>
+                  <div className="text-[11px] font-mono text-slate-400">Ferretería · Heredia</div>
+                </div>
+                <h3 className="font-display text-base sm:text-lg font-semibold text-slate-900 mb-3 leading-snug">
+                  "Tu equipo dedica 40+ horas al mes a Excel"
+                </h3>
+                <p className="text-slate-500 mb-8 text-sm leading-relaxed flex-grow">
+                  Talento caro haciendo tareas robóticas de copiar y pegar. Sin tiempo para analizar, expuesto a errores manuales costosos.
+                </p>
+                <div className="pt-6 border-t border-slate-100">
+                  <div className="font-display text-[3rem] sm:text-[3.5rem] font-extrabold text-[var(--brand-bad)] leading-none tracking-tight">
+                    −₡2.4M
+                  </div>
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-slate-500 mt-2">
+                    Fuga anual · horas-persona en reportes manuales
+                  </div>
+                  <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-slate-700 border-b border-slate-300 group-hover:border-[var(--brand-bad)] group-hover:text-[var(--brand-bad)] pb-0.5 transition-colors">
+                    Entender este problema <ChevronRight size={14} />
+                  </div>
+                </div>
+              </button>
+            </FadeInUp>
+
+            {/* Card 3 — Rentabilidad invisible */}
             <FadeInUp delay={0.3}>
-              <div className="bg-slate-50 p-5 sm:p-8 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-[0_20px_40px_-15px_rgba(59,130,246,0.15)] transition-all h-full flex flex-col">
-                <div className="flex items-start justify-between mb-5 sm:mb-6">
-                  <div className="w-11 h-11 sm:w-14 sm:h-14 bg-blue-100/50 rounded-2xl flex items-center justify-center text-blue-500 font-black text-2xl border border-blue-200">
-                    <BarChart3 size={22} />
+              <button
+                onClick={() => setActiveModal('rentabilidad')}
+                className="text-left w-full bg-white p-6 sm:p-8 rounded-[1.5rem] border border-slate-200 hover:border-slate-300 hover:shadow-[0_20px_40px_-20px_rgba(15,23,42,0.15)] transition-all h-full flex flex-col group"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                    <BarChart3 size={14} className="text-[var(--brand-bad)]" />
+                    <span>CASE_03 / MARGIN</span>
                   </div>
-                  <div className="text-right">
-                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Riesgo Financiero</div>
-                    <div className="text-xl font-black text-blue-500">30%</div>
-                    <div className="text-xs text-blue-400 font-medium">capital estancado</div>
+                  <div className="text-[11px] font-mono text-slate-400">Distribuidora · GAM</div>
+                </div>
+                <h3 className="font-display text-base sm:text-lg font-semibold text-slate-900 mb-3 leading-snug">
+                  "No sabes quién genera el 80% del margen"
+                </h3>
+                <p className="text-slate-500 mb-8 text-sm leading-relaxed flex-grow">
+                  Sin visibilidad de rentabilidad en tiempo real, financias inventario muerto y dejas pasar tus mayores riesgos de cartera.
+                </p>
+                <div className="pt-6 border-t border-slate-100">
+                  <div className="font-display text-[3rem] sm:text-[3.5rem] font-extrabold text-[var(--brand-bad)] leading-none tracking-tight">
+                    30%
+                  </div>
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-slate-500 mt-2">
+                    Capital inmovilizado · sin visibilidad analítica
+                  </div>
+                  <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-slate-700 border-b border-slate-300 group-hover:border-[var(--brand-bad)] group-hover:text-[var(--brand-bad)] pb-0.5 transition-colors">
+                    Entender este problema <ChevronRight size={14} />
                   </div>
                 </div>
-                <h3 className="font-bold text-base sm:text-xl text-slate-900 mb-3 sm:mb-4 tracking-tight">"No sabes quién genera el 80% del margen"</h3>
-                <p className="text-slate-600 mb-6 sm:mb-8 font-medium text-sm flex-grow">Al no tener visibilidad de rentabilidad en tiempo real, tienes mercancía crítica estancada en bodegas y dejas que tus mayores riesgos de cartera pasen desapercibidos bajo el radar.</p>
-                
-                <div className="space-y-3 pt-6 border-t border-slate-200/60 mt-auto">
-                  <div className="flex items-center gap-3 text-sm text-slate-600 font-medium">
-                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
-                      <Target size={14} className="text-slate-500" />
-                    </div>
-                    <span><strong>Caso real:</strong> Distribuidora en el GAM</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-slate-600 font-medium">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                      <Zap size={14} className="text-blue-600" />
-                    </div>
-                    <span><strong>Dashboard en:</strong> 2 semanas</span>
-                  </div>
-                  <button
-                    onClick={() => setActiveModal('rentabilidad')}
-                    className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 text-sm font-semibold transition-colors"
-                  >
-                    Entender este problema <ChevronRight size={15} />
-                  </button>
-                </div>
-              </div>
+              </button>
             </FadeInUp>
           </div>
 
@@ -834,15 +832,15 @@ const App = () => {
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
                   <div className="glass-card-dark border-l-4 border-l-red-500 p-3 sm:p-5 md:p-6 rounded-xl border border-slate-800/50">
                     <div className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 sm:mb-2">Costo Mensual Actual</div>
-                    <div className="font-display text-base sm:text-xl md:text-2xl lg:text-3xl font-black text-white leading-tight">₡{new Intl.NumberFormat('es-CR').format(currentMonthlyCost)}</div>
+                    <div className="font-mono text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight">₡{new Intl.NumberFormat('es-CR').format(currentMonthlyCost)}</div>
                   </div>
                   <div className="glass-card-dark border-l-4 border-l-emerald-500 p-3 sm:p-5 md:p-6 rounded-xl border border-slate-800/50">
                     <div className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 sm:mb-2">Horas Recuperables</div>
-                    <div className="font-display text-base sm:text-xl md:text-2xl lg:text-3xl font-black text-white leading-tight">{recoverableHours}<span className="text-xs sm:text-sm text-slate-400 font-normal ml-1">h/mes</span></div>
+                    <div className="font-mono text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight">{recoverableHours}<span className="text-xs sm:text-sm text-slate-400 font-normal ml-1">h/mes</span></div>
                   </div>
                   <div className="glass-card-dark border-l-4 border-l-cyan-500 p-3 sm:p-5 md:p-6 rounded-xl border border-slate-800/50">
                     <div className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 sm:mb-2">Payback Estimado</div>
-                    <div className="font-display text-base sm:text-xl md:text-2xl lg:text-3xl font-black text-white leading-tight">{((1500000) / (currentMonthlyCost * 0.9 || 1)).toFixed(1)} <span className="text-xs sm:text-sm text-slate-400 font-normal">meses</span></div>
+                    <div className="font-mono text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight">{((1500000) / (currentMonthlyCost * 0.9 || 1)).toFixed(1)} <span className="text-xs sm:text-sm text-slate-400 font-normal">meses</span></div>
                   </div>
                   <div className="glass-card-dark border-l-4 border-l-emerald-400 p-3 sm:p-5 md:p-6 rounded-xl border border-slate-800/50 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/20 rounded-full blur-xl"></div>

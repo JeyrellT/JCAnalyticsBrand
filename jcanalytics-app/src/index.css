@@ -2,7 +2,36 @@
 
 @theme {
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-display: "Syne", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-display: "Inter Tight", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   BRAND TOKENS · 1 acento + 2 semánticos (OKLCH, fallback HEX)
+   accent → marca (azul editorial)
+   ok     → resultado positivo / éxito
+   bad    → problema / alerta
+   ──────────────────────────────────────────────────────────────────────────── */
+:root {
+  --brand-accent: oklch(0.62 0.14 250);
+  --brand-accent-soft: oklch(0.92 0.04 250);
+  --brand-ok: oklch(0.68 0.12 160);
+  --brand-ok-soft: oklch(0.94 0.05 160);
+  --brand-bad: oklch(0.64 0.16 25);
+  --brand-bad-soft: oklch(0.95 0.04 25);
+  --brand-ink: #0b0c10;
+  --brand-paper: #f7f6f3;
+}
+
+@supports not (color: oklch(0 0 0)) {
+  :root {
+    --brand-accent: #3b6fd8;
+    --brand-accent-soft: #e6ecf9;
+    --brand-ok: #2fa37a;
+    --brand-ok-soft: #e7f6ef;
+    --brand-bad: #d65a45;
+    --brand-bad-soft: #fbeae6;
+  }
 }
 
 @layer utilities {
@@ -17,7 +46,7 @@
 
   .noise-overlay {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    opacity: 0.03;
+    opacity: 0.02;
     pointer-events: none;
     z-index: 50;
   }
@@ -194,15 +223,12 @@
     --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* ─── Animated gradient text ─────────────────────────────────────────── */
+  /* ─── Brand emphasis text (sin gradient para no perder contraste) ──── */
   .text-gradient-animated {
-    background: linear-gradient(120deg, #60a5fa 0%, #06b6d4 35%, #10b981 70%, #60a5fa 100%);
-    background-size: 200% 200%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
-    animation: text-gradient-shift 8s var(--ease-soft) infinite;
+    color: var(--brand-accent);
+    font-style: italic;
+    font-weight: 700;
+    animation: none;
   }
 
   @keyframes text-gradient-shift {
@@ -370,14 +396,11 @@
       0 8px 28px -10px rgba(16, 185, 129, 0.35);
   }
 
-  /* ─── Scroll progress bar — multilayer glow ──────────────────────────── */
+  /* ─── Scroll progress bar — single accent ────────────────────────────── */
   .scroll-progress-bar {
     height: 3px;
-    background: linear-gradient(90deg,
-      #3b82f6 0%, #06b6d4 45%, #10b981 100%);
-    box-shadow:
-      0 0 12px rgba(59, 130, 246, 0.55),
-      0 0 22px rgba(6, 182, 212, 0.35);
+    background: var(--brand-accent);
+    box-shadow: 0 0 12px color-mix(in oklab, var(--brand-accent) 55%, transparent);
     border-radius: 0 4px 4px 0;
   }
   .scroll-progress-bar::after {
