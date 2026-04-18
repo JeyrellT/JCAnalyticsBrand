@@ -33,21 +33,26 @@ const SplitText = ({ text, className = "", delay = 0 }) => {
     visible: {
       opacity: 1,
       y: 0,
+      rotateX: 0,
+      filter: 'blur(0px)',
       transition: {
         type: "spring",
-        damping: isCompactMotion ? 16 : 12,
-        stiffness: isCompactMotion ? 85 : 100,
+        damping: isCompactMotion ? 16 : 14,
+        stiffness: isCompactMotion ? 90 : 110,
+        mass: 0.6,
       },
     },
     hidden: {
       opacity: 0,
-      y: isCompactMotion ? 40 : 120,
+      y: isCompactMotion ? 28 : 90,
+      rotateX: isCompactMotion ? 0 : -55,
+      filter: isCompactMotion ? 'blur(0px)' : 'blur(8px)',
     },
   };
 
   return (
     <motion.div
-      style={{ overflow: "hidden", display: "inline-flex", flexWrap: "wrap", gap: "0.25em" }}
+      style={{ overflow: "hidden", display: "inline-flex", flexWrap: "wrap", gap: "0.25em", perspective: 800 }}
       variants={container}
       initial="hidden"
       whileInView="visible"
@@ -55,9 +60,9 @@ const SplitText = ({ text, className = "", delay = 0 }) => {
       className={className}
     >
       {words.map((word, index) => (
-        <span key={index} style={{ overflow: "hidden", display: "inline-flex" }}>
+        <span key={index} style={{ overflow: "hidden", display: "inline-flex", transformStyle: 'preserve-3d' }}>
           {Array.from(word).map((char, charIndex) => (
-            <motion.span variants={child} key={charIndex} style={{ display: "inline-block" }}>
+            <motion.span variants={child} key={charIndex} style={{ display: "inline-block", willChange: 'transform, opacity, filter', transformOrigin: '50% 100%' }}>
               {char}
             </motion.span>
           ))}

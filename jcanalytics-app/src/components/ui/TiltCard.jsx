@@ -1,37 +1,51 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion, useMotionValue, useTransform } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 
 const _MOTION = motion;
 
-const TiltCard = ({ children, className = "" }) => {
+/**
+ * Premium TiltCard:
+ *  - Spring-based smooth tilt
+ *  - Pointer-tracked shine reflection (CSS vars --mx/--my via .tilt-shine)
+ *  - 3D layered children via translateZ
+ *  - Gracefully disabled on touch / reduced-motion
+ */
+const TiltCard = ({ children, className = "", maxTilt = 8, glare = true }) => {
   const ref = useRef(null);
   const [tiltEnabled, setTiltEnabled] = useState(true);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  const rotateX = useTransform(y, [-0.5, 0.5], ["7deg", "-7deg"]);
-  const rotateY = useTransform(x, [-0.5, 0.5], ["-7deg", "7deg"]);
+  const xs = useSpring(x, { stiffness: 240, damping: 22, mass: 0.3 });
+  const ys = useSpring(y, { stiffness: 240, damping: 22, mass: 0.3 });
+
+  const rotateX = useTransform(ys, [-0.5, 0.5], [`${maxTilt}deg`, `${-maxTilt}deg`]);
+  const rotateY = useTransform(xs, [-0.5, 0.5], [`${-maxTilt}deg`, `${maxTilt}deg`]);
 
   useEffect(() => {
     const hoverQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
-    const updateTiltMode = () => setTiltEnabled(hoverQuery.matches);
-
-    updateTiltMode();
-    hoverQuery.addEventListener("change", updateTiltMode);
-
-    return () => hoverQuery.removeEventListener("change", updateTiltMode);
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setTiltEnabled(hoverQuery.matches && !reduced.matches);
+    sync();
+    hoverQuery.addEventListener("change", sync);
+    reduced.addEventListener("change", sync);
+    return () => {
+      hoverQuery.removeEventListener("change", sync);
+      reduced.removeEventListener("change", sync);
+    };
   }, []);
 
   const handlePointerMove = (event) => {
-    if (!tiltEnabled) return;
-    if (!ref.current) return;
+    if (!tiltEnabled || !ref.current) return;
     const rect = ref.current.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
-    const pointerX = event.clientX - rect.left;
-    const pointerY = event.clientY - rect.top;
-    x.set(pointerX / width - 0.5);
-    y.set(pointerY / height - 0.5);
+    const px = (event.clientX - rect.left) / rect.width;
+    const py = (event.clientY - rect.top) / rect.height;
+    x.set(px - 0.5);
+    y.set(py - 0.5);
+    if (glare) {
+      ref.current.style.setProperty('--mx', `${px * 100}%`);
+      ref.current.style.setProperty('--my', `${py * 100}%`);
+    }
   };
 
   const handlePointerLeave = () => {
@@ -44,9 +58,13 @@ const TiltCard = ({ children, className = "" }) => {
       ref={ref}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
-      style={{ rotateX: tiltEnabled ? rotateX : "0deg", rotateY: tiltEnabled ? rotateY : "0deg", transformStyle: "preserve-3d" }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className={`perspective-1000 ${className}`}
+      style={{
+        rotateX: tiltEnabled ? rotateX : "0deg",
+        rotateY: tiltEnabled ? rotateY : "0deg",
+        transformStyle: "preserve-3d",
+        transformPerspective: 1000,
+      }}
+      className={`perspective-1000 ${glare ? 'tilt-shine' : ''} ${className}`}
     >
       <div style={{ transform: "translateZ(30px)" }} className="w-full h-full">
         {children}
