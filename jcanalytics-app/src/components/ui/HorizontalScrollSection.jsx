@@ -146,7 +146,7 @@ const HorizontalScrollSection = () => {
               <TiltCard className="w-full h-full max-w-md">
                 <div className="bg-white rounded-[1.75rem] sm:rounded-[2rem] border border-slate-200/60 shadow-xl shadow-slate-200/50 transition-all duration-300 group flex flex-col h-full overflow-hidden relative">
                   {/* Card image */}
-                  <div className="h-44 sm:h-52 md:h-56 lg:h-64 overflow-hidden relative shrink-0">
+                  <div className="h-44 sm:h-52 md:h-52 lg:h-56 overflow-hidden relative shrink-0">
                     <img
                       src={card.img}
                       alt={card.title}
@@ -157,26 +157,28 @@ const HorizontalScrollSection = () => {
                   </div>
 
                   {/* Floating icon badge */}
-                  <div className={`absolute top-36 sm:top-44 md:top-48 lg:top-52 left-5 z-20 glass-card p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border ${card.iconBox}`}>
+                  <div className={`absolute top-36 sm:top-44 md:top-44 lg:top-48 left-5 z-20 glass-card p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border ${card.iconBox}`}>
                     {card.icon}
                   </div>
 
-                  <div className="p-4 sm:p-6 md:p-8 pt-9 sm:pt-11 flex-1 flex flex-col bg-white z-20 relative">
-                    <h3 className={`font-display text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-3 text-slate-900 transition-colors ${card.colorClass}`}>{card.title}</h3>
-                    <p className="font-sans text-slate-600 mb-4 sm:mb-5 text-xs sm:text-sm flex-1 leading-relaxed">
-                      {card.desc}
-                    </p>
-                    <ul className="space-y-2 sm:space-y-3 mb-4 sm:mb-5">
-                      {card.points.map((point, i) => (
-                        <li key={i} className="flex items-center gap-2 sm:gap-3 text-slate-700 font-bold bg-slate-50 p-2.5 sm:p-3 rounded-xl border border-slate-100">
-                          <CheckCircle size={16} className={`${card.checkColor} shrink-0`} />
-                          <span className="text-xs sm:text-sm">{point}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  <div className="p-4 sm:p-6 md:p-8 pt-9 sm:pt-11 md:pt-10 flex-1 flex flex-col bg-white z-20 relative min-h-0">
+                    <div className="flex-1 min-h-0">
+                      <h3 className={`font-display text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-3 text-slate-900 transition-colors ${card.colorClass}`}>{card.title}</h3>
+                      <p className="font-sans text-slate-600 mb-4 sm:mb-5 text-xs sm:text-sm leading-relaxed">
+                        {card.desc}
+                      </p>
+                      <ul className="space-y-2 sm:space-y-3">
+                        {card.points.map((point, i) => (
+                          <li key={i} className="flex items-center gap-2 sm:gap-3 text-slate-700 font-bold bg-slate-50 p-2.5 sm:p-3 rounded-xl border border-slate-100">
+                            <CheckCircle size={16} className={`${card.checkColor} shrink-0`} />
+                            <span className="text-xs sm:text-sm">{point}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                     <button
                       onClick={() => setActiveModalId(card.id)}
-                      className={`flex w-full items-center justify-center gap-2 text-center py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold transition-all border text-xs sm:text-sm active:scale-95 ${card.btnClass}`}
+                      className={`mt-4 sm:mt-5 md:mt-6 flex w-full items-center justify-center gap-2 text-center py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold transition-all border text-xs sm:text-sm active:scale-95 ${card.btnClass}`}
                     >
                       Ver todos los casos reales <ArrowRight size={15} />
                     </button>

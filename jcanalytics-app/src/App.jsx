@@ -345,7 +345,7 @@ const App = () => {
   ];
 
   const handleAssessmentClick = () => {
-    const email = "jcanalyticscr@gmail.com";
+    const email = "gerencia@jcanalytic.com";
     const subject = "Solicitud de Assessment Fase 0 - JC Analytics";
     window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}`;
   };
@@ -410,8 +410,8 @@ const App = () => {
             />
           </div>
           <div className="hidden md:flex items-center gap-5">
-            <a href="mailto:jcanalyticscr@gmail.com" className="text-sm font-semibold text-slate-300 hover:text-white transition-colors">
-              jcanalyticscr@gmail.com
+            <a href="mailto:gerencia@jcanalytic.com" className="text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+              gerencia@jcanalytic.com
             </a>
             <a 
               href="https://wa.me/50670330596" 
@@ -1380,8 +1380,8 @@ const App = () => {
                   En la sesión de Discovery de 30 min, evaluaremos si podemos ayudarte. Si no hay ROI claro, te lo decimos sin compromisos.
                 </p>
                 <div className="space-y-4 mb-8">
-                  <a href="mailto:jcanalyticscr@gmail.com" className="flex items-center gap-3 text-slate-300 hover:text-white transition-colors text-lg">
-                    <MessageSquare size={20} className="text-blue-500"/> jcanalyticscr@gmail.com
+                  <a href="mailto:gerencia@jcanalytic.com" className="flex items-center gap-3 text-slate-300 hover:text-white transition-colors text-lg">
+                    <MessageSquare size={20} className="text-blue-500"/> gerencia@jcanalytic.com
                   </a>
                   <div className="flex items-center gap-3 text-slate-300 text-lg">
                     <Target size={20} className="text-emerald-500"/> Heredia, Costa Rica
@@ -1433,7 +1433,7 @@ const App = () => {
             © 2026 JC Analytics. Propuesta Privada.
           </div>
           <div className="flex flex-wrap justify-center gap-4 sm:gap-8 font-sans items-center">
-            <a href="mailto:jcanalyticscr@gmail.com" className="hover:text-cyan-400 transition-colors text-xs sm:text-sm font-bold">jcanalyticscr@gmail.com</a>
+            <a href="mailto:gerencia@jcanalytic.com" className="hover:text-cyan-400 transition-colors text-xs sm:text-sm font-bold">gerencia@jcanalytic.com</a>
             <a href="https://wa.me/50670330596" target="_blank" rel="noreferrer" className="hover:text-emerald-400 transition-colors text-xs sm:text-sm font-bold text-emerald-500">Contacto WhatsApp</a>
             <button className="hover:text-cyan-400 transition-colors text-xs sm:text-sm font-bold">LinkedIn</button>
           </div>
