@@ -51,6 +51,11 @@ const TiltCard = ({ children, className = "", maxTilt = 8, glare = true }) => {
   const handlePointerLeave = () => {
     x.set(0);
     y.set(0);
+    // Reset del glare para que no salte la posición en el próximo hover
+    if (ref.current) {
+      ref.current.style.removeProperty('--mx');
+      ref.current.style.removeProperty('--my');
+    }
   };
 
   return (

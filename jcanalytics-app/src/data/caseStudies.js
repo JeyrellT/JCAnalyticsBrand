@@ -1,4 +1,4 @@
-import { Target, Database, ShieldCheck } from 'lucide-react';
+import { Target, Database, ShieldCheck, Receipt } from 'lucide-react';
 
 export const casesData = {
   inteligencia: {
@@ -49,6 +49,42 @@ export const casesData = {
         tech: ["Power BI", "TMDL", "DAX (RANKX, CALCULATE)", "Esquema Estrella"],
         result: "Modelo auditable, depurado y escalable, con clasificación ABC automatizada que reduce dependencias técnicas futuras.",
         image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800"
+      }
+    ]
+  },
+  fiscal: {
+    title: "Cumplimiento Fiscal y Planilla CR",
+    icon: Receipt,
+    bgClass: "bg-cyan-600",
+    glowClass: "bg-cyan-400",
+    accentClass: "bg-cyan-500",
+    resultBgClass: "bg-cyan-50/50",
+    resultBorderClass: "border-cyan-200",
+    resultTextClass: "text-cyan-600",
+    cases: [
+      {
+        sector: "PYME / Facturación electrónica",
+        title: "Conciliación de Factura Electrónica v4.4 y rechazos de Hacienda",
+        problem: "La empresa emitía cientos de comprobantes electrónicos al mes, pero los rechazos de Hacienda se detectaban tarde — a veces a fin de mes, cuando ya había desorden contable. Revisar comprobante por comprobante en el portal del Ministerio era manual y se saltaban casos.",
+        methodology: {
+          "Define": "Mapeo del flujo de emisión, recepción de respuestas de Hacienda y los motivos de rechazo más frecuentes (clave, cédula del receptor, código de actividad).",
+          "Develop": "Validación automática del XML contra el esquema v4.4 antes de emitir, y conciliación de los mensajes de aceptación/rechazo de Hacienda contra el registro interno.",
+          "Debug": "Pruebas con comprobantes reales de varios meses; se normalizaron formatos de fecha y montos inconsistentes entre el sistema emisor y el archivo de respuesta.",
+          "Deploy": "Proceso entregado con tablero de estado (aceptados / rechazados / pendientes) y documentación de operación."
+        },
+        solution: "Pipeline que valida cada comprobante contra el esquema v4.4, concilia las respuestas de Hacienda con el registro interno y marca al instante los rechazos con su motivo — sin abrir el portal manualmente.",
+        tech: ["Python", "XML / Esquema v4.4", "openpyxl", "Power Automate"],
+        result: "Más de 5.900 comprobantes consolidados y validados. Los rechazos se detectan el mismo día, no a fin de mes.",
+        image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=800"
+      },
+      {
+        sector: "PYME / Planilla y CCSS",
+        title: "Automatización del cierre de planilla y cálculo de CCSS",
+        problem: "El cierre de planilla se armaba a mano en Excel cada quincena: deducciones de CCSS, rebajos, horas extra y aguinaldo se calculaban con fórmulas frágiles que se rompían al agregar o quitar colaboradores. Un error de cálculo significaba reprocesar todo.",
+        solution: "Automatización del cálculo de planilla y deducciones de CCSS a partir de los datos de marcaje y el maestro de colaboradores, con validaciones que detectan inconsistencias antes del cierre y generan el archivo listo para pago y para el SICERE.",
+        tech: ["Python / Excel", "openpyxl", "Reglas CCSS", "VBA"],
+        result: "El cierre quincenal pasó de horas de armado manual a minutos, con cero errores de cálculo de CCSS desde la implementación.",
+        image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&q=80&w=800"
       }
     ]
   },

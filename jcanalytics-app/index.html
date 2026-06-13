@@ -2,9 +2,22 @@
 <html lang="es-CR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/Logo.png" />
-    <link rel="apple-touch-icon" href="/Logo.png" />
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18237462818"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'AW-18237462818');
+    </script>
+
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="description" content="Firma de analítica de datos para PYMEs de la Gran Área Metropolitana (Costa Rica). Dashboards Power BI, pipelines Python y automatización con Power Automate. Resultados visibles en 14 días o no cobramos." />
     <link rel="canonical" href="https://www.jcanalytic.com/" />
     <meta name="theme-color" content="#020617" />
@@ -12,16 +25,20 @@
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="JC Analytics" />
     <meta property="og:title" content="JC Analytics — Analítica y Automatización para PYMEs en Costa Rica" />
     <meta property="og:description" content="Dashboards Power BI, pipelines Python y Power Automate para PYMEs del GAM. Resultados visibles en 14 días o no cobramos." />
-    <meta property="og:image" content="https://www.jcanalytic.com/Logo.png" />
+    <meta property="og:image" content="https://www.jcanalytic.com/og-cover.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="JC Analytics — Analítica y Automatización para PYMEs de Costa Rica" />
     <meta property="og:url" content="https://www.jcanalytic.com/" />
     <meta property="og:locale" content="es_CR" />
     <!-- Twitter / X -->
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="JC Analytics — Analítica y Automatización para PYMEs en Costa Rica" />
     <meta name="twitter:description" content="Dashboards Power BI, pipelines Python y Power Automate para PYMEs del GAM." />
-    <meta name="twitter:image" content="https://www.jcanalytic.com/Logo.png" />
+    <meta name="twitter:image" content="https://www.jcanalytic.com/og-cover.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,22 +48,89 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "ProfessionalService",
-      "name": "JC Analytics",
-      "description": "Firma de analítica de datos y automatización de procesos para PYMEs de la Gran Área Metropolitana de Costa Rica.",
-      "url": "https://www.jcanalytic.com",
-      "logo": "https://www.jcanalytic.com/Logo.png",
-      "email": "gerencia@jcanalytic.com",
-      "telephone": "+50670330596",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "Heredia",
-        "addressRegion": "Heredia",
-        "addressCountry": "CR"
-      },
-      "areaServed": "Gran Área Metropolitana, Costa Rica",
-      "serviceType": ["Analítica de datos", "Power BI", "Automatización de procesos", "Python", "Power Automate"],
-      "priceRange": "$$"
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://www.jcanalytic.com/#website",
+          "url": "https://www.jcanalytic.com/",
+          "name": "JC Analytics",
+          "inLanguage": "es-CR",
+          "publisher": { "@id": "https://www.jcanalytic.com/#org" }
+        },
+        {
+          "@type": ["ProfessionalService", "Organization"],
+          "@id": "https://www.jcanalytic.com/#org",
+          "name": "JC Analytics",
+          "description": "Firma de analítica de datos y automatización de procesos para PYMEs de la Gran Área Metropolitana de Costa Rica. Dashboards Power BI, pipelines Python, Power Automate y cumplimiento fiscal (factura electrónica v4.4, CCSS).",
+          "url": "https://www.jcanalytic.com/",
+          "logo": "https://www.jcanalytic.com/Logo.png",
+          "image": "https://www.jcanalytic.com/og-cover.png",
+          "email": "gerencia@jcanalytic.com",
+          "telephone": "+50670330596",
+          "priceRange": "$$",
+          "knowsLanguage": ["es", "en"],
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Heredia",
+            "addressRegion": "Heredia",
+            "addressCountry": "CR"
+          },
+          "geo": { "@type": "GeoCoordinates", "latitude": 9.9981, "longitude": -84.1170 },
+          "areaServed": [
+            { "@type": "AdministrativeArea", "name": "Gran Área Metropolitana, Costa Rica" },
+            { "@type": "Country", "name": "Costa Rica" }
+          ],
+          "openingHoursSpecification": [
+            { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "opens": "08:00", "closes": "17:00" }
+          ],
+          "hasOfferCatalog": {
+            "@type": "OfferCatalog",
+            "name": "Servicios de JC Analytics",
+            "itemListElement": [
+              { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Dashboards Power BI", "serviceType": "Business Intelligence" } },
+              { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Automatización de procesos (Power Automate / Python)", "serviceType": "Automatización" } },
+              { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Automatización fiscal y de planilla CR (factura electrónica v4.4, CCSS)", "serviceType": "Cumplimiento tributario" } },
+              { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Software a la medida", "serviceType": "Desarrollo de software" } }
+            ]
+          }
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://www.jcanalytic.com/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "¿Cuánto cuesta un proyecto con JC Analytics?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Los proyectos van desde US$500 (un análisis o automatización puntual) hasta US$6.000 (software a la medida). Podés estimar tu rango en el cotizador del sitio; la cifra final se cierra en una primera sesión sin costo." }
+            },
+            {
+              "@type": "Question",
+              "name": "¿Qué significa \"resultados en 14 días o no cobramos\"?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Entregamos un primer resultado operativo dentro de los primeros 14 días hábiles del proyecto; si no lo ves, no cobramos esa fase. El alcance exacto se define por escrito antes de empezar." }
+            },
+            {
+              "@type": "Question",
+              "name": "¿Automatizan la factura electrónica v4.4 y los rechazos de Hacienda?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Sí. Validamos los comprobantes contra el esquema v4.4 y conciliamos las respuestas de Hacienda para detectar los rechazos el mismo día, no a fin de mes." }
+            },
+            {
+              "@type": "Question",
+              "name": "¿Pueden automatizar la planilla y el cálculo de la CCSS?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Sí. Automatizamos el cierre de planilla y el cálculo de deducciones de CCSS, con validaciones que detectan inconsistencias y el archivo listo para pago y para el SICERE." }
+            },
+            {
+              "@type": "Question",
+              "name": "¿Trabajan con PYMEs fuera de la Gran Área Metropolitana?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Nuestro foco es el GAM (Heredia, San José, Alajuela, Cartago), pero trabajamos de forma remota con empresas de todo Costa Rica, y cotizamos en dólares con conversión a colones y otras monedas." }
+            },
+            {
+              "@type": "Question",
+              "name": "¿Cuánto tarda un proyecto típico?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Un análisis o automatización puntual toma de 1 a 3 semanas; un dashboard Power BI de 2 a 6 semanas; un software a la medida de 5 a 14 semanas, según el alcance." }
+            }
+          ]
+        }
+      ]
     }
     </script>
   </head>

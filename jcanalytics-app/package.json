@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build --base=./",
+    "prerender": "node scripts/prerender.mjs",
+    "build:prerender": "vite build --base=./ && node scripts/prerender.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -36,6 +38,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "postcss": "^8.5.8",
+    "puppeteer": "^24.43.1",
     "tailwindcss": "^4.2.1",
     "vite": "^7.3.1"
   }

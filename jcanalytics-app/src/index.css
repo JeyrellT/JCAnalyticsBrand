@@ -37,6 +37,10 @@
 @layer utilities {
   .animate-blob {
     animation: blob 15s infinite alternate ease-in-out;
+    /* Forma orgánica estática + solo transform animado: animar border-radius no es
+       compositable y fuerza repaint de un área grande y difuminada en cada frame. */
+    border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%;
+    will-change: transform;
   }
 
   .animate-gradient-mesh {
@@ -133,22 +137,10 @@
 }
 
 @keyframes blob {
-  0% {
-    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
-    transform: rotate(0deg) scale(1);
-  }
-  33% {
-    border-radius: 60% 40% 30% 70% / 60% 50% 40% 50%;
-    transform: rotate(120deg) scale(1.1);
-  }
-  66% {
-    border-radius: 40% 60% 30% 70% / 50% 60% 50% 40%;
-    transform: rotate(240deg) scale(0.9);
-  }
-  100% {
-    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
-    transform: rotate(360deg) scale(1);
-  }
+  0%   { transform: rotate(0deg) scale(1); }
+  33%  { transform: rotate(120deg) scale(1.1); }
+  66%  { transform: rotate(240deg) scale(0.9); }
+  100% { transform: rotate(360deg) scale(1); }
 }
 
 @keyframes gradient-shift {
@@ -321,7 +313,11 @@
     pointer-events: none;
     z-index: 1;
   }
-  .spotlight:hover::before { opacity: 1; }
+  /* Solo en dispositivos con hover real: evita que el highlight quede pegado en táctil */
+  @media (hover: hover) and (pointer: fine) {
+    .spotlight:hover::before { opacity: 1; }
+  }
+  .spotlight:focus-visible::before { opacity: 1; }
 
   /* Dark variant of spotlight (subtle blue/cyan glow) */
   .spotlight-dark::before {
@@ -353,7 +349,9 @@
     pointer-events: none;
     z-index: 3;
   }
-  .tilt-shine:hover::after { opacity: 1; }
+  @media (hover: hover) and (pointer: fine) {
+    .tilt-shine:hover::after { opacity: 1; }
+  }
 
   /* ─── Premium focus ring (accessibility + style) ─────────────────────── */
   :where(a, button, input, select, textarea, [tabindex]):focus-visible {
@@ -576,14 +574,17 @@
   .marquee__track,
   .float-idle,
   .pulse-soft,
+  .scroll-reveal,
   .scroll-progress-bar::after {
     animation: none !important;
   }
-  .reveal-blur {
+  .reveal-blur,
+  .scroll-reveal {
     opacity: 1 !important;
     filter: none !important;
     transform: none !important;
     transition: none !important;
   }
+  .glow-hover { transition: none !important; }
   .btn-sheen::after { display: none; }
 }

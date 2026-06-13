@@ -7,7 +7,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
-  BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settings, Lightbulb,
+  BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settings, Lightbulb, Receipt,
   ArrowRight, Clock, CheckCircle, ShieldCheck, Calculator, MessageSquare, ChevronUp,
 } from 'lucide-react';
 import {
@@ -17,7 +17,7 @@ import { FX_UPDATED } from '../../data/currencies';
 import { useCurrency } from '../../hooks/useCurrency';
 import CurrencySelector from './CurrencySelector';
 
-const ICONS = { BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settings, Lightbulb };
+const ICONS = { BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settings, Lightbulb, Receipt };
 
 const ACCENT = {
   blue:    { card: 'border-blue-500/60 bg-blue-500/10',       icon: 'text-blue-400' },

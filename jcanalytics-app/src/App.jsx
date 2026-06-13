@@ -1,15 +1,17 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import {
-  Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area
-} from 'recharts';
+import React, { useState, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring, useReducedMotion } from 'framer-motion';
 import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import CustomCursor from './components/ui/CustomCursor';
-import HorizontalScrollSection from './components/ui/HorizontalScrollSection';
 import TiltCard from './components/ui/TiltCard';
 import QuoteEstimator from './components/ui/QuoteEstimator';
+
+// Componentes pesados / debajo del fold cargados de forma diferida.
+// - ForecastChart arrastra recharts (~111 kB gzip): el chunk más pesado.
+// - HorizontalScrollSection arrastra CaseStudyModal y su data.
+const ForecastChart = lazy(() => import('./components/ui/ForecastChart'));
+const HorizontalScrollSection = lazy(() => import('./components/ui/HorizontalScrollSection'));
 import {
   TrendingUp, Target, CheckCircle, Database, Cpu, BarChart3,
   ArrowRight, ShieldCheck, Zap, Users, Calculator, MessageSquare, ChevronRight,
@@ -156,7 +158,6 @@ const ProblemModal = ({ modalKey, onClose }) => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
       onClick={onClose}
       data-lenis-prevent
@@ -168,7 +169,6 @@ const ProblemModal = ({ modalKey, onClose }) => {
         ref={dialogRef}
         initial={{ opacity: 0, scale: 0.92, y: 24 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.92, y: 24 }}
         transition={{ type: 'spring', stiffness: 300, damping: 28 }}
         role="dialog"
         aria-modal="true"
@@ -282,6 +282,16 @@ const NAV_LINKS = [
   { label: 'Equipo', href: '#equipo' },
   { label: 'Contacto', href: '#contacto' },
 ];
+
+// Placeholder slate sólido para imágenes remotas que fallan (evita el ícono de imagen rota)
+const PLACEHOLDER_IMG =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10'%3E%3Crect width='100%25' height='100%25' fill='%231e293b'/%3E%3C/svg%3E";
+const onImgError = (e) => {
+  const img = e.currentTarget;
+  if (img.dataset.fallback) return;
+  img.dataset.fallback = '1';
+  img.src = PLACEHOLDER_IMG;
+};
 
 const App = () => {
   const [activePhase, setActivePhase] = useState(0);
@@ -454,9 +464,12 @@ const App = () => {
         <div className="max-w-7xl mx-auto px-3 sm:px-4 h-20 flex items-center justify-between gap-3">
           <a href="#top" className="flex items-center gap-2.5 group cursor-pointer shrink-0">
             <motion.img
-              whileHover={{ scale: 1.05 }}
-              src={import.meta.env.BASE_URL + "LogoMark.png"}
+              whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+              src={import.meta.env.BASE_URL + "LogoMark.webp"}
               alt=""
+              width={162}
+              height={200}
+              decoding="async"
               className="h-10 sm:h-11 w-auto object-contain"
             />
             <span className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-white leading-none">
@@ -608,8 +621,8 @@ const App = () => {
             </motion.div>
 
             {/* Hero Parallax Image */}
-            <motion.div 
-              style={{ y: heroImageY, opacity: heroOpacity }}
+            <motion.div
+              style={{ y: prefersReducedMotion ? '0%' : heroImageY, opacity: heroOpacity }}
               className="lg:w-1/2 relative w-full perspective-1000 mt-8 sm:mt-12 lg:mt-0"
             >
               <FadeInUp delay={0.5}>
@@ -620,6 +633,8 @@ const App = () => {
                        width={1200}
                        height={600}
                        fetchPriority="high"
+                       decoding="async"
+                       onError={onImgError}
                        className="w-full h-[260px] sm:h-[360px] md:h-[500px] lg:h-[600px] object-cover opacity-90 transition-opacity duration-700"
                   />
                 </TiltCard>
@@ -634,7 +649,8 @@ const App = () => {
       {/* Strip de Credibilidad y El Problema */}
       <section className="relative z-20 py-12 sm:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-wrap justify-between items-center gap-4 sm:gap-8 mb-12 sm:mb-20 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+          <p className="text-center text-[11px] font-mono uppercase tracking-[0.2em] text-slate-400 mb-4 sm:mb-6">Sectores que atendemos</p>
+          <div className="flex flex-wrap justify-between items-center gap-4 sm:gap-8 mb-12 sm:mb-20 opacity-60 grayscale hover:grayscale-0 transition-all duration-500" aria-label="Sectores atendidos">
              <div className="font-display font-black text-base sm:text-2xl text-slate-800 tracking-wider">Retail & Consumo</div>
              <div className="font-display font-black text-lg sm:text-3xl text-slate-800 tracking-tighter">Sector Energético</div>
              <div className="font-display font-bold text-base sm:text-2xl text-slate-800 tracking-widest italic">Logística & Distribución</div>
@@ -662,11 +678,11 @@ const App = () => {
                 className="text-left w-full bg-white p-6 sm:p-8 rounded-[1.5rem] border border-slate-200 hover:border-slate-300 hover:shadow-[0_20px_40px_-20px_rgba(15,23,42,0.15)] transition-all h-full flex flex-col group"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                  <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     <Clock size={14} className="text-[var(--brand-bad)]" />
                     <span>CASE_01 / REPORTS</span>
                   </div>
-                  <div className="text-[11px] font-mono text-slate-400">Mayorista · Alajuela</div>
+                  <div className="text-[11px] font-mono text-slate-500">Mayorista · Alajuela</div>
                 </div>
                 <h3 className="font-display text-base sm:text-lg font-semibold text-slate-900 mb-3 leading-snug">
                   "Tus reportes llegan 3 días después de que ya no sirven"
@@ -695,11 +711,11 @@ const App = () => {
                 className="text-left w-full bg-white p-6 sm:p-8 rounded-[1.5rem] border border-slate-200 hover:border-slate-300 hover:shadow-[0_20px_40px_-20px_rgba(15,23,42,0.15)] transition-all h-full flex flex-col group"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                  <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     <Database size={14} className="text-[var(--brand-bad)]" />
                     <span>CASE_02 / EXCEL</span>
                   </div>
-                  <div className="text-[11px] font-mono text-slate-400">Ferretería · Heredia</div>
+                  <div className="text-[11px] font-mono text-slate-500">Ferretería · Heredia</div>
                 </div>
                 <h3 className="font-display text-base sm:text-lg font-semibold text-slate-900 mb-3 leading-snug">
                   "Tu equipo dedica 40+ horas al mes a Excel"
@@ -728,11 +744,11 @@ const App = () => {
                 className="text-left w-full bg-white p-6 sm:p-8 rounded-[1.5rem] border border-slate-200 hover:border-slate-300 hover:shadow-[0_20px_40px_-20px_rgba(15,23,42,0.15)] transition-all h-full flex flex-col group"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                  <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     <BarChart3 size={14} className="text-[var(--brand-bad)]" />
                     <span>CASE_03 / MARGIN</span>
                   </div>
-                  <div className="text-[11px] font-mono text-slate-400">Distribuidora · GAM</div>
+                  <div className="text-[11px] font-mono text-slate-500">Distribuidora · GAM</div>
                 </div>
                 <h3 className="font-display text-base sm:text-lg font-semibold text-slate-900 mb-3 leading-snug">
                   "No sabes quién genera el 80% del margen"
@@ -801,7 +817,7 @@ const App = () => {
           >
             {[...Array(2)].map((_, i) => (
               <div key={i} className="flex gap-8 sm:gap-16 items-center px-4 sm:px-8">
-                <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-emerald-400">+50 proyectos</span> entregados</div>
+                <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-emerald-400">+50 proyectos</span> del equipo</div>
                 <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 shrink-0"></div>
                 <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-blue-400">14 días</span> o no cobramos</div>
                 <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 shrink-0"></div>
@@ -819,7 +835,9 @@ const App = () => {
 
       {/* Main Pillars - GSAP Pinned Horizontal Scroll */}
       <div id="soluciones" className="scroll-mt-20">
-        <HorizontalScrollSection />
+        <Suspense fallback={<div className="min-h-[60vh]" aria-hidden="true" />}>
+          <HorizontalScrollSection />
+        </Suspense>
       </div>
 
       {/* ROI & Calculator */}
@@ -937,31 +955,9 @@ const App = () => {
                 >
                   <div className="absolute top-0 right-10 w-24 h-1.5 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-b-lg"></div>
                   <div className="h-80 w-full mt-4" style={{ position: 'relative', width: '100%', height: 320 }}>
-                    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={220}>
-                      <AreaChart data={forecastData} margin={chartMargins}>
-                        <defs>
-                          <linearGradient id="colorRealLight" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                        <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} fontWeight="600" />
-                        <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} fontWeight="600" />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: 'rgba(15, 23, 42, 0.95)', 
-                            border: '1px solid rgba(255,255,255,0.1)', 
-                            borderRadius: '16px', 
-                            color: '#fff',
-                            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
-                            backdropFilter: 'blur(8px)'
-                          }} 
-                        />
-                        <Area type="monotone" dataKey="real" stroke="#3b82f6" strokeWidth={5} fillOpacity={1} fill="url(#colorRealLight)" animationDuration={2000} />
-                        <Line type="monotone" dataKey="forecast" stroke="#94a3b8" strokeWidth={3} strokeDasharray="5 5" animationDuration={2000} />
-                      </AreaChart>
-                    </ResponsiveContainer>
+                    <Suspense fallback={<div className="w-full h-full rounded-xl bg-slate-100 animate-pulse" aria-hidden="true" />}>
+                      <ForecastChart data={forecastData} margin={chartMargins} />
+                    </Suspense>
                   </div>
                   <div className="flex justify-center items-center mt-8 gap-8 px-4 bg-slate-50 border border-slate-100 py-4 rounded-xl">
                     <span className="text-sm text-slate-800 font-bold flex items-center gap-3">
@@ -1095,14 +1091,14 @@ const App = () => {
                   activePhase === idx && (
                     <motion.div
                       key={idx}
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4 }}
+                      transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.4 }}
                       className="grid grid-cols-1 md:grid-cols-2"
                     >
                       {/* Image column */}
-                      <div className="h-64 md:h-auto min-h-[300px] overflow-hidden relative">
-                        <img src={content.image} alt={content.imageAlt} loading="lazy" className="w-full h-full object-cover" />
+                      <div className="h-64 md:h-auto min-h-[300px] overflow-hidden relative bg-slate-800">
+                        <img src={content.image} alt={content.imageAlt} loading="lazy" decoding="async" width={800} height={533} onError={onImgError} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/10"></div>
                       </div>
 
@@ -1185,7 +1181,7 @@ const App = () => {
                   </a>
                 </div>
                 <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto">
-                  Metodología aplicada en proyectos para corporaciones de consumo masivo, sector energético y empresas de la Gran Área Metropolitana. Más de 50 proyectos documentados bajo este mismo framework.
+                  Metodología aplicada en proyectos para corporaciones de consumo masivo, sector energético y empresas de la Gran Área Metropolitana. Más de 50 proyectos del equipo (8+ años de experiencia combinada) documentados bajo este mismo framework.
                 </p>
               </div>
             </div>
@@ -1223,19 +1219,19 @@ const App = () => {
                 fullName: "Catalina González Araya",
                 role: "Operaciones & CX",
                 description: "Especialista en operaciones y mejora continua de procesos financieros. Experiencia en optimización de KPIs en multinacionales del sector BPO y retail. Dirige el área de implementación asegurando adopción total.",
-                image: import.meta.env.BASE_URL + "Kathalina Gonzales.png"
+                image: import.meta.env.BASE_URL + "kathalina-gonzales.webp"
               },
               {
                 fullName: "Jeyrell Tardencilla",
                 role: "Data & Automation Lead",
                 description: "Senior Engineer con 8+ años de experiencia corporativa en corporaciones de consumo masivo. Lean Six Sigma Green Belt. Especializado en arquitecturas de datos, Python y Power BI, transformando equipos ahogados en reportes en áreas de alto rendimiento.",
-                image: import.meta.env.BASE_URL + "Jeyrell Tardencilla.png"
+                image: import.meta.env.BASE_URL + "jeyrell-tardencilla.webp"
               },
               {
                 fullName: "Alex Benedict",
                 role: "Implementación Técnica",
                 description: "Desarrollador enfocado en estructuración de datos y pipelines analíticos. Garantiza el soporte técnico riguroso de cada solución entregada, aportando solidez en la automatización confiable de procesos manuales.",
-                image: import.meta.env.BASE_URL + "Alex Benect.png"
+                image: import.meta.env.BASE_URL + "alex-benedict.webp"
               }
             ].map((member, idx) => (
               <FadeInUp key={idx} delay={0.15 * idx} className="h-full">
@@ -1251,11 +1247,19 @@ const App = () => {
                       <div className="absolute inset-[-10px] bg-gradient-to-tr from-blue-500 to-cyan-400 rounded-full blur-xl opacity-20 group-hover:opacity-70 transition-opacity duration-700"></div>
                       <div className="absolute inset-[-3px] bg-gradient-to-b from-slate-700 to-slate-800 rounded-full z-10 transition-transform duration-500 group-hover:scale-105"></div>
                       <div className="w-32 h-32 sm:w-40 sm:h-40 lg:w-44 lg:h-44 rounded-full overflow-hidden relative z-20 bg-slate-900 border-2 border-slate-600/50 group-hover:border-blue-400/50 transition-all duration-500 transform group-hover:scale-105 shadow-inner">
-                        <img 
-                          src={member.image} 
-                          alt={member.fullName} 
+                        {/* Fallback de iniciales si la imagen no carga */}
+                        <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center font-display font-bold text-3xl text-slate-500 select-none">
+                          {member.fullName.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+                        </span>
+                        <img
+                          src={member.image}
+                          alt={member.fullName}
                           loading="lazy"
-                          className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 object-top" 
+                          decoding="async"
+                          width={400}
+                          height={400}
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 object-top relative z-10"
                         />
                       </div>
                     </div>
@@ -1341,7 +1345,7 @@ const App = () => {
                   <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 font-display">Solicitar Assessment (Fase 0)</h3>
                   <p className="text-sm text-slate-400 mb-5 sm:mb-6">Si usaste la calculadora, adjuntamos tu cálculo de ROI automáticamente.</p>
                   {assessmentSent ? (
-                    <div className="flex flex-col items-center text-center gap-4 py-6">
+                    <div role="status" aria-live="polite" className="flex flex-col items-center text-center gap-4 py-6">
                       <div className="w-14 h-14 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
                         <CheckCircle size={28} className="text-emerald-400" />
                       </div>
@@ -1377,7 +1381,7 @@ const App = () => {
                     </div>
                     <div className="flex flex-col gap-2">
                        <label htmlFor="assessment-phone" className="text-sm font-bold text-slate-400">Teléfono <span className="font-normal text-slate-500">(opcional)</span></label>
-                       <input id="assessment-phone" name="phone" type="tel" inputMode="tel" placeholder="+506 8888 8888" value={assessmentPhone} onChange={(e) => setAssessmentPhone(e.target.value)} className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder:text-slate-600 focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/60" />
+                       <input id="assessment-phone" name="phone" type="tel" inputMode="tel" pattern="[\d\s+().\-]{7,20}" title="Ingresá un número de teléfono válido (7 a 20 dígitos)" placeholder="+506 8888 8888" value={assessmentPhone} onChange={(e) => setAssessmentPhone(e.target.value)} className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder:text-slate-600 focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/60" />
                     </div>
                     <div className="flex flex-col gap-2">
                        <label htmlFor="assessment-pain" className="text-sm font-bold text-slate-400">Principal dolor</label>
@@ -1407,7 +1411,7 @@ const App = () => {
       <footer className="py-8 sm:py-12 border-t border-slate-800 text-slate-400 bg-slate-950">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
           <div className="flex items-center gap-2.5">
-            <img src={import.meta.env.BASE_URL + "LogoMark.png"} alt="" className="h-9 sm:h-10 w-auto object-contain" />
+            <img src={import.meta.env.BASE_URL + "LogoMark.webp"} alt="" width={162} height={200} decoding="async" className="h-9 sm:h-10 w-auto object-contain" />
             <span className="font-display text-base sm:text-lg font-extrabold tracking-tight text-white leading-none">JC Analytics</span>
           </div>
           <div className="text-xs sm:text-sm font-medium font-sans text-center">
@@ -1423,8 +1427,8 @@ const App = () => {
 
       {/* Floating WhatsApp Button with Pulse */}
       <motion.a
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
+        whileHover={prefersReducedMotion ? {} : { scale: 1.1 }}
+        whileTap={prefersReducedMotion ? {} : { scale: 0.9 }}
         href="https://wa.me/50670330596"
         target="_blank"
         rel="noreferrer"

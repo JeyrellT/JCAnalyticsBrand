@@ -1,12 +1,29 @@
 import React, { useRef, useEffect, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ShieldCheck, Target, Database, CheckCircle, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Target, Database, CheckCircle, ArrowRight, Receipt } from 'lucide-react';
 import TiltCard from './TiltCard';
 import CaseStudyModal from './CaseStudyModal';
 import { casesData } from '../../data/caseStudies';
 
 gsap.registerPlugin(ScrollTrigger);
+
+// Fondo branded autocontenido para la card fiscal (data-URI SVG: siempre carga,
+// no depende de Unsplash). Gradiente cian + motivo de comprobante validado.
+const FISCAL_BG =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450">' +
+    '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+    '<stop offset="0" stop-color="#0e7490"/><stop offset="1" stop-color="#0b1220"/>' +
+    '</linearGradient></defs><rect width="800" height="450" fill="url(#g)"/>' +
+    '<g fill="none" stroke="#67e8f9" stroke-opacity="0.18" stroke-width="7" stroke-linecap="round">' +
+    '<line x1="80" y1="120" x2="430" y2="120"/><line x1="80" y1="170" x2="540" y2="170"/>' +
+    '<line x1="80" y1="220" x2="360" y2="220"/><line x1="80" y1="270" x2="480" y2="270"/></g>' +
+    '<circle cx="630" cy="300" r="74" fill="#22d3ee" fill-opacity="0.12" stroke="#22d3ee" stroke-opacity="0.45" stroke-width="4"/>' +
+    '<path d="M598 300 l22 24 l44 -50" fill="none" stroke="#a5f3fc" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>'
+  );
 
 const HorizontalScrollSection = () => {
   const sectionRef = useRef(null);
@@ -78,6 +95,19 @@ const HorizontalScrollSection = () => {
       accent: "from-blue-500/20 to-blue-600/5",
     },
     {
+      id: "fiscal",
+      title: "Cumplimiento Fiscal y Planilla CR",
+      desc: "Factura electrónica v4.4, rechazos de Hacienda, CCSS y cierre de planilla — automatizado y validado para Costa Rica.",
+      icon: <Receipt className="text-cyan-400" size={28} />,
+      colorClass: "group-hover:text-cyan-600",
+      iconBox: "border-cyan-400/30",
+      checkColor: "text-cyan-500",
+      btnClass: "bg-cyan-50 text-cyan-600 hover:bg-cyan-600 hover:text-white border-cyan-100",
+      img: FISCAL_BG,
+      points: ["Factura v4.4 + rechazos de Hacienda", "Planilla y CCSS sin Excel manual"],
+      accent: "from-cyan-500/20 to-cyan-600/5",
+    },
+    {
       id: "automatizacion",
       title: "Automatización de Procesos",
       desc: "Cierre de reportes automático, alertas de SLA por Teams/WhatsApp, y pipelines de limpieza de datos desde tu ERP o contabilidad.",
@@ -146,10 +176,20 @@ const HorizontalScrollSection = () => {
               <TiltCard className="w-full h-full max-w-md">
                 <div className="bg-white rounded-[1.75rem] sm:rounded-[2rem] border border-slate-200/60 shadow-xl shadow-slate-200/50 transition-all duration-300 group flex flex-col h-full overflow-hidden relative">
                   {/* Card image */}
-                  <div className="h-44 sm:h-52 md:h-52 lg:h-56 overflow-hidden relative shrink-0">
+                  <div className="h-44 sm:h-52 md:h-52 lg:h-56 overflow-hidden relative shrink-0 bg-slate-200">
                     <img
                       src={card.img}
                       alt={card.title}
+                      loading="lazy"
+                      decoding="async"
+                      width={800}
+                      height={450}
+                      onError={(e) => {
+                        if (e.currentTarget.dataset.f) return;
+                        e.currentTarget.dataset.f = '1';
+                        e.currentTarget.src =
+                          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='9'%3E%3Crect width='100%25' height='100%25' fill='%23cbd5e1'/%3E%3C/svg%3E";
+                      }}
                       className="distortion-img w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       style={isDesktop ? { clipPath: 'polygon(0 100%, 100% 100%, 100% 100%, 0 100%)' } : { clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)' }}
                     />

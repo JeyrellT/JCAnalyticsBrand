@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { X, CheckCircle, ArrowRight, Layers, Target, Database, ShieldCheck } from 'lucide-react';
 
 const _MOTION = motion;
@@ -10,6 +10,7 @@ const CaseStudyModal = ({ isOpen, onClose, categoryId, casesData }) => {
   const dialogRef = useRef(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const shouldReduce = useReducedMotion();
 
   // Depende solo de isOpen (no de onClose, que cambia de identidad en cada render
   // del padre): así el efecto no hace cleanup/setup en cada render durante la
@@ -21,6 +22,10 @@ const CaseStudyModal = ({ isOpen, onClose, categoryId, casesData }) => {
     const prevFocused = document.activeElement;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    // El modal se monta vía portal en document.body (fuera de #root): ocultar #root
+    // de lectores de pantalla evita que naveguen el fondo mientras está abierto.
+    const appRoot = document.getElementById('root');
+    appRoot?.setAttribute('aria-hidden', 'true');
     closeBtnRef.current?.focus();
 
     const handleKey = (e) => {
@@ -40,6 +45,7 @@ const CaseStudyModal = ({ isOpen, onClose, categoryId, casesData }) => {
 
     return () => {
       document.body.style.overflow = prevOverflow;
+      appRoot?.removeAttribute('aria-hidden');
       document.removeEventListener('keydown', handleKey);
       if (prevFocused && typeof prevFocused.focus === 'function') prevFocused.focus();
     };
@@ -61,17 +67,15 @@ const CaseStudyModal = ({ isOpen, onClose, categoryId, casesData }) => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
             onClick={onClose}
             className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm"
           />
 
           <motion.div
             ref={dialogRef}
-            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            initial={shouldReduce ? { opacity: 0 } : { opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 50, scale: 0.95 }}
-            transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+            transition={shouldReduce ? { duration: 0.15 } : { type: 'spring', bounce: 0, duration: 0.4 }}
             role="dialog"
             aria-modal="true"
             aria-labelledby="case-modal-title"
@@ -102,7 +106,7 @@ const CaseStudyModal = ({ isOpen, onClose, categoryId, casesData }) => {
             </div>
 
             {/* Content Body - Scrollable */}
-            <div className="p-4 sm:p-6 md:p-12 max-h-[78vh] sm:max-h-[70vh] overflow-y-auto custom-scrollbar bg-slate-50" data-lenis-prevent>
+            <div className="p-4 sm:p-6 md:p-12 max-h-[78dvh] sm:max-h-[70dvh] overflow-y-auto custom-scrollbar bg-slate-50" data-lenis-prevent>
               <div className="space-y-8 sm:space-y-16">
                 {category.cases.map((cs, idx) => (
                   <div key={idx} className="bg-white rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden group">
@@ -115,6 +119,14 @@ const CaseStudyModal = ({ isOpen, onClose, categoryId, casesData }) => {
                         <img
                           src={cs.image}
                           alt={cs.title}
+                          loading="lazy"
+                          decoding="async"
+                          onError={(e) => {
+                            if (e.currentTarget.dataset.f) return;
+                            e.currentTarget.dataset.f = '1';
+                            e.currentTarget.src =
+                              "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='9'%3E%3Crect width='100%25' height='100%25' fill='%23e2e8f0'/%3E%3C/svg%3E";
+                          }}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                         />
                         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent"></div>

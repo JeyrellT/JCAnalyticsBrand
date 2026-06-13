@@ -86,6 +86,12 @@ export const SERVICES = {
     priceMin: 900, priceMax: 4500, weeksMin: 2, weeksMax: 7,
     bullets: ['Flujos automáticos entre sistemas', 'Aprobaciones y lógica condicional', 'Manejo de errores + documentación'],
   },
+  fiscal_planilla: {
+    label: 'Fiscal y planilla CR', icon: 'Receipt', accent: 'cyan',
+    micro: 'Factura electrónica v4.4, CCSS y planilla — validado para Costa Rica.',
+    priceMin: 700, priceMax: 4500, weeksMin: 2, weeksMax: 7,
+    bullets: ['Factura electrónica v4.4 + rechazos de Hacienda', 'Cálculo de CCSS y cierre de planilla', 'Validado contra la normativa tributaria CR'],
+  },
   python_pipeline: {
     label: 'Pipeline Python', icon: 'Cpu', accent: 'purple',
     micro: 'ETL programado, desplegado y monitoreado.',
@@ -103,7 +109,7 @@ export const SERVICES = {
 // Orden de las cards (de más sencillo a más complejo)
 export const SERVICE_ORDER = [
   'analisis_tfg', 'excel_vba', 'doc_generation', 'power_bi',
-  'alteryx_knime', 'power_automate', 'python_pipeline', 'software_medida',
+  'alteryx_knime', 'power_automate', 'fiscal_planilla', 'python_pipeline', 'software_medida',
 ];
 
 // Garantías SIEMPRE presentes en "qué incluye"
