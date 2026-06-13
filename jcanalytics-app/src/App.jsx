@@ -1,60 +1,40 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area
+  Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
-import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring, useReducedMotion } from 'framer-motion';
 import Lenis from 'lenis';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import CustomCursor from './components/ui/CustomCursor';
-import MagneticButton from './components/ui/MagneticButton';
 import HorizontalScrollSection from './components/ui/HorizontalScrollSection';
 import TiltCard from './components/ui/TiltCard';
-import Background3D from './components/3d/Background3D';
+import QuoteEstimator from './components/ui/QuoteEstimator';
 import {
   TrendingUp, Target, CheckCircle, Database, Cpu, BarChart3,
   ArrowRight, ShieldCheck, Zap, Users, Calculator, MessageSquare, ChevronRight,
-  Layers, Settings, MonitorSmartphone, Clock, X, AlertTriangle, TrendingDown, Lightbulb
+  Layers, Settings, MonitorSmartphone, Clock, X, AlertTriangle, TrendingDown, Lightbulb, Menu
 } from 'lucide-react';
 
-const _MOTION = motion;
+gsap.registerPlugin(ScrollTrigger);
 
 // Fade In Up Reusable Component
-const FadeInUp = ({ children, delay = 0, className = "" }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 40 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: "-50px" }}
-    transition={{ duration: 0.8, delay: delay, ease: [0.25, 0.46, 0.45, 0.94] }}
-    className={className}
-  >
-    {children}
-  </motion.div>
-);
-
-
-
-// Scroll Parallax Image
-const ParallaxImage = ({ src, alt, className = "" }) => {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"]
-  });
-  
-  const y = useTransform(scrollYProgress, [0, 1], ["-15%", "15%"]);
-  const scale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
-
+const FadeInUp = ({ children, delay = 0, className = "" }) => {
+  const prefersReducedMotion = useReducedMotion();
   return (
-    <div ref={ref} className={`overflow-hidden relative ${className}`}>
-      <motion.img 
-        src={src}
-        alt={alt}
-        loading="lazy"
-        style={{ y, scale }}
-        className="w-full h-full object-cover origin-center"
-      />
-    </div>
+    <motion.div
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.8, delay: delay, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
   );
 };
+
+
 
 // ── Contenido de los modales de "El Problema Oculto" ──────────────────────────
 const PROBLEM_MODAL_CONTENT = {
@@ -126,6 +106,43 @@ const PROBLEM_MODAL_CONTENT = {
 // Modal de Problema
 const ProblemModal = ({ modalKey, onClose }) => {
   const data = PROBLEM_MODAL_CONTENT[modalKey];
+  const closeBtnRef = useRef(null);
+  const dialogRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // Efecto de "una sola vez": evita re-runs por render (onClose cambia de identidad
+  // en cada render de App) que, durante la animación de salida de AnimatePresence,
+  // re-enfocaban el modal saliente e impedían que el exit completara el unmount.
+  useEffect(() => {
+    const prevFocused = document.activeElement;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeBtnRef.current?.focus();
+
+    const handleKey = (e) => {
+      if (e.key === 'Escape') { onCloseRef.current?.(); return; }
+      if (e.key === 'Tab') {
+        const focusables = dialogRef.current?.querySelectorAll(
+          'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (!focusables || focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.removeEventListener('keydown', handleKey);
+      if (prevFocused && typeof prevFocused.focus === 'function') prevFocused.focus();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (!data) return null;
 
   const colorMap = {
@@ -142,15 +159,20 @@ const ProblemModal = ({ modalKey, onClose }) => {
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
       onClick={onClose}
+      data-lenis-prevent
     >
       {/* backdrop */}
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
 
       <motion.div
+        ref={dialogRef}
         initial={{ opacity: 0, scale: 0.92, y: 24 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.92, y: 24 }}
         transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="problem-modal-title"
         className="relative bg-white rounded-[2rem] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
@@ -161,16 +183,18 @@ const ProblemModal = ({ modalKey, onClose }) => {
               {data.icon}
             </div>
             <button
+              ref={closeBtnRef}
               onClick={onClose}
+              aria-label="Cerrar"
               className="w-9 h-9 rounded-full bg-white/80 hover:bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors shrink-0"
             >
-              <X size={16} />
+              <X size={16} aria-hidden="true" />
             </button>
           </div>
           <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mt-3 mb-2 ${c.tag}`}>
             <AlertTriangle size={11} /> {data.tag}
           </div>
-          <h3 className="font-display text-lg sm:text-xl font-bold text-slate-900 leading-snug">{data.title}</h3>
+          <h3 id="problem-modal-title" className="font-display text-lg sm:text-xl font-bold text-slate-900 leading-snug">{data.title}</h3>
         </div>
 
         {/* Body */}
@@ -239,23 +263,40 @@ const ProblemModal = ({ modalKey, onClose }) => {
   );
 };
 
+// Datos estáticos para el gráfico de forecast (fuera del componente: no se recrean por render)
+const forecastData = [
+  { name: 'Lun', real: 2100, forecast: 2200 },
+  { name: 'Mar', real: 2300, forecast: 2250 },
+  { name: 'Mie', real: 2450, forecast: 2400 },
+  { name: 'Jue', real: 2200, forecast: 2350 },
+  { name: 'Vie', real: 2600, forecast: 2550 },
+  { name: 'Sab', real: 1800, forecast: 1900 },
+  { name: 'Dom', real: 1500, forecast: 1600 },
+];
+
+const NAV_LINKS = [
+  { label: 'Soluciones', href: '#soluciones' },
+  { label: 'Cotizador', href: '#roi' },
+  { label: 'Casos', href: '#portfolio' },
+  { label: 'Metodología', href: '#metodologia' },
+  { label: 'Equipo', href: '#equipo' },
+  { label: 'Contacto', href: '#contacto' },
+];
+
 const App = () => {
   const [activePhase, setActivePhase] = useState(0);
   const [activeModal, setActiveModal] = useState(null);
+  const [navOpen, setNavOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
-  // Mantenemos el state de "reduced motion" para futuras animaciones que lo respeten;
-  // hoy no se consume directamente porque el hero retiró Background3D.
-  const [_prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
-  // States for ROI Calculator
-  const [calcPeople, setCalcPeople] = useState(2);
-  const [calcHours, setCalcHours] = useState(10);
-  const [calcSalary, setCalcSalary] = useState(800000);
-  const [calcFreq, setCalcFreq] = useState(4); // 1 = Mensual, 4 = Semanal, 20 = Diario
-  const [calcErrors, setCalcErrors] = useState(1.2); // 1 = Nunca, 1.2 = A veces, 1.4 = Frecuente
-
-  const vfxImgRef = useRef(null);
+  // Estado del formulario de Assessment (Fase 0)
+  const [assessmentName, setAssessmentName] = useState('');
+  const [assessmentEmail, setAssessmentEmail] = useState('');
+  const [assessmentPhone, setAssessmentPhone] = useState('');
+  const [assessmentPain, setAssessmentPain] = useState('');
+  const [assessmentSent, setAssessmentSent] = useState(false);
 
   useEffect(() => {
     const mobileQuery = window.matchMedia("(max-width: 767px)");
@@ -281,29 +322,52 @@ const App = () => {
     };
   }, []);
   
-  // Custom cursor is enabled, hide default
+  // Smooth scroll (Lenis) + cursor custom — solo en desktop/no-touch.
+  // En táctil dejamos el scroll nativo del SO (Lenis lo degrada en móvil).
   useEffect(() => {
-    if (!isMobileViewport && !isTouchDevice) {
-      document.body.classList.add('hide-cursor');
+    if (isMobileViewport || isTouchDevice) {
+      return undefined;
     }
-    
-    // Initialize Lenis
+
+    document.body.classList.add('hide-cursor');
+
     const lenis = new Lenis({
       lerp: 0.08,
       smoothWheel: true,
     });
 
-    function raf(time) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
+    // Sincroniza GSAP ScrollTrigger con la posición suavizada de Lenis
+    // y conduce el rAF de Lenis desde el ticker de GSAP (un solo loop, sin leak).
+    lenis.on('scroll', ScrollTrigger.update);
+    const tickerCallback = (time) => lenis.raf(time * 1000);
+    gsap.ticker.add(tickerCallback);
+    gsap.ticker.lagSmoothing(0);
 
     return () => {
       document.body.classList.remove('hide-cursor');
+      gsap.ticker.remove(tickerCallback);
       lenis.destroy();
     };
   }, [isMobileViewport, isTouchDevice]);
+
+  // Bloqueo de scroll + Escape + retorno de foco para el panel de navegación móvil
+  const navBtnRef = useRef(null);
+  useEffect(() => {
+    if (!navOpen) return undefined;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleKey = (e) => {
+      if (e.key === 'Escape') {
+        setNavOpen(false);
+        navBtnRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [navOpen]);
 
   // Scroll progress bar
   const { scrollYProgress: pageScrollProgress } = useScroll();
@@ -334,39 +398,25 @@ const App = () => {
     ["transparent", "rgba(255, 255, 255, 0.05)"]
   );
 
-  // Datos para los gráficos
-  const forecastData = [
-    { name: 'Lun', real: 2100, forecast: 2200 },
-    { name: 'Mar', real: 2300, forecast: 2250 },
-    { name: 'Mie', real: 2450, forecast: 2400 },
-    { name: 'Jue', real: 2200, forecast: 2350 },
-    { name: 'Vie', real: 2600, forecast: 2550 },
-    { name: 'Sab', real: 1800, forecast: 1900 },
-    { name: 'Dom', real: 1500, forecast: 1600 },
-  ];
-
-  const handleAssessmentClick = () => {
+  const handleAssessmentClick = (e) => {
+    if (e) e.preventDefault();
     const email = "gerencia@jcanalytic.com";
     const subject = "Solicitud de Assessment Fase 0 - JC Analytics";
-    window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}`;
+    const body =
+      `Nombre / Empresa: ${assessmentName || '(sin especificar)'}\n` +
+      `Email de contacto: ${assessmentEmail || '(sin especificar)'}\n` +
+      `Teléfono: ${assessmentPhone || '(no indicado)'}\n` +
+      `Principal dolor: ${assessmentPain || '(sin especificar)'}`;
+    window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    setAssessmentSent(true);
   };
 
-  const formatCRC = (value) => new Intl.NumberFormat('es-CR').format(Math.round(value));
-  const hourlyCost = calcSalary / 160;
-  const monthlyProcessHours = calcPeople * calcHours * calcFreq;
-  const monthlyTotalHours = monthlyProcessHours * calcErrors;
-  const recoverableHours = Math.round(monthlyTotalHours * 0.9);
-  const recoverableCostEquivalent = Math.round(recoverableHours * hourlyCost);
-  const fullTimeHoursPerMonth = 160;
-  const fullTimePeopleEquivalent = (recoverableHours / fullTimeHoursPerMonth).toFixed(1);
-  const currentMonthlyCost = Math.round(monthlyTotalHours * hourlyCost);
-  const currentYearlyCost = currentMonthlyCost * 12;
-  const netflixMonthlyReference = 12000;
-  const netflixMonthsEquivalent = Math.max(1, Math.round(currentMonthlyCost / netflixMonthlyReference));
-  const netflixEquivalentLabel = netflixMonthsEquivalent >= 12
-    ? `${(netflixMonthsEquivalent / 12).toFixed(1)} años`
-    : `${netflixMonthsEquivalent} meses`;
-  const chartMargins = isMobileViewport ? { top: 8, right: 0, left: -24, bottom: 0 } : { top: 10, right: 10, left: -20, bottom: 0 };
+  const chartMargins = useMemo(
+    () => (isMobileViewport
+      ? { top: 8, right: 0, left: -24, bottom: 0 }
+      : { top: 10, right: 10, left: -20, bottom: 0 }),
+    [isMobileViewport]
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-500 selection:text-white overflow-x-hidden">
@@ -402,42 +452,90 @@ const App = () => {
         className="fixed w-full z-50 transition-colors duration-300"
       >
         <div className="max-w-7xl mx-auto px-3 sm:px-4 h-20 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 group cursor-pointer">
+          <a href="#top" className="flex items-center gap-2.5 group cursor-pointer shrink-0">
             <motion.img
               whileHover={{ scale: 1.05 }}
-              src={import.meta.env.BASE_URL + "Logo.png"}
-              alt="JC Analytics Logo"
-              className="h-12 w-auto object-contain"
+              src={import.meta.env.BASE_URL + "LogoMark.png"}
+              alt=""
+              className="h-10 sm:h-11 w-auto object-contain"
             />
-          </div>
-          <div className="hidden md:flex items-center gap-5">
-            <a href="mailto:gerencia@jcanalytic.com" className="text-sm font-semibold text-slate-300 hover:text-white transition-colors">
-              gerencia@jcanalytic.com
-            </a>
-            <a 
-              href="https://wa.me/50670330596" 
-              target="_blank" 
-              rel="noreferrer"
-              className="flex items-center gap-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 px-6 py-2.5 rounded-full font-bold transition-all shadow-lg backdrop-blur-md"
-            >
-              Contactar por WhatsApp
-              <ArrowRight size={18} />
-            </a>
-          </div>
+            <span className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-white leading-none">
+              JC Analytics
+            </span>
+          </a>
+
+          {/* Nav desktop */}
+          <nav className="hidden lg:flex items-center gap-7" aria-label="Navegación principal">
+            {NAV_LINKS.map((l) => (
+              <a key={l.href} href={l.href} className="text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+                {l.label}
+              </a>
+            ))}
+          </nav>
+
+          {/* CTA desktop */}
           <a
             href="https://wa.me/50670330596"
             target="_blank"
             rel="noreferrer"
-            className="md:hidden inline-flex items-center justify-center gap-2 bg-emerald-500/25 hover:bg-emerald-500/35 border border-emerald-500/40 text-emerald-300 px-4 py-3 rounded-full font-bold text-sm transition-all backdrop-blur-md min-h-11"
+            className="hidden lg:inline-flex items-center gap-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 px-5 py-2.5 rounded-full font-bold transition-all shadow-lg backdrop-blur-md shrink-0"
           >
             WhatsApp
-            <ArrowRight size={16} />
+            <ArrowRight size={18} />
           </a>
+
+          {/* Hamburguesa móvil */}
+          <button
+            ref={navBtnRef}
+            onClick={() => setNavOpen((v) => !v)}
+            aria-label={navOpen ? "Cerrar menú" : "Abrir menú"}
+            aria-expanded={navOpen}
+            aria-controls="mobile-nav-panel"
+            className="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-colors shrink-0"
+          >
+            {navOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
+
+        {/* Panel móvil */}
+        <AnimatePresence>
+          {navOpen && (
+            <motion.div
+              id="mobile-nav-panel"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="lg:hidden absolute top-20 inset-x-0 bg-slate-950 border-b border-white/10 shadow-2xl px-4 py-5"
+            >
+              <nav className="flex flex-col gap-1" aria-label="Navegación móvil">
+                {NAV_LINKS.map((l) => (
+                  <a
+                    key={l.href}
+                    href={l.href}
+                    onClick={() => setNavOpen(false)}
+                    className="py-3 px-3 text-base font-semibold text-slate-200 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                  >
+                    {l.label}
+                  </a>
+                ))}
+                <a
+                  href="https://wa.me/50670330596"
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => setNavOpen(false)}
+                  className="mt-3 inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-3.5 rounded-full font-bold transition-colors"
+                >
+                  Contactar por WhatsApp <ArrowRight size={18} />
+                </a>
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.nav>
 
       {/* Hero Section — refinado: 1 acento (azul brand), claim declarativo, prueba arriba del fold */}
-      <header ref={heroRef} className="relative pt-28 pb-16 sm:pt-32 sm:pb-24 lg:pt-40 lg:pb-32 overflow-hidden bg-slate-950 text-white">
+      <header id="top" ref={heroRef} className="relative pt-28 pb-16 sm:pt-32 sm:pb-24 lg:pt-40 lg:pb-32 overflow-hidden bg-slate-950 text-white">
         
         {/* Gradient blobs sutiles — única animación protagonista del hero */}
         <div className="absolute top-0 right-0 w-full h-full overflow-hidden pointer-events-none opacity-30">
@@ -452,13 +550,13 @@ const App = () => {
               className="lg:w-1/2"
             >
               <FadeInUp delay={0.1}>
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-mono font-medium mb-7 text-slate-300 border border-white/10 bg-white/5 backdrop-blur-sm uppercase tracking-[0.18em]">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-mono font-medium mb-7 text-slate-200 border border-white/15 bg-white/5 backdrop-blur-sm uppercase tracking-[0.18em]">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
                   JC Analytics · Analítica · Automatización · GAM
                 </div>
               </FadeInUp>
               <FadeInUp delay={0.2}>
-                <h1 className="font-display text-[2rem] sm:text-5xl md:text-[3.5rem] lg:text-[4rem] font-extrabold text-white leading-[1.05] mb-5 sm:mb-6 tracking-[-0.02em]">
+                <h1 className="font-display text-[clamp(1.75rem,6vw,2rem)] sm:text-5xl md:text-6xl lg:text-[4rem] font-extrabold text-white leading-[1.05] mb-5 sm:mb-6 tracking-[-0.02em] break-words">
                   Reportes en tiempo real.<br />
                   <span className="italic font-semibold text-slate-300">Decisiones en minutos, no en días.</span>
                 </h1>
@@ -485,25 +583,25 @@ const App = () => {
                     rel="noreferrer"
                     className="inline-flex items-center justify-center gap-2 text-slate-300 hover:text-white font-medium text-sm transition-colors group min-h-11"
                   >
-                    Agendar 30 min
+                    Agendar diagnóstico gratis
                     <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                   </a>
                 </div>
               </FadeInUp>
               <FadeInUp delay={0.5}>
                 {/* Prueba arriba del fold — cifras duras en mono */}
-                <div className="grid grid-cols-3 gap-4 sm:gap-6 pt-6 border-t border-white/10 max-w-xl">
+                <div className="grid grid-cols-3 gap-2 sm:gap-6 pt-6 border-t border-white/10 max-w-xl">
                   <div>
-                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300 leading-none">99.4%</div>
-                    <div className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">reducción tiempo auditoría</div>
+                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300 leading-none whitespace-nowrap">99.4%</div>
+                    <div className="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">reducción tiempo auditoría</div>
                   </div>
                   <div>
-                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300 leading-none">3h → 30s</div>
-                    <div className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">cierre financiero</div>
+                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300 leading-none whitespace-nowrap">3h → 30s</div>
+                    <div className="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">cierre financiero</div>
                   </div>
                   <div>
-                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300 leading-none">174</div>
-                    <div className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">SKUs / 24 tiendas live</div>
+                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300 leading-none whitespace-nowrap">174</div>
+                    <div className="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">SKUs / 24 tiendas live</div>
                   </div>
                 </div>
               </FadeInUp>
@@ -516,11 +614,13 @@ const App = () => {
             >
               <FadeInUp delay={0.5}>
                 <TiltCard className="relative rounded-2xl overflow-hidden shadow-[0_20px_60px_-15px_rgba(37,99,235,0.5)] border border-slate-700/50">
-                  <img 
-                       ref={vfxImgRef}
+                  <img
                        src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1200"
-                       alt="Data Analytics Dashboard"
-                         className="w-full h-[260px] sm:h-[360px] md:h-[500px] lg:h-[600px] object-cover opacity-90 transition-opacity duration-700" 
+                       alt="Dashboard ejecutivo con métricas de ventas e inventario en tiempo real"
+                       width={1200}
+                       height={600}
+                       fetchPriority="high"
+                       className="w-full h-[260px] sm:h-[360px] md:h-[500px] lg:h-[600px] object-cover opacity-90 transition-opacity duration-700"
                   />
                 </TiltCard>
               </FadeInUp>
@@ -529,8 +629,10 @@ const App = () => {
         </div>
       </header>
 
+      {/* Puente de transición oscuro → claro */}
+      <div aria-hidden="true" className="h-16 sm:h-24 bg-gradient-to-b from-slate-950 to-white" />
       {/* Strip de Credibilidad y El Problema */}
-      <section className="relative z-20 py-12 sm:py-16 bg-white border-b border-slate-200">
+      <section className="relative z-20 py-12 sm:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-wrap justify-between items-center gap-4 sm:gap-8 mb-12 sm:mb-20 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
              <div className="font-display font-black text-base sm:text-2xl text-slate-800 tracking-wider">Retail & Consumo</div>
@@ -675,7 +777,7 @@ const App = () => {
                    rel="noreferrer"
                    className="bg-slate-900 text-white hover:bg-slate-800 px-8 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all shadow-xl"
                  >
-                   Quiero un diagnóstico gratis <ArrowRight size={20} />
+                   Agendar diagnóstico gratis <ArrowRight size={20} />
                  </motion.a>
                  <div className="flex flex-col items-start text-left">
                    <div className="flex items-center gap-2 text-slate-700 font-bold text-sm">
@@ -691,19 +793,23 @@ const App = () => {
         </div>
 
         {/* Social Proof Animated Ticker */}
-        <div className="mt-12 sm:mt-20 w-full bg-slate-900 py-4 sm:py-6 overflow-hidden flex border-y border-slate-800">
+        <div className="mt-12 sm:mt-20 w-full bg-slate-900 py-4 sm:py-6 overflow-hidden flex border-y border-slate-800" aria-hidden="true">
           <motion.div
-            animate={{ x: ["0%", "-50%"] }}
-            transition={{ ease: "linear", duration: 30, repeat: Infinity }}
+            animate={prefersReducedMotion ? { x: "0%" } : { x: ["0%", "-50%"] }}
+            transition={prefersReducedMotion ? { duration: 0 } : { ease: "linear", duration: 30, repeat: Infinity }}
             className="flex whitespace-nowrap min-w-max"
           >
             {[...Array(2)].map((_, i) => (
               <div key={i} className="flex gap-8 sm:gap-16 items-center px-4 sm:px-8">
-                <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-emerald-400">99.4%</span> reducción en tiempo de auditoría</div>
+                <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-emerald-400">+50 proyectos</span> entregados</div>
                 <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 shrink-0"></div>
-                <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-blue-400">174 SKUs</span> en 24 tiendas — visibilidad total</div>
+                <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-blue-400">14 días</span> o no cobramos</div>
                 <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 shrink-0"></div>
                 <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-cyan-400">28 reportes manuales</span> eliminados por semana</div>
+                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 shrink-0"></div>
+                <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-emerald-400">Avances cada 72 h</span>, no al final</div>
+                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 shrink-0"></div>
+                <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-blue-400">30 días</span> de soporte post-entrega</div>
                 <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 shrink-0"></div>
               </div>
             ))}
@@ -712,189 +818,25 @@ const App = () => {
       </section>
 
       {/* Main Pillars - GSAP Pinned Horizontal Scroll */}
-      <HorizontalScrollSection />
+      <div id="soluciones" className="scroll-mt-20">
+        <HorizontalScrollSection />
+      </div>
 
       {/* ROI & Calculator */}
-      <section id="roi" className="py-14 sm:py-20 md:py-24 bg-slate-950 text-white relative overflow-hidden z-20">
+      {/* Puente de transición claro → oscuro */}
+      <div aria-hidden="true" className="h-16 sm:h-24 bg-gradient-to-b from-slate-50 to-slate-950" />
+      <section id="roi" className="scroll-mt-20 py-14 sm:py-20 md:py-24 bg-slate-950 text-white relative overflow-hidden z-20">
         {/* Decorative background grids */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.05] mix-blend-overlay"></div>
         <div className="absolute top-0 right-0 w-[340px] h-[340px] sm:w-[520px] sm:h-[520px] lg:w-[800px] lg:h-[800px] bg-emerald-500/10 rounded-full blur-[100px] sm:blur-[120px] pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-4 relative z-10">
-          <div className="text-center mb-16">
-            <FadeInUp>
-              <div className="inline-flex items-center gap-2 px-6 py-2 bg-white/5 border border-white/10 rounded-full text-sm font-bold mb-6 backdrop-blur-md text-emerald-300">
-                <Calculator size={16} /> Evaluación Transparete
-              </div>
-              <h2 className="font-display text-[1.75rem] sm:text-4xl md:text-5xl lg:text-6xl font-black mb-5 sm:mb-6 tracking-tight">
-                Antes de contratarnos, <br className="hidden sm:block"/>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">calculá si te conviene.</span>
-              </h2>
-              <p className="font-sans text-base sm:text-lg md:text-xl text-slate-300 max-w-3xl mx-auto font-light leading-relaxed">
-                La mayoría de empresas en Costa Rica pierde entre ₡400,000 y ₡2,000,000 al mes en procesos que se podrían automatizar. En 2 minutos sabés si ese es tu caso.
-              </p>
-            </FadeInUp>
-          </div>
-
-          <div className="flex flex-col lg:flex-row gap-12 items-center">
-            {/* Sliders Form */}
-            <div className="lg:w-1/2 w-full space-y-8 glass-card-dark p-5 sm:p-8 md:p-10 rounded-[2rem] border border-slate-800">
-              <FadeInUp delay={0.1}>
-                <div>
-                  <div className="flex justify-between mb-3">
-                    <label className="text-sm font-bold text-slate-300">¿Cuántas personas generan reportes?</label>
-                    <span className="text-emerald-400 font-black">{calcPeople}</span>
-                  </div>
-                  <input type="range" min="1" max="20" value={calcPeople} onChange={(e) => setCalcPeople(parseInt(e.target.value))} className="w-full touch-slider h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
-                </div>
-              </FadeInUp>
-              <FadeInUp delay={0.2}>
-                <div>
-                  <div className="flex justify-between mb-3">
-                    <label className="text-sm font-bold text-slate-300">Horas dedicadas por proceso (por persona)</label>
-                    <span className="text-emerald-400 font-black">{calcHours} h</span>
-                  </div>
-                  <input type="range" min="1" max="40" value={calcHours} onChange={(e) => setCalcHours(parseInt(e.target.value))} className="w-full touch-slider h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
-                </div>
-              </FadeInUp>
-              <FadeInUp delay={0.3}>
-                <div>
-                  <div className="flex justify-between mb-3">
-                    <label className="text-sm font-bold text-slate-300">Salario promedio mensual (₡)</label>
-                    <span className="text-emerald-400 font-black">₡{(calcSalary / 1000).toFixed(0)}K</span>
-                  </div>
-                  <input type="range" min="300000" max="2000000" step="50000" value={calcSalary} onChange={(e) => setCalcSalary(parseInt(e.target.value))} className="w-full touch-slider h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
-                </div>
-              </FadeInUp>
-              <FadeInUp delay={0.4}>
-                <div>
-                  <div className="flex justify-between mb-3">
-                    <label className="text-sm font-bold text-slate-300">Frecuencia del proceso</label>
-                  </div>
-                  <div className="flex bg-slate-800 rounded-lg w-full p-1 space-x-1">
-                    <button 
-                      onClick={() => setCalcFreq(20)}
-                      className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${calcFreq === 20 ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-300'}`}
-                    >
-                      Diaria
-                    </button>
-                    <button 
-                      onClick={() => setCalcFreq(4)}
-                      className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${calcFreq === 4 ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-300'}`}
-                    >
-                      Semanal
-                    </button>
-                    <button 
-                      onClick={() => setCalcFreq(1)}
-                      className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${calcFreq === 1 ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-300'}`}
-                    >
-                      Mensual
-                    </button>
-                  </div>
-                </div>
-              </FadeInUp>
-              <FadeInUp delay={0.5}>
-                <div>
-                  <div className="flex justify-between mb-3">
-                    <label className="text-sm font-bold text-slate-300">Frecuencia de errores por corregir</label>
-                  </div>
-                  <div className="flex bg-slate-800/80 rounded-xl w-full p-1.5 space-x-1.5 border border-slate-700/50">
-                    <button 
-                      onClick={() => setCalcErrors(1.0)}
-                      className={`flex-1 flex flex-col items-center justify-center py-3 text-xs font-bold rounded-lg transition-all duration-300 ${calcErrors === 1.0 ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'border border-transparent text-slate-400 hover:text-slate-300 hover:bg-slate-700/40'}`}
-                    >
-                      <span className={`w-2 h-2 rounded-full mb-1.5 transition-colors ${calcErrors === 1.0 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-slate-600'}`}></span>
-                      Cero
-                    </button>
-                    <button 
-                      onClick={() => setCalcErrors(1.2)}
-                      className={`flex-1 flex flex-col items-center justify-center py-3 text-xs font-bold rounded-lg transition-all duration-300 ${calcErrors === 1.2 ? 'bg-amber-500/10 border border-amber-500/30 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]' : 'border border-transparent text-slate-400 hover:text-slate-300 hover:bg-slate-700/40'}`}
-                    >
-                      <span className={`w-2 h-2 rounded-full mb-1.5 transition-colors ${calcErrors === 1.2 ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'bg-slate-600'}`}></span>
-                      A veces
-                    </button>
-                    <button 
-                      onClick={() => setCalcErrors(1.4)}
-                      className={`flex-1 flex flex-col items-center justify-center py-3 text-xs font-bold rounded-lg transition-all duration-300 ${calcErrors === 1.4 ? 'bg-red-500/10 border border-red-500/30 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'border border-transparent text-slate-400 hover:text-slate-300 hover:bg-slate-700/40'}`}
-                    >
-                      <span className={`w-2 h-2 rounded-full mb-1.5 transition-colors ${calcErrors === 1.4 ? 'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]' : 'bg-slate-600'}`}></span>
-                      Frecuente
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-slate-500 mt-3 text-center uppercase tracking-widest font-semibold">Tener que revisar eleva hasta un +40% el costo final</p>
-                </div>
-              </FadeInUp>
-            </div>
-
-            {/* Results Output */}
-            <div className="lg:w-1/2 w-full">
-              <FadeInUp delay={0.3}>
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
-                  <div className="glass-card-dark border-l-4 border-l-red-500 p-3 sm:p-5 md:p-6 rounded-xl border border-slate-800/50">
-                    <div className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 sm:mb-2">Costo Mensual Actual</div>
-                    <div className="font-mono text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight">₡{new Intl.NumberFormat('es-CR').format(currentMonthlyCost)}</div>
-                  </div>
-                  <div className="glass-card-dark border-l-4 border-l-emerald-500 p-3 sm:p-5 md:p-6 rounded-xl border border-slate-800/50">
-                    <div className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 sm:mb-2">Horas Recuperables</div>
-                    <div className="font-mono text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight">{recoverableHours}<span className="text-xs sm:text-sm text-slate-400 font-normal ml-1">h/mes</span></div>
-                  </div>
-                  <div className="glass-card-dark border-l-4 border-l-cyan-500 p-3 sm:p-5 md:p-6 rounded-xl border border-slate-800/50">
-                    <div className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 sm:mb-2">Payback Estimado</div>
-                    <div className="font-mono text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight">{((1500000) / (currentMonthlyCost * 0.9 || 1)).toFixed(1)} <span className="text-xs sm:text-sm text-slate-400 font-normal">meses</span></div>
-                  </div>
-                  <div className="glass-card-dark border-l-4 border-l-emerald-400 p-3 sm:p-5 md:p-6 rounded-xl border border-slate-800/50 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/20 rounded-full blur-xl"></div>
-                    <div className="text-[10px] sm:text-xs font-bold text-emerald-400 uppercase tracking-widest mb-1.5 sm:mb-2">Ahorro Año 1</div>
-                    <div className="font-display text-base sm:text-xl md:text-2xl lg:text-3xl font-black text-emerald-400 leading-tight">₡{new Intl.NumberFormat('es-CR').format(Math.round(currentYearlyCost * 0.9))}</div>
-                  </div>
-                </div>
-              </FadeInUp>
-            </div>
-          </div>
-
-          {/* DYNAMIC CONCRETE COMPARISONS */}
-          <div className="mt-20 pt-16 border-t border-slate-800">
-            <div className="text-center mb-12">
-              <FadeInUp>
-                <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
-                  ₡{new Intl.NumberFormat('es-CR').format(currentMonthlyCost)} al mes en reportes manuales es lo mismo que...
-                </h3>
-              </FadeInUp>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               <FadeInUp delay={0.1}>
-                 <div className="bg-slate-900/50 border border-slate-800 p-8 rounded-2xl text-center h-full flex flex-col items-center justify-center">
-                   <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 shadow-inner border border-blue-500/20">
-                     <Users size={28} className="text-blue-400" />
-                   </div>
-                   <p className="text-lg font-medium text-slate-300">Cubrir {recoverableHours} horas/mes recuperables de trabajo manual</p>
-                   <p className="text-sm text-slate-500 mt-2">Equivale a {fullTimePeopleEquivalent} personas de tiempo completo (~₡{formatCRC(recoverableCostEquivalent)}/mes).</p>
-                 </div>
-               </FadeInUp>
-               <FadeInUp delay={0.2}>
-                 <div className="bg-slate-900/50 border border-slate-800 p-8 rounded-2xl text-center h-full flex flex-col items-center justify-center">
-                   <div className="w-16 h-16 bg-orange-500/10 rounded-full flex items-center justify-center mb-6 shadow-inner border border-orange-500/20">
-                     <MonitorSmartphone size={28} className="text-orange-400" />
-                   </div>
-                   <p className="text-lg font-medium text-slate-300">Pagar <strong className="text-orange-300">{netflixEquivalentLabel}</strong> de Netflix empresarial sin ver nada util</p>
-                   <p className="text-sm text-slate-500 mt-2">{netflixMonthsEquivalent} meses al valor de referencia de ₡{formatCRC(netflixMonthlyReference)}/mes.</p>
-                 </div>
-               </FadeInUp>
-               <FadeInUp delay={0.3}>
-                 <div className="bg-slate-900/50 border border-slate-800 p-8 rounded-2xl text-center h-full flex flex-col items-center justify-center">
-                   <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6 shadow-inner border border-red-500/20">
-                     <TrendingUp size={28} className="text-red-400" />
-                   </div>
-                   <p className="text-lg font-medium text-slate-300">Dejar <strong className="text-red-400">₡{(currentYearlyCost / 1000000).toFixed(1)}M</strong> sobre la mesa cada año</p>
-                 </div>
-               </FadeInUp>
-            </div>
-          </div>
-        </div>
+        <QuoteEstimator />
       </section>
 
       {/* Casos de Uso Reales / Portfolio */}
-      <section id="portfolio" className="py-14 sm:py-20 md:py-24 bg-slate-50 relative overflow-hidden border-t border-slate-200 z-10">
+      {/* Puente de transición oscuro → claro */}
+      <div aria-hidden="true" className="h-16 sm:h-24 bg-gradient-to-b from-slate-950 to-slate-50" />
+      <section id="portfolio" className="scroll-mt-20 py-14 sm:py-20 md:py-24 bg-slate-50 relative overflow-hidden z-10">
         <div className="absolute top-0 left-0 w-full h-[320px] sm:h-[420px] lg:h-[500px] bg-gradient-to-b from-slate-100 to-transparent pointer-events-none" />
         <div className="max-w-7xl mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
@@ -961,10 +903,8 @@ const App = () => {
               <p className="font-sans text-xl md:text-2xl text-white font-medium mb-10 leading-relaxed italic relative z-10 text-balance">
                 "Si tu calculadora mostró más de ₡500,000 al mes, tiene sentido que hablemos 30 minutos. Sin compromiso, sin presentación de ventas — solo revisamos si los números son reales con tus datos."
               </p>
-              <a 
-                href="https://wa.me/50670330596?text=Hola,%20quisiera%20validar%20mi%20c%C3%A1lculo%20de%20ROI%20sin%20compromiso." 
-                target="_blank" 
-                rel="noreferrer"
+              <a
+                href="#contacto"
                 className="relative z-10 inline-flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-500 text-white px-8 md:px-10 py-5 md:py-6 rounded-full font-bold text-lg md:text-xl transition-all hover:scale-105 shadow-[0_10px_40px_rgba(5,150,105,0.4)]"
               >
                 Validar mi resultado gratis <ArrowRight size={24} />
@@ -993,7 +933,7 @@ const App = () => {
               <FadeInUp delay={0.2}>
                 <motion.div 
                   whileHover={{ scale: 1.02, y: -5 }}
-                  className="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] relative"
+                  className="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-10 w-24 h-1.5 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-b-lg"></div>
                   <div className="h-80 w-full mt-4" style={{ position: 'relative', width: '100%', height: 320 }}>
@@ -1061,7 +1001,7 @@ const App = () => {
       </section>
 
       {/* Metodología 4D */}
-      <section className="py-14 sm:py-20 md:py-24 bg-white relative border-t border-slate-200 z-20">
+      <section id="metodologia" className="scroll-mt-20 py-14 sm:py-20 md:py-24 bg-white relative border-t border-slate-200 z-20">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
             <FadeInUp>
@@ -1081,7 +1021,7 @@ const App = () => {
           <FadeInUp delay={0.2}>
             <div className="bg-slate-50 rounded-[2rem] p-2 md:p-6 shadow-sm border border-slate-200 mb-8">
               {/* Tab Selector */}
-              <div className="flex overflow-x-auto snap-x snap-mandatory flex-nowrap md:flex-row justify-between mb-8 gap-3 relative pb-4 md:pb-0 no-scrollbar">
+              <div className="flex overflow-x-auto snap-x snap-mandatory flex-nowrap md:flex-row justify-between mb-8 gap-3 relative pb-4 md:pb-0 no-scrollbar" data-lenis-prevent style={{ touchAction: 'pan-x' }}>
                 <div className="hidden md:block absolute top-1/2 left-0 w-full h-1 bg-slate-200 -translate-y-1/2 z-0"></div>
                 {[
                   { id: "D1", title: "DEFINE", tagline: "Primero entendemos.", icon: <Target className="w-6 h-6" /> },
@@ -1124,28 +1064,32 @@ const App = () => {
                     detail: "En esta fase no hay presentaciones ni demos. Hacemos preguntas incómodas: ¿Cuánto tiempo real tarda este proceso? ¿Quién lo hace y cuánto le pagás? ¿Qué pasa cuando hay un error? ¿Alguien toma decisiones basadas en este reporte o solo lo archivan? Al terminar el D1 tenés un diagnóstico escrito con el costo real de tu problema actual, los 3 procesos con mayor potencial de automatización ordenados por impacto, y una estimación honesta de si tiene sentido invertir o no. Si no tiene sentido, te lo decimos en esta fase — no después de que pagaste.",
                     deliverables: ["Diagnóstico del proceso AS-IS documentado", "Mapa de fuentes de datos disponibles", "Estimación de costo real del problema (en colones)", "Definición del alcance Go/No-Go"],
                     duration: "1–2 sesiones · Primera sin costo",
-                    image: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=800"
+                    image: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=800",
+                    imageAlt: "Sesión de diagnóstico de procesos junto al cliente"
                   },
                   {
                     summary: "Diseño y construcción del modelo. Avances cada 72 horas, no al final del proyecto.",
                     detail: "Aquí es donde la mayoría de consultores desaparecen 3 semanas. Nosotros trabajamos diferente: cada 72 horas hay una actualización visible, un avance funcional que podés tocar, no una presentación de PowerPoint explicando lo que vamos a hacer. Toda la construcción se hace con tus datos reales — no con datasets de demo. Eso significa que cuando llegue el D4, el sistema ya fue probado con la realidad de tu operación. La arquitectura se diseña para que tu equipo la pueda mantener. No queremos que dependás de nosotros para siempre.",
                     deliverables: ["Arquitectura del modelo documentada", "Primera versión funcional con datos reales", "Avances parciales cada 72 horas", "Revisión de alcance antes de continuar"],
                     duration: "1–3 semanas según complejidad",
-                    image: "https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?auto=format&fit=crop&q=80&w=800"
+                    image: "https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?auto=format&fit=crop&q=80&w=800",
+                    imageAlt: "Construcción del modelo de datos con datos reales del cliente"
                   },
                   {
                     summary: "Pruebas con tus datos reales, casos edge incluidos. Iteramos hasta que el resultado sea confiable, no solo correcto en condiciones ideales.",
                     detail: "Un sistema que funciona el 90% del tiempo no sirve en producción. En esta fase sometemos el modelo a los escenarios más incómodos: archivos con encoding diferente, fechas en formato texto, registros duplicados, columnas vacías, datos de meses anteriores que llegan tarde. Cada error que encontramos en el D3 es un error que no te va a despertar a las 11 de la noche en producción. También es la fase donde tu equipo empieza a conocer el sistema — los involucramos en las pruebas para que al momento del Deploy no sea algo nuevo y extraño.",
                     deliverables: ["Log de casos edge encontrados y resueltos", "Validación con datos históricos reales", "Sesión de prueba con el equipo del cliente", "Aprobación formal antes de Deploy"],
                     duration: "3–7 días de iteración",
-                    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800"
+                    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800",
+                    imageAlt: "Pruebas y validación del sistema con casos edge"
                   },
                   {
                     summary: "Entrega final en producción con capacitación incluida. Sin sorpresas, sin costos ocultos, sin dependencia permanente de nosotros.",
                     detail: "El Deploy no es solo subir el archivo y mandar un email. Es una sesión de entrega donde tu equipo entiende cómo funciona el sistema, cómo actualizarlo, qué hacer si algo falla, y cuándo tiene sentido contactarnos. Cada proyecto entregado incluye: documentación técnica en lenguaje no técnico, SOP de actualización y mantenimiento, checklist de validación mensual, y una sesión de soporte post-Deploy de 30 días sin costo adicional. El objetivo es que en 30 días tu equipo opere el sistema de forma completamente autónoma. Si eso no pasa, seguimos hasta que pase.",
                     deliverables: ["Sistema en producción documentado", "Capacitación del equipo (presencial o remota)", "SOP de mantenimiento y actualización", "30 días de soporte post-entrega incluido"],
                     duration: "1 sesión de entrega + 30 días soporte",
-                    image: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=800"
+                    image: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=800",
+                    imageAlt: "Entrega en producción y capacitación del equipo del cliente"
                   }
                 ].map((content, idx) => (
                   activePhase === idx && (
@@ -1158,7 +1102,7 @@ const App = () => {
                     >
                       {/* Image column */}
                       <div className="h-64 md:h-auto min-h-[300px] overflow-hidden relative">
-                        <img src={content.image} alt="" className="w-full h-full object-cover" />
+                        <img src={content.image} alt={content.imageAlt} loading="lazy" className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/10"></div>
                       </div>
 
@@ -1231,16 +1175,16 @@ const App = () => {
                     target="_blank" rel="noreferrer"
                     className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl font-bold transition-all shadow-lg hover:scale-105"
                   >
-                    Agendar mi D1 gratuito <ArrowRight size={20} />
+                    Agendar diagnóstico gratis <ArrowRight size={20} />
                   </a>
                   <a
-                    href="#servicios"
+                    href="#portfolio"
                     className="inline-flex items-center gap-2 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 px-8 py-4 rounded-xl font-bold transition-all"
                   >
                     Ver casos donde aplicamos esto
                   </a>
                 </div>
-                <p className="text-xs text-slate-500 max-w-2xl mx-auto">
+                <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto">
                   Metodología aplicada en proyectos para corporaciones de consumo masivo, sector energético y empresas de la Gran Área Metropolitana. Más de 50 proyectos documentados bajo este mismo framework.
                 </p>
               </div>
@@ -1251,7 +1195,9 @@ const App = () => {
       </section>
 
       {/* Equipo / Sobre Nosotros */}
-      <section className="py-16 sm:py-24 md:py-32 bg-slate-950 relative z-20 overflow-hidden">
+      {/* Puente de transición claro → oscuro */}
+      <div aria-hidden="true" className="h-16 sm:h-24 bg-gradient-to-b from-white to-slate-950" />
+      <section id="equipo" className="scroll-mt-20 py-16 sm:py-24 md:py-32 bg-slate-950 relative z-20 overflow-hidden">
         {/* Ambient Glow Effects */}
         <div className="absolute top-0 right-1/4 w-[220px] h-[220px] sm:w-[300px] sm:h-[300px] lg:w-[400px] lg:h-[400px] bg-blue-600/10 rounded-full blur-[90px] sm:blur-[120px] pointer-events-none mix-blend-screen" />
         <div className="absolute bottom-0 left-1/4 w-[260px] h-[260px] sm:w-[360px] sm:h-[360px] lg:w-[500px] lg:h-[500px] bg-cyan-500/10 rounded-full blur-[100px] sm:blur-[150px] pointer-events-none mix-blend-screen" />
@@ -1362,7 +1308,7 @@ const App = () => {
       </section>
 
       {/* CTA Final y Contacto */}
-      <section className="relative py-14 sm:py-20 md:py-24 text-center overflow-hidden bg-slate-950 border-t-4 border-blue-600">
+      <section id="contacto" className="scroll-mt-20 relative py-14 sm:py-20 md:py-24 text-center overflow-hidden bg-slate-950 border-t-4 border-blue-600">
         <div className="max-w-7xl mx-auto px-4 relative z-10">
           <div className="flex flex-col lg:flex-row gap-16 items-center">
             
@@ -1392,16 +1338,51 @@ const App = () => {
             <div className="lg:w-1/2 w-full">
               <FadeInUp delay={0.2}>
                 <div className="glass-card-dark rounded-3xl p-5 sm:p-8 border border-slate-700 shadow-2xl text-left">
-                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-5 sm:mb-6 font-display">Solicitar Assessment (Fase 0)</h3>
-                  <form className="flex flex-col gap-4">
+                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 font-display">Solicitar Assessment (Fase 0)</h3>
+                  <p className="text-sm text-slate-400 mb-5 sm:mb-6">Si usaste la calculadora, adjuntamos tu cálculo de ROI automáticamente.</p>
+                  {assessmentSent ? (
+                    <div className="flex flex-col items-center text-center gap-4 py-6">
+                      <div className="w-14 h-14 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
+                        <CheckCircle size={28} className="text-emerald-400" />
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold text-white">¡Listo! Abrimos tu correo.</p>
+                        <p className="text-sm text-slate-400 mt-1">Si tu cliente de correo no se abrió, escribinos directo por WhatsApp y te respondemos hoy.</p>
+                      </div>
+                      <a
+                        href="https://wa.me/50670330596"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-6 py-3 rounded-xl transition-colors"
+                      >
+                        <MessageSquare size={18} /> Escribir por WhatsApp
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => setAssessmentSent(false)}
+                        className="text-xs font-semibold text-slate-500 hover:text-slate-300 transition-colors"
+                      >
+                        Enviar otra solicitud
+                      </button>
+                    </div>
+                  ) : (
+                  <form className="flex flex-col gap-4" onSubmit={handleAssessmentClick}>
                     <div className="flex flex-col gap-2">
-                       <label className="text-sm font-bold text-slate-400">Nombre & Empresa</label>
-                       <input type="text" placeholder="Tu nombre" className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500" />
+                       <label htmlFor="assessment-name" className="text-sm font-bold text-slate-400">Nombre &amp; Empresa</label>
+                       <input id="assessment-name" name="name" type="text" required placeholder="Tu nombre y empresa" value={assessmentName} onChange={(e) => setAssessmentName(e.target.value)} className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder:text-slate-600 focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/60" />
                     </div>
                     <div className="flex flex-col gap-2">
-                       <label className="text-sm font-bold text-slate-400">Principal dolor</label>
-                       <select className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-blue-500">
-                         <option>Selecciona un área</option>
+                       <label htmlFor="assessment-email" className="text-sm font-bold text-slate-400">Email</label>
+                       <input id="assessment-email" name="email" type="email" required placeholder="tu@empresa.com" value={assessmentEmail} onChange={(e) => setAssessmentEmail(e.target.value)} className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder:text-slate-600 focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/60" />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                       <label htmlFor="assessment-phone" className="text-sm font-bold text-slate-400">Teléfono <span className="font-normal text-slate-500">(opcional)</span></label>
+                       <input id="assessment-phone" name="phone" type="tel" inputMode="tel" placeholder="+506 8888 8888" value={assessmentPhone} onChange={(e) => setAssessmentPhone(e.target.value)} className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder:text-slate-600 focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/60" />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                       <label htmlFor="assessment-pain" className="text-sm font-bold text-slate-400">Principal dolor</label>
+                       <select id="assessment-pain" name="pain" required value={assessmentPain} onChange={(e) => setAssessmentPain(e.target.value)} className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/60 [&>option]:bg-slate-900 [&>option]:text-white">
+                         <option value="">Selecciona un área</option>
                          <option>Reportes excesivos</option>
                          <option>Descontrol de Inventario</option>
                          <option>Cuentas por Cobrar</option>
@@ -1409,11 +1390,12 @@ const App = () => {
                          <option>Otro</option>
                        </select>
                     </div>
-                    <button type="button" onClick={handleAssessmentClick} className="mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl transition-colors w-full flex items-center justify-center gap-2">
-                      <Target size={20} /> Agendar
+                    <button type="submit" className="mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl transition-colors w-full flex items-center justify-center gap-2">
+                      <Target size={20} /> Agendar diagnóstico gratis
                     </button>
                     <p className="text-xs text-center text-slate-500 mt-2 flex items-center justify-center gap-2"><ShieldCheck size={14}/> 100% libre de spam</p>
                   </form>
+                  )}
                 </div>
               </FadeInUp>
             </div>
@@ -1422,18 +1404,19 @@ const App = () => {
       </section>
 
       {/* Footer Minimalista Premium */}
-      <footer className="py-8 sm:py-12 border-t border-slate-800 text-slate-400" style={{ backgroundColor: '#020617' }}>
+      <footer className="py-8 sm:py-12 border-t border-slate-800 text-slate-400 bg-slate-950">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
-          <div className="flex items-center gap-3">
-            <img src={import.meta.env.BASE_URL + "Logo.png"} alt="JC Analytics Logo" className="h-8 sm:h-10 w-auto object-contain" />
+          <div className="flex items-center gap-2.5">
+            <img src={import.meta.env.BASE_URL + "LogoMark.png"} alt="" className="h-9 sm:h-10 w-auto object-contain" />
+            <span className="font-display text-base sm:text-lg font-extrabold tracking-tight text-white leading-none">JC Analytics</span>
           </div>
           <div className="text-xs sm:text-sm font-medium font-sans text-center">
-            © 2026 JC Analytics. Propuesta Privada.
+            © 2026 JC Analytics. Todos los derechos reservados.
           </div>
           <div className="flex flex-wrap justify-center gap-4 sm:gap-8 font-sans items-center">
             <a href="mailto:gerencia@jcanalytic.com" className="hover:text-cyan-400 transition-colors text-xs sm:text-sm font-bold">gerencia@jcanalytic.com</a>
             <a href="https://wa.me/50670330596" target="_blank" rel="noreferrer" className="hover:text-emerald-400 transition-colors text-xs sm:text-sm font-bold text-emerald-500">Contacto WhatsApp</a>
-            <button className="hover:text-cyan-400 transition-colors text-xs sm:text-sm font-bold">LinkedIn</button>
+            <span className="text-xs sm:text-sm font-bold text-slate-600 cursor-default select-none">LinkedIn</span>
           </div>
         </div>
       </footer>
@@ -1445,11 +1428,10 @@ const App = () => {
         href="https://wa.me/50670330596"
         target="_blank"
         rel="noreferrer"
-        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 bg-emerald-500 hover:bg-emerald-400 text-white p-3 sm:p-4 rounded-full shadow-2xl flex items-center justify-center pulse-ring"
+        className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-50 bg-emerald-500 hover:bg-emerald-400 text-white p-3 sm:p-4 rounded-full shadow-2xl flex items-center justify-center pulse-ring"
         aria-label="Contactar por WhatsApp"
       >
-        <MessageSquare size={26} className="sm:hidden" />
-        <MessageSquare size={30} className="hidden sm:block" />
+        <MessageSquare className="w-[26px] h-[26px] sm:w-[30px] sm:h-[30px]" />
       </motion.a>
     </div>
   );

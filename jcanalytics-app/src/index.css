@@ -101,19 +101,6 @@
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
   }
 
-  /* Scroll progress bar */
-  .scroll-progress-bar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #3b82f6, #06b6d4, #10b981);
-    transform-origin: 0%;
-    z-index: 9999;
-    pointer-events: none;
-  }
-
   /* Pulse ring for floating button */
   .pulse-ring {
     animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
@@ -398,10 +385,17 @@
 
   /* ─── Scroll progress bar — single accent ────────────────────────────── */
   .scroll-progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
     height: 3px;
     background: var(--brand-accent);
     box-shadow: 0 0 12px color-mix(in oklab, var(--brand-accent) 55%, transparent);
     border-radius: 0 4px 4px 0;
+    transform-origin: 0%;
+    z-index: 9999;
+    pointer-events: none;
   }
   .scroll-progress-bar::after {
     content: '';

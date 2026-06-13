@@ -10,6 +10,8 @@ const _MOTION = motion;
  *  - Hover state expands ring on interactive elements + magnetic feel
  *  - Click pulse
  *  - Auto-disabled on touch / coarse pointer / reduced-motion
+ *  - Se eleva por encima de cualquier modal (z-[10000]) y mantiene contraste
+ *    sobre fondos claros/pastel vía drop-shadow.
  */
 const CustomCursor = () => {
   const cursorX = useMotionValue(-100);
@@ -42,19 +44,25 @@ const CustomCursor = () => {
   useEffect(() => {
     if (!enabled) return;
 
+    const INTERACTIVE = 'a, button, [role="button"], [data-cursor="hover"], input, textarea, select, summary, label[for]';
+
     const move = (e) => {
       cursorX.set(e.clientX);
       cursorY.set(e.clientY);
 
       // Detect interactive target for hover state
       const t = e.target;
-      const isInteractive =
-        !!t?.closest?.('a, button, [role="button"], [data-cursor="hover"], input, textarea, select, summary, label[for]');
-      setHover(isInteractive);
+      setHover(!!t?.closest?.(INTERACTIVE));
     };
 
     const down = () => setPressed(true);
-    const up = () => setPressed(false);
+    // Al soltar, re-evaluar hover: si el click cerró un modal y el elemento bajo
+    // el cursor cambió sin un mousemove, evita que quede el estado hover pegado.
+    const up = (e) => {
+      setPressed(false);
+      const t = e?.target;
+      setHover(!!t?.closest?.(INTERACTIVE));
+    };
     const leave = () => setHidden(true);
     const enter = () => setHidden(false);
 
@@ -100,10 +108,10 @@ const CustomCursor = () => {
         }}
       />
 
-      {/* Outline ring */}
+      {/* Outline ring — z-[10000] para quedar siempre por encima de modales (z-[9998]/[9999]) */}
       <motion.div
         aria-hidden
-        className="fixed top-0 left-0 pointer-events-none z-[9999] hidden md:block rounded-full mix-blend-difference"
+        className="fixed top-0 left-0 pointer-events-none z-[10000] hidden md:block rounded-full mix-blend-difference"
         style={{
           x: ringX,
           y: ringY,
@@ -118,13 +126,15 @@ const CustomCursor = () => {
             'width 280ms cubic-bezier(0.34,1.56,0.64,1), height 280ms cubic-bezier(0.34,1.56,0.64,1), margin 280ms cubic-bezier(0.34,1.56,0.64,1), background 200ms ease, border 200ms ease, opacity 200ms ease',
           transform: pressed ? 'scale(0.82)' : undefined,
           backdropFilter: hover ? 'blur(2px)' : undefined,
+          // Garantiza visibilidad sobre fondos blancos/pastel de los modales
+          filter: 'drop-shadow(0 0 2.5px rgba(0,0,0,0.45))',
         }}
       />
 
-      {/* Center dot */}
+      {/* Center dot — z-[10000] igual que el ring */}
       <motion.div
         aria-hidden
-        className="fixed top-0 left-0 bg-white pointer-events-none z-[9999] hidden md:block rounded-full mix-blend-difference"
+        className="fixed top-0 left-0 bg-white pointer-events-none z-[10000] hidden md:block rounded-full mix-blend-difference"
         style={{
           x: cursorX,
           y: cursorY,
@@ -135,6 +145,7 @@ const CustomCursor = () => {
           opacity: hidden ? 0 : 1,
           transition:
             'width 220ms cubic-bezier(0.34,1.56,0.64,1), height 220ms cubic-bezier(0.34,1.56,0.64,1), margin 220ms cubic-bezier(0.34,1.56,0.64,1), opacity 200ms ease',
+          filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.5))',
         }}
       />
     </>

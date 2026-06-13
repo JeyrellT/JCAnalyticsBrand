@@ -1,0 +1,8 @@
+# Tooling local (no parte del producto)
+.claude/
+_scripts/
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
