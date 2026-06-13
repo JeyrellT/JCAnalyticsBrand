@@ -31,18 +31,17 @@ jobs:
       - name: Install dependencies
         working-directory: jcanalytics-app
         run: npm ci
-        env:
-          # No descargar Chromium aquí: que un fallo de descarga NUNCA rompa el deploy.
-          PUPPETEER_SKIP_DOWNLOAD: 'true'
 
       - name: Build
         working-directory: jcanalytics-app
         run: npm run build
 
+      # Prerender desacoplado de npm ci: puppeteer se instala solo en este step
+      # (--no-save no toca el lock) y TODO es non-fatal. Si falla, se publica la SPA.
       - name: Prerender (non-fatal — el HTML servido trae el contenido para bots/SEO)
         working-directory: jcanalytics-app
         run: |
-          npx puppeteer browsers install chrome || true
+          npm i puppeteer@^24 --no-save --no-audit --no-fund || true
           node scripts/prerender.mjs || true
 
       - name: Setup Pages
