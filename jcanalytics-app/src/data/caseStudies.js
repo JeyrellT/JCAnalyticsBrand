@@ -1,4 +1,9 @@
-import { Target, Database, ShieldCheck, Receipt } from 'lucide-react';
+import { Target, Database, ShieldCheck, Receipt, Globe } from 'lucide-react';
+import { WEB_PROPERTIES } from './webProperties';
+
+// Capturas 16/9 del hero de cada sitio propio, indexadas por id (el contenedor
+// de imagen del modal de casos es apaisado).
+const sitePreview = Object.fromEntries(WEB_PROPERTIES.map((p) => [p.id, p.shotHero]));
 
 export const casesData = {
   inteligencia: {
@@ -85,6 +90,63 @@ export const casesData = {
         tech: ["Python / Excel", "openpyxl", "Reglas CCSS", "VBA"],
         result: "El cierre quincenal pasó de horas de armado manual a minutos, con cero errores de cálculo de CCSS desde la implementación.",
         image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&q=80&w=800"
+      }
+    ]
+  },
+  web: {
+    title: "Páginas Web y Reservas en Línea",
+    icon: Globe,
+    bgClass: "bg-violet-600",
+    glowClass: "bg-violet-400",
+    accentClass: "bg-violet-500",
+    resultBgClass: "bg-violet-50/50",
+    resultBorderClass: "border-violet-200",
+    resultTextClass: "text-violet-600",
+    cases: [
+      {
+        sector: "Producto propio · Barberías CR",
+        title: "BarberXCR — página propia y reservas automáticas para barberías",
+        problem: "La barbería tica promedio agenda por WhatsApp: el barbero corta, deja la máquina, contesta, apunta la cita en un cuaderno y vuelve. Se pierden citas, se duplican horarios y no queda historial del cliente. Las alternativas eran apps que el cliente tiene que descargar — fricción que la mayoría no pasa.",
+        methodology: {
+          "Define": "Decisión de producto tomada de entrada: cero descargas. Si el cliente necesita instalar algo para reservar, no reserva. Todo tenía que funcionar desde el navegador, en el celular, en menos de 30 segundos.",
+          "Develop": "Cada barbería recibe su propia página con su marca, sus fotos y su catálogo. Detrás, agenda con panel administrativo e historial de clientes con foto del último corte para no repetir la conversación de qué le hicimos la vez pasada.",
+          "Debug": "Los planes se estructuraron según cómo opera realmente el negocio: barbero solo, barbero con asistente de IA, y local con hasta 5 barberos donde cada uno necesita su propia agenda y calendario independiente.",
+          "Deploy": "En producción con prueba de 10 días sin tarjeta, sin contratos, y un plan Business con dominio propio, WhatsApp Business y mensajería automática al cliente."
+        },
+        solution: "Plataforma de reservas vertical para barberías. El dueño arma su página, publica su horario y el cliente elige servicio y hora desde el link — la cita queda agendada sin intervención. El panel muestra la agenda del día, el historial por cliente y, en los planes con IA, responde consultas automáticamente.",
+        tech: ["Web app (SPA)", "Reservas en línea", "Panel administrativo", "Agenda multi-barbero", "Asistente con IA", "WhatsApp Business"],
+        result: "En producción en barberxcr.com. Planes desde ₡10.000/mes con 10 días gratis; reservas ilimitadas 24/7 y agenda independiente por barbero hasta 5 sillas.",
+        image: sitePreview.barberxcr
+      },
+      {
+        sector: "Producto propio · Talleres y vehículos CR",
+        title: "Taller Ticos — historial de mantenimiento certificado por el taller",
+        problem: "Vender un carro usado en Costa Rica es un ejercicio de fe: el vendedor dice que le hizo todos los servicios, pero no lo puede probar. Las facturas se pierden, el cuaderno del taller no se comparte y el comprador termina pagando una revisión aparte. El vehículo bien mantenido vale lo mismo que el descuidado.",
+        methodology: {
+          "Define": "El registro no lo puede hacer el dueño — sería un documento sin valor probatorio. Quien registra es el taller, con fotos, lista de repuestos y firma. Eso convierte el historial en evidencia y no en declaración.",
+          "Develop": "Dos productos en una plataforma: para el dueño, historial gratuito con dashboard de salud del vehículo, recordatorios preventivos por kilometraje y control de RTV/DEKRA; para el taller, órdenes de trabajo digitales, agenda y notificación al cliente por WhatsApp.",
+          "Debug": "El punto delicado era la privacidad: al compartir el historial para vender, no puede filtrarse cédula, teléfono ni dirección. Se resolvió con enlaces que excluyen datos personales, con expiración configurable de 7 a 90 días y revocables por el dueño en cualquier momento.",
+          "Deploy": "En producción, gratis para dueños de vehículo y con plan mensual para talleres, incluyendo lectura del odómetro por IA para evitar digitación y errores de kilometraje."
+        },
+        solution: "Historial de mantenimiento vehicular certificado — el equivalente tico de un reporte de historial de vehículo. El taller documenta cada servicio con evidencia; el dueño acumula un expediente verificable y comparte un enlace limpio cuando va a vender. El taller, a cambio, digitaliza su operación y deja de perder el registro en papel.",
+        tech: ["Web app", "Órdenes de trabajo digitales", "Enlaces con expiración y revocación", "Notificaciones WhatsApp", "Lectura de odómetro con IA"],
+        result: "En producción en tallerticos.com. Gratis para dueños de vehículo; gestión digital para talleres desde ₡20.000/mes, con evidencia fotográfica y recordatorios automáticos por kilometraje.",
+        image: sitePreview.tallerticos
+      },
+      {
+        sector: "Producto propio · Salones de belleza CR",
+        title: "Glow Studio CR — sitio de salón con reserva en línea en 3 pasos",
+        problem: "Un salón de belleza vive de la agenda y del portafolio, y casi siempre tiene los dos en el lugar equivocado: las citas en mensajes directos y los trabajos en historias que desaparecen en 24 horas. La clienta que quiere ver antes/después y reservar a las 10 de la noche no puede hacer ninguna de las dos cosas.",
+        methodology: {
+          "Define": "La reserva tenía que caber en tres decisiones: servicio, día y hora. Cualquier paso extra es una clienta que abandona. Y el precio de entrada de cada servicio tenía que estar visible — esconderlo genera consultas que nadie contesta a tiempo.",
+          "Develop": "Sitio con seis especialidades (cabello, color, uñas, maquillaje, cejas y pestañas, faciales), cada una con precio desde y reserva directa. Portafolio con comparador deslizable de antes/después para que el trabajo se vea sin depender de redes sociales.",
+          "Debug": "Ajuste de la ficha de servicio y del flujo móvil hasta que reservar tomara menos de 30 segundos en celular, con confirmación inmediata y sin llamada de vuelta.",
+          "Deploy": "En producción con horarios publicados, testimonios, reserva y reprogramación en línea 24/7."
+        },
+        solution: "Sitio de salón orientado a convertir: catálogo de servicios con precio de entrada, portafolio comparativo antes/después y reserva en línea de tres pasos con confirmación inmediata. La clienta resuelve sola, a cualquier hora, y el salón deja de administrar la agenda por mensajes.",
+        tech: ["Web app (SPA)", "Reservas en línea", "Comparador antes/después", "Diseño responsive", "Catálogo de servicios"],
+        result: "En producción en glowstudiocr.com. Reserva en línea en unos 30 segundos desde el celular, disponible 24/7, con catálogo de 6 especialidades y portafolio comparativo.",
+        image: sitePreview.glowstudiocr
       }
     ]
   },

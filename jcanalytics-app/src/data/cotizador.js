@@ -68,6 +68,12 @@ export const SERVICES = {
     priceMin: 550, priceMax: 2500, weeksMin: 1, weeksMax: 4,
     bullets: ['Plantillas con tu marca', 'Generación automática desde tus datos', 'Listo para imprimir o enviar'],
   },
+  pagina_web: {
+    label: 'Página web con reservas', icon: 'Globe', accent: 'violet',
+    micro: 'Sitio con tu marca y citas que se agendan solas.',
+    priceMin: 600, priceMax: 3200, weeksMin: 1, weeksMax: 5,
+    bullets: ['Sitio responsive con tu marca y catálogo de servicios', 'Reservas en línea 24/7 con confirmación automática', 'Panel de citas y clientes + publicación con tu dominio'],
+  },
   power_bi: {
     label: 'Dashboard Power BI', icon: 'BarChart3', accent: 'blue',
     micro: 'Reportes vivos conectados a tus datos.',
@@ -108,7 +114,7 @@ export const SERVICES = {
 
 // Orden de las cards (de más sencillo a más complejo)
 export const SERVICE_ORDER = [
-  'analisis_tfg', 'excel_vba', 'doc_generation', 'power_bi',
+  'analisis_tfg', 'excel_vba', 'doc_generation', 'pagina_web', 'power_bi',
   'alteryx_knime', 'power_automate', 'fiscal_planilla', 'python_pipeline', 'software_medida',
 ];
 

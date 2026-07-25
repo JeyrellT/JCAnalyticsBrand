@@ -6,6 +6,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import CustomCursor from './components/ui/CustomCursor';
 import TiltCard from './components/ui/TiltCard';
 import QuoteEstimator from './components/ui/QuoteEstimator';
+import WebProperties from './components/ui/WebProperties';
 
 // Componentes pesados / debajo del fold cargados de forma diferida.
 // - ForecastChart arrastra recharts (~111 kB gzip): el chunk más pesado.
@@ -15,8 +16,10 @@ const HorizontalScrollSection = lazy(() => import('./components/ui/HorizontalScr
 import {
   TrendingUp, Target, CheckCircle, Database, Cpu, BarChart3,
   ArrowRight, ShieldCheck, Zap, Users, Calculator, MessageSquare, ChevronRight,
-  Layers, Settings, MonitorSmartphone, Clock, X, AlertTriangle, TrendingDown, Lightbulb, Menu
+  Layers, Settings, MonitorSmartphone, Clock, X, AlertTriangle, TrendingDown, Lightbulb, Menu,
+  ExternalLink
 } from 'lucide-react';
+import { WEB_PROPERTIES } from './data/webProperties';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -278,6 +281,7 @@ const NAV_LINKS = [
   { label: 'Soluciones', href: '#soluciones' },
   { label: 'Cotizador', href: '#roi' },
   { label: 'Casos', href: '#portfolio' },
+  { label: 'Sitios propios', href: '#sitios' },
   { label: 'Metodología', href: '#metodologia' },
   { label: 'Equipo', href: '#equipo' },
   { label: 'Contacto', href: '#contacto' },
@@ -477,8 +481,8 @@ const App = () => {
             </span>
           </a>
 
-          {/* Nav desktop */}
-          <nav className="hidden lg:flex items-center gap-7" aria-label="Navegación principal">
+          {/* Nav desktop — gap reducido en lg para que los 7 enlaces no desborden */}
+          <nav className="hidden lg:flex items-center gap-5 xl:gap-7" aria-label="Navegación principal">
             {NAV_LINKS.map((l) => (
               <a key={l.href} href={l.href} className="text-sm font-semibold text-slate-300 hover:text-white transition-colors">
                 {l.label}
@@ -931,6 +935,13 @@ const App = () => {
           </FadeInUp>
         </div>
       </section>
+
+      {/* Sitios propios — productos web que construimos y operamos */}
+      {/* Puente de transición claro → oscuro */}
+      <div aria-hidden="true" className="h-16 sm:h-24 bg-gradient-to-b from-slate-50 to-slate-950" />
+      <WebProperties />
+      {/* Puente de transición oscuro → claro */}
+      <div aria-hidden="true" className="h-16 sm:h-24 bg-gradient-to-b from-slate-950 to-white" />
 
       {/* Methodology Visualizer - Recharts AreaChart */}
       <section className="py-16 sm:py-24 md:py-32 bg-white relative overflow-hidden">
@@ -1409,6 +1420,29 @@ const App = () => {
 
       {/* Footer Minimalista Premium */}
       <footer className="py-8 sm:py-12 border-t border-slate-800 text-slate-400 bg-slate-950">
+        {/* Sitios propios — cross-link a nuestras otras marcas */}
+        <div className="max-w-7xl mx-auto px-4 mb-7 sm:mb-9 pb-7 sm:pb-9 border-b border-slate-800/70">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6">
+            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500 shrink-0">
+              Sitios propios
+            </span>
+            <div className="flex flex-wrap justify-center gap-x-5 gap-y-2.5">
+              {WEB_PROPERTIES.map((p) => (
+                <a
+                  key={p.id}
+                  href={p.url}
+                  target="_blank"
+                  rel="noopener"
+                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-300 hover:text-white transition-colors"
+                >
+                  {p.name}
+                  <ExternalLink size={12} className="text-slate-500" aria-hidden="true" />
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
           <div className="flex items-center gap-2.5">
             <img src={import.meta.env.BASE_URL + "LogoMark.webp"} alt="" width={162} height={200} decoding="async" className="h-9 sm:h-10 w-auto object-contain" />

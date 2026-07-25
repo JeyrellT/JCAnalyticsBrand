@@ -1,10 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ShieldCheck, Target, Database, CheckCircle, ArrowRight, Receipt } from 'lucide-react';
+import { ShieldCheck, Target, Database, CheckCircle, ArrowRight, Receipt, Globe } from 'lucide-react';
 import TiltCard from './TiltCard';
 import CaseStudyModal from './CaseStudyModal';
 import { casesData } from '../../data/caseStudies';
+import { WEB_SERVICE_SHOT } from '../../data/webProperties';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -106,6 +107,19 @@ const HorizontalScrollSection = () => {
       img: FISCAL_BG,
       points: ["Factura v4.4 + rechazos de Hacienda", "Planilla y CCSS sin Excel manual"],
       accent: "from-cyan-500/20 to-cyan-600/5",
+    },
+    {
+      id: "web",
+      title: "Páginas Web y Reservas en Línea",
+      desc: "Sitio con tu marca, catálogo de servicios y reservas que se agendan solas. La misma base que corre en nuestros tres sitios propios — podés entrar y probarlos.",
+      icon: <Globe className="text-violet-400" size={28} />,
+      colorClass: "group-hover:text-violet-600",
+      iconBox: "border-violet-400/30",
+      checkColor: "text-violet-500",
+      btnClass: "bg-violet-50 text-violet-600 hover:bg-violet-600 hover:text-white border-violet-100",
+      img: WEB_SERVICE_SHOT,
+      points: ["Reservas 24/7 sin llamadas", "3 sitios propios en producción"],
+      accent: "from-violet-500/20 to-violet-600/5",
     },
     {
       id: "automatizacion",

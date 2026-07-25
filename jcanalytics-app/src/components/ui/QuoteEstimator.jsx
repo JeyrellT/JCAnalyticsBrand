@@ -7,7 +7,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
-  BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settings, Lightbulb, Receipt,
+  BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settings, Lightbulb, Receipt, Globe,
   ArrowRight, Clock, CheckCircle, ShieldCheck, Calculator, MessageSquare, ChevronUp,
 } from 'lucide-react';
 import {
@@ -17,7 +17,7 @@ import { FX_UPDATED } from '../../data/currencies';
 import { useCurrency } from '../../hooks/useCurrency';
 import CurrencySelector from './CurrencySelector';
 
-const ICONS = { BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settings, Lightbulb, Receipt };
+const ICONS = { BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settings, Lightbulb, Receipt, Globe };
 
 const ACCENT = {
   blue:    { card: 'border-blue-500/60 bg-blue-500/10',       icon: 'text-blue-400' },
@@ -28,6 +28,7 @@ const ACCENT = {
   red:     { card: 'border-red-500/60 bg-red-500/10',         icon: 'text-red-400' },
   orange:  { card: 'border-orange-500/60 bg-orange-500/10',   icon: 'text-orange-400' },
   green:   { card: 'border-green-500/60 bg-green-500/10',     icon: 'text-green-400' },
+  violet:  { card: 'border-violet-500/60 bg-violet-500/10',   icon: 'text-violet-400' },
 };
 const DOT = {
   emerald: 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]',

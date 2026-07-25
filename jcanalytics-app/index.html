@@ -18,7 +18,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="description" content="Firma de analítica de datos para PYMEs de la Gran Área Metropolitana (Costa Rica). Dashboards Power BI, pipelines Python y automatización con Power Automate. Resultados visibles en 14 días o no cobramos." />
+    <meta name="description" content="Firma de analítica de datos para PYMEs de la Gran Área Metropolitana (Costa Rica). Dashboards Power BI, pipelines Python, automatización con Power Automate y páginas web con reservas en línea. Resultados visibles en 14 días o no cobramos." />
     <link rel="canonical" href="https://www.jcanalytic.com/" />
     <meta name="theme-color" content="#020617" />
     <title>JC Analytics | Analítica y Automatización para PYMEs en Costa Rica</title>
@@ -27,7 +27,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="JC Analytics" />
     <meta property="og:title" content="JC Analytics — Analítica y Automatización para PYMEs en Costa Rica" />
-    <meta property="og:description" content="Dashboards Power BI, pipelines Python y Power Automate para PYMEs del GAM. Resultados visibles en 14 días o no cobramos." />
+    <meta property="og:description" content="Dashboards Power BI, pipelines Python, Power Automate y páginas web con reservas para PYMEs del GAM. Resultados visibles en 14 días o no cobramos." />
     <meta property="og:image" content="https://www.jcanalytic.com/og-cover.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -37,7 +37,7 @@
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="JC Analytics — Analítica y Automatización para PYMEs en Costa Rica" />
-    <meta name="twitter:description" content="Dashboards Power BI, pipelines Python y Power Automate para PYMEs del GAM." />
+    <meta name="twitter:description" content="Dashboards Power BI, pipelines Python, Power Automate y páginas web con reservas para PYMEs del GAM." />
     <meta name="twitter:image" content="https://www.jcanalytic.com/og-cover.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -61,7 +61,7 @@
           "@type": ["ProfessionalService", "Organization"],
           "@id": "https://www.jcanalytic.com/#org",
           "name": "JC Analytics",
-          "description": "Firma de analítica de datos y automatización de procesos para PYMEs de la Gran Área Metropolitana de Costa Rica. Dashboards Power BI, pipelines Python, Power Automate y cumplimiento fiscal (factura electrónica v4.4, CCSS).",
+          "description": "Firma de analítica de datos y automatización de procesos para PYMEs de la Gran Área Metropolitana de Costa Rica. Dashboards Power BI, pipelines Python, Power Automate, cumplimiento fiscal (factura electrónica v4.4, CCSS) y desarrollo de páginas web con reservas en línea.",
           "url": "https://www.jcanalytic.com/",
           "logo": "https://www.jcanalytic.com/Logo.png",
           "image": "https://www.jcanalytic.com/og-cover.png",
@@ -90,9 +90,77 @@
               { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Dashboards Power BI", "serviceType": "Business Intelligence" } },
               { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Automatización de procesos (Power Automate / Python)", "serviceType": "Automatización" } },
               { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Automatización fiscal y de planilla CR (factura electrónica v4.4, CCSS)", "serviceType": "Cumplimiento tributario" } },
+              {
+                "@type": "Offer",
+                "itemOffered": {
+                  "@type": "Service",
+                  "name": "Páginas web con reservas en línea",
+                  "serviceType": "Diseño y desarrollo web",
+                  "description": "Sitio responsive con marca propia, catálogo de servicios, reservas en línea 24/7 y panel de administración de citas y clientes.",
+                  "areaServed": { "@type": "Country", "name": "Costa Rica" },
+                  "provider": { "@id": "https://www.jcanalytic.com/#org" }
+                }
+              },
               { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Software a la medida", "serviceType": "Desarrollo de software" } }
             ]
-          }
+          },
+          "brand": [
+            { "@type": "Brand", "name": "BarberXCR", "url": "https://barberxcr.com/" },
+            { "@type": "Brand", "name": "Taller Ticos", "url": "https://www.tallerticos.com/" },
+            { "@type": "Brand", "name": "Glow Studio CR", "url": "https://glowstudiocr.com/" }
+          ]
+        },
+        {
+          "@type": "ItemList",
+          "@id": "https://www.jcanalytic.com/#sitios-propios",
+          "name": "Sitios y productos digitales propios de JC Analytics",
+          "description": "Productos web que JC Analytics diseña, desarrolla, opera y mantiene en producción.",
+          "numberOfItems": 3,
+          "itemListOrder": "https://schema.org/ItemListUnordered",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "item": {
+                "@type": "WebSite",
+                "@id": "https://barberxcr.com/#website",
+                "name": "BarberXCR",
+                "url": "https://barberxcr.com/",
+                "description": "Plataforma de reservas para barberías de Costa Rica: página propia con la marca del negocio, reservas automáticas 24/7, agenda independiente por barbero e historial de clientes.",
+                "inLanguage": "es-CR",
+                "creator": { "@id": "https://www.jcanalytic.com/#org" },
+                "publisher": { "@id": "https://www.jcanalytic.com/#org" }
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "item": {
+                "@type": "WebSite",
+                "@id": "https://www.tallerticos.com/#website",
+                "name": "Taller Ticos",
+                "url": "https://www.tallerticos.com/",
+                "description": "Historial de mantenimiento vehicular certificado por el taller, con órdenes de trabajo digitales, evidencia fotográfica, enlaces para compartir con expiración y recordatorios preventivos por kilometraje.",
+                "inLanguage": "es-CR",
+                "creator": { "@id": "https://www.jcanalytic.com/#org" },
+                "publisher": { "@id": "https://www.jcanalytic.com/#org" }
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "item": {
+                "@type": "WebSite",
+                "@id": "https://glowstudiocr.com/#website",
+                "name": "Glow Studio CR",
+                "url": "https://glowstudiocr.com/",
+                "description": "Sitio de salón de belleza con reserva en línea en tres pasos, catálogo de seis especialidades con precio de entrada y portafolio comparativo de antes y después.",
+                "inLanguage": "es-CR",
+                "creator": { "@id": "https://www.jcanalytic.com/#org" },
+                "publisher": { "@id": "https://www.jcanalytic.com/#org" }
+              }
+            }
+          ]
         },
         {
           "@type": "FAQPage",
@@ -117,6 +185,16 @@
               "@type": "Question",
               "name": "¿Pueden automatizar la planilla y el cálculo de la CCSS?",
               "acceptedAnswer": { "@type": "Answer", "text": "Sí. Automatizamos el cierre de planilla y el cálculo de deducciones de CCSS, con validaciones que detectan inconsistencias y el archivo listo para pago y para el SICERE." }
+            },
+            {
+              "@type": "Question",
+              "name": "¿Hacen páginas web?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Sí, es uno de nuestros servicios: sitios con marca propia, catálogo de servicios y reservas en línea 24/7 con panel para administrar citas y clientes. Operamos tres sitios propios donde podés ver el resultado en vivo: barberxcr.com (barberías), tallerticos.com (talleres y vehículos) y glowstudiocr.com (salones de belleza)." }
+            },
+            {
+              "@type": "Question",
+              "name": "¿Cuánto cuesta una página web con reservas?",
+              "acceptedAnswer": { "@type": "Answer", "text": "El rango preliminar va de unos US$550 (un sitio puntual) a unos US$3.500 (sitio completo con reservas y lógica avanzada), con entrega típica de 2 a 7 semanas. Podés estimar tu caso en el cotizador del sitio; la cifra final se cierra en una primera sesión sin costo." }
             },
             {
               "@type": "Question",
