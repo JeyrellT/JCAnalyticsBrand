@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect, useMemo, lazy, Suspense } from 'rea
 import { motion, AnimatePresence, useScroll, useTransform, useSpring, useReducedMotion } from 'framer-motion';
 import Lenis from 'lenis';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import CustomCursor from './components/ui/CustomCursor';
 import TiltCard from './components/ui/TiltCard';
 import QuoteEstimator from './components/ui/QuoteEstimator';
@@ -10,9 +9,9 @@ import WebProperties from './components/ui/WebProperties';
 
 // Componentes pesados / debajo del fold cargados de forma diferida.
 // - ForecastChart arrastra recharts (~111 kB gzip): el chunk más pesado.
-// - HorizontalScrollSection arrastra CaseStudyModal y su data.
+// - ServicesGrid arrastra CaseStudyModal y su data.
 const ForecastChart = lazy(() => import('./components/ui/ForecastChart'));
-const HorizontalScrollSection = lazy(() => import('./components/ui/HorizontalScrollSection'));
+const ServicesGrid = lazy(() => import('./components/ui/ServicesGrid'));
 import {
   TrendingUp, Target, CheckCircle, Database, Cpu, BarChart3,
   ArrowRight, ShieldCheck, Zap, Users, Calculator, MessageSquare, ChevronRight,
@@ -21,7 +20,10 @@ import {
 } from 'lucide-react';
 import { WEB_PROPERTIES } from './data/webProperties';
 
-gsap.registerPlugin(ScrollTrigger);
+// gsap se usa solo por su ticker, para conducir el rAF de Lenis en un único
+// loop. ScrollTrigger se retiró (jul-26) al reemplazar el carrusel horizontal
+// por la grilla de servicios: ya no queda ningún trigger en la app y el plugin
+// pesaba ~40 kB en el chunk de vendor.
 
 // Fade In Up Reusable Component
 const FadeInUp = ({ children, delay = 0, className = "" }) => {
@@ -350,9 +352,7 @@ const App = () => {
       smoothWheel: true,
     });
 
-    // Sincroniza GSAP ScrollTrigger con la posición suavizada de Lenis
-    // y conduce el rAF de Lenis desde el ticker de GSAP (un solo loop, sin leak).
-    lenis.on('scroll', ScrollTrigger.update);
+    // Conduce el rAF de Lenis desde el ticker de GSAP (un solo loop, sin leak).
     const tickerCallback = (time) => lenis.raf(time * 1000);
     gsap.ticker.add(tickerCallback);
     gsap.ticker.lagSmoothing(0);
@@ -837,10 +837,10 @@ const App = () => {
         </div>
       </section>
 
-      {/* Main Pillars - GSAP Pinned Horizontal Scroll */}
+      {/* Servicios — grilla plana (antes: carrusel horizontal con pinning GSAP) */}
       <div id="soluciones" className="scroll-mt-20">
         <Suspense fallback={<div className="min-h-[60vh]" aria-hidden="true" />}>
-          <HorizontalScrollSection />
+          <ServicesGrid />
         </Suspense>
       </div>
 
