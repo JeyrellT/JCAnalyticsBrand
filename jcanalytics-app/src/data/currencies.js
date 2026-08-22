@@ -22,10 +22,15 @@ export const CURRENCIES = {
 
 export const CURRENCY_ORDER = ['USD', 'CRC', 'MXN', 'COP', 'CLP', 'PEN', 'ARS', 'GTQ', 'PAB', 'BRL', 'UYU'];
 
-// Redondeo adaptivo: monedas de alta inflación suben roundTo ×10 sobre el umbral.
+// Redondeo adaptivo en ambas direcciones:
+// · Alta inflación: roundTo ×10 sobre el umbral.
+// · Montos pequeños (el cotizador arranca en $30): baja el paso ÷10 hasta que
+//   el monto sea ≥ 10× el paso — si no, un floor con roundTo 50 convertiría
+//   $30 en $0.
 function adaptiveRoundTo(amount, currency) {
-  const base = currency.roundTo;
+  let base = currency.roundTo;
   if (currency.scaleThreshold && amount > currency.scaleThreshold) return base * 10;
+  while (base > 1 && amount < base * 10) base = Math.max(1, base / 10);
   return base;
 }
 

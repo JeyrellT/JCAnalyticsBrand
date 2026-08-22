@@ -1,21 +1,23 @@
 // ============================================================================
 //  src/data/cotizador.js
 //  COTIZADOR · modelo simple por banda de precio · JC Analytics
-//  Precios REALES del dueño: lo más sencillo = $500, tope = $6.000 (USD).
-//  Cada servicio tiene su propia sub-banda dentro de [500, 6000]; el tamaño y
-//  la complejidad interpolan dentro de esa sub-banda. Todo clamp a [500,6000].
+//  Precios REALES del dueño (ago-26): entrada accesible por servicio —
+//  Excel $30 · documentos $40 · tesis/proyectos $50 · Alteryx/KNIME $65 ·
+//  Power Platform $85 · Power BI $125 · web con reservas $900 ·
+//  software a la medida $2.000. Tope global $6.000 (USD).
+//  Cada servicio tiene su sub-banda [priceMin, priceMax]; tamaño y complejidad
+//  interpolan dentro de ella. El extremo bajo NUNCA baja del "desde" publicado.
 //  El cliente ve SOLO el rango (USD/su moneda) + ventana de entrega.
 // ============================================================================
 
 export const CONFIG = {
-  PRICE_MIN: 500,        // piso absoluto (lo más sencillo)
+  PRICE_MIN: 30,         // piso absoluto (Excel puntual)
   PRICE_MAX: 6000,       // techo absoluto
-  USD_ROUND: 50,         // redondeo de presentación
   RANGE_LOW: 0.92,       // extremo bajo del rango = medio * 0.92
   RANGE_HIGH: 1.10,      // extremo alto = medio * 1.10
   SIZE_WEIGHT: 0.55,     // peso del "tamaño" en el score (0..1)
   CX_WEIGHT: 0.45,       // peso de la "complejidad" en el score
-  BACKLOG_WEEKS: 1.0,    // cola de arranque sumada a la entrega
+  BACKLOG_WEEKS: 0.5,    // cola de arranque sumada a la entrega
   URGENCY: {
     tranquila: { price: 1.0,  speed: 1.0 },
     normal:    { price: 1.0,  speed: 1.0 },
@@ -50,53 +52,53 @@ export const URGENCY_UI = [
 // ============================================================================
 
 export const SERVICES = {
-  analisis_tfg: {
-    label: 'Análisis puntual / TFG', icon: 'Lightbulb', accent: 'green',
-    micro: 'Limpieza de datos + hallazgos, entrega única.',
-    priceMin: 500, priceMax: 2000, weeksMin: 1, weeksMax: 3,
-    bullets: ['Limpieza y orden de tus datos', 'Preguntas de negocio respondidas', 'Informe de hallazgos + recomendaciones'],
-  },
   excel_vba: {
     label: 'Excel / VBA', icon: 'Layers', accent: 'amber',
-    micro: 'Macros y reportes que se llenan solos.',
-    priceMin: 500, priceMax: 2500, weeksMin: 1, weeksMax: 4,
+    micro: 'Macros y reportes que se llenan solos. Desde $30.',
+    priceMin: 30, priceMax: 400, weeksMin: 0.5, weeksMax: 3,
     bullets: ['Automatización de macros y reportes', 'Compatibilidad entre versiones de Office', 'Plantilla reutilizable + instrucciones'],
   },
   doc_generation: {
     label: 'Generación de documentos', icon: 'Settings', accent: 'orange',
-    micro: 'Facturas, actas y PPTX en lote desde tus datos.',
-    priceMin: 550, priceMax: 2500, weeksMin: 1, weeksMax: 4,
+    micro: 'Facturas, actas y PPTX en lote desde tus datos. Desde $40.',
+    priceMin: 40, priceMax: 500, weeksMin: 0.5, weeksMax: 3,
     bullets: ['Plantillas con tu marca', 'Generación automática desde tus datos', 'Listo para imprimir o enviar'],
   },
-  pagina_web: {
-    label: 'Página web con reservas', icon: 'Globe', accent: 'violet',
-    micro: 'Sitio con tu marca y citas que se agendan solas.',
-    priceMin: 600, priceMax: 3200, weeksMin: 1, weeksMax: 5,
-    bullets: ['Sitio responsive con tu marca y catálogo de servicios', 'Reservas en línea 24/7 con confirmación automática', 'Panel de citas y clientes + publicación con tu dominio'],
-  },
-  power_bi: {
-    label: 'Dashboard Power BI', icon: 'BarChart3', accent: 'blue',
-    micro: 'Reportes vivos conectados a tus datos.',
-    priceMin: 800, priceMax: 4000, weeksMin: 2, weeksMax: 6,
-    bullets: ['Conexión a tus fuentes de datos', 'Modelo de datos + medidas DAX', 'Publicación y acceso por rol (RLS)'],
+  analisis_tfg: {
+    label: 'Tesis y proyectos', icon: 'Lightbulb', accent: 'green',
+    micro: 'Análisis de datos para tesis, TFG y proyectos. Desde $50, sube según dificultad.',
+    priceMin: 50, priceMax: 650, weeksMin: 0.5, weeksMax: 4,
+    bullets: ['Limpieza y orden de tus datos', 'Preguntas de investigación respondidas', 'Informe de hallazgos + recomendaciones'],
   },
   alteryx_knime: {
     label: 'Alteryx / KNIME', icon: 'Database', accent: 'cyan',
-    micro: 'Flujos de datos y conciliaciones sin código.',
-    priceMin: 900, priceMax: 4200, weeksMin: 2, weeksMax: 6,
+    micro: 'Flujos de datos y conciliaciones sin código. Desde $65.',
+    priceMin: 65, priceMax: 900, weeksMin: 1, weeksMax: 5,
     bullets: ['Cruces y joins entre datasets', 'Reglas de tolerancia y conciliación', 'Workflow documentado y reejecutable'],
   },
   power_automate: {
-    label: 'Power Automate / SharePoint', icon: 'Zap', accent: 'emerald',
-    micro: 'Flujos que trabajan solos 24/7.',
-    priceMin: 900, priceMax: 4500, weeksMin: 2, weeksMax: 7,
+    label: 'Power Platform', icon: 'Zap', accent: 'emerald',
+    micro: 'Power Automate, Apps y SharePoint: flujos que trabajan solos 24/7. Desde $85.',
+    priceMin: 85, priceMax: 1200, weeksMin: 1, weeksMax: 6,
     bullets: ['Flujos automáticos entre sistemas', 'Aprobaciones y lógica condicional', 'Manejo de errores + documentación'],
+  },
+  power_bi: {
+    label: 'Dashboard Power BI', icon: 'BarChart3', accent: 'blue',
+    micro: 'Reportes vivos conectados a tus datos. Desde $125.',
+    priceMin: 125, priceMax: 1500, weeksMin: 1, weeksMax: 6,
+    bullets: ['Conexión a tus fuentes de datos', 'Modelo de datos + medidas DAX', 'Publicación y acceso por rol (RLS)'],
   },
   fiscal_planilla: {
     label: 'Fiscal y planilla CR', icon: 'Receipt', accent: 'cyan',
     micro: 'Factura electrónica v4.4, CCSS y planilla — validado para Costa Rica.',
-    priceMin: 700, priceMax: 4500, weeksMin: 2, weeksMax: 7,
+    priceMin: 150, priceMax: 2500, weeksMin: 2, weeksMax: 7,
     bullets: ['Factura electrónica v4.4 + rechazos de Hacienda', 'Cálculo de CCSS y cierre de planilla', 'Validado contra la normativa tributaria CR'],
+  },
+  pagina_web: {
+    label: 'Página web con reservas', icon: 'Globe', accent: 'violet',
+    micro: 'Sitio personalizado con tu marca y citas que se agendan solas. Desde $900.',
+    priceMin: 900, priceMax: 3200, weeksMin: 2, weeksMax: 6,
+    bullets: ['Sitio responsive con tu marca y catálogo de servicios', 'Reservas en línea 24/7 con confirmación automática', 'Panel de citas y clientes + publicación con tu dominio'],
   },
   python_pipeline: {
     label: 'Pipeline Python', icon: 'Cpu', accent: 'purple',
@@ -106,16 +108,16 @@ export const SERVICES = {
   },
   software_medida: {
     label: 'Software a la medida', icon: 'MonitorSmartphone', accent: 'red',
-    micro: 'Web o app construida desde cero.',
+    micro: 'Web o app construida desde cero. A partir de $2.000.',
     priceMin: 2000, priceMax: 5600, weeksMin: 5, weeksMax: 14, isMajor: true,
     bullets: ['Interfaz + lógica + base de datos', 'Integraciones con tus sistemas', 'Despliegue + manual de uso'],
   },
 };
 
-// Orden de las cards (de más sencillo a más complejo)
+// Orden de las cards (de más accesible a más complejo, por precio de entrada)
 export const SERVICE_ORDER = [
-  'analisis_tfg', 'excel_vba', 'doc_generation', 'pagina_web', 'power_bi',
-  'alteryx_knime', 'power_automate', 'fiscal_planilla', 'python_pipeline', 'software_medida',
+  'excel_vba', 'doc_generation', 'analisis_tfg', 'alteryx_knime', 'power_automate',
+  'power_bi', 'fiscal_planilla', 'pagina_web', 'python_pipeline', 'software_medida',
 ];
 
 // Garantías SIEMPRE presentes en "qué incluye"
@@ -126,13 +128,20 @@ export const GUARANTEE_BULLETS = [
 ];
 
 // ============================================================================
-//  estimate()  — devuelve rango USD (clamp a [500,6000]) + ventana de entrega
+//  estimate()  — devuelve rango USD + ventana de entrega
+//  · Redondeo ADAPTIVO: $5 bajo $150, $10 bajo $400, $25 bajo $1.500, $50 arriba
+//    (con un piso de $30 el redondeo fijo de $50 aplastaría los precios chicos).
+//  · El extremo bajo se ancla al priceMin del servicio: el rango nunca muestra
+//    menos que el "desde" publicado.
 // ============================================================================
 
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
-const round = (n, step) => Math.round(n / step) * step;
 const floorHalf = (n) => Math.floor(n * 2) / 2;
 const ceilHalf = (n) => Math.ceil(n * 2) / 2;
+
+// Paso de redondeo según magnitud del monto
+const roundStep = (v) => (v < 150 ? 5 : v < 400 ? 10 : v < 1500 ? 25 : 50);
+const roundAdaptive = (v) => Math.round(v / roundStep(v)) * roundStep(v);
 
 /**
  * @param {Object} input { service, size (0..1), complexityScore (0..1), urgency }
@@ -150,9 +159,8 @@ export function estimate(input) {
   const score = clamp(cfg.SIZE_WEIGHT * size + cfg.CX_WEIGHT * cx, 0, 1);
   const mid = (s.priceMin + score * (s.priceMax - s.priceMin)) * urg.price;
 
-  const clampPrice = (v) => clamp(v, cfg.PRICE_MIN, cfg.PRICE_MAX);
-  const low = clampPrice(round(mid * cfg.RANGE_LOW, cfg.USD_ROUND));
-  const high = clampPrice(round(mid * cfg.RANGE_HIGH, cfg.USD_ROUND));
+  const low = clamp(roundAdaptive(mid * cfg.RANGE_LOW), s.priceMin, cfg.PRICE_MAX);
+  const high = clamp(roundAdaptive(mid * cfg.RANGE_HIGH), low, cfg.PRICE_MAX);
 
   // Ventana de entrega (semanas)
   const wMid = s.weeksMin + score * (s.weeksMax - s.weeksMin);

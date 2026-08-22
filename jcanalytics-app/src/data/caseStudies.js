@@ -176,21 +176,6 @@ export const casesData = {
         image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=800"
       },
       {
-        sector: "Corporación Consumo Masivo",
-        title: "Sistema de Notificaciones con Escalado (Transfer Pricing)",
-        problem: "El equipo manejaba tareas de cumplimiento con entidades fiscales de múltiples países. Las fechas límite se perdían porque no había un sistema de alertas. Los recordatorios eran manuales, dependían de que alguien revisara el Excel correcto el día correcto.",
-        methodology: {
-          "Define": "Mapeo de todos los tipos de tarea (documentación, filing, revisión, aprobación) y sus respectivos SLAs. Identificación de los 3 actores (responsable, supervisor, director regional).",
-          "Develop": "Flow en Power Automate con trigger recurrente diario. Lógica condicional: si días restantes > 14 → notificación informativa al responsable. Si 7–14 → advertencia al responsable + copia al supervisor. Si < 7 → alerta crítica a todos los niveles + Teams adaptative card con botón de acción directa.",
-          "Debug": "Problema resuelto: timeout de red en llamadas a SharePoint List dentro del flow. Solución: chunking de la consulta en lotes de 100 registros con retry logic.",
-          "Deploy": "Flow en producción. SharePoint Task Hub como fuente única de verdad para todas las tareas."
-        },
-        solution: "Sistema de notificaciones automáticas con 3 niveles de urgencia según días restantes para el deadline. Integrado con SharePoint como fuente de datos y Power Automate como motor de despacho. Las alertas llegaban directamente a Teams con formato diferenciado por urgencia.",
-        tech: ["Power Automate", "SharePoint Lists", "MS Teams Adaptive Cards", "Power Apps"],
-        result: "Cero deadlines perdidos desde implementación. El tiempo de seguimiento manual pasó de 45 minutos diarios a cero.",
-        image: "https://images.unsplash.com/photo-1596526131083-e8c633c948d2?auto=format&fit=crop&q=80&w=800"
-      },
-      {
         sector: "Empresa Contable",
         title: "Pipeline de Limpieza QuickBooks",
         problem: "Los exports de QuickBooks llegaban con formato inconsistente: nombres de cuentas con variaciones tipográficas, transacciones duplicadas por doble sincronización, montos en formato texto con símbolos de moneda mixtos (₡, $, USD). Limpiar el archivo antes de cualquier análisis tomaba 1.5 horas por export.",
@@ -233,15 +218,6 @@ export const casesData = {
         tech: ["Excel", "SQL Básico", "Power BI", "Python (pandas)", "Jupyter Notebooks"],
         result: "Meses de entrenamiento resultaron en 3 proyectos documentados per cápita, con datos reales y dashboards 100% operativos en el portafolio final.",
         image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=800"
-      },
-      {
-        sector: "Corporación Consumo Masivo",
-        title: "Documentación Técnica y SOPs de Automatización",
-        problem: "El sistema automatizado de gestión de tareas que se construyó en Power Apps / SharePoint no tenía documentación. Si la persona que lo operaba salía de la empresa, el conocimiento se iba con ella.",
-        solution: "Manual técnico completo: arquitectura del sistema, estructura de datos en SharePoint, lógica de los flows en Power Automate, guía de troubleshooting para los 8 errores más comunes, y manual estándar de operaciones (SOP) de onboarding para nuevos usuarios.",
-        tech: ["SharePoint", "Power Apps", "Power Automate", "Markdown"],
-        result: "Onboarding de nuevos usuarios reducido drásticamente: de 3 días de explicaciones manuales a tan solo 4 horas de lectura estructurada del manual.",
-        image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=800"
       }
     ]
   }

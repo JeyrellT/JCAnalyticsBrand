@@ -38,45 +38,48 @@ const FISCAL_BG =
 const IMG_FALLBACK =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10'%3E%3Crect width='100%25' height='100%25' fill='%23e2e8f0'/%3E%3C/svg%3E";
 
+// Cada card se describe por la dependencia que elimina, no por la herramienta
+// que usa (las herramientas son mecanismo interno; el cliente compra el cambio
+// de estado operacional).
 const SERVICES = [
   {
     id: 'inteligencia',
-    tag: 'Datos',
-    title: 'Inteligencia de Datos',
-    desc: 'Dashboard ejecutivo de ventas e inventario, cartera de clientes con aging y forecast de demanda.',
+    tag: 'Decisión',
+    title: 'Sistemas de Decisión',
+    desc: 'La decisión que hoy espera a que alguien actualice el Excel: ventas, inventario, cartera y margen en una sola fuente, actualizados sin intervención humana.',
     icon: Target,
     accent: 'text-blue-600',
     dot: 'bg-blue-500',
     img: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800',
-    points: ['Assessment: $500', 'Implementación desde $1,500'],
+    points: ['Dashboard ejecutivo con fuente única de verdad', 'Cartera con aging y prioridades automáticas'],
   },
   {
     id: 'fiscal',
-    tag: 'Fiscal CR',
+    tag: 'Cumplimiento CR',
     title: 'Cumplimiento Fiscal y Planilla',
-    desc: 'Factura electrónica v4.4, rechazos de Hacienda, CCSS y cierre de planilla — validado para Costa Rica.',
+    desc: 'Factura electrónica v4.4, rechazos de Hacienda, CCSS y planilla: las reglas del país convertidas en validaciones automáticas, no en memoria institucional.',
     icon: Receipt,
     accent: 'text-cyan-600',
     dot: 'bg-cyan-500',
     img: FISCAL_BG,
-    points: ['Factura v4.4 + rechazos de Hacienda', 'Planilla y CCSS sin Excel manual'],
+    points: ['Rechazos de Hacienda detectados el mismo día', 'Planilla y CCSS sin fórmulas frágiles'],
   },
   {
     id: 'web',
     tag: 'Web',
-    title: 'Páginas Web y Reservas',
-    desc: 'Sitio con tu marca, catálogo de servicios y reservas que se agendan solas. La misma base de nuestros tres sitios propios.',
+    title: 'Plataformas Web y Reservas',
+    desc: 'Sitio con tu marca y una agenda que se llena sola, sin llamadas ni mensajes. La misma base técnica que corre en nuestros tres productos propios.',
     icon: Globe,
     accent: 'text-violet-600',
     dot: 'bg-violet-500',
     img: WEB_SERVICE_SHOT,
-    points: ['Reservas 24/7 sin llamadas', '3 sitios propios en producción'],
+    points: ['Reservas 24/7 sin depender de quien contesta', '3 productos propios en producción como prueba'],
   },
   {
     id: 'community',
     tag: 'Redes',
     title: 'Community Manager',
-    desc: 'Gestión de tus redes con la misma disciplina de datos del resto: calendario de contenido, publicación, respuesta a mensajes y reporte de lo que funcionó.',
+    desc: 'Tus redes gestionadas con la misma disciplina de sistemas: calendario de contenido, publicación, respuesta a mensajes y reporte mensual de lo que funcionó.',
     icon: Megaphone,
     accent: 'text-pink-600',
     dot: 'bg-pink-500',
@@ -93,23 +96,23 @@ const SERVICES = [
     id: 'automatizacion',
     tag: 'Automatización',
     title: 'Automatización de Procesos',
-    desc: 'Cierre de reportes automático, alertas de SLA por Teams o WhatsApp y limpieza de datos desde tu ERP.',
+    desc: 'El proceso que alguien arma a mano cada semana, convertido en pipeline con validaciones: se ejecuta solo y avisa cuando algo no cuadra.',
     icon: Database,
     accent: 'text-orange-600',
     dot: 'bg-orange-500',
     img: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?auto=format&fit=crop&q=80&w=800',
-    points: ['Proceso de 3 h reducido a 30 s', 'Alertas automáticas'],
+    points: ['Proceso de 3 h reducido a 30 s (caso documentado)', 'Alertas automáticas por Teams o WhatsApp'],
   },
   {
     id: 'transferencia',
-    tag: 'Capacitación',
+    tag: 'Autonomía',
     title: 'Transferencia de Conocimiento',
-    desc: 'Capacitación en Power BI y Python para tu equipo, con SOPs y documentación del modelo de datos.',
+    desc: 'La anti-dependencia aplicada a nosotros mismos: capacitación, SOPs y documentación para que tu equipo opere y mantenga el sistema sin llamarnos.',
     icon: ShieldCheck,
     accent: 'text-emerald-600',
     dot: 'bg-emerald-500',
     img: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=800',
-    points: ['Capacitación de tu equipo en CR', 'Mantenimiento autónomo'],
+    points: ['Capacitación con tus datos, no con demos', 'Tu equipo mantiene el sistema solo'],
   },
 ];
 
@@ -136,14 +139,14 @@ export default function ServicesGrid() {
             className="max-w-2xl mb-9 sm:mb-12"
           >
             <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white text-slate-600 rounded-full text-[11px] font-mono font-medium uppercase tracking-[0.16em] mb-4 border border-slate-200">
-              <Target size={12} className="text-blue-500" /> Servicios
+              <Target size={12} className="text-blue-500" /> Sistemas que construimos
             </div>
             <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-[2.75rem] font-bold text-slate-900 mb-4 tracking-tight leading-[1.1]">
-              Qué hacemos, en concreto.
+              Seis maneras de convertir tu operación en sistema.
             </h2>
             <p className="font-sans text-base sm:text-lg text-slate-500 leading-relaxed">
-              Seis líneas de servicio con entregables definidos. Cada una abre los casos reales donde ya la aplicamos —
-              sin catálogo genérico y sin letra chica.
+              Cada línea ataca una dependencia concreta — un proceso que hoy vive en una persona, un Excel o una rutina
+              manual. Y cada card abre los casos reales donde ya la eliminamos.
             </p>
           </motion.div>
 
@@ -156,9 +159,16 @@ export default function ServicesGrid() {
                   key={s.id}
                   initial={reduce ? false : { opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
+                  whileHover={reduce ? undefined : { y: -5 }}
                   viewport={{ once: true, margin: '-40px' }}
                   transition={reduce ? { duration: 0 } : { duration: 0.5, delay: Math.min(idx, 3) * 0.06 }}
-                  className="group flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden transition-all duration-300 hover:border-slate-300 hover:shadow-[0_12px_30px_-18px_rgba(15,23,42,0.25)]"
+                  onPointerMove={(e) => {
+                    const el = e.currentTarget;
+                    const r = el.getBoundingClientRect();
+                    el.style.setProperty('--mx', `${((e.clientX - r.left) / r.width) * 100}%`);
+                    el.style.setProperty('--my', `${((e.clientY - r.top) / r.height) * 100}%`);
+                  }}
+                  className="spotlight group flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden transition-all duration-300 hover:border-slate-300 hover:shadow-[0_16px_40px_-18px_rgba(15,23,42,0.3)]"
                 >
                   {/* Imagen */}
                   <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">

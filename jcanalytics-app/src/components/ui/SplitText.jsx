@@ -51,24 +51,32 @@ const SplitText = ({ text, className = "", delay = 0 }) => {
   };
 
   return (
-    <motion.div
-      style={{ overflow: "hidden", display: "inline-flex", flexWrap: "wrap", gap: "0.25em", perspective: 800 }}
-      variants={container}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-50px" }}
-      className={className}
-    >
-      {words.map((word, index) => (
-        <span key={index} style={{ overflow: "hidden", display: "inline-flex", transformStyle: 'preserve-3d' }}>
-          {Array.from(word).map((char, charIndex) => (
-            <motion.span variants={child} key={charIndex} style={{ display: "inline-block", willChange: 'transform, opacity, filter', transformOrigin: '50% 100%' }}>
-              {char}
-            </motion.span>
-          ))}
-        </span>
-      ))}
-    </motion.div>
+    // span (no div): HTML válido dentro de h1/h2/p.
+    // El texto real vive en un span sr-only (lectores de pantalla + SEO); la
+    // versión animada por caracteres va aria-hidden — sin esto, el textContent
+    // del título sería "Procesosquehoy..." porque el espaciado es gap de flex.
+    <>
+      <span className="sr-only">{text}</span>
+      <motion.span
+        aria-hidden="true"
+        style={{ overflow: "hidden", display: "inline-flex", flexWrap: "wrap", gap: "0.25em", perspective: 800 }}
+        variants={container}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-50px" }}
+        className={className}
+      >
+        {words.map((word, index) => (
+          <span key={index} style={{ overflow: "hidden", display: "inline-flex", transformStyle: 'preserve-3d' }}>
+            {Array.from(word).map((char, charIndex) => (
+              <motion.span variants={child} key={charIndex} style={{ display: "inline-block", willChange: 'transform, opacity, filter', transformOrigin: '50% 100%' }}>
+                {char}
+              </motion.span>
+            ))}
+          </span>
+        ))}
+      </motion.span>
+    </>
   );
 };
 

@@ -1,22 +1,24 @@
-import React, { useState, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
-import { motion, AnimatePresence, useScroll, useTransform, useSpring, useReducedMotion } from 'framer-motion';
+import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring, useReducedMotion, useInView, animate } from 'framer-motion';
 import Lenis from 'lenis';
 import gsap from 'gsap';
 import CustomCursor from './components/ui/CustomCursor';
 import TiltCard from './components/ui/TiltCard';
 import QuoteEstimator from './components/ui/QuoteEstimator';
 import WebProperties from './components/ui/WebProperties';
+import SplitText from './components/ui/SplitText';
 
 // Componentes pesados / debajo del fold cargados de forma diferida.
-// - ForecastChart arrastra recharts (~111 kB gzip): el chunk más pesado.
 // - ServicesGrid arrastra CaseStudyModal y su data.
-const ForecastChart = lazy(() => import('./components/ui/ForecastChart'));
+// (ForecastChart/recharts se retiró en ago-26 junto con la sección de
+//  "analítica predictiva": su cifra de precisión no tenía caso documentado
+//  detrás y contradecía el principio "probamos antes de afirmar".)
 const ServicesGrid = lazy(() => import('./components/ui/ServicesGrid'));
 import {
-  TrendingUp, Target, CheckCircle, Database, Cpu, BarChart3,
-  ArrowRight, ShieldCheck, Zap, Users, Calculator, MessageSquare, ChevronRight,
+  Target, CheckCircle, Database, Cpu, BarChart3,
+  ArrowRight, ShieldCheck, Users, Calculator, MessageSquare, ChevronRight, ChevronDown,
   Layers, Settings, MonitorSmartphone, Clock, X, AlertTriangle, TrendingDown, Lightbulb, Menu,
-  ExternalLink
+  ExternalLink, Compass, Eye, MapPin, Check
 } from 'lucide-react';
 import { WEB_PROPERTIES } from './data/webProperties';
 
@@ -38,6 +40,61 @@ const FadeInUp = ({ children, delay = 0, className = "" }) => {
     >
       {children}
     </motion.div>
+  );
+};
+
+// ── CountUp ───────────────────────────────────────────────────────────────────
+// Contador animado: arranca mostrando el valor FINAL (así el HTML prerenderizado
+// y los bots nunca ven "0"), y al entrar en viewport anima 0 → valor.
+// Con reduced-motion queda el valor final estático.
+const CountUp = ({ to, suffix = '', className = '' }) => {
+  const reduce = useReducedMotion();
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-40px' });
+  const [val, setVal] = useState(to);
+
+  useEffect(() => {
+    if (!inView || reduce) return undefined;
+    const controls = animate(0, to, {
+      duration: 1.6,
+      ease: [0.19, 1, 0.22, 1],
+      onUpdate: (v) => setVal(v),
+    });
+    return () => controls.stop();
+  }, [inView, to, reduce]);
+
+  return (
+    <span ref={ref} className={className}>
+      {Math.round(val).toLocaleString('es-CR')}
+      {suffix}
+    </span>
+  );
+};
+
+// ── Spotlight helper ──────────────────────────────────────────────────────────
+// Alimenta las clases .spotlight / .spotlight-dark del CSS: setea --mx/--my
+// directo en el DOM en cada movimiento del puntero — cero re-renders.
+// Uso: <div className="spotlight ..." onPointerMove={setSpotVars}>
+const setSpotVars = (e) => {
+  const el = e.currentTarget;
+  const r = el.getBoundingClientRect();
+  el.style.setProperty('--mx', `${((e.clientX - r.left) / r.width) * 100}%`);
+  el.style.setProperty('--my', `${((e.clientY - r.top) / r.height) * 100}%`);
+};
+
+// ── HeaderRule ────────────────────────────────────────────────────────────────
+// Línea de acento que se dibuja bajo los títulos de sección al entrar en vista.
+const HeaderRule = ({ className = '' }) => {
+  const reduce = useReducedMotion();
+  return (
+    <motion.div
+      aria-hidden="true"
+      initial={reduce ? false : { scaleX: 0 }}
+      whileInView={{ scaleX: 1 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={reduce ? { duration: 0 } : { duration: 0.9, ease: [0.19, 1, 0.22, 1] }}
+      className={`h-1 w-24 rounded-full bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400 origin-left ${className}`}
+    />
   );
 };
 
@@ -268,24 +325,45 @@ const ProblemModal = ({ modalKey, onClose }) => {
   );
 };
 
-// Datos estáticos para el gráfico de forecast (fuera del componente: no se recrean por render)
-const forecastData = [
-  { name: 'Lun', real: 2100, forecast: 2200 },
-  { name: 'Mar', real: 2300, forecast: 2250 },
-  { name: 'Mie', real: 2450, forecast: 2400 },
-  { name: 'Jue', real: 2200, forecast: 2350 },
-  { name: 'Vie', real: 2600, forecast: 2550 },
-  { name: 'Sab', real: 1800, forecast: 1900 },
-  { name: 'Dom', real: 1500, forecast: 1600 },
+// ── Consola de verificación del hero ─────────────────────────────────────────
+// Reemplaza la foto stock de Unsplash: cada fila sale de un caso documentado en
+// data/caseStudies.js (no inventar filas sin caso detrás — regla de la marca).
+const SYSTEM_ROWS = [
+  { proc: 'conciliacion_financiera', before: '3 h a mano', after: '30 s' },
+  { proc: 'factura_electronica_4.4', before: 'revisión a fin de mes', after: 'mismo día' },
+  { proc: 'cartera_de_clientes', before: '943 filas en Excel', after: '24 prioridades' },
+  { proc: 'planilla_y_ccss', before: 'quincena manual', after: 'minutos' },
+];
+
+// ── Manifiesto ────────────────────────────────────────────────────────────────
+const PRINCIPLES = [
+  { n: '01', title: 'Resolvemos la causa', body: 'No automatizamos un proceso defectuoso solo porque lo pidieron. Primero entendemos por qué existe.' },
+  { n: '02', title: 'Probamos antes de afirmar', body: 'Un sistema no está terminado porque "parece funcionar". Está terminado cuando podemos demostrarlo con datos reales.' },
+  { n: '03', title: 'Diseñamos para el siguiente problema', body: 'Cada proyecto deja una pieza reutilizable. Por eso el segundo sistema siempre llega más rápido que el primero.' },
+  { n: '04', title: 'La realidad manda', body: 'La herramienta se adapta a tu proceso, tu regulación y tu país — nunca al revés.' },
+  { n: '05', title: 'Terminado significa usable', body: 'Si técnicamente funciona pero tu equipo no puede operarlo, todavía no está terminado.' },
+  { n: '06', title: 'La evidencia puede cambiarnos de opinión', body: 'Defender una decisión equivocada por ego cuesta más que corregirla. Lo aplicamos también a nuestras propias ideas.' },
+];
+
+// ── Capa Costa Rica ───────────────────────────────────────────────────────────
+// El diferenciador que ningún software traducido puede copiar: los sistemas
+// nacen entendiendo la regulación y la forma de operar local.
+const CR_LAYERS = [
+  { code: 'FE_4.4', label: 'Factura electrónica v4.4', desc: 'Validación contra el esquema y rechazos de Hacienda detectados el mismo día.' },
+  { code: 'CCSS', label: 'Planilla, CCSS y SICERE', desc: 'Deducciones, incapacidades y archivos listos para carga — sin fórmulas frágiles.' },
+  { code: 'LABORAL', label: 'Cesantía, aguinaldo y vacaciones', desc: 'Las reglas del Código de Trabajo convertidas en cálculo reproducible.' },
+  { code: 'PAGOS', label: 'SINPE y pagos locales', desc: 'Nuestros productos cobran como cobra Costa Rica, no como cobra otro mercado.' },
+  { code: 'L-8968', label: 'Protección de datos (Ley 8968)', desc: 'Privacidad diseñada desde el inicio, no parchada al final.' },
+  { code: 'WA', label: 'WhatsApp como canal real', desc: 'Donde el negocio tico realmente conversa: reservas, avisos y confirmaciones.' },
 ];
 
 const NAV_LINKS = [
-  { label: 'Soluciones', href: '#soluciones' },
+  { label: 'Sistemas', href: '#soluciones' },
   { label: 'Cotizador', href: '#roi' },
-  { label: 'Casos', href: '#portfolio' },
-  { label: 'Sitios propios', href: '#sitios' },
+  { label: 'Evidencia', href: '#portfolio' },
+  { label: 'Productos', href: '#sitios' },
+  { label: 'Manifiesto', href: '#manifiesto' },
   { label: 'Metodología', href: '#metodologia' },
-  { label: 'Equipo', href: '#equipo' },
   { label: 'Contacto', href: '#contacto' },
 ];
 
@@ -297,6 +375,91 @@ const onImgError = (e) => {
   if (img.dataset.fallback) return;
   img.dataset.fallback = '1';
   img.src = PLACEHOLDER_IMG;
+};
+
+// ── SystemConsole ─────────────────────────────────────────────────────────────
+// Visual del hero: un panel de verificación de sistema con procesos reales
+// pasando de "dependiente de una persona" a "verificado". Sustituye la foto
+// stock: nada comunica mejor la marca que ver un proceso volverse sistema.
+const SystemConsole = ({ prefersReducedMotion }) => {
+  const rowAnim = (i) => (prefersReducedMotion
+    ? {}
+    : {
+        initial: { opacity: 0, x: -12 },
+        animate: { opacity: 1, x: 0 },
+        transition: { delay: 0.9 + i * 0.35, duration: 0.45, ease: 'easeOut' },
+      });
+
+  return (
+    <div className="relative rounded-2xl overflow-hidden border border-slate-700/60 bg-slate-950 shadow-[0_20px_60px_-15px_rgba(37,99,235,0.5)] font-mono text-[11px] sm:text-[13px]">
+      {/* Barra de título estilo terminal */}
+      <div className="flex items-center gap-2 px-4 h-10 bg-slate-900 border-b border-white/10">
+        <span className="flex gap-1.5" aria-hidden="true">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-400/70" />
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-400/70" />
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/70" />
+        </span>
+        <span className="flex-1 text-center text-slate-500 truncate">jc://sistema_en_produccion</span>
+        <span className="flex items-center gap-1.5 shrink-0" aria-hidden="true">
+          <span className="relative flex w-1.5 h-1.5">
+            <span className="absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-70 animate-ping motion-reduce:animate-none" />
+            <span className="relative inline-flex w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          </span>
+          <span className="text-[9px] uppercase tracking-widest text-slate-500">live</span>
+        </span>
+      </div>
+
+      {/* Barra de progreso: se llena mientras las filas van verificándose */}
+      <motion.div
+        aria-hidden="true"
+        initial={prefersReducedMotion ? false : { scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.7, duration: 2.2, ease: 'easeInOut' }}
+        style={{ transformOrigin: '0% 50%' }}
+        className="h-0.5 bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400"
+      />
+
+      {/* Cuerpo */}
+      <div className="p-4 sm:p-6 space-y-1">
+        <motion.p
+          {...(prefersReducedMotion ? {} : { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { delay: 0.6 } })}
+          className="text-slate-500 mb-3"
+        >
+          <span className="text-blue-400">▸</span> verificando dependencias del proceso…
+        </motion.p>
+
+        {SYSTEM_ROWS.map((row, i) => (
+          <motion.div
+            key={row.proc}
+            {...rowAnim(i)}
+            className="flex items-center gap-2 sm:gap-3 py-2 sm:py-2.5 border-b border-white/5 last:border-0 min-w-0"
+          >
+            <Check size={13} strokeWidth={3} className="text-emerald-400 shrink-0" aria-hidden="true" />
+            <span className="text-slate-200 truncate">{row.proc}</span>
+            <span className="flex-1 border-b border-dotted border-slate-800 mx-1 hidden sm:block" aria-hidden="true" />
+            <span className="text-red-300/60 line-through decoration-red-400/40 whitespace-nowrap hidden sm:inline">{row.before}</span>
+            <span className="text-slate-600 shrink-0" aria-hidden="true">→</span>
+            <span className="text-emerald-300 font-bold whitespace-nowrap">{row.after}</span>
+          </motion.div>
+        ))}
+
+        {/* Cierre: la tesis de la empresa en una línea de log */}
+        <motion.div
+          {...(prefersReducedMotion ? {} : { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { delay: 2.5, duration: 0.5 } })}
+          className="pt-4 space-y-1.5"
+        >
+          <p className="text-slate-500">
+            depende_de: <span className="text-red-300/70 line-through decoration-red-400/40">persona</span>{' '}
+            <span className="text-slate-600">→</span> <span className="text-emerald-300 font-bold">sistema</span>
+          </p>
+          <p className="text-slate-300">
+            <span className="text-blue-400">▸</span> estado: <span className="text-emerald-300 font-bold">verificado con datos reales</span>
+            <span className="inline-block w-2 h-3.5 ml-1.5 bg-emerald-400/80 align-middle animate-pulse motion-reduce:animate-none" aria-hidden="true" />
+          </p>
+        </motion.div>
+      </div>
+    </div>
+  );
 };
 
 const App = () => {
@@ -425,13 +588,6 @@ const App = () => {
     setAssessmentSent(true);
   };
 
-  const chartMargins = useMemo(
-    () => (isMobileViewport
-      ? { top: 8, right: 0, left: -24, bottom: 0 }
-      : { top: 10, right: 10, left: -20, bottom: 0 }),
-    [isMobileViewport]
-  );
-
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-500 selection:text-white overflow-x-hidden">
       {!isTouchDevice && !isMobileViewport && <CustomCursor />}
@@ -484,7 +640,7 @@ const App = () => {
           {/* Nav desktop — gap reducido en lg para que los 7 enlaces no desborden */}
           <nav className="hidden lg:flex items-center gap-5 xl:gap-7" aria-label="Navegación principal">
             {NAV_LINKS.map((l) => (
-              <a key={l.href} href={l.href} className="text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+              <a key={l.href} href={l.href} className="link-underline text-sm font-semibold text-slate-300 hover:text-white transition-colors">
                 {l.label}
               </a>
             ))}
@@ -495,7 +651,7 @@ const App = () => {
             href="https://wa.me/50670330596"
             target="_blank"
             rel="noreferrer"
-            className="hidden lg:inline-flex items-center gap-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 px-5 py-2.5 rounded-full font-bold transition-all shadow-lg backdrop-blur-md shrink-0"
+            className="btn-sheen hidden lg:inline-flex items-center gap-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 px-5 py-2.5 rounded-full font-bold transition-all shadow-lg backdrop-blur-md shrink-0"
           >
             WhatsApp
             <ArrowRight size={18} />
@@ -568,83 +724,108 @@ const App = () => {
             >
               <FadeInUp delay={0.1}>
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-mono font-medium mb-7 text-slate-200 border border-white/15 bg-white/5 backdrop-blur-sm uppercase tracking-[0.18em]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                  JC Analytics · Analítica · Automatización · GAM
+                  <span className="pulse-soft w-1.5 h-1.5 rounded-full bg-blue-400" />
+                  Ingeniería de sistemas de negocio · Costa Rica
                 </div>
               </FadeInUp>
-              <FadeInUp delay={0.2}>
-                <h1 className="font-display text-[clamp(1.75rem,6vw,2rem)] sm:text-5xl md:text-6xl lg:text-[4rem] font-extrabold text-white leading-[1.05] mb-5 sm:mb-6 tracking-[-0.02em] break-words">
-                  Reportes en tiempo real.<br />
-                  <span className="italic font-semibold text-slate-300">Decisiones en minutos, no en días.</span>
-                </h1>
-              </FadeInUp>
+              {/* H1 con revelado carácter por carácter (SplitText renderiza spans: HTML válido) */}
+              <h1 className="font-display text-[clamp(1.75rem,6vw,2rem)] sm:text-5xl md:text-6xl lg:text-[4rem] font-extrabold text-white leading-[1.05] mb-5 sm:mb-6 tracking-[-0.02em] break-words">
+                <SplitText text="Procesos que hoy dependen de personas." delay={0.15} />
+                <br />
+                <SplitText
+                  text="Sistemas que mañana funcionan solos."
+                  delay={0.75}
+                  className="italic font-semibold text-slate-300"
+                />
+              </h1>
               <FadeInUp delay={0.3}>
                 <p className="text-base sm:text-lg text-slate-400 mb-7 sm:mb-9 leading-relaxed max-w-xl font-sans">
-                  Firma de analítica enfocada en PYMEs de la Gran Área Metropolitana. Dashboards Power BI, pipelines Python y automatización con Power Automate. <span className="text-white font-medium">Resultados visibles en 14 días o no cobramos.</span>
+                  Diseñamos software, automatización y sistemas de decisión para operaciones donde el Excel, las tareas manuales y el conocimiento disperso se convirtieron en el límite para crecer. <span className="text-white font-medium">Y no afirmamos nada que no podamos demostrar con tus datos.</span>
                 </p>
               </FadeInUp>
               <FadeInUp delay={0.4}>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-8">
-                  <motion.a 
+                  <motion.a
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
-                    href="#roi"
-                    className="bg-blue-600 hover:bg-blue-500 text-white px-6 sm:px-7 py-3.5 rounded-xl font-semibold text-base flex items-center justify-center gap-2.5 transition-colors shadow-[0_0_30px_rgba(37,99,235,0.35)] min-h-11"
-                  >
-                    <Calculator size={18} />
-                    Ver mi ROI estimado
-                  </motion.a>
-                  <a 
-                    href="https://wa.me/50670330596"
+                    href="https://wa.me/50670330596?text=Hola%2C%20tengo%20un%20proceso%20que%20depende%20de%20una%20persona%20y%20quiero%20convertirlo%20en%20sistema."
                     target="_blank"
                     rel="noreferrer"
+                    className="btn-sheen glow-hover bg-blue-600 hover:bg-blue-500 text-white px-6 sm:px-7 py-3.5 rounded-xl font-semibold text-base flex items-center justify-center gap-2.5 transition-colors shadow-[0_0_30px_rgba(37,99,235,0.35)] min-h-11"
+                  >
+                    Diagnosticar mi proceso — sin costo
+                    <ArrowRight size={18} />
+                  </motion.a>
+                  <a
+                    href="#roi"
                     className="inline-flex items-center justify-center gap-2 text-slate-300 hover:text-white font-medium text-sm transition-colors group min-h-11"
                   >
-                    Agendar diagnóstico gratis
+                    <Calculator size={16} />
+                    Estimar mi proyecto
                     <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                   </a>
                 </div>
               </FadeInUp>
               <FadeInUp delay={0.5}>
-                {/* Prueba arriba del fold — cifras duras en mono */}
+                {/* Prueba arriba del fold — solo cifras con caso documentado detrás */}
                 <div className="grid grid-cols-3 gap-2 sm:gap-6 pt-6 border-t border-white/10 max-w-xl">
                   <div>
-                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300 leading-none whitespace-nowrap">99.4%</div>
-                    <div className="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">reducción tiempo auditoría</div>
-                  </div>
-                  <div>
                     <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300 leading-none whitespace-nowrap">3h → 30s</div>
-                    <div className="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">cierre financiero</div>
+                    <div className="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">conciliación financiera</div>
                   </div>
                   <div>
-                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300 leading-none whitespace-nowrap">174</div>
-                    <div className="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">SKUs / 24 tiendas live</div>
+                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300 leading-none whitespace-nowrap">
+                      <CountUp to={5900} suffix="+" />
+                    </div>
+                    <div className="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">comprobantes validados con Hacienda</div>
+                  </div>
+                  <div>
+                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300 leading-none whitespace-nowrap">
+                      <CountUp to={3} />
+                    </div>
+                    <div className="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">productos propios en producción</div>
                   </div>
                 </div>
               </FadeInUp>
             </motion.div>
 
-            {/* Hero Parallax Image */}
+            {/* Hero: consola de verificación — un proceso volviéndose sistema */}
             <motion.div
               style={{ y: prefersReducedMotion ? '0%' : heroImageY, opacity: heroOpacity }}
               className="lg:w-1/2 relative w-full perspective-1000 mt-8 sm:mt-12 lg:mt-0"
             >
               <FadeInUp delay={0.5}>
-                <TiltCard className="relative rounded-2xl overflow-hidden shadow-[0_20px_60px_-15px_rgba(37,99,235,0.5)] border border-slate-700/50">
-                  <img
-                       src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1200"
-                       alt="Dashboard ejecutivo con métricas de ventas e inventario en tiempo real"
-                       width={1200}
-                       height={600}
-                       fetchPriority="high"
-                       decoding="async"
-                       onError={onImgError}
-                       className="w-full h-[260px] sm:h-[360px] md:h-[500px] lg:h-[600px] object-cover opacity-90 transition-opacity duration-700"
-                  />
-                </TiltCard>
+                <div className="float-idle">
+                  <TiltCard className="relative">
+                    <SystemConsole prefersReducedMotion={prefersReducedMotion} />
+                  </TiltCard>
+                </div>
               </FadeInUp>
             </motion.div>
           </div>
+
+          {/* Indicador de scroll */}
+          <motion.div
+            initial={prefersReducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 2.2, duration: 0.8 }}
+            className="hidden lg:flex justify-center mt-14"
+          >
+            <a
+              href="#soluciones"
+              aria-label="Bajar a la sección de sistemas"
+              className="group flex flex-col items-center gap-2 text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              <span className="font-mono text-[10px] uppercase tracking-[0.22em]">Ver cómo</span>
+              <motion.span
+                animate={prefersReducedMotion ? {} : { y: [0, 7, 0] }}
+                transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
+                className="w-8 h-8 rounded-full border border-white/15 bg-white/5 flex items-center justify-center group-hover:border-white/30 transition-colors"
+              >
+                <ChevronDown size={15} />
+              </motion.span>
+            </a>
+          </motion.div>
         </div>
       </header>
 
@@ -664,9 +845,15 @@ const App = () => {
           <div className="text-center mb-10 sm:mb-16">
             <FadeInUp>
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-full text-xs sm:text-sm font-bold mb-4 border border-red-100">
-                <ShieldCheck size={14} /> Lo que descubrimos en cada PYME que auditamos
+                <ShieldCheck size={14} /> El patrón que encontramos en cada empresa que auditamos
               </div>
-              <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 sm:mb-6 tracking-tight">El Problema Oculto en tu PYME</h2>
+              <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 sm:mb-6 tracking-tight text-balance">
+                Tu operación funciona porque <span className="text-red-500">alguien se acuerda</span> de hacerla funcionar.
+              </h2>
+              <p className="font-sans text-base sm:text-lg text-slate-500 max-w-2xl mx-auto mb-4">
+                Reportes armados a mano, conocimiento que vive en la cabeza de una persona, decisiones que esperan al Excel.
+                Son tres síntomas del mismo problema: <strong className="text-slate-700">dependencia operativa</strong>.
+              </p>
               <div className="flex items-center justify-center gap-2 text-slate-500 font-medium font-sans">
                 <Users size={18} className="text-blue-500" />
                 <span>Identificado en <strong className="text-slate-700">+8 empresas</strong> de Heredia y Alajuela</span>
@@ -679,7 +866,8 @@ const App = () => {
             <FadeInUp delay={0.1}>
               <button
                 onClick={() => setActiveModal('reportes')}
-                className="text-left w-full bg-white p-6 sm:p-8 rounded-[1.5rem] border border-slate-200 hover:border-slate-300 hover:shadow-[0_20px_40px_-20px_rgba(15,23,42,0.15)] transition-all h-full flex flex-col group"
+                onPointerMove={setSpotVars}
+                className="spotlight text-left w-full bg-white p-6 sm:p-8 rounded-[1.5rem] border border-slate-200 hover:border-slate-300 hover:shadow-[0_20px_40px_-20px_rgba(15,23,42,0.15)] transition-all h-full flex flex-col group"
               >
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">
@@ -712,7 +900,8 @@ const App = () => {
             <FadeInUp delay={0.2}>
               <button
                 onClick={() => setActiveModal('excel')}
-                className="text-left w-full bg-white p-6 sm:p-8 rounded-[1.5rem] border border-slate-200 hover:border-slate-300 hover:shadow-[0_20px_40px_-20px_rgba(15,23,42,0.15)] transition-all h-full flex flex-col group"
+                onPointerMove={setSpotVars}
+                className="spotlight text-left w-full bg-white p-6 sm:p-8 rounded-[1.5rem] border border-slate-200 hover:border-slate-300 hover:shadow-[0_20px_40px_-20px_rgba(15,23,42,0.15)] transition-all h-full flex flex-col group"
               >
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">
@@ -745,7 +934,8 @@ const App = () => {
             <FadeInUp delay={0.3}>
               <button
                 onClick={() => setActiveModal('rentabilidad')}
-                className="text-left w-full bg-white p-6 sm:p-8 rounded-[1.5rem] border border-slate-200 hover:border-slate-300 hover:shadow-[0_20px_40px_-20px_rgba(15,23,42,0.15)] transition-all h-full flex flex-col group"
+                onPointerMove={setSpotVars}
+                className="spotlight text-left w-full bg-white p-6 sm:p-8 rounded-[1.5rem] border border-slate-200 hover:border-slate-300 hover:shadow-[0_20px_40px_-20px_rgba(15,23,42,0.15)] transition-all h-full flex flex-col group"
               >
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">
@@ -782,10 +972,10 @@ const App = () => {
                <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/5 rounded-full blur-[40px] pointer-events-none"></div>
 
                <h3 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mb-4 relative z-10">
-                 Si te identificaste con al menos uno, <span className="text-red-500">tu empresa está dejando dinero sobre la mesa.</span>
+                 Si te identificaste con al menos uno, <span className="text-red-500">tu operación depende de personas donde debería depender de sistemas.</span>
                </h3>
                <p className="font-sans text-slate-600 text-lg mb-8 max-w-2xl mx-auto relative z-10">
-                 Hacer lo mismo todos los meses esperando que la rentabilidad mejore sola no es una estrategia. Cortá la pérdida de recursos hoy.
+                 Y las dependencias no se arreglan solas: se acumulan hasta que la persona clave se enferma, renuncia o se equivoca. Convertirlas en sistema es exactamente lo que hacemos.
                </p>
                
                <div className="flex flex-col sm:flex-row items-center justify-center gap-6 relative z-10">
@@ -795,7 +985,7 @@ const App = () => {
                    href="https://wa.me/50670330596?text=Quiero%20agendar%20un%20diagn%C3%B3stico%20gratis"
                    target="_blank"
                    rel="noreferrer"
-                   className="bg-slate-900 text-white hover:bg-slate-800 px-8 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all shadow-xl"
+                   className="btn-sheen glow-hover bg-slate-900 text-white hover:bg-slate-800 px-8 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all shadow-xl"
                  >
                    Agendar diagnóstico gratis <ArrowRight size={20} />
                  </motion.a>
@@ -813,7 +1003,7 @@ const App = () => {
         </div>
 
         {/* Social Proof Animated Ticker */}
-        <div className="mt-12 sm:mt-20 w-full bg-slate-900 py-4 sm:py-6 overflow-hidden flex border-y border-slate-800" aria-hidden="true">
+        <div className="marquee mt-12 sm:mt-20 w-full bg-slate-900 py-4 sm:py-6 overflow-hidden flex border-y border-slate-800" aria-hidden="true">
           <motion.div
             animate={prefersReducedMotion ? { x: "0%" } : { x: ["0%", "-50%"] }}
             transition={prefersReducedMotion ? { duration: 0 } : { ease: "linear", duration: 30, repeat: Infinity }}
@@ -821,15 +1011,15 @@ const App = () => {
           >
             {[...Array(2)].map((_, i) => (
               <div key={i} className="flex gap-8 sm:gap-16 items-center px-4 sm:px-8">
-                <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-emerald-400">+50 proyectos</span> del equipo</div>
+                <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-emerald-400">Probado, no prometido</span> — evidencia en cada entrega</div>
                 <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 shrink-0"></div>
-                <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-blue-400">14 días</span> o no cobramos</div>
+                <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-blue-400">De procesos dependientes</span> a sistemas que funcionan</div>
                 <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 shrink-0"></div>
-                <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-cyan-400">28 reportes manuales</span> eliminados por semana</div>
+                <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-cyan-400">3 productos propios</span> operando en producción</div>
                 <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 shrink-0"></div>
                 <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-emerald-400">Avances cada 72 h</span>, no al final</div>
                 <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 shrink-0"></div>
-                <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-blue-400">30 días</span> de soporte post-entrega</div>
+                <div className="flex items-center gap-2 sm:gap-3 text-white font-bold text-sm sm:text-base md:text-lg ticker-item"><span className="text-blue-400">Cero dependencia</span> — tu equipo lo opera solo</div>
                 <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 shrink-0"></div>
               </div>
             ))}
@@ -863,71 +1053,87 @@ const App = () => {
         <div className="max-w-7xl mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
             <FadeInUp>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full text-xs sm:text-sm font-bold mb-5 border border-emerald-100">
+                <CheckCircle size={14} /> Evidencia, no promesas
+              </div>
               <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-5 sm:mb-6 tracking-tight">
-                Los números de arriba son reales. <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-500">Ya lo hemos hecho.</span>
+                Probado, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-500">no prometido.</span>
               </h2>
+              <p className="font-sans text-base sm:text-lg text-slate-500 max-w-2xl mx-auto">
+                Cada cifra de este sitio tiene un caso medido detrás. Estos son tres, con el antes, el después y la dependencia que se eliminó.
+              </p>
+              <HeaderRule className="mx-auto mt-6" />
             </FadeInUp>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-8 mb-12 sm:mb-16">
-            <FadeInUp delay={0.1}>
-              <motion.div whileHover={{ y: -5 }} className="bg-white p-5 sm:p-8 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-2xl transition-all h-full flex flex-col relative group">
-                <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Empresa de distribución (Heredia)</div>
-                <h3 className="font-display text-xl font-medium text-slate-900 mb-6 leading-relaxed italic text-balance">
-                  "Tenían 2 personas dedicando 12 horas semanales a consolidar datos de ventas desde 3 sistemas distintos."
-                </h3>
-                <div className="mt-auto pt-6 border-t border-slate-100">
-                  <div className="text-xs font-bold text-emerald-600 uppercase mb-2">Resultado</div>
-                  <div className="flex items-start gap-3 text-slate-700 font-medium">
-                    <CheckCircle className="text-emerald-500 shrink-0 mt-0.5" size={18} /> 
-                    <p>Proceso automatizado en 3 semanas. Esas 12 horas se convirtieron en <strong>20 minutos</strong>.</p>
+            {[
+              {
+                sector: 'Empresa de distribución · Heredia',
+                before: '2 personas y 12 h semanales consolidando ventas de 3 sistemas distintos.',
+                after: '20 minutos automatizados, implementados en 3 semanas.',
+                freed: 'Dos personas dejaron de ser el proceso.',
+              },
+              {
+                sector: 'Empresa de servicios financieros',
+                before: 'Cierre de conciliación de 3 horas, con errores de digitación frecuentes.',
+                after: '30 segundos por cierre. Cero errores desde la implementación.',
+                freed: 'El cierre ya no depende de que nadie se concentre.',
+              },
+              {
+                sector: 'Retail multilocal · 24 tiendas',
+                before: 'SKUs perdiendo margen que nadie veía hasta semanas después.',
+                after: '174 productos visibles en tiempo real, operado por el equipo desde el día 1.',
+                freed: 'La visibilidad ya no espera a que alguien consolide.',
+              },
+            ].map((c, idx) => (
+              <FadeInUp key={c.sector} delay={0.1 * (idx + 1)} className="h-full">
+                <motion.div
+                  whileHover={{ y: -5 }}
+                  onPointerMove={setSpotVars}
+                  className="spotlight bg-white p-5 sm:p-8 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-2xl hover:border-slate-300 transition-all h-full flex flex-col relative group"
+                >
+                  <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-6">{c.sector}</div>
+                  <div className="space-y-5 flex-grow">
+                    <motion.div
+                      initial={{ opacity: 0, x: -14 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true, margin: '-40px' }}
+                      transition={{ delay: 0.25 + 0.1 * idx, duration: 0.5, ease: [0.19, 1, 0.22, 1] }}
+                    >
+                      <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-red-400 mb-1.5">Antes</div>
+                      <p className="text-slate-600 leading-relaxed text-sm sm:text-base">{c.before}</p>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, x: -14 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true, margin: '-40px' }}
+                      transition={{ delay: 0.45 + 0.1 * idx, duration: 0.5, ease: [0.19, 1, 0.22, 1] }}
+                    >
+                      <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-600 mb-1.5">Ahora</div>
+                      <p className="text-slate-900 font-semibold leading-relaxed text-sm sm:text-base">{c.after}</p>
+                    </motion.div>
                   </div>
-                </div>
-              </motion.div>
-            </FadeInUp>
-
-            <FadeInUp delay={0.2}>
-              <motion.div whileHover={{ y: -5 }} className="bg-white p-5 sm:p-8 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-2xl transition-all h-full flex flex-col relative group">
-                <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Empresa de Servicios Financieros</div>
-                <h3 className="font-display text-xl font-medium text-slate-900 mb-6 leading-relaxed italic text-balance">
-                  "El cierre mensual de reconciliación tomaba 3 horas y generaba errores frecuentes."
-                </h3>
-                <div className="mt-auto pt-6 border-t border-slate-100">
-                  <div className="text-xs font-bold text-emerald-600 uppercase mb-2">Resultado</div>
-                  <div className="flex items-start gap-3 text-slate-700 font-medium">
-                    <CheckCircle className="text-emerald-500 shrink-0 mt-0.5" size={18} /> 
-                    <p>Pipeline automatizado. Hoy tarda <strong>30 segundos</strong>. Cero errores de digitación desde la implementación.</p>
+                  <div className="mt-auto pt-6 border-t border-slate-100">
+                    <div className="flex items-start gap-2.5 text-sm text-slate-500 font-medium">
+                      <CheckCircle className="text-emerald-500 shrink-0 mt-0.5" size={16} />
+                      <p><span className="text-slate-700 font-bold">Dependencia eliminada:</span> {c.freed}</p>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            </FadeInUp>
-
-            <FadeInUp delay={0.3}>
-              <motion.div whileHover={{ y: -5 }} className="bg-white p-5 sm:p-8 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-2xl transition-all h-full flex flex-col relative group">
-                <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Retail Multilocal</div>
-                <h3 className="font-display text-xl font-medium text-slate-900 mb-6 leading-relaxed italic text-balance">
-                  "El equipo no sabía cuáles SKUs generaban pérdida hasta que ya era demasiado tarde."
-                </h3>
-                <div className="mt-auto pt-6 border-t border-slate-100">
-                  <div className="text-xs font-bold text-emerald-600 uppercase mb-2">Resultado</div>
-                  <div className="flex items-start gap-3 text-slate-700 font-medium">
-                    <CheckCircle className="text-emerald-500 shrink-0 mt-0.5" size={18} /> 
-                    <p>Dashboard unificado con visibilidad de <strong>174 productos</strong> en tiempo real.</p>
-                  </div>
-                </div>
-              </motion.div>
-            </FadeInUp>
+                </motion.div>
+              </FadeInUp>
+            ))}
           </div>
 
           <FadeInUp delay={0.4}>
             <div className="max-w-4xl mx-auto bg-slate-900 rounded-3xl p-5 sm:p-8 md:p-12 text-center shadow-xl border border-slate-800/80 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px]"></div>
               <p className="font-sans text-xl md:text-2xl text-white font-medium mb-10 leading-relaxed italic relative z-10 text-balance">
-                "Si tu calculadora mostró más de ₡500,000 al mes, tiene sentido que hablemos 30 minutos. Sin compromiso, sin presentación de ventas — solo revisamos si los números son reales con tus datos."
+                "Si un proceso de tu empresa depende de una sola persona, hablemos 30 minutos. Sin presentación de ventas — revisamos con tus datos si convertirlo en sistema tiene ROI, y si no lo tiene, te lo decimos."
               </p>
               <a
                 href="#contacto"
-                className="relative z-10 inline-flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-500 text-white px-8 md:px-10 py-5 md:py-6 rounded-full font-bold text-lg md:text-xl transition-all hover:scale-105 shadow-[0_10px_40px_rgba(5,150,105,0.4)]"
+                className="btn-sheen glow-hover relative z-10 inline-flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-500 text-white px-8 md:px-10 py-5 md:py-6 rounded-full font-bold text-lg md:text-xl transition-all hover:scale-105 shadow-[0_10px_40px_rgba(5,150,105,0.4)]"
               >
                 Validar mi resultado gratis <ArrowRight size={24} />
               </a>
@@ -940,70 +1146,165 @@ const App = () => {
       {/* Puente de transición claro → oscuro */}
       <div aria-hidden="true" className="h-16 sm:h-24 bg-gradient-to-b from-slate-50 to-slate-950" />
       <WebProperties />
+
+      {/* Hecho para Costa Rica — la capa local como ventaja, no como parche */}
+      <section id="costarica" className="scroll-mt-20 py-14 sm:py-20 md:py-24 bg-slate-950 text-white relative overflow-hidden z-20 border-t border-slate-800/60">
+        <div className="absolute top-0 right-1/4 w-[240px] h-[240px] sm:w-[380px] sm:h-[380px] bg-blue-600/10 rounded-full blur-[110px] pointer-events-none mix-blend-screen" />
+        <div className="max-w-7xl mx-auto px-4 relative z-10">
+          <div className="max-w-3xl mb-10 sm:mb-14">
+            <FadeInUp>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-xs sm:text-sm font-bold mb-5 backdrop-blur-md text-emerald-300">
+                <MapPin size={14} /> Hecho para Costa Rica
+              </div>
+              <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-5 tracking-tight text-balance">
+                No traducimos software extranjero.{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-cyan-300">
+                  Modelamos cómo se opera acá.
+                </span>
+              </h2>
+              <p className="font-sans text-base sm:text-lg text-slate-400 leading-relaxed">
+                La mayoría del software que llega al país trata a Costa Rica como una configuración regional. Nuestros
+                sistemas nacen entendiendo la regulación fiscal, laboral y la forma real de hacer negocios — y esa capa
+                es la parte más difícil de copiar.
+              </p>
+              <HeaderRule className="mt-6" />
+            </FadeInUp>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {CR_LAYERS.map((item, idx) => (
+              <FadeInUp key={item.code} delay={0.08 * idx} className="h-full">
+                <motion.div
+                  whileHover={{ y: -4 }}
+                  onPointerMove={setSpotVars}
+                  className="spotlight spotlight-dark h-full bg-slate-900/60 border border-slate-800 hover:border-slate-600 rounded-2xl p-5 sm:p-6 transition-colors duration-300 group"
+                >
+                  <div className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/80 mb-3 group-hover:text-emerald-300 transition-colors">
+                    {item.code}
+                  </div>
+                  <h3 className="font-display text-base sm:text-lg font-bold text-white mb-2 leading-snug">{item.label}</h3>
+                  <p className="font-sans text-[13px] sm:text-sm text-slate-400 leading-relaxed">{item.desc}</p>
+                </motion.div>
+              </FadeInUp>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Puente de transición oscuro → claro */}
       <div aria-hidden="true" className="h-16 sm:h-24 bg-gradient-to-b from-slate-950 to-white" />
 
-      {/* Methodology Visualizer - Recharts AreaChart */}
-      <section className="py-16 sm:py-24 md:py-32 bg-white relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 relative z-10">
-          <div className="flex flex-col lg:flex-row gap-16 items-center">
-            <div className="lg:w-1/2">
-              <FadeInUp>
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-bold mb-6 border border-blue-100">
-                  <BarChart3 size={16} /> Inteligencia de Negocio
-                </div>
-                <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-5 sm:mb-6 text-slate-900 leading-tight tracking-normal">Analítica Predictiva en <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Tiempo Real</span></h2>
-                <p className="font-sans text-lg text-slate-600 mb-10 leading-relaxed font-medium">
-                  Visualiza el futuro de tu demanda hoy. Nuestro forecast con 93.2% de precisión te permite planificar turnos, optimizar el occupancy y reducir horas extra drásticamente.
-                </p>
-              </FadeInUp>
+      {/* Manifiesto — propósito, misión, visión y reglas de ingeniería */}
+      <section id="manifiesto" className="scroll-mt-20 py-16 sm:py-24 md:py-32 bg-white relative overflow-hidden">
+        <div className="max-w-6xl mx-auto px-4 relative z-10">
+          <div className="text-center mb-12 sm:mb-16">
+            <FadeInUp>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-bold mb-6 border border-blue-100">
+                <Compass size={16} /> Manifiesto
+              </div>
+              <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 tracking-tight text-balance">
+                En qué creemos y hacia dónde vamos.
+              </h2>
+              <HeaderRule className="mx-auto" />
+            </FadeInUp>
+          </div>
 
-              {/* Dashboard Mockup */}
-              <FadeInUp delay={0.2}>
-                <motion.div 
-                  whileHover={{ scale: 1.02, y: -5 }}
-                  className="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] relative overflow-hidden"
+          {/* Propósito — la afirmación grande */}
+          <FadeInUp delay={0.1}>
+            <div className="text-center max-w-4xl mx-auto mb-12 sm:mb-16">
+              <div className="font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-blue-600 mb-4">Propósito</div>
+              <p className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 leading-snug text-balance">
+                Que las empresas puedan crecer{' '}
+                <span className="animate-gradient-mesh text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600">
+                  sin que su complejidad crezca con ellas.
+                </span>
+              </p>
+            </div>
+          </FadeInUp>
+
+          {/* Misión y Visión */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 mb-12 sm:mb-16">
+            <FadeInUp delay={0.15} className="h-full">
+              <div onPointerMove={setSpotVars} className="spotlight h-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-[2rem] p-6 sm:p-9 relative overflow-hidden transition-colors duration-300">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/5 rounded-full blur-[50px] pointer-events-none" />
+                <div className="flex items-center gap-2.5 mb-5">
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+                    <Target size={20} />
+                  </div>
+                  <span className="font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">Misión</span>
+                </div>
+                <p className="font-display text-xl sm:text-2xl font-bold text-slate-900 leading-snug mb-4">
+                  Convertir procesos que dependen de personas y trabajo manual en sistemas confiables, medibles y escalables.
+                </p>
+                <p className="font-sans text-sm sm:text-base text-slate-500 leading-relaxed">
+                  Con datos, automatización, software a la medida y el conocimiento regulatorio de operar en Costa Rica —
+                  entregado con evidencia de que funciona, no con promesas.
+                </p>
+              </div>
+            </FadeInUp>
+
+            <FadeInUp delay={0.25} className="h-full">
+              <div onPointerMove={setSpotVars} className="spotlight spotlight-dark h-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-[2rem] p-6 sm:p-9 relative overflow-hidden text-white transition-colors duration-300">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-cyan-500/10 rounded-full blur-[50px] pointer-events-none" />
+                <div className="flex items-center gap-2.5 mb-5">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/15 text-cyan-300 flex items-center justify-center">
+                    <Eye size={20} />
+                  </div>
+                  <span className="font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Visión 2031</span>
+                </div>
+                <p className="font-display text-xl sm:text-2xl font-bold leading-snug mb-4">
+                  Una compañía tecnológica costarricense que crece sin depender de las horas de sus fundadores.
+                </p>
+                <p className="font-sans text-sm sm:text-base text-slate-400 leading-relaxed">
+                  Combinando soluciones empresariales de alto valor con al menos tres productos autosostenibles operando
+                  en Centroamérica. Es una visión medible: en 2031 se cumplió o no se cumplió.
+                </p>
+              </div>
+            </FadeInUp>
+          </div>
+
+          {/* Principios — reglas de ingeniería, no valores de pared */}
+          <FadeInUp delay={0.2}>
+            <div className="text-center mb-8 sm:mb-10">
+              <h3 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mb-3">
+                Reglas de ingeniería, no valores de pared.
+              </h3>
+              <p className="font-sans text-sm sm:text-base text-slate-500 max-w-2xl mx-auto">
+                Cualquier empresa puede firmar "innovación y compromiso". Estas seis reglas se pueden verificar viendo cómo trabajamos.
+              </p>
+            </div>
+          </FadeInUp>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {PRINCIPLES.map((p, idx) => (
+              <FadeInUp key={p.n} delay={0.08 * idx} className="h-full">
+                <motion.div
+                  whileHover={{ y: -4 }}
+                  onPointerMove={setSpotVars}
+                  className="spotlight h-full bg-white border border-slate-200 hover:border-slate-300 rounded-2xl p-5 sm:p-6 transition-all duration-300 hover:shadow-[0_12px_30px_-18px_rgba(15,23,42,0.25)] group"
                 >
-                  <div className="absolute top-0 right-10 w-24 h-1.5 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-b-lg"></div>
-                  <div className="h-80 w-full mt-4" style={{ position: 'relative', width: '100%', height: 320 }}>
-                    <Suspense fallback={<div className="w-full h-full rounded-xl bg-slate-100 animate-pulse" aria-hidden="true" />}>
-                      <ForecastChart data={forecastData} margin={chartMargins} />
-                    </Suspense>
+                  <div className="font-mono text-2xl sm:text-3xl font-bold text-slate-200 group-hover:text-blue-500 transition-colors mb-3 leading-none">
+                    {p.n}
                   </div>
-                  <div className="flex justify-center items-center mt-8 gap-8 px-4 bg-slate-50 border border-slate-100 py-4 rounded-xl">
-                    <span className="text-sm text-slate-800 font-bold flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-full bg-blue-500 shadow-md shadow-blue-400/50" /> Volumen Real
-                    </span>
-                    <span className="text-sm text-slate-500 font-bold flex items-center gap-3">
-                      <div className="w-4 h-4 border-[3px] border-slate-400 border-dashed rounded-full" /> Forecast Predictivo
-                    </span>
-                  </div>
+                  <h4 className="font-display text-base sm:text-lg font-bold text-slate-900 mb-2 leading-snug">{p.title}</h4>
+                  <p className="font-sans text-[13px] sm:text-sm text-slate-500 leading-relaxed">{p.body}</p>
                 </motion.div>
               </FadeInUp>
-            </div>
-
-            <div className="lg:w-1/2 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 pt-8 lg:pt-0">
-              {[
-                { title: "Dashboard Ejecutivo", desc: "Visibilidad total en 30 días garantizada y en tu móvil.", icon: <BarChart3 className="text-blue-500" size={28} /> },
-                { title: "Alertas SLA", desc: "Notificaciones proactivas directas en tus canales de Teams.", icon: <Zap className="text-yellow-500" size={28} /> },
-                { title: "Staffing Óptimo", desc: "Simulación de escenarios What-If para ajustar turnos.", icon: <Users className="text-purple-500" size={28} /> },
-                { title: "Transferencia COE", desc: "Tu equipo aprende a dominar el modelo de datos sin nosotros.", icon: <Cpu className="text-emerald-500" size={28} /> }
-              ].map((item, idx) => (
-                <FadeInUp key={idx} delay={0.2 + (idx * 0.1)}>
-                  <motion.div
-                    whileHover={{ scale: 1.03, y: -5 }}
-                    className="bg-slate-50 p-5 sm:p-7 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] transition-all h-full"
-                  >
-                    <div className="mb-4 sm:mb-5 w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-2xl border border-slate-200 flex items-center justify-center shadow-sm">
-                      {item.icon}
-                    </div>
-                    <h4 className="font-display font-bold text-base sm:text-lg md:text-xl text-slate-900 mb-2 sm:mb-3">{item.title}</h4>
-                    <p className="font-sans text-slate-600 font-medium leading-relaxed text-sm sm:text-base">{item.desc}</p>
-                  </motion.div>
-                </FadeInUp>
-              ))}
-            </div>
+            ))}
           </div>
+
+          {/* Promesa de marca */}
+          <FadeInUp delay={0.3}>
+            <div className="mt-12 sm:mt-16 text-center">
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 mb-3">Nuestra promesa</p>
+              <p className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 text-balance">
+                De procesos dependientes{' '}
+                <span className="animate-gradient-mesh text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-emerald-500 to-blue-600">
+                  a sistemas que funcionan.
+                </span>
+              </p>
+            </div>
+          </FadeInUp>
         </div>
       </section>
 
@@ -1015,9 +1316,9 @@ const App = () => {
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-bold mb-6 border border-blue-100">
                 <Layers size={16} /> Metodología 4D
               </div>
-              <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 text-slate-900 tracking-normal">Nuestro Framework Propietario.</h2>
+              <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 text-slate-900 tracking-normal">Cómo un proceso se convierte en sistema.</h2>
               <p className="font-sans text-base sm:text-lg md:text-xl text-slate-600 max-w-3xl mx-auto mb-5 sm:mb-6">
-                No improvisamos. Aplicamos 4 fases estrictas con entregables medibles en cada etapa — porque el cliente no debería pagar por experimentos.
+                Cuatro fases con entregables verificables. Un sistema no está terminado cuando funciona — está terminado cuando podemos demostrarlo con tus datos y tu equipo lo opera sin nosotros.
               </p>
               <p className="text-base text-slate-400 max-w-2xl mx-auto font-medium italic">
                 &ldquo;La mayoría de consultores llegan con una propuesta. Nosotros llegamos con preguntas. Esa es la diferencia entre un proyecto que funciona y uno que se entrega pero nadie usa.&rdquo;
@@ -1108,7 +1409,7 @@ const App = () => {
                       className="grid grid-cols-1 md:grid-cols-2"
                     >
                       {/* Image column */}
-                      <div className="h-64 md:h-auto min-h-[300px] overflow-hidden relative bg-slate-800">
+                      <div className="img-hover-premium h-64 md:h-auto min-h-[300px] overflow-hidden relative bg-slate-800">
                         <img src={content.image} alt={content.imageAlt} loading="lazy" decoding="async" width={800} height={533} onError={onImgError} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/10"></div>
                       </div>
@@ -1180,7 +1481,7 @@ const App = () => {
                   <a
                     href="https://wa.me/50670330596?text=Hola%2C%20quisiera%20agendar%20mi%20sesi%C3%B3n%20D1%20gratuita."
                     target="_blank" rel="noreferrer"
-                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl font-bold transition-all shadow-lg hover:scale-105"
+                    className="btn-sheen glow-hover inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl font-bold transition-all shadow-lg hover:scale-105"
                   >
                     Agendar diagnóstico gratis <ArrowRight size={20} />
                   </a>
@@ -1192,7 +1493,7 @@ const App = () => {
                   </a>
                 </div>
                 <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto">
-                  Metodología aplicada en proyectos para corporaciones de consumo masivo, sector energético y empresas de la Gran Área Metropolitana. Más de 50 proyectos del equipo (8+ años de experiencia combinada) documentados bajo este mismo framework.
+                  Framework destilado de más de 8 años de experiencia del equipo en entornos corporativos, y aplicado hoy en los proyectos y productos propios de JC Analytics en Costa Rica.
                 </p>
               </div>
             </div>
@@ -1313,7 +1614,7 @@ const App = () => {
                   </div>
                   <div className="text-center group cursor-default">
                     <div className="w-16 h-16 mx-auto bg-slate-950 border-2 border-emerald-500/50 rounded-full flex items-center justify-center text-emerald-400 font-bold group-hover:border-emerald-400 group-hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all">2026</div>
-                    <div className="mt-4 font-bold text-white group-hover:text-emerald-300">Expansión CR</div>
+                    <div className="mt-4 font-bold text-white group-hover:text-emerald-300">Productos propios</div>
                   </div>
                 </div>
               </div>
@@ -1323,7 +1624,7 @@ const App = () => {
       </section>
 
       {/* CTA Final y Contacto */}
-      <section id="contacto" className="scroll-mt-20 relative py-14 sm:py-20 md:py-24 text-center overflow-hidden bg-slate-950 border-t-4 border-blue-600">
+      <section id="contacto" className="aurora-bg scroll-mt-20 relative py-14 sm:py-20 md:py-24 text-center overflow-hidden bg-slate-950 border-t-4 border-blue-600">
         <div className="max-w-7xl mx-auto px-4 relative z-10">
           <div className="flex flex-col lg:flex-row gap-16 items-center">
             
@@ -1332,11 +1633,11 @@ const App = () => {
                 <div className="inline-flex items-center gap-2 px-6 py-2 bg-slate-800 border border-slate-700 rounded-full text-sm font-bold mb-6 shadow-sm text-cyan-400">
                   <Target size={16} /> El Próximo Paso
                 </div>
-                <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6">
-                  Validamos tu caso de forma <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">gratuita</span>.
+                <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6 text-balance">
+                  Contanos qué proceso depende hoy de <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">una persona</span>.
                 </h2>
                 <p className="font-sans text-base sm:text-lg md:text-xl text-slate-400 mb-6 sm:mb-8 max-w-xl">
-                  En la sesión de Discovery de 30 min, evaluaremos si podemos ayudarte. Si no hay ROI claro, te lo decimos sin compromisos.
+                  En 30 minutos evaluamos si convertirlo en sistema tiene ROI claro. Si no lo tiene, te lo decimos en esa misma sesión — sin costo y sin compromiso.
                 </p>
                 <div className="space-y-4 mb-8">
                   <a href="mailto:gerencia@jcanalytic.com" className="flex items-center gap-3 text-slate-300 hover:text-white transition-colors text-lg">
@@ -1405,7 +1706,7 @@ const App = () => {
                          <option>Otro</option>
                        </select>
                     </div>
-                    <button type="submit" className="mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl transition-colors w-full flex items-center justify-center gap-2">
+                    <button type="submit" className="btn-sheen glow-hover mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl transition-colors w-full flex items-center justify-center gap-2">
                       <Target size={20} /> Agendar diagnóstico gratis
                     </button>
                     <p className="text-xs text-center text-slate-500 mt-2 flex items-center justify-center gap-2"><ShieldCheck size={14}/> 100% libre de spam</p>
@@ -1444,9 +1745,14 @@ const App = () => {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
-          <div className="flex items-center gap-2.5">
-            <img src={import.meta.env.BASE_URL + "LogoMark.webp"} alt="" width={162} height={200} decoding="async" className="h-9 sm:h-10 w-auto object-contain" />
-            <span className="font-display text-base sm:text-lg font-extrabold tracking-tight text-white leading-none">JC Analytics</span>
+          <div className="flex flex-col items-center md:items-start gap-2">
+            <div className="flex items-center gap-2.5">
+              <img src={import.meta.env.BASE_URL + "LogoMark.webp"} alt="" width={162} height={200} decoding="async" className="h-9 sm:h-10 w-auto object-contain" />
+              <span className="font-display text-base sm:text-lg font-extrabold tracking-tight text-white leading-none">JC Analytics</span>
+            </div>
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
+              De procesos dependientes a sistemas que funcionan
+            </span>
           </div>
           <div className="text-xs sm:text-sm font-medium font-sans text-center">
             © 2026 JC Analytics. Todos los derechos reservados.

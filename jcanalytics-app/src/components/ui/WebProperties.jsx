@@ -139,18 +139,18 @@ export default function WebProperties() {
         <div className="text-center mb-9 sm:mb-12">
           <motion.div {...fadeUp()}>
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-xs sm:text-sm font-bold mb-5 backdrop-blur-md text-violet-300">
-              <Globe size={14} /> Sitios propios · en producción
+              <Globe size={14} /> Productos propios · en producción
             </div>
             <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-5 tracking-tight text-balance">
-              No solo lo recomendamos.{' '}
+              Cuando un problema se repite en toda una industria,{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-300">
-                Operamos nuestros propios sitios.
+                lo convertimos en producto.
               </span>
             </h2>
             <p className="font-sans text-base sm:text-lg text-slate-400 max-w-2xl mx-auto">
-              Tres productos digitales que diseñamos, desarrollamos y mantenemos nosotros mismos. Cada card trae la
-              captura real del sitio: recorrelo desde aquí, o entrá y probalo — es la muestra más honesta de lo que
-              construimos.
+              No solo resolvemos problemas por encargo: los mejores los transformamos en tecnología propia. Tres
+              productos que diseñamos, operamos y mantenemos nosotros mismos — cada card trae la captura real del sitio.
+              Entrá y probalos: son la muestra más honesta de lo que construimos.
             </p>
           </motion.div>
         </div>

@@ -82,10 +82,10 @@ export const WEB_PROPERTIES = [
 
 // Cifras de la tira de resumen de la sección #sitios.
 export const WEB_STATS = [
-  { value: '3', label: 'sitios propios en producción' },
-  { value: '3', label: 'verticales distintas' },
-  { value: '24/7', label: 'reservas sin llamadas' },
-  { value: '100%', label: 'hechos en Costa Rica' },
+  { value: '3', label: 'productos propios en producción' },
+  { value: '3', label: 'industrias distintas' },
+  { value: '24/7', label: 'reservas sin depender de nadie' },
+  { value: '100%', label: 'diseñados para Costa Rica' },
 ];
 
 // Imagen de la card "Páginas Web y Reservas" del carrusel de servicios.

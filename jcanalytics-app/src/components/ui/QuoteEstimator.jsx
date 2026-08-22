@@ -1,8 +1,8 @@
 // ============================================================================
 //  src/components/ui/QuoteEstimator.jsx
 //  Cotizador simple: 3 decisiones (tipo · tamaño · complejidad) + urgencia.
-//  Precio garantizado entre $500 y $6.000 USD, convertible a LatAm.
-//  El cliente ve SOLO rango de inversión + ventana de entrega.
+//  Proyectos desde $30 (Excel puntual) hasta $6.000 (software a la medida),
+//  convertible a LatAm. El cliente ve SOLO rango + ventana de entrega.
 // ============================================================================
 import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -155,7 +155,7 @@ export default function QuoteEstimator() {
       {/* Header */}
       <div className="text-center mb-10 sm:mb-14">
         <div className="inline-flex items-center gap-2 px-5 py-2 bg-white/5 border border-white/10 rounded-full text-sm font-bold mb-5 backdrop-blur-md text-emerald-300">
-          <Calculator size={16} /> Cotizador preliminar
+          <Calculator size={16} /> Cotizador preliminar · proyectos desde $30
         </div>
         <h2 className="font-display text-[1.75rem] sm:text-4xl md:text-5xl font-black mb-4 tracking-tight max-w-3xl mx-auto">
           3 clics y mirá tu inversión{' '}
@@ -262,7 +262,7 @@ export default function QuoteEstimator() {
                 <Clock size={13} className="text-cyan-400" /> Ventana de entrega
               </div>
               <div className="font-mono text-xl font-bold text-white">{result.delivery.display}</div>
-              <p className="text-[11px] text-slate-500 mt-1">Incluye ~1 sem. de arranque en cola — equipo enfocado de 2.</p>
+              <p className="text-[11px] text-slate-500 mt-1">Incluye ~media semana de arranque en cola — equipo enfocado.</p>
             </div>
 
             {/* Meter de detalle */}
