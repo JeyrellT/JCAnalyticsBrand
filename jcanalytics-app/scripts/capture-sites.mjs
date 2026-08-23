@@ -23,10 +23,24 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dirname, '..', 'public', 'sites');
 
 const SITES = [
+  // Productos propios
   { id: 'barberxcr', url: 'https://barberxcr.com/' },
   { id: 'tallerticos', url: 'https://www.tallerticos.com/' },
   { id: 'glowstudiocr', url: 'https://glowstudiocr.com/' },
+  // Sitios de clientes
+  { id: 'uniquexcr', url: 'https://uniquexcr.com/landing' },
+  { id: 'cotizadorvip', url: 'https://client-production-a96b.up.railway.app/branding' },
+  // Demos de apps y dashboards
+  { id: 'powerbiquest', url: 'https://jcanalyticscr.github.io/PowerBIQuest/' },
+  { id: 'leansixsigma', url: 'https://jeyrellt.github.io/JCAPP/#/projects/project-4' },
+  { id: 'dashboardbi', url: 'https://jeyrellt.github.io/DashboardBI' },
 ];
+
+// Sin argumentos captura todos; con ids captura solo esos
+// (`node scripts/capture-sites.mjs uniquexcr dashboardbi`), que es lo normal
+// cuando se agrega un sitio y los demás no cambiaron.
+const only = process.argv.slice(2);
+const TARGETS = only.length ? SITES.filter((s) => only.includes(s.id)) : SITES;
 
 const DESKTOP = { width: 1200, height: 800 };
 const MOBILE = { width: 390, height: 844 };
@@ -61,7 +75,7 @@ const VARIANTS = [
   { suffix: '-hero', vp: { width: 1200, height: 675 }, scale: 1.5, quality: 80, maxH: 675 },
 ];
 
-for (const site of SITES) {
+for (const site of TARGETS) {
   for (const v of VARIANTS) {
     const page = await browser.newPage();
     try {
@@ -70,6 +84,15 @@ for (const site of SITES) {
       await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
       await page.goto(site.url, { waitUntil: 'networkidle2', timeout: 45_000 });
       await new Promise((r) => setTimeout(r, 1800));
+      // Rutas hash (#/algo): en la carga inicial el router puede montar la ruta
+      // por defecto y descartar el hash. Se re-aplica ya con la app viva.
+      const hash = new URL(site.url).hash;
+      if (hash && (await page.evaluate(() => location.hash)) !== hash) {
+        await page.evaluate((h) => {
+          location.hash = h;
+        }, hash);
+        await new Promise((r) => setTimeout(r, 1800));
+      }
       await autoScroll(page);
       await new Promise((r) => setTimeout(r, 900));
 
