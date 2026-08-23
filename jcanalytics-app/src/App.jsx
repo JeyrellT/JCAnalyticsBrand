@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
-import { motion, AnimatePresence, useScroll, useTransform, useSpring, useReducedMotion, useInView, animate } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring, useReducedMotion, useInView, animate, useDragControls } from 'framer-motion';
 import Lenis from 'lenis';
+
+// eslint (sin plugin de react) no reconoce a `motion` usado solo como <motion.x>.
+const _MOTION = motion;
 import gsap from 'gsap';
 import CustomCursor from './components/ui/CustomCursor';
 import TiltCard from './components/ui/TiltCard';
@@ -167,13 +170,16 @@ const PROBLEM_MODAL_CONTENT = {
   },
 };
 
-// Modal de Problema
-const ProblemModal = ({ modalKey, onClose }) => {
+// Modal de Problema — en móvil se comporta como bottom sheet nativo:
+// entra desde abajo, tiene asa de arrastre y se cierra deslizando hacia abajo.
+const ProblemModal = ({ modalKey, onClose, sheet = false }) => {
   const data = PROBLEM_MODAL_CONTENT[modalKey];
   const closeBtnRef = useRef(null);
   const dialogRef = useRef(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const dragControls = useDragControls();
+  const reduce = useReducedMotion();
 
   // Efecto de "una sola vez": evita re-runs por render (onClose cambia de identidad
   // en cada render de App) que, durante la animación de salida de AnimatePresence,
@@ -220,7 +226,8 @@ const ProblemModal = ({ modalKey, onClose }) => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
       onClick={onClose}
       data-lenis-prevent
     >
@@ -229,17 +236,38 @@ const ProblemModal = ({ modalKey, onClose }) => {
 
       <motion.div
         ref={dialogRef}
-        initial={{ opacity: 0, scale: 0.92, y: 24 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+        initial={reduce ? { opacity: 0 } : sheet ? { y: '100%' } : { opacity: 0, scale: 0.92, y: 24 }}
+        animate={reduce ? { opacity: 1 } : sheet ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+        exit={reduce ? { opacity: 0 } : sheet ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 16 }}
+        transition={reduce ? { duration: 0.15 } : { type: 'spring', stiffness: 300, damping: sheet ? 32 : 28 }}
+        drag={sheet && !reduce ? 'y' : false}
+        dragListener={false}
+        dragControls={dragControls}
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={{ top: 0, bottom: 0.7 }}
+        onDragEnd={(e, info) => {
+          if (info.offset.y > 90 || info.velocity.y > 600) onCloseRef.current?.();
+        }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="problem-modal-title"
-        className="relative bg-white rounded-[2rem] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        className="relative bg-white rounded-t-[1.75rem] rounded-b-none sm:rounded-[2rem] shadow-2xl max-w-2xl w-full max-h-[92dvh] sm:max-h-[90dvh] overflow-y-auto overscroll-contain"
         onClick={e => e.stopPropagation()}
       >
+        {/* Asa de arrastre (solo móvil): deslizar hacia abajo cierra */}
+        {sheet && (
+          <div
+            onPointerDown={(e) => dragControls.start(e)}
+            className="sm:hidden sticky top-0 z-20 flex justify-center pt-2.5 pb-1 touch-none cursor-grab active:cursor-grabbing"
+            style={{ backgroundColor: 'transparent' }}
+            aria-hidden="true"
+          >
+            <span className="w-11 h-1.5 rounded-full bg-slate-900/15" />
+          </div>
+        )}
+
         {/* Header */}
-        <div className={`${c.bg} ${c.border} border-b px-6 pt-6 pb-5 rounded-t-[2rem]`}>
+        <div className={`${c.bg} ${c.border} border-b px-5 sm:px-6 pt-4 sm:pt-6 pb-5 ${sheet ? '-mt-[1.4rem]' : ''} rounded-t-[1.75rem] sm:rounded-t-[2rem]`}>
           <div className="flex items-start justify-between gap-4">
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${c.icon}`}>
               {data.icon}
@@ -248,9 +276,9 @@ const ProblemModal = ({ modalKey, onClose }) => {
               ref={closeBtnRef}
               onClick={onClose}
               aria-label="Cerrar"
-              className="w-9 h-9 rounded-full bg-white/80 hover:bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors shrink-0"
+              className="tap-press w-10 h-10 sm:w-9 sm:h-9 rounded-full bg-white/80 hover:bg-white active:bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors shrink-0"
             >
-              <X size={16} aria-hidden="true" />
+              <X size={17} aria-hidden="true" />
             </button>
           </div>
           <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mt-3 mb-2 ${c.tag}`}>
@@ -260,7 +288,7 @@ const ProblemModal = ({ modalKey, onClose }) => {
         </div>
 
         {/* Body */}
-        <div className="px-6 py-6 space-y-6">
+        <div className="px-5 sm:px-6 py-5 sm:py-6 space-y-5 sm:space-y-6">
           {/* Pasos / ciclo */}
           <div>
             <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{data.intro}</p>
@@ -310,12 +338,12 @@ const ProblemModal = ({ modalKey, onClose }) => {
           </div>
         </div>
 
-        {/* Footer CTA */}
-        <div className="px-6 pb-6">
+        {/* Footer CTA — pegajoso en móvil para que siempre haya salida a la acción */}
+        <div className="sticky bottom-0 sm:static bg-gradient-to-t from-white via-white/95 to-transparent sm:bg-none px-5 sm:px-6 pt-3 sm:pt-0 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pb-6">
           <a
             href="#contacto"
             onClick={onClose}
-            className={`flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-white font-bold text-sm transition-colors ${c.btn}`}
+            className={`tap-press flex items-center justify-center gap-2 w-full py-3.5 min-h-12 rounded-xl text-white font-bold text-sm transition-colors shadow-lg sm:shadow-none ${c.btn}`}
           >
             Quiero resolver esto en mi empresa <ArrowRight size={16} />
           </a>
@@ -367,6 +395,10 @@ const NAV_LINKS = [
   { label: 'Contacto', href: '#contacto' },
 ];
 
+// Ids que el scrollspy vigila para marcar el enlace activo (los mismos anchors
+// de NAV_LINKS, sin el "#").
+const NAV_SECTION_IDS = NAV_LINKS.map((l) => l.href.slice(1));
+
 // Placeholder slate sólido para imágenes remotas que fallan (evita el ícono de imagen rota)
 const PLACEHOLDER_IMG =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10'%3E%3Crect width='100%25' height='100%25' fill='%231e293b'/%3E%3C/svg%3E";
@@ -391,7 +423,7 @@ const SystemConsole = ({ prefersReducedMotion }) => {
       });
 
   return (
-    <div className="relative rounded-2xl overflow-hidden border border-slate-700/60 bg-slate-950 shadow-[0_20px_60px_-15px_rgba(37,99,235,0.5)] font-mono text-[11px] sm:text-[13px]">
+    <div className="relative rounded-2xl overflow-hidden border border-slate-700/60 bg-slate-950 shadow-[0_20px_60px_-15px_rgba(37,99,235,0.5)] font-mono text-xs sm:text-[13px]">
       {/* Barra de título estilo terminal */}
       <div className="flex items-center gap-2 px-4 h-10 bg-slate-900 border-b border-white/10">
         <span className="flex gap-1.5" aria-hidden="true">
@@ -432,14 +464,22 @@ const SystemConsole = ({ prefersReducedMotion }) => {
           <motion.div
             key={row.proc}
             {...rowAnim(i)}
-            className="flex items-center gap-2 sm:gap-3 py-2 sm:py-2.5 border-b border-white/5 last:border-0 min-w-0"
+            className="py-2 sm:py-2.5 border-b border-white/5 last:border-0 min-w-0"
           >
-            <Check size={13} strokeWidth={3} className="text-emerald-400 shrink-0" aria-hidden="true" />
-            <span className="text-slate-200 truncate">{row.proc}</span>
-            <span className="flex-1 border-b border-dotted border-slate-800 mx-1 hidden sm:block" aria-hidden="true" />
-            <span className="text-red-300/60 line-through decoration-red-400/40 whitespace-nowrap hidden sm:inline">{row.before}</span>
-            <span className="text-slate-600 shrink-0" aria-hidden="true">→</span>
-            <span className="text-emerald-300 font-bold whitespace-nowrap">{row.after}</span>
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <Check size={13} strokeWidth={3} className="text-emerald-400 shrink-0" aria-hidden="true" />
+              <span className="text-slate-200 truncate">{row.proc}</span>
+              <span className="flex-1 border-b border-dotted border-slate-800 mx-1 hidden sm:block" aria-hidden="true" />
+              <span className="text-red-300/60 line-through decoration-red-400/40 whitespace-nowrap hidden sm:inline">{row.before}</span>
+              <span className="text-slate-600 shrink-0 hidden sm:inline" aria-hidden="true">→</span>
+              <span className="text-emerald-300 font-bold whitespace-nowrap hidden sm:inline">{row.after}</span>
+            </div>
+            {/* Móvil: el antes → después no se pierde — baja a su propia línea */}
+            <div className="flex sm:hidden items-center gap-1.5 pl-[21px] mt-1 text-[11px] min-w-0">
+              <span className="text-red-300/60 line-through decoration-red-400/40 truncate">{row.before}</span>
+              <span className="text-slate-600 shrink-0" aria-hidden="true">→</span>
+              <span className="text-emerald-300 font-bold whitespace-nowrap">{row.after}</span>
+            </div>
           </motion.div>
         ))}
 
@@ -546,6 +586,25 @@ const App = () => {
     };
   }, [navOpen]);
 
+  // Scrollspy: marca en el nav la sección visible. La banda de detección va del
+  // 35% al 45% del viewport — la sección que la cruza es la "actual".
+  const [activeSection, setActiveSection] = useState('');
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setActiveSection(entry.target.id);
+        });
+      },
+      { rootMargin: '-35% 0px -55% 0px', threshold: 0 }
+    );
+    NAV_SECTION_IDS.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, []);
+
   // Scroll progress bar
   const { scrollYProgress: pageScrollProgress } = useScroll();
   const scaleProgress = useSpring(pageScrollProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
@@ -595,7 +654,7 @@ const App = () => {
       {/* Modal Problema Oculto */}
       <AnimatePresence>
         {activeModal && (
-          <ProblemModal modalKey={activeModal} onClose={() => setActiveModal(null)} />
+          <ProblemModal modalKey={activeModal} onClose={() => setActiveModal(null)} sheet={isMobileViewport} />
         )}
       </AnimatePresence>
 
@@ -605,13 +664,15 @@ const App = () => {
         style={{ scaleX: scaleProgress }}
       />
 
-      <div className="fixed inset-0 noise-overlay pointer-events-none z-50 mix-blend-overlay" />
+      {/* Textura de ruido — solo desktop: en móvil es imperceptible y el blend
+          de pantalla completa cuesta una capa de composición extra por frame. */}
+      <div className="hidden md:block fixed inset-0 noise-overlay pointer-events-none z-50 mix-blend-overlay" />
       {/* Background3D retirado del hero (abr-26) — reducir capas visuales simultáneas. Se mantiene el import para futura reutilización en otra sección. */}
       
       {/* Navigation - Dynamic Glassmorphism */}
-      <motion.nav  
-        style={{ 
-          backgroundColor: navBackground, 
+      <motion.nav
+        style={{
+          backgroundColor: navBackground,
           backdropFilter: navBackdropBlur,
           borderBottomColor: navBorder,
           borderBottomWidth: "1px"
@@ -621,8 +682,15 @@ const App = () => {
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="fixed w-full z-50 transition-colors duration-300"
       >
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 h-20 flex items-center justify-between gap-3">
-          <a href="#top" className="flex items-center gap-2.5 group cursor-pointer shrink-0">
+        {/* Capa sólida bajo la barra cuando el menú está abierto (el estilo del
+            nav mantiene siempre los MotionValues: alternar tipos por render
+            rompe la contabilidad de AnimatePresence en el exit del panel) */}
+        <div
+          aria-hidden="true"
+          className={`absolute inset-0 bg-slate-950 transition-opacity duration-300 pointer-events-none ${navOpen ? 'opacity-100' : 'opacity-0'}`}
+        />
+        <div className="relative max-w-7xl mx-auto px-3 sm:px-4 h-16 sm:h-20 flex items-center justify-between gap-3">
+          <a href="#top" className="flex items-center gap-2.5 group cursor-pointer shrink-0 min-h-11">
             <motion.img
               whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
               src={import.meta.env.BASE_URL + "LogoMark.webp"}
@@ -630,7 +698,7 @@ const App = () => {
               width={162}
               height={200}
               decoding="async"
-              className="h-10 sm:h-11 w-auto object-contain"
+              className="h-9 sm:h-11 w-auto object-contain"
             />
             <span className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-white leading-none">
               JC Analytics
@@ -639,11 +707,28 @@ const App = () => {
 
           {/* Nav desktop — gap reducido en lg para que los 7 enlaces no desborden */}
           <nav className="hidden lg:flex items-center gap-5 xl:gap-7" aria-label="Navegación principal">
-            {NAV_LINKS.map((l) => (
-              <a key={l.href} href={l.href} className="link-underline text-sm font-semibold text-slate-300 hover:text-white transition-colors">
-                {l.label}
-              </a>
-            ))}
+            {NAV_LINKS.map((l) => {
+              const isActive = activeSection === l.href.slice(1);
+              return (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  aria-current={isActive ? 'location' : undefined}
+                  className={`link-underline text-sm font-semibold transition-colors ${
+                    isActive ? 'text-white' : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  {l.label}
+                  {isActive && (
+                    <motion.span
+                      layoutId="nav-active-dot"
+                      className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-cyan-400"
+                      aria-hidden="true"
+                    />
+                  )}
+                </a>
+              );
+            })}
           </nav>
 
           {/* CTA desktop */}
@@ -664,51 +749,111 @@ const App = () => {
             aria-label={navOpen ? "Cerrar menú" : "Abrir menú"}
             aria-expanded={navOpen}
             aria-controls="mobile-nav-panel"
-            className="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-colors shrink-0"
+            className="tap-press lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/10 text-white transition-colors shrink-0"
           >
-            {navOpen ? <X size={22} /> : <Menu size={22} />}
+            <motion.span
+              key={navOpen ? 'close' : 'open'}
+              initial={prefersReducedMotion ? false : { rotate: navOpen ? -90 : 90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+              className="flex items-center justify-center"
+            >
+              {navOpen ? <X size={22} /> : <Menu size={22} />}
+            </motion.span>
           </button>
         </div>
 
-        {/* Panel móvil */}
+        {/* Panel móvil — sheet premium con backdrop, stagger y sección activa.
+            Backdrop y panel van como hermanos directos de AnimatePresence (con
+            key propio): envueltos en un Fragment, el exit nunca completa. */}
         <AnimatePresence>
           {navOpen && (
-            <motion.div
-              id="mobile-nav-panel"
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-              className="lg:hidden absolute top-20 inset-x-0 bg-slate-950 border-b border-white/10 shadow-2xl px-4 py-5"
-            >
-              <nav className="flex flex-col gap-1" aria-label="Navegación móvil">
-                {NAV_LINKS.map((l) => (
-                  <a
-                    key={l.href}
-                    href={l.href}
-                    onClick={() => setNavOpen(false)}
-                    className="py-3 px-3 text-base font-semibold text-slate-200 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                  >
-                    {l.label}
-                  </a>
-                ))}
-                <a
-                  href="https://wa.me/50670330596"
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => setNavOpen(false)}
-                  className="mt-3 inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-3.5 rounded-full font-bold transition-colors"
+              <motion.div
+                key="mobile-nav-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                onClick={() => setNavOpen(false)}
+                aria-hidden="true"
+                className="lg:hidden fixed inset-0 top-16 sm:top-20 bg-slate-950/70 backdrop-blur-sm"
+              />
+          )}
+          {navOpen && (
+              <motion.div
+                key="mobile-nav-panel"
+                id="mobile-nav-panel"
+                initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -12 }}
+                transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
+                className="lg:hidden absolute top-full inset-x-0 bg-slate-950/98 border-b border-white/10 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] rounded-b-[1.75rem] overflow-hidden"
+              >
+                <nav
+                  className="max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain px-4 pt-2 pb-5 flex flex-col"
+                  aria-label="Navegación móvil"
                 >
-                  Contactar por WhatsApp <ArrowRight size={18} />
-                </a>
-              </nav>
-            </motion.div>
+                  {NAV_LINKS.map((l, i) => {
+                    const isActive = activeSection === l.href.slice(1);
+                    return (
+                      <motion.a
+                        key={l.href}
+                        href={l.href}
+                        onClick={() => setNavOpen(false)}
+                        initial={prefersReducedMotion ? false : { opacity: 0, x: -14 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.05 + i * 0.045, duration: 0.3, ease: 'easeOut' }}
+                        className={`tap-press group flex items-center gap-3.5 py-3 px-3.5 min-h-12 rounded-xl transition-colors ${
+                          isActive
+                            ? 'bg-blue-500/10 text-white'
+                            : 'text-slate-200 hover:text-white hover:bg-white/5 active:bg-white/10'
+                        }`}
+                        aria-current={isActive ? 'location' : undefined}
+                      >
+                        <span
+                          className={`font-mono text-[10px] font-bold tracking-widest ${
+                            isActive ? 'text-cyan-400' : 'text-slate-600'
+                          }`}
+                        >
+                          {String(i + 1).padStart(2, '0')}
+                        </span>
+                        <span className="flex-1 text-base font-semibold">{l.label}</span>
+                        {isActive ? (
+                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]" aria-hidden="true" />
+                        ) : (
+                          <ChevronRight size={15} className="text-slate-600 group-hover:text-slate-400 transition-colors" aria-hidden="true" />
+                        )}
+                      </motion.a>
+                    );
+                  })}
+
+                  <motion.div
+                    initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.05 + NAV_LINKS.length * 0.045, duration: 0.3 }}
+                    className="mt-4 pt-4 border-t border-white/10"
+                  >
+                    <a
+                      href="https://wa.me/50670330596"
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => setNavOpen(false)}
+                      className="tap-press btn-sheen flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-white px-5 py-3.5 min-h-12 rounded-2xl font-bold transition-colors shadow-[0_10px_30px_-10px_rgba(16,185,129,0.6)]"
+                    >
+                      <MessageSquare size={18} /> Contactar por WhatsApp
+                    </a>
+                    <div className="mt-4 flex items-center justify-center gap-2 text-[11px] font-mono uppercase tracking-[0.14em] text-slate-500 pb-safe">
+                      <MapPin size={11} aria-hidden="true" /> Heredia, Costa Rica · respuesta en &lt;24 h
+                    </div>
+                  </motion.div>
+                </nav>
+              </motion.div>
           )}
         </AnimatePresence>
       </motion.nav>
 
       {/* Hero Section — refinado: 1 acento (azul brand), claim declarativo, prueba arriba del fold */}
-      <header id="top" ref={heroRef} className="relative pt-28 pb-16 sm:pt-32 sm:pb-24 lg:pt-40 lg:pb-32 overflow-hidden bg-slate-950 text-white">
+      <header id="top" ref={heroRef} className="relative pt-24 pb-14 sm:pt-32 sm:pb-24 lg:pt-40 lg:pb-32 overflow-hidden bg-slate-950 text-white">
         
         {/* Gradient blobs sutiles — única animación protagonista del hero */}
         <div className="absolute top-0 right-0 w-full h-full overflow-hidden pointer-events-none opacity-30">
@@ -729,7 +874,7 @@ const App = () => {
                 </div>
               </FadeInUp>
               {/* H1 con revelado carácter por carácter (SplitText renderiza spans: HTML válido) */}
-              <h1 className="font-display text-[clamp(1.75rem,6vw,2rem)] sm:text-5xl md:text-6xl lg:text-[4rem] font-extrabold text-white leading-[1.05] mb-5 sm:mb-6 tracking-[-0.02em] break-words">
+              <h1 className="font-display text-[clamp(1.9rem,8.4vw,2.5rem)] sm:text-5xl md:text-6xl lg:text-[4rem] font-extrabold text-white leading-[1.08] sm:leading-[1.05] mb-5 sm:mb-6 tracking-[-0.02em] break-words">
                 <SplitText text="Procesos que hoy dependen de personas." delay={0.15} />
                 <br />
                 <SplitText
@@ -751,14 +896,14 @@ const App = () => {
                     href="https://wa.me/50670330596?text=Hola%2C%20tengo%20un%20proceso%20que%20depende%20de%20una%20persona%20y%20quiero%20convertirlo%20en%20sistema."
                     target="_blank"
                     rel="noreferrer"
-                    className="btn-sheen glow-hover bg-blue-600 hover:bg-blue-500 text-white px-6 sm:px-7 py-3.5 rounded-xl font-semibold text-base flex items-center justify-center gap-2.5 transition-colors shadow-[0_0_30px_rgba(37,99,235,0.35)] min-h-11"
+                    className="btn-sheen glow-hover bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white px-6 sm:px-7 py-4 sm:py-3.5 rounded-xl font-semibold text-base flex items-center justify-center gap-2.5 transition-colors shadow-[0_0_30px_rgba(37,99,235,0.35)] min-h-12"
                   >
                     Diagnosticar mi proceso — sin costo
                     <ArrowRight size={18} />
                   </motion.a>
                   <a
                     href="#roi"
-                    className="inline-flex items-center justify-center gap-2 text-slate-300 hover:text-white font-medium text-sm transition-colors group min-h-11"
+                    className="tap-press inline-flex items-center justify-center gap-2 text-slate-300 hover:text-white font-medium text-sm transition-colors group min-h-12 sm:min-h-11 rounded-xl border border-white/10 sm:border-transparent bg-white/5 sm:bg-transparent px-5 sm:px-0"
                   >
                     <Calculator size={16} />
                     Estimar mi proyecto
@@ -768,22 +913,22 @@ const App = () => {
               </FadeInUp>
               <FadeInUp delay={0.5}>
                 {/* Prueba arriba del fold — solo cifras con caso documentado detrás */}
-                <div className="grid grid-cols-3 gap-2 sm:gap-6 pt-6 border-t border-white/10 max-w-xl">
-                  <div>
-                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300 leading-none whitespace-nowrap">3h → 30s</div>
-                    <div className="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">conciliación financiera</div>
+                <div className="grid grid-cols-3 gap-2.5 sm:gap-6 pt-5 sm:pt-6 border-t border-white/10 max-w-xl">
+                  <div className="min-w-0">
+                    <div className="font-mono text-[clamp(1rem,5vw,1.25rem)] sm:text-2xl font-bold text-emerald-300 leading-none whitespace-nowrap">3h → 30s</div>
+                    <div className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">conciliación financiera</div>
                   </div>
-                  <div>
-                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300 leading-none whitespace-nowrap">
+                  <div className="min-w-0">
+                    <div className="font-mono text-[clamp(1rem,5vw,1.25rem)] sm:text-2xl font-bold text-emerald-300 leading-none whitespace-nowrap">
                       <CountUp to={5900} suffix="+" />
                     </div>
-                    <div className="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">comprobantes validados con Hacienda</div>
+                    <div className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">comprobantes validados con Hacienda</div>
                   </div>
-                  <div>
-                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300 leading-none whitespace-nowrap">
+                  <div className="min-w-0">
+                    <div className="font-mono text-[clamp(1rem,5vw,1.25rem)] sm:text-2xl font-bold text-emerald-300 leading-none whitespace-nowrap">
                       <CountUp to={3} />
                     </div>
-                    <div className="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">productos propios en producción</div>
+                    <div className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wider mt-1.5 leading-tight">productos propios en producción</div>
                   </div>
                 </div>
               </FadeInUp>
@@ -835,11 +980,12 @@ const App = () => {
       <section className="relative z-20 py-12 sm:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <p className="text-center text-[11px] font-mono uppercase tracking-[0.2em] text-slate-400 mb-4 sm:mb-6">Sectores que atendemos</p>
-          <div className="flex flex-wrap justify-between items-center gap-4 sm:gap-8 mb-12 sm:mb-20 opacity-60 grayscale hover:grayscale-0 transition-all duration-500" aria-label="Sectores atendidos">
-             <div className="font-display font-black text-base sm:text-2xl text-slate-800 tracking-wider">Retail & Consumo</div>
-             <div className="font-display font-black text-lg sm:text-3xl text-slate-800 tracking-tighter">Sector Energético</div>
-             <div className="font-display font-bold text-base sm:text-2xl text-slate-800 tracking-widest italic">Logística & Distribución</div>
-             <div className="font-display text-base sm:text-2xl font-bold text-slate-800 tracking-tight">Servicios Financieros</div>
+          {/* Móvil: grilla 2×2 de chips alineados. Desktop: fila tipográfica original. */}
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-between sm:items-center gap-2.5 sm:gap-8 mb-12 sm:mb-20 sm:opacity-60 sm:grayscale hover:grayscale-0 transition-all duration-500" aria-label="Sectores atendidos">
+             <div className="font-display font-black text-[13px] sm:text-2xl text-slate-600 sm:text-slate-800 sm:tracking-wider text-center sm:text-left border border-slate-200 sm:border-0 rounded-xl sm:rounded-none py-3 sm:py-0 px-2 sm:px-0 bg-slate-50/60 sm:bg-transparent leading-tight">Retail & Consumo</div>
+             <div className="font-display font-black text-[13px] sm:text-3xl text-slate-600 sm:text-slate-800 sm:tracking-tighter text-center sm:text-left border border-slate-200 sm:border-0 rounded-xl sm:rounded-none py-3 sm:py-0 px-2 sm:px-0 bg-slate-50/60 sm:bg-transparent leading-tight">Sector Energético</div>
+             <div className="font-display font-bold text-[13px] sm:text-2xl text-slate-600 sm:text-slate-800 sm:tracking-widest sm:italic text-center sm:text-left border border-slate-200 sm:border-0 rounded-xl sm:rounded-none py-3 sm:py-0 px-2 sm:px-0 bg-slate-50/60 sm:bg-transparent leading-tight">Logística & Distribución</div>
+             <div className="font-display font-bold text-[13px] sm:text-2xl text-slate-600 sm:text-slate-800 sm:tracking-tight text-center sm:text-left border border-slate-200 sm:border-0 rounded-xl sm:rounded-none py-3 sm:py-0 px-2 sm:px-0 bg-slate-50/60 sm:bg-transparent leading-tight">Servicios Financieros</div>
           </div>
 
           <div className="text-center mb-10 sm:mb-16">
@@ -985,7 +1131,7 @@ const App = () => {
                    href="https://wa.me/50670330596?text=Quiero%20agendar%20un%20diagn%C3%B3stico%20gratis"
                    target="_blank"
                    rel="noreferrer"
-                   className="btn-sheen glow-hover bg-slate-900 text-white hover:bg-slate-800 px-8 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all shadow-xl"
+                   className="tap-press btn-sheen glow-hover bg-slate-900 text-white hover:bg-slate-800 active:bg-slate-950 px-8 py-4 min-h-12 w-full sm:w-auto rounded-xl font-bold text-base sm:text-lg flex items-center justify-center gap-3 transition-all shadow-xl"
                  >
                    Agendar diagnóstico gratis <ArrowRight size={20} />
                  </motion.a>
@@ -1133,9 +1279,9 @@ const App = () => {
               </p>
               <a
                 href="#contacto"
-                className="btn-sheen glow-hover relative z-10 inline-flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-500 text-white px-8 md:px-10 py-5 md:py-6 rounded-full font-bold text-lg md:text-xl transition-all hover:scale-105 shadow-[0_10px_40px_rgba(5,150,105,0.4)]"
+                className="tap-press btn-sheen glow-hover relative z-10 inline-flex w-full sm:w-auto items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white px-6 md:px-10 py-4 md:py-6 rounded-full font-bold text-base sm:text-lg md:text-xl transition-all hover:scale-105 shadow-[0_10px_40px_rgba(5,150,105,0.4)]"
               >
-                Validar mi resultado gratis <ArrowRight size={24} />
+                Validar mi resultado gratis <ArrowRight size={22} />
               </a>
             </div>
           </FadeInUp>
@@ -1328,8 +1474,8 @@ const App = () => {
 
           <FadeInUp delay={0.2}>
             <div className="bg-slate-50 rounded-[2rem] p-2 md:p-6 shadow-sm border border-slate-200 mb-8">
-              {/* Tab Selector */}
-              <div className="flex overflow-x-auto snap-x snap-mandatory flex-nowrap md:flex-row justify-between mb-8 gap-3 relative pb-4 md:pb-0 no-scrollbar" data-lenis-prevent style={{ touchAction: 'pan-x' }}>
+              {/* Tab Selector — en móvil: carrusel con snap, fade de borde y auto-centrado */}
+              <div className="scroll-fade-x flex overflow-x-auto snap-x snap-mandatory flex-nowrap md:flex-row justify-between mb-3 md:mb-8 gap-3 relative pb-2 md:pb-0 no-scrollbar overscroll-x-contain" data-lenis-prevent style={{ touchAction: 'pan-x pan-y' }}>
                 <div className="hidden md:block absolute top-1/2 left-0 w-full h-1 bg-slate-200 -translate-y-1/2 z-0"></div>
                 {[
                   { id: "D1", title: "DEFINE", tagline: "Primero entendemos.", icon: <Target className="w-6 h-6" /> },
@@ -1339,27 +1485,51 @@ const App = () => {
                 ].map((phase, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setActivePhase(idx)}
-                    className={`relative z-10 w-[75vw] sm:w-[45vw] md:w-auto shrink-0 snap-center md:flex-1 flex flex-row md:flex-col items-center gap-4 p-4 rounded-2xl transition-all duration-300 ${
+                    onClick={(e) => {
+                      setActivePhase(idx);
+                      e.currentTarget.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', inline: 'center', block: 'nearest' });
+                    }}
+                    aria-pressed={activePhase === idx}
+                    className={`tap-press relative z-10 w-[72vw] sm:w-[45vw] md:w-auto shrink-0 snap-center md:flex-1 flex flex-row md:flex-col items-center gap-4 p-4 min-h-[4.75rem] rounded-2xl transition-all duration-300 ${
                       activePhase === idx
                         ? 'bg-blue-600 text-white shadow-lg md:scale-105 scale-[1.02]'
-                        : 'bg-white text-slate-500 hover:bg-blue-50 hover:text-blue-600 border border-slate-200'
+                        : 'bg-white text-slate-500 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-50 border border-slate-200'
                     }`}
                   >
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                    <div className={`w-12 h-12 shrink-0 rounded-full flex items-center justify-center ${
                       activePhase === idx ? 'bg-white/20' : 'bg-slate-100'
                     }`}>
                       {phase.icon}
                     </div>
-                    <div className="text-left md:text-center block">
+                    <div className="text-left md:text-center block min-w-0">
                       <div className={`text-xs font-bold uppercase tracking-widest ${
                         activePhase === idx ? 'text-blue-200' : 'text-slate-400'
                       }`}>{phase.id}</div>
                       <div className="font-display font-bold text-base sm:text-lg">{phase.title}</div>
-                      <div className={`text-xs hidden md:block ${
+                      <div className={`text-xs md:block ${
                         activePhase === idx ? 'text-blue-200' : 'text-slate-400'
                       }`}>{phase.tagline}</div>
                     </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Indicador de fase (solo móvil): dónde estoy de las 4 */}
+              <div className="flex md:hidden items-center justify-center gap-2 mb-5" role="tablist" aria-label="Fase de la metodología">
+                {[0, 1, 2, 3].map((idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setActivePhase(idx)}
+                    aria-label={`Ir a la fase D${idx + 1}`}
+                    aria-current={activePhase === idx}
+                    className="tap-press flex items-center justify-center min-w-11 min-h-11 -mx-1.5"
+                  >
+                    <span
+                      className={`block h-1.5 rounded-full transition-all duration-300 ${
+                        activePhase === idx ? 'w-6 bg-blue-600' : 'w-1.5 bg-slate-300'
+                      }`}
+                    />
                   </button>
                 ))}
               </div>
@@ -1408,9 +1578,13 @@ const App = () => {
                       transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.4 }}
                       className="grid grid-cols-1 md:grid-cols-2"
                     >
-                      {/* Image column */}
-                      <div className="img-hover-premium h-64 md:h-auto min-h-[300px] overflow-hidden relative bg-slate-800">
-                        <img src={content.image} alt={content.imageAlt} loading="lazy" decoding="async" width={800} height={533} onError={onImgError} className="w-full h-full object-cover" />
+                      {/* Image column — más compacta en móvil para priorizar el texto */}
+                      <div className="img-hover-premium h-44 sm:h-56 md:h-auto min-h-0 md:min-h-[300px] overflow-hidden relative bg-slate-800">
+                        <img
+                          src={content.image}
+                          srcSet={`${content.image.replace('w=800', 'w=480')} 480w, ${content.image} 800w`}
+                          sizes="(max-width: 767px) 100vw, 50vw"
+                          alt={content.imageAlt} loading="lazy" decoding="async" width={800} height={533} onError={onImgError} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/10"></div>
                       </div>
 
@@ -1443,7 +1617,10 @@ const App = () => {
 
           {/* Comparativa Visual */}
           <FadeInUp delay={0.3}>
-            <div className="table-scroll-wrap shadow-xl border border-slate-200 mb-10 sm:mb-12">
+            <p className="md:hidden flex items-center justify-end gap-1.5 text-[10px] font-mono uppercase tracking-[0.16em] text-slate-400 mb-2 pr-1" aria-hidden="true">
+              Deslizá para comparar <ArrowRight size={11} />
+            </p>
+            <div className="table-scroll-wrap scroll-fade-x shadow-xl border border-slate-200 mb-10 sm:mb-12">
               <div className="min-w-[520px]">
                 <div className="grid grid-cols-3 bg-slate-900 text-white px-4 py-4 sm:p-6 font-bold text-xs sm:text-sm md:text-base rounded-t-3xl">
                   <div className="text-slate-400">Característica</div>
@@ -1481,13 +1658,13 @@ const App = () => {
                   <a
                     href="https://wa.me/50670330596?text=Hola%2C%20quisiera%20agendar%20mi%20sesi%C3%B3n%20D1%20gratuita."
                     target="_blank" rel="noreferrer"
-                    className="btn-sheen glow-hover inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl font-bold transition-all shadow-lg hover:scale-105"
+                    className="tap-press btn-sheen glow-hover inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white px-8 py-4 min-h-12 rounded-xl font-bold transition-all shadow-lg hover:scale-105"
                   >
                     Agendar diagnóstico gratis <ArrowRight size={20} />
                   </a>
                   <a
                     href="#portfolio"
-                    className="inline-flex items-center gap-2 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 px-8 py-4 rounded-xl font-bold transition-all"
+                    className="tap-press inline-flex items-center justify-center gap-2 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 active:bg-white/5 px-8 py-4 min-h-12 rounded-xl font-bold transition-all"
                   >
                     Ver casos donde aplicamos esto
                   </a>
@@ -1685,15 +1862,15 @@ const App = () => {
                   <form className="flex flex-col gap-4" onSubmit={handleAssessmentClick}>
                     <div className="flex flex-col gap-2">
                        <label htmlFor="assessment-name" className="text-sm font-bold text-slate-400">Nombre &amp; Empresa</label>
-                       <input id="assessment-name" name="name" type="text" required placeholder="Tu nombre y empresa" value={assessmentName} onChange={(e) => setAssessmentName(e.target.value)} className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder:text-slate-600 focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/60" />
+                       <input id="assessment-name" name="name" type="text" required autoComplete="name" placeholder="Tu nombre y empresa" value={assessmentName} onChange={(e) => setAssessmentName(e.target.value)} className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder:text-slate-600 focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/60" />
                     </div>
                     <div className="flex flex-col gap-2">
                        <label htmlFor="assessment-email" className="text-sm font-bold text-slate-400">Email</label>
-                       <input id="assessment-email" name="email" type="email" required placeholder="tu@empresa.com" value={assessmentEmail} onChange={(e) => setAssessmentEmail(e.target.value)} className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder:text-slate-600 focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/60" />
+                       <input id="assessment-email" name="email" type="email" required autoComplete="email" placeholder="tu@empresa.com" value={assessmentEmail} onChange={(e) => setAssessmentEmail(e.target.value)} className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder:text-slate-600 focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/60" />
                     </div>
                     <div className="flex flex-col gap-2">
                        <label htmlFor="assessment-phone" className="text-sm font-bold text-slate-400">Teléfono <span className="font-normal text-slate-500">(opcional)</span></label>
-                       <input id="assessment-phone" name="phone" type="tel" inputMode="tel" pattern="[\d\s+().\-]{7,20}" title="Ingresá un número de teléfono válido (7 a 20 dígitos)" placeholder="+506 8888 8888" value={assessmentPhone} onChange={(e) => setAssessmentPhone(e.target.value)} className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder:text-slate-600 focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/60" />
+                       <input id="assessment-phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" pattern="[\d\s+().\-]{7,20}" title="Ingresá un número de teléfono válido (7 a 20 dígitos)" placeholder="+506 8888 8888" value={assessmentPhone} onChange={(e) => setAssessmentPhone(e.target.value)} className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder:text-slate-600 focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/60" />
                     </div>
                     <div className="flex flex-col gap-2">
                        <label htmlFor="assessment-pain" className="text-sm font-bold text-slate-400">Principal dolor</label>
@@ -1706,7 +1883,7 @@ const App = () => {
                          <option>Otro</option>
                        </select>
                     </div>
-                    <button type="submit" className="btn-sheen glow-hover mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl transition-colors w-full flex items-center justify-center gap-2">
+                    <button type="submit" className="tap-press btn-sheen glow-hover mt-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-4 min-h-12 rounded-xl transition-colors w-full flex items-center justify-center gap-2">
                       <Target size={20} /> Agendar diagnóstico gratis
                     </button>
                     <p className="text-xs text-center text-slate-500 mt-2 flex items-center justify-center gap-2"><ShieldCheck size={14}/> 100% libre de spam</p>
@@ -1727,14 +1904,14 @@ const App = () => {
             <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500 shrink-0">
               Sitios propios
             </span>
-            <div className="flex flex-wrap justify-center gap-x-5 gap-y-2.5">
+            <div className="flex flex-wrap justify-center gap-x-2 gap-y-1.5">
               {WEB_PROPERTIES.map((p) => (
                 <a
                   key={p.id}
                   href={p.url}
                   target="_blank"
                   rel="noopener"
-                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-300 hover:text-white transition-colors"
+                  className="tap-press inline-flex items-center gap-1.5 min-h-11 px-2.5 rounded-lg text-xs sm:text-sm font-bold text-slate-300 hover:text-white active:bg-white/5 transition-colors"
                 >
                   {p.name}
                   <ExternalLink size={12} className="text-slate-500" aria-hidden="true" />
@@ -1757,22 +1934,23 @@ const App = () => {
           <div className="text-xs sm:text-sm font-medium font-sans text-center">
             © 2026 JC Analytics. Todos los derechos reservados.
           </div>
-          <div className="flex flex-wrap justify-center gap-4 sm:gap-8 font-sans items-center">
-            <a href="mailto:gerencia@jcanalytic.com" className="hover:text-cyan-400 transition-colors text-xs sm:text-sm font-bold">gerencia@jcanalytic.com</a>
-            <a href="https://wa.me/50670330596" target="_blank" rel="noreferrer" className="hover:text-emerald-400 transition-colors text-xs sm:text-sm font-bold text-emerald-500">Contacto WhatsApp</a>
-            <span className="text-xs sm:text-sm font-bold text-slate-600 cursor-default select-none">LinkedIn</span>
+          <div className="flex flex-wrap justify-center gap-x-2 gap-y-1 sm:gap-8 font-sans items-center pb-safe md:pb-0">
+            <a href="mailto:gerencia@jcanalytic.com" className="tap-press inline-flex items-center min-h-11 px-2.5 rounded-lg hover:text-cyan-400 active:bg-white/5 transition-colors text-xs sm:text-sm font-bold">gerencia@jcanalytic.com</a>
+            <a href="https://wa.me/50670330596" target="_blank" rel="noreferrer" className="tap-press inline-flex items-center min-h-11 px-2.5 rounded-lg hover:text-emerald-400 active:bg-white/5 transition-colors text-xs sm:text-sm font-bold text-emerald-500">Contacto WhatsApp</a>
+            <span className="inline-flex items-center min-h-11 px-2.5 text-xs sm:text-sm font-bold text-slate-600 cursor-default select-none">LinkedIn</span>
           </div>
         </div>
       </footer>
 
-      {/* Floating WhatsApp Button with Pulse */}
+      {/* Floating WhatsApp Button with Pulse — .wa-fab gestiona bottom con
+          safe-area y sube cuando la barra del cotizador está visible */}
       <motion.a
         whileHover={prefersReducedMotion ? {} : { scale: 1.1 }}
         whileTap={prefersReducedMotion ? {} : { scale: 0.9 }}
         href="https://wa.me/50670330596"
         target="_blank"
         rel="noreferrer"
-        className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-50 bg-emerald-500 hover:bg-emerald-400 text-white p-3 sm:p-4 rounded-full shadow-2xl flex items-center justify-center pulse-ring"
+        className="wa-fab fixed right-5 sm:right-8 z-50 bg-emerald-500 hover:bg-emerald-400 text-white p-3.5 sm:p-4 min-w-13 min-h-13 rounded-full shadow-2xl flex items-center justify-center pulse-ring"
         aria-label="Contactar por WhatsApp"
       >
         <MessageSquare className="w-[26px] h-[26px] sm:w-[30px] sm:h-[30px]" />

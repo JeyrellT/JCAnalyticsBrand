@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion, useDragControls } from 'framer-motion';
 import { X, CheckCircle, ArrowRight, Layers, Target, Database, ShieldCheck } from 'lucide-react';
 
 const _MOTION = motion;
@@ -11,6 +11,18 @@ const CaseStudyModal = ({ isOpen, onClose, categoryId, casesData }) => {
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
   const shouldReduce = useReducedMotion();
+  const dragControls = useDragControls();
+
+  // En móvil el modal se comporta como bottom sheet (entra desde abajo y se
+  // cierra deslizando el asa hacia abajo); en sm+ mantiene el diálogo centrado.
+  const [isSheet, setIsSheet] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 639px)');
+    const sync = () => setIsSheet(query.matches);
+    sync();
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
+  }, []);
 
   // Depende solo de isOpen (no de onClose, que cambia de identidad en cada render
   // del padre): así el efecto no hace cleanup/setup en cada render durante la
@@ -61,52 +73,71 @@ const CaseStudyModal = ({ isOpen, onClose, categoryId, casesData }) => {
       {isOpen && category && (
         <div
           key="case-modal"
-          className="fixed inset-0 z-[9998] flex items-start sm:items-center justify-center p-3 sm:p-6 overflow-y-auto"
+          className="fixed inset-0 z-[9998] flex items-end sm:items-center justify-center p-0 sm:p-6 sm:overflow-y-auto"
           data-lenis-prevent
         >
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={onClose}
             className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm"
           />
 
           <motion.div
             ref={dialogRef}
-            initial={shouldReduce ? { opacity: 0 } : { opacity: 0, y: 50, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
+            initial={shouldReduce ? { opacity: 0 } : isSheet ? { y: '100%' } : { opacity: 0, y: 50, scale: 0.95 }}
+            animate={shouldReduce ? { opacity: 1 } : isSheet ? { y: 0 } : { opacity: 1, y: 0, scale: 1 }}
+            exit={shouldReduce ? { opacity: 0 } : isSheet ? { y: '100%' } : { opacity: 0, y: 30, scale: 0.97 }}
             transition={shouldReduce ? { duration: 0.15 } : { type: 'spring', bounce: 0, duration: 0.4 }}
+            drag={isSheet && !shouldReduce ? 'y' : false}
+            dragListener={false}
+            dragControls={dragControls}
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 0.7 }}
+            onDragEnd={(e, info) => {
+              if (info.offset.y > 90 || info.velocity.y > 600) onCloseRef.current?.();
+            }}
             role="dialog"
             aria-modal="true"
             aria-labelledby="case-modal-title"
-            className="relative w-full max-w-full sm:max-w-3xl lg:max-w-5xl bg-white rounded-[1.5rem] sm:rounded-[2rem] shadow-2xl overflow-hidden my-3 sm:my-8"
+            className="relative w-full max-w-full sm:max-w-3xl lg:max-w-5xl bg-white rounded-t-[1.5rem] rounded-b-none sm:rounded-[2rem] shadow-2xl overflow-hidden my-0 sm:my-8 max-h-[94dvh] sm:max-h-[88dvh] flex flex-col"
           >
             {/* Header */}
-            <div className={`p-5 sm:p-8 md:p-12 ${category.bgClass} relative overflow-hidden`}>
+            <div className={`shrink-0 p-5 sm:p-8 md:p-12 pt-3 sm:pt-8 ${category.bgClass} relative overflow-hidden`}>
               {/* Decorative background blur */}
               <div className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-[80px] opacity-50 ${category.glowClass}`}></div>
+
+              {/* Asa de arrastre (solo móvil): deslizar hacia abajo cierra */}
+              <div
+                onPointerDown={(e) => isSheet && dragControls.start(e)}
+                className="sm:hidden relative z-10 flex justify-center pb-2.5 -mx-5 px-5 touch-none cursor-grab active:cursor-grabbing"
+                aria-hidden="true"
+              >
+                <span className="w-11 h-1.5 rounded-full bg-white/40" />
+              </div>
 
               <button
                 ref={closeBtnRef}
                 onClick={onClose}
                 aria-label="Cerrar"
-                className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors backdrop-blur-md z-10 min-h-11 min-w-11 flex items-center justify-center"
+                className="tap-press absolute top-4 right-4 sm:top-6 sm:right-6 p-2 bg-white/10 hover:bg-white/20 active:bg-white/25 text-white rounded-full transition-colors backdrop-blur-md z-10 min-h-11 min-w-11 flex items-center justify-center"
               >
                 <X size={24} aria-hidden="true" />
               </button>
 
-              <div className="relative z-10 flex items-center gap-4 mb-4">
-                <div className="p-3 bg-white/10 rounded-xl backdrop-blur-md text-white border border-white/20">
-                   <Icon size={28} />
+              <div className="relative z-10 flex items-center gap-4 mb-3 sm:mb-4">
+                <div className="p-2.5 sm:p-3 bg-white/10 rounded-xl backdrop-blur-md text-white border border-white/20">
+                   <Icon size={24} />
                 </div>
-                <div className="text-sm font-bold tracking-widest text-white/80 uppercase">Casos Reales</div>
+                <div className="text-xs sm:text-sm font-bold tracking-widest text-white/80 uppercase">Casos Reales</div>
               </div>
 
-              <h2 id="case-modal-title" className="relative z-10 text-2xl sm:text-3xl md:text-5xl font-display font-black text-white">{category.title}</h2>
+              <h2 id="case-modal-title" className="relative z-10 text-[1.4rem] leading-tight sm:text-3xl md:text-5xl font-display font-black text-white">{category.title}</h2>
             </div>
 
             {/* Content Body - Scrollable */}
-            <div className="p-4 sm:p-6 md:p-12 max-h-[78dvh] sm:max-h-[70dvh] overflow-y-auto custom-scrollbar bg-slate-50" data-lenis-prevent>
+            <div className="flex-1 min-h-0 p-4 sm:p-6 md:p-12 overflow-y-auto overscroll-contain custom-scrollbar bg-slate-50" data-lenis-prevent>
               <div className="space-y-8 sm:space-y-16">
                 {category.cases.map((cs, idx) => (
                   <div key={idx} className="bg-white rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden group">
@@ -216,12 +247,12 @@ const CaseStudyModal = ({ isOpen, onClose, categoryId, casesData }) => {
                 ))}
               </div>
 
-              <div className="mt-10 sm:mt-12 text-center">
+              <div className="mt-10 sm:mt-12 text-center pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:pb-0">
                 <a
                   href="https://wa.me/50670330596?text=Hola,%20vi%20los%20casos%20de%20uso%20y%20quiero%20conversar%20sobre%20c%C3%B3mo%20aplicarlo%20a%20mi%20empresa."
                   target="_blank"
                   rel="noreferrer"
-                  className={`inline-flex w-full sm:w-auto items-center justify-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-full font-bold text-white transition-all hover:scale-105 shadow-lg min-h-11 ${category.bgClass} hover:opacity-90`}
+                  className={`tap-press inline-flex w-full sm:w-auto items-center justify-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-full font-bold text-white transition-all hover:scale-105 shadow-lg min-h-12 ${category.bgClass} hover:opacity-90`}
                 >
                   Quiero algo similar para mi empresa <ArrowRight size={20} />
                 </a>

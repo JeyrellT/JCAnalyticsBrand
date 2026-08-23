@@ -34,6 +34,34 @@
   }
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+   MOBILE FOUNDATIONS
+   Scroll suave nativo (Lenis solo corre en desktop), safe-areas de iOS,
+   tap-highlight custom y estabilidad tipográfica en rotación.
+   ──────────────────────────────────────────────────────────────────────────── */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* En táctil no hay Lenis: los saltos de ancla usan el scroll nativo del SO.
+   Solo se suaviza si el usuario no pidió reducir movimiento. */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+a, button, [role="button"], input[type="range"], select, label, summary {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
 @layer utilities {
   .animate-blob {
     animation: blob 15s infinite alternate ease-in-out;
@@ -85,15 +113,36 @@
     scrollbar-width: none;
   }
 
+  /* Slider premium: track delgado con relleno de progreso (--pct la setea React)
+     pero área táctil de 32px de alto para dedos reales. */
+  .touch-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 32px;
+    margin: 0;
+    background:
+      linear-gradient(90deg, #10b981 var(--pct, 33%), rgba(148, 163, 184, 0.22) var(--pct, 33%));
+    background-size: 100% 6px;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 9999px;
+    cursor: pointer;
+  }
   .touch-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: 28px;
     height: 28px;
     background: #10b981;
+    border: 3px solid #022c22;
     border-radius: 50%;
     cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18), 0 4px 10px rgba(0, 0, 0, 0.4);
+    transition: transform 0.2s var(--ease-out-quart), box-shadow 0.2s var(--ease-out-quart);
+  }
+  .touch-slider:active::-webkit-slider-thumb {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.22), 0 4px 14px rgba(0, 0, 0, 0.5);
   }
   .touch-slider::-moz-range-thumb {
     width: 28px;
@@ -101,8 +150,15 @@
     background: #10b981;
     border-radius: 50%;
     cursor: pointer;
-    border: none;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    border: 3px solid #022c22;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18), 0 4px 10px rgba(0, 0, 0, 0.4);
+    transition: transform 0.2s var(--ease-out-quart);
+  }
+  .touch-slider:active::-moz-range-thumb { transform: scale(1.15); }
+  .touch-slider::-moz-range-track {
+    height: 6px;
+    border-radius: 9999px;
+    background: transparent;
   }
 
   /* Pulse ring for floating button */
@@ -133,6 +189,49 @@
     -webkit-overflow-scrolling: touch;
     overflow-x: auto;
     border-radius: 1.5rem;
+    overscroll-behavior-x: contain;
+  }
+
+  /* Pista visual de "hay más contenido a la derecha" en scrollers horizontales.
+     El fade desaparece al llegar al final gracias a scroll-timeline cuando el
+     navegador lo soporta; si no, queda el fade estático (inofensivo). */
+  .scroll-fade-x {
+    mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 44px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 44px), transparent 100%);
+  }
+  @media (min-width: 768px) {
+    .scroll-fade-x {
+      mask-image: none;
+      -webkit-mask-image: none;
+    }
+  }
+
+  /* Feedback de presión para táctil: el equivalente móvil del hover. */
+  .tap-press {
+    transition: transform 0.16s var(--ease-out-quart);
+  }
+  @media (hover: none) {
+    .tap-press:active { transform: scale(0.97); }
+  }
+
+  /* Safe areas (iOS notch / home indicator) */
+  .pb-safe { padding-bottom: max(0.75rem, var(--safe-bottom)); }
+  .mb-safe { margin-bottom: var(--safe-bottom); }
+
+  /* Botón flotante de WhatsApp: sube cuando la barra del cotizador está
+     visible para no taparle el CTA (la clase la togglea QuoteEstimator). */
+  .wa-fab {
+    bottom: calc(1.25rem + var(--safe-bottom));
+    transition: bottom 0.35s var(--ease-out-quart), transform 0.2s var(--ease-out-quart);
+  }
+  @media (min-width: 640px) {
+    .wa-fab { bottom: calc(2rem + var(--safe-bottom)); }
+  }
+  body.quote-bar-visible .wa-fab {
+    bottom: calc(5.25rem + var(--safe-bottom));
+  }
+  @media (min-width: 1024px) {
+    body.quote-bar-visible .wa-fab { bottom: calc(2rem + var(--safe-bottom)); }
   }
 }
 

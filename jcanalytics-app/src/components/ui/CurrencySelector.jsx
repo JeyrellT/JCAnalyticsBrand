@@ -6,6 +6,9 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Check } from 'lucide-react';
 
+// eslint (sin plugin de react) no reconoce a `motion` usado solo como <motion.x>.
+const _MOTION = motion;
+
 export default function CurrencySelector({ activeCode, onChange, currencies }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
@@ -33,7 +36,7 @@ export default function CurrencySelector({ activeCode, onChange, currencies }) {
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={`Moneda: ${active.name}. Cambiar moneda`}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60"
+        className="tap-press inline-flex items-center gap-1.5 px-3 py-2 min-h-10 rounded-full bg-slate-800/80 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60"
       >
         <span aria-hidden="true">{active.flag}</span>
         <span>{active.code}</span>

@@ -4,8 +4,11 @@
 //  Proyectos desde $30 (Excel puntual) hasta $6.000 (software a la medida),
 //  convertible a LatAm. El cliente ve SOLO rango + ventana de entrega.
 // ============================================================================
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+
+// eslint (sin plugin de react) no reconoce a `motion` usado solo como <motion.x>.
+const _MOTION = motion;
 import {
   BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settings, Lightbulb, Receipt, Globe,
   ArrowRight, Clock, CheckCircle, ShieldCheck, Calculator, MessageSquare, ChevronUp,
@@ -53,9 +56,9 @@ function SegmentedToggle({ options, value, onChange }) {
           <button
             key={o.id} type="button" role="radio" aria-checked={active}
             onClick={() => onChange(o.id)}
-            className={`flex-1 flex flex-col items-center justify-center py-3 px-2 text-xs font-bold rounded-xl border transition-all duration-300 ${
+            className={`tap-press flex-1 flex flex-col items-center justify-center py-3 px-2 min-h-12 text-xs font-bold rounded-xl border transition-all duration-300 ${
               active ? SEG_ACTIVE[o.dot] || SEG_ACTIVE.blue
-                     : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-700/40'
+                     : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-700/40 active:bg-slate-700/60'
             }`}
           >
             <span className={`w-2 h-2 rounded-full mb-1.5 transition-colors ${active ? DOT[o.dot] || DOT.blue : 'bg-slate-600'}`} />
@@ -88,7 +91,44 @@ export default function QuoteEstimator() {
   const [sent, setSent] = useState(false);
 
   const resultRef = useRef(null);
+  const rootRef = useRef(null);
   const svc = SERVICES[service];
+
+  // ── Barra resumen móvil ──────────────────────────────────────────────────
+  // Solo tiene sentido mientras el usuario está DENTRO del cotizador y el
+  // desglose no está a la vista (en móvil el resultado queda debajo de los
+  // controles). Fuera de la sección desaparece — antes tapaba el footer y el
+  // botón de WhatsApp en toda la página.
+  const [inSection, setInSection] = useState(false);
+  const [resultVisible, setResultVisible] = useState(false);
+  const showBar = inSection && !resultVisible;
+
+  useEffect(() => {
+    const rootEl = rootRef.current;
+    const resultEl = resultRef.current;
+    if (!rootEl || !resultEl) return undefined;
+
+    const sectionObs = new IntersectionObserver(
+      ([entry]) => setInSection(entry.isIntersecting),
+      { rootMargin: '-15% 0px -10% 0px', threshold: 0 }
+    );
+    const resultObs = new IntersectionObserver(
+      ([entry]) => setResultVisible(entry.isIntersecting),
+      { threshold: 0.35 }
+    );
+    sectionObs.observe(rootEl);
+    resultObs.observe(resultEl);
+    return () => {
+      sectionObs.disconnect();
+      resultObs.disconnect();
+    };
+  }, []);
+
+  // El FAB de WhatsApp lee esta clase para subir y no tapar el CTA de la barra.
+  useEffect(() => {
+    document.body.classList.toggle('quote-bar-visible', showBar);
+    return () => document.body.classList.remove('quote-bar-visible');
+  }, [showBar]);
 
   const complexityScore = useMemo(
     () => COMPLEXITY_UI.find((c) => c.id === complexityId)?.score ?? 0,
@@ -151,7 +191,7 @@ export default function QuoteEstimator() {
   const block = 'bg-slate-900/60 p-5 sm:p-6 rounded-[2rem] border border-slate-800';
 
   return (
-    <div className="max-w-7xl mx-auto px-4 relative z-10 pb-20 lg:pb-0">
+    <div ref={rootRef} className="max-w-7xl mx-auto px-4 relative z-10 pb-6 lg:pb-0">
       {/* Header */}
       <div className="text-center mb-10 sm:mb-14">
         <div className="inline-flex items-center gap-2 px-5 py-2 bg-white/5 border border-white/10 rounded-full text-sm font-bold mb-5 backdrop-blur-md text-emerald-300">
@@ -185,8 +225,8 @@ export default function QuoteEstimator() {
                     onClick={() => { setService(key); touch('service'); }}
                     whileHover={reduce ? undefined : { scale: 1.02 }}
                     whileTap={reduce ? undefined : { scale: 0.97 }}
-                    className={`text-left p-3 rounded-2xl border transition-colors h-full flex flex-col gap-2 ${
-                      active ? a.card : 'border-slate-800 bg-slate-900/40 hover:border-slate-700'
+                    className={`text-left p-3 min-h-[4.5rem] rounded-2xl border transition-colors h-full flex flex-col gap-2 ${
+                      active ? a.card : 'border-slate-800 bg-slate-900/40 hover:border-slate-700 active:bg-slate-800/60'
                     }`}
                   >
                     <Icon size={20} className={active ? a.icon : 'text-slate-400'} />
@@ -210,12 +250,24 @@ export default function QuoteEstimator() {
             <input
               type="range" min={0} max={3} step={1} value={sizeIdx}
               onChange={(e) => { setSizeIdx(Number(e.target.value)); touch('size'); }}
+              style={{ '--pct': `${(sizeIdx / 3) * 100}%` }}
               className="touch-slider w-full" aria-label="Tamaño del proyecto"
             />
-            <div className="flex justify-between mt-2 text-[10px] font-mono uppercase tracking-wider text-slate-500">
-              {SIZE_UI.map((v) => <span key={v.idx}>{v.label}</span>)}
+            {/* Las etiquetas también son objetivos táctiles: tocar "Grande" mueve el slider */}
+            <div className="flex justify-between mt-1">
+              {SIZE_UI.map((v) => (
+                <button
+                  key={v.idx} type="button"
+                  onClick={() => { setSizeIdx(v.idx); touch('size'); }}
+                  className={`tap-press text-[10px] font-mono uppercase tracking-wider px-1.5 py-3 -my-1 -mx-1.5 min-h-11 rounded-lg transition-colors ${
+                    v.idx === sizeIdx ? 'text-emerald-300 font-bold' : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  {v.label}
+                </button>
+              ))}
             </div>
-            <p className="text-xs text-slate-500 mt-1.5">{SIZE_UI[sizeIdx]?.hint}</p>
+            <p className="text-xs text-slate-500 mt-1">{SIZE_UI[sizeIdx]?.hint}</p>
           </div>
 
           {/* 3. Complejidad */}
@@ -308,12 +360,13 @@ export default function QuoteEstimator() {
                     initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
                     className="space-y-3 overflow-hidden">
                     <p className="text-xs text-slate-400">Dejanos tus datos y te enviamos el resumen de esta cotización.</p>
-                    <input type="text" required placeholder="Nombre y empresa" value={qName} onChange={(e) => setQName(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white text-sm placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60" />
-                    <input type="email" required placeholder="tu@empresa.com" value={qEmail} onChange={(e) => setQEmail(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white text-sm placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60" />
-                    <input type="tel" inputMode="tel" placeholder="WhatsApp (opcional)" value={qPhone} onChange={(e) => setQPhone(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white text-sm placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60" />
+                    {/* text-base (16px): debajo de eso iOS hace zoom automático al enfocar */}
+                    <input type="text" required autoComplete="organization" placeholder="Nombre y empresa" value={qName} onChange={(e) => setQName(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white text-base sm:text-sm placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60" />
+                    <input type="email" required autoComplete="email" placeholder="tu@empresa.com" value={qEmail} onChange={(e) => setQEmail(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white text-base sm:text-sm placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60" />
+                    <input type="tel" inputMode="tel" autoComplete="tel" placeholder="WhatsApp (opcional)" value={qPhone} onChange={(e) => setQPhone(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white text-base sm:text-sm placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60" />
                     <button type="submit" className="btn-sheen glow-hover w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2">
                       Enviar cotización <ArrowRight size={18} />
                     </button>
@@ -321,7 +374,7 @@ export default function QuoteEstimator() {
                 ) : (
                   <motion.div key="cta" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                     <button type="button" onClick={() => setShowForm(true)}
-                      className="btn-sheen glow-hover w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl transition-colors flex items-center justify-center gap-2">
+                      className="tap-press btn-sheen glow-hover w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-4 rounded-xl transition-colors flex items-center justify-center gap-2">
                       <Calculator size={18} /> Solicitar cotización formal
                     </button>
                   </motion.div>
@@ -329,7 +382,7 @@ export default function QuoteEstimator() {
               </AnimatePresence>
 
               <a href={whatsappHref} target="_blank" rel="noreferrer"
-                className="mt-3 w-full inline-flex items-center justify-center gap-2 text-sm font-bold text-slate-300 hover:text-white transition-colors">
+                className="tap-press mt-2 w-full inline-flex items-center justify-center gap-2 min-h-11 rounded-xl text-sm font-bold text-slate-300 hover:text-white active:bg-white/5 transition-colors">
                 <MessageSquare size={16} className="text-emerald-400" /> o escribinos por WhatsApp
               </a>
 
@@ -342,17 +395,41 @@ export default function QuoteEstimator() {
         </div>
       </div>
 
-      {/* Barra resumen fija (mobile) */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 glass-nav border-t border-white/10 px-4 py-3 flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="font-mono text-sm font-bold text-emerald-300 truncate">{singlePrice ? range.max : range?.label}</div>
-          <div className="text-[10px] text-slate-400">{result.delivery.display}</div>
-        </div>
-        <button type="button" onClick={scrollToResult}
-          className="shrink-0 inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold px-4 py-2.5 rounded-full transition-colors">
-          Ver desglose <ChevronUp size={16} />
-        </button>
-      </div>
+      {/* Barra resumen fija (mobile) — visible solo dentro del cotizador y
+          mientras el desglose no está en pantalla */}
+      <AnimatePresence>
+        {showBar && (
+          <motion.div
+            initial={reduce ? { opacity: 0 } : { y: '110%' }}
+            animate={reduce ? { opacity: 1 } : { y: 0 }}
+            exit={reduce ? { opacity: 0 } : { y: '110%' }}
+            transition={reduce ? { duration: 0.15 } : { type: 'spring', stiffness: 380, damping: 34 }}
+            className="lg:hidden fixed bottom-0 inset-x-0 z-40 glass-nav border-t border-white/10 px-4 pt-3 pb-safe"
+          >
+            {/* Filo superior con acento de marca */}
+            <div aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent" />
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500 mb-0.5">Estimado en vivo</div>
+                <motion.div
+                  key={`${range?.label}-bar`}
+                  initial={reduce ? false : { opacity: 0.4, y: 3 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: reduce ? 0 : 0.25 }}
+                  className="font-mono text-sm font-bold text-emerald-300 truncate leading-tight"
+                >
+                  {singlePrice ? range.max : range?.label}
+                  <span className="ml-2 font-sans font-medium text-[10px] text-slate-400 normal-case">{result.delivery.display}</span>
+                </motion.div>
+              </div>
+              <button type="button" onClick={scrollToResult}
+                className="tap-press shrink-0 inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-sm font-bold px-4 py-2.5 min-h-11 rounded-full transition-colors">
+                Ver desglose <ChevronUp size={16} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -255,9 +255,10 @@ export default function WebProperties() {
                     rel="noopener"
                     aria-label={`Visitar ${p.name} en ${p.domain} — abre en una pestaña nueva`}
                     style={{ '--brand': p.accent }}
-                    className="group/cta inline-flex w-full items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm min-h-11 transition-colors duration-300
+                    className="tap-press group/cta inline-flex w-full items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm min-h-12 transition-colors duration-300
                       bg-[var(--brand)]/10 border border-[var(--brand)]/25 text-white
                       hover:bg-[var(--brand)] hover:border-[var(--brand)] hover:text-slate-950
+                      active:bg-[var(--brand)] active:border-[var(--brand)] active:text-slate-950
                       focus-visible:bg-[var(--brand)] focus-visible:border-[var(--brand)] focus-visible:text-slate-950
                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                   >
@@ -292,7 +293,7 @@ export default function WebProperties() {
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                 <a
                   href="#roi"
-                  className="btn-sheen inline-flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-6 sm:px-7 py-3.5 rounded-xl font-bold text-sm sm:text-base transition-colors shadow-[0_0_30px_rgba(124,58,237,0.3)] min-h-11"
+                  className="tap-press btn-sheen inline-flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 active:bg-violet-700 text-white px-6 sm:px-7 py-3.5 rounded-xl font-bold text-sm sm:text-base transition-colors shadow-[0_0_30px_rgba(124,58,237,0.3)] min-h-12"
                 >
                   <Calculator size={17} /> Cotizar mi página web
                 </a>
@@ -300,7 +301,7 @@ export default function WebProperties() {
                   href="https://wa.me/50670330596?text=Hola%2C%20quiero%20una%20p%C3%A1gina%20web%20con%20reservas%20como%20las%20de%20sus%20sitios%20propios."
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center justify-center gap-2 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white px-6 sm:px-7 py-3.5 rounded-xl font-bold text-sm sm:text-base transition-colors min-h-11"
+                  className="tap-press inline-flex items-center justify-center gap-2 border border-slate-700 hover:border-slate-500 active:bg-white/5 text-slate-300 hover:text-white px-6 sm:px-7 py-3.5 rounded-xl font-bold text-sm sm:text-base transition-colors min-h-12"
                 >
                   Hablar por WhatsApp <ArrowRight size={17} />
                 </a>

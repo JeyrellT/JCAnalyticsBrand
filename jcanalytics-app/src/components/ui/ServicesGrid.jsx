@@ -170,10 +170,17 @@ export default function ServicesGrid() {
                   }}
                   className="spotlight group flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden transition-all duration-300 hover:border-slate-300 hover:shadow-[0_16px_40px_-18px_rgba(15,23,42,0.3)]"
                 >
-                  {/* Imagen */}
+                  {/* Imagen — srcset solo para remotas (Unsplash acepta &w=): en móvil
+                      baja ~60% del peso por card frente al asset de 800px */}
                   <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
                     <img
                       src={s.img}
+                      {...(s.img.includes('unsplash.com')
+                        ? {
+                            srcSet: `${s.img.replace('w=800', 'w=480')} 480w, ${s.img} 800w`,
+                            sizes: '(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw',
+                          }
+                        : {})}
                       alt={s.title}
                       loading="lazy"
                       decoding="async"
@@ -205,18 +212,19 @@ export default function ServicesGrid() {
                       ))}
                     </ul>
 
-                    {/* CTA: modal de casos, o conversación si el servicio aún no tiene casos */}
-                    <div className="mt-auto pt-4 border-t border-slate-100">
+                    {/* CTA: modal de casos, o conversación si el servicio aún no tiene casos.
+                        En móvil es una fila completa de 44px+ (tap cómodo); en sm+ vuelve a enlace inline. */}
+                    <div className="mt-auto pt-3 sm:pt-4 border-t border-slate-100">
                       {s.cta ? (
                         <a
                           href={s.cta.href}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors group/cta focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 rounded"
+                          className="tap-press flex sm:inline-flex w-full sm:w-auto items-center justify-between sm:justify-start gap-1.5 min-h-11 sm:min-h-0 -mx-2 sm:mx-0 px-2 sm:px-0 rounded-lg active:bg-slate-50 sm:active:bg-transparent text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors group/cta focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
                         >
                           {s.cta.label}
                           <ArrowRight
-                            size={14}
+                            size={15}
                             className="transition-transform duration-300 group-hover/cta:translate-x-0.5"
                             aria-hidden="true"
                           />
@@ -225,11 +233,11 @@ export default function ServicesGrid() {
                         <button
                           type="button"
                           onClick={() => setActiveModalId(s.id)}
-                          className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors group/cta focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 rounded"
+                          className="tap-press flex sm:inline-flex w-full sm:w-auto items-center justify-between sm:justify-start gap-1.5 min-h-11 sm:min-h-0 -mx-2 sm:mx-0 px-2 sm:px-0 rounded-lg active:bg-slate-50 sm:active:bg-transparent text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors group/cta focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
                         >
                           Ver casos reales
                           <ArrowRight
-                            size={14}
+                            size={15}
                             className="transition-transform duration-300 group-hover/cta:translate-x-0.5"
                             aria-hidden="true"
                           />
