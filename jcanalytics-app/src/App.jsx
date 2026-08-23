@@ -389,7 +389,7 @@ const NAV_LINKS = [
   { label: 'Sistemas', href: '#soluciones' },
   { label: 'Cotizador', href: '#roi' },
   { label: 'Evidencia', href: '#portfolio' },
-  { label: 'Productos', href: '#sitios' },
+  { label: 'Sitios', href: '#sitios' },
   { label: 'Manifiesto', href: '#manifiesto' },
   { label: 'Metodología', href: '#metodologia' },
   { label: 'Contacto', href: '#contacto' },

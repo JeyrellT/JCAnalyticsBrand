@@ -1,8 +1,9 @@
 // ============================================================================
 //  src/components/ui/WebProperties.jsx
-//  Sección "Sitios propios": los productos web que construimos, operamos y
-//  mantenemos en producción. Doble función — prueba de trabajo real y soporte
-//  del servicio "Páginas Web y Reservas en Línea".
+//  Sección "Sitios": todo lo que está en línea y se puede abrir hoy, en tres
+//  grupos (productos propios, sitios de clientes y demos abiertos). Doble
+//  función — prueba de trabajo real y soporte del servicio "Páginas Web y
+//  Reservas en Línea". Los grupos y su contenido viven en data/webProperties.
 //
 //  La card muestra la captura REAL del sitio dentro de un marco de navegador.
 //  En escritorio la captura se desplaza en hover (recorre la página) y el marco
@@ -11,13 +12,13 @@
 //  donde está la mayor parte del tráfico. Todo se anula con reduced-motion.
 //
 //  rel="noopener" (y NO "noreferrer" como el resto de los enlaces externos del
-//  sitio): son propiedades nuestras, así que conviene conservar el referrer
-//  para que su propia analítica atribuya el tráfico que llega de jcanalytic.com.
+//  sitio): son sitios que construimos nosotros, así que conviene conservar el
+//  referrer para que su analítica atribuya el tráfico que llega de jcanalytic.com.
 // ============================================================================
 import { useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Globe, Check, ArrowUpRight, ArrowRight, Calculator, Lock } from 'lucide-react';
-import { WEB_PROPERTIES, WEB_STATS } from '../../data/webProperties';
+import { SITE_GROUPS, WEB_STATS } from '../../data/webProperties';
 
 // Cuánto de la captura se recorre (deja margen: nunca llega al blanco del final).
 const PAN = '-58%';
@@ -103,6 +104,109 @@ const SitePreview = ({ site, autoPan }) => (
   </div>
 );
 
+// Card de un sitio. Misma pieza para los tres grupos: un sitio de cliente o un
+// demo no se muestra "más chiquito" que uno propio — lo que cambia es el
+// encabezado del grupo, no el peso visual de la card.
+const SiteCard = ({ site: p, autoPan, anim }) => (
+  <motion.article
+    {...anim}
+    className="group relative flex flex-col h-full rounded-[2rem] border border-slate-800 bg-slate-900/50 hover:bg-slate-900/80 hover:border-slate-700 transition-colors duration-300 overflow-hidden"
+  >
+    {/* Resplandor de marca al pasar el cursor */}
+    <div
+      aria-hidden="true"
+      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
+      style={{ background: `radial-gradient(130% 55% at 50% 0%, ${p.accent}1f, transparent 70%)` }}
+    />
+    {/* Filo superior en el color de la marca */}
+    <div
+      aria-hidden="true"
+      className="absolute inset-x-0 top-0 h-px opacity-40 group-hover:opacity-100 transition-opacity duration-500"
+      style={{ background: `linear-gradient(90deg, transparent, ${p.accent}, transparent)` }}
+    />
+
+    {/* Ventana con la captura real */}
+    <div className="relative z-10 p-3 sm:p-3.5">
+      <SitePreview site={p} autoPan={autoPan} />
+    </div>
+
+    {/* Cuerpo */}
+    <div className="relative z-10 px-5 sm:px-6 pb-5 sm:pb-6 flex flex-col flex-1">
+      <div className="flex items-center gap-2 mb-2.5">
+        <span
+          className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] px-2 py-1 rounded-md border"
+          style={{ color: p.accent, borderColor: `${p.accent}33`, backgroundColor: `${p.accent}14` }}
+        >
+          {p.sector}
+        </span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">Costa Rica</span>
+      </div>
+
+      <h3 className="font-display text-xl sm:text-2xl font-bold text-white leading-tight text-balance">{p.name}</h3>
+      <p className="font-sans text-sm italic mt-1.5 mb-3.5" style={{ color: p.accent }}>
+        {p.tagline}
+      </p>
+
+      <p className="font-sans text-[13px] sm:text-sm text-slate-400 leading-relaxed mb-5">{p.desc}</p>
+
+      <ul className="space-y-2 mb-5">
+        {p.features.map((f) => (
+          <li key={f} className="flex items-start gap-2.5 text-[13px] text-slate-300 leading-snug">
+            <span
+              className="shrink-0 mt-0.5 w-4 h-4 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: `${p.accent}24` }}
+            >
+              <Check size={10} strokeWidth={3} style={{ color: p.accent }} />
+            </span>
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="flex flex-wrap gap-1.5 mb-5">
+        {p.stack.map((t) => (
+          <span
+            key={t}
+            className="font-mono text-[10px] font-medium px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-400"
+          >
+            {t}
+          </span>
+        ))}
+      </div>
+
+      {/* Métrica publicada + CTA */}
+      <div className="mt-auto pt-5 border-t border-slate-800">
+        <div className="mb-4">
+          <div className="font-mono text-base sm:text-lg font-bold text-white leading-none">{p.metric.value}</div>
+          <div className="text-[11px] text-slate-500 mt-1.5 leading-tight">{p.metric.label}</div>
+        </div>
+        {/* El color de marca entra por --brand: así el hover/focus es
+            CSS puro y no depende de handlers de ratón. */}
+        <a
+          href={p.url}
+          target="_blank"
+          rel="noopener"
+          aria-label={`Visitar ${p.name} en ${p.domain} — abre en una pestaña nueva`}
+          style={{ '--brand': p.accent }}
+          className="tap-press group/cta inline-flex w-full items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm min-h-12 transition-colors duration-300
+            bg-[var(--brand)]/10 border border-[var(--brand)]/25 text-white
+            hover:bg-[var(--brand)] hover:border-[var(--brand)] hover:text-slate-950
+            active:bg-[var(--brand)] active:border-[var(--brand)] active:text-slate-950
+            focus-visible:bg-[var(--brand)] focus-visible:border-[var(--brand)] focus-visible:text-slate-950
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+        >
+          <span className="truncate">Visitar {p.domain}</span>
+          <ArrowUpRight
+            size={16}
+            className="shrink-0 transition-transform duration-300 group-hover/cta:translate-x-0.5 group-hover/cta:-translate-y-0.5"
+            aria-hidden="true"
+          />
+        </a>
+      </div>
+    </div>
+  </motion.article>
+);
+
 export default function WebProperties() {
   const reduce = useReducedMotion();
 
@@ -139,18 +243,18 @@ export default function WebProperties() {
         <div className="text-center mb-9 sm:mb-12">
           <motion.div {...fadeUp()}>
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-xs sm:text-sm font-bold mb-5 backdrop-blur-md text-violet-300">
-              <Globe size={14} /> Productos propios · en producción
+              <Globe size={14} /> Productos, clientes y demos · en línea
             </div>
             <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-5 tracking-tight text-balance">
-              Cuando un problema se repite en toda una industria,{' '}
+              No te contamos lo que hacemos.{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-300">
-                lo convertimos en producto.
+                Te damos el enlace.
               </span>
             </h2>
             <p className="font-sans text-base sm:text-lg text-slate-400 max-w-2xl mx-auto">
-              No solo resolvemos problemas por encargo: los mejores los transformamos en tecnología propia. Tres
-              productos que diseñamos, operamos y mantenemos nosotros mismos — cada card trae la captura real del sitio.
-              Entrá y probalos: son la muestra más honesta de lo que construimos.
+              Productos que operamos nosotros, sitios que hicimos para clientes y demos abiertos de nuestras apps. Cada
+              card trae la captura real del sitio y el enlace directo — entrá y probalos: es la muestra más honesta de
+              lo que construimos.
             </p>
           </motion.div>
         </div>
@@ -169,111 +273,43 @@ export default function WebProperties() {
           </div>
         </motion.div>
 
-        {/* Grid de sitios */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-7 mb-12 sm:mb-16">
-          {WEB_PROPERTIES.map((p, idx) => (
-            <motion.article
-              key={p.id}
-              {...fadeUp(0.15 + 0.1 * idx)}
-              className="group relative flex flex-col h-full rounded-[2rem] border border-slate-800 bg-slate-900/50 hover:bg-slate-900/80 hover:border-slate-700 transition-colors duration-300 overflow-hidden"
-            >
-              {/* Resplandor de marca al pasar el cursor */}
-              <div
-                aria-hidden="true"
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
-                style={{ background: `radial-gradient(130% 55% at 50% 0%, ${p.accent}1f, transparent 70%)` }}
-              />
-              {/* Filo superior en el color de la marca */}
-              <div
-                aria-hidden="true"
-                className="absolute inset-x-0 top-0 h-px opacity-40 group-hover:opacity-100 transition-opacity duration-500"
-                style={{ background: `linear-gradient(90deg, transparent, ${p.accent}, transparent)` }}
-              />
-
-              {/* Ventana con la captura real */}
-              <div className="relative z-10 p-3 sm:p-3.5">
-                <SitePreview site={p} autoPan={autoPan} />
-              </div>
-
-              {/* Cuerpo */}
-              <div className="relative z-10 px-5 sm:px-6 pb-5 sm:pb-6 flex flex-col flex-1">
-                <div className="flex items-center gap-2 mb-2.5">
-                  <span
-                    className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] px-2 py-1 rounded-md border"
-                    style={{ color: p.accent, borderColor: `${p.accent}33`, backgroundColor: `${p.accent}14` }}
-                  >
-                    {p.sector}
-                  </span>
-                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">Costa Rica</span>
-                </div>
-
-                <h3 className="font-display text-xl sm:text-2xl font-bold text-white leading-tight">{p.name}</h3>
-                <p className="font-sans text-sm italic mt-1.5 mb-3.5" style={{ color: p.accent }}>
-                  {p.tagline}
-                </p>
-
-                <p className="font-sans text-[13px] sm:text-sm text-slate-400 leading-relaxed mb-5">{p.desc}</p>
-
-                <ul className="space-y-2 mb-5">
-                  {p.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-[13px] text-slate-300 leading-snug">
-                      <span
-                        className="shrink-0 mt-0.5 w-4 h-4 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: `${p.accent}24` }}
-                      >
-                        <Check size={10} strokeWidth={3} style={{ color: p.accent }} />
-                      </span>
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="flex flex-wrap gap-1.5 mb-5">
-                  {p.stack.map((t) => (
-                    <span
-                      key={t}
-                      className="font-mono text-[10px] font-medium px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-400"
-                    >
-                      {t}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Métrica publicada + CTA */}
-                <div className="mt-auto pt-5 border-t border-slate-800">
-                  <div className="mb-4">
-                    <div className="font-mono text-base sm:text-lg font-bold text-white leading-none">
-                      {p.metric.value}
-                    </div>
-                    <div className="text-[11px] text-slate-500 mt-1.5 leading-tight">{p.metric.label}</div>
+        {/* Grupos de sitios: propios, de clientes y demos */}
+        {SITE_GROUPS.map((group, gi) => (
+          <div key={group.id} className="mb-12 sm:mb-16">
+            {/* Encabezado del grupo — separa sin cortar la seccion en tres */}
+            <motion.div {...fadeUp(0.1)}>
+              <div className="flex flex-col md:flex-row md:items-end gap-3 md:gap-8 mb-6 sm:mb-8 pb-5 border-b border-slate-800">
+                <div className="md:max-w-md">
+                  <div className="font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.18em] text-violet-300/80 mb-2">
+                    {String(gi + 1).padStart(2, "0")} · {group.eyebrow}
                   </div>
-                  {/* El color de marca entra por --brand: así el hover/focus es
-                      CSS puro y no depende de handlers de ratón. */}
-                  <a
-                    href={p.url}
-                    target="_blank"
-                    rel="noopener"
-                    aria-label={`Visitar ${p.name} en ${p.domain} — abre en una pestaña nueva`}
-                    style={{ '--brand': p.accent }}
-                    className="tap-press group/cta inline-flex w-full items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm min-h-12 transition-colors duration-300
-                      bg-[var(--brand)]/10 border border-[var(--brand)]/25 text-white
-                      hover:bg-[var(--brand)] hover:border-[var(--brand)] hover:text-slate-950
-                      active:bg-[var(--brand)] active:border-[var(--brand)] active:text-slate-950
-                      focus-visible:bg-[var(--brand)] focus-visible:border-[var(--brand)] focus-visible:text-slate-950
-                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-                  >
-                    Visitar {p.domain}
-                    <ArrowUpRight
-                      size={16}
-                      className="shrink-0 transition-transform duration-300 group-hover/cta:translate-x-0.5 group-hover/cta:-translate-y-0.5"
-                      aria-hidden="true"
-                    />
-                  </a>
+                  <h3 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight text-balance">
+                    {group.title}
+                  </h3>
                 </div>
+                <p className="font-sans text-[13px] sm:text-sm text-slate-400 leading-relaxed md:flex-1 md:pb-1">
+                  {group.desc}
+                </p>
+                <span className="hidden md:block font-mono text-[11px] text-slate-600 shrink-0 pb-1.5">
+                  {group.sites.length} {group.sites.length === 1 ? "sitio" : "sitios"}
+                </span>
               </div>
-            </motion.article>
-          ))}
-        </div>
+            </motion.div>
+
+            {/* Un grupo de dos se centra en vez de dejar el hueco de la tercera
+                columna. El max-w sale de la medida de la card a 3 columnas
+                (dos cards + un gap), así todas miden igual entre grupos. */}
+            <div
+              className={`grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 lg:gap-7 ${
+                group.sites.length === 2 ? 'lg:max-w-[51.5rem] lg:mx-auto' : 'lg:grid-cols-3'
+              }`}
+            >
+              {group.sites.map((p, idx) => (
+                <SiteCard key={p.id} site={p} autoPan={autoPan} anim={fadeUp(0.15 + 0.1 * idx)} />
+              ))}
+            </div>
+          </div>
+        ))}
 
         {/* Cierre: el servicio detrás de los sitios */}
         <motion.div {...fadeUp(0.3)}>
@@ -288,7 +324,7 @@ export default function WebProperties() {
               </h3>
               <p className="font-sans text-sm sm:text-base text-slate-400 mb-7 max-w-2xl mx-auto leading-relaxed">
                 Página con tu marca, catálogo de servicios y reservas que se agendan solas — con panel para administrar
-                citas y clientes. La misma base técnica que ya corre en estos tres sitios, adaptada a tu operación.
+                citas y clientes. La misma base técnica que ya corre en todos estos sitios, adaptada a tu operación.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                 <a
