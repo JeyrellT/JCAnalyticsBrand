@@ -128,6 +128,26 @@ export const CLIENT_SITES = [
     shotMobile: asset('cotizadorvip-mobile.webp'),
     shotHero: asset('cotizadorvip-hero.webp'),
   },
+  {
+    id: 'laburradacr',
+    name: 'La Burrada',
+    domain: 'www.laburradacr.com',
+    url: 'https://www.laburradacr.com/',
+    sector: 'Restaurante · Street food',
+    tagline: 'Esto no es un burrito. Es una burrada.',
+    desc: 'Sitio de pedidos en línea para La Burrada Street Food. El cliente explora el menú de burritos XL, loaded fries y extras, arma su carrito sin cuenta y confirma el pedido desde el celular o por WhatsApp.',
+    features: [
+      'Menú digital con burritos XL, loaded fries y extras',
+      'Carrito de compra sin cuenta obligatoria',
+      'Confirmación del pedido por web o WhatsApp',
+    ],
+    stack: ['Menú digital', 'Carrito de compra', 'Pedidos por WhatsApp'],
+    metric: { value: 'Pedido en línea', label: 'menú, carrito y confirmación desde el celular' },
+    accent: '#ff5a00',
+    shot: asset('laburradacr.webp'),
+    shotMobile: asset('laburradacr-mobile.webp'),
+    shotHero: asset('laburradacr-hero.webp'),
+  },
 ];
 
 // ---------------------------------------------------------------------------

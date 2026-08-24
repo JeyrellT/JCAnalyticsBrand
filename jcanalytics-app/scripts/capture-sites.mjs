@@ -30,6 +30,7 @@ const SITES = [
   // Sitios de clientes
   { id: 'uniquexcr', url: 'https://uniquexcr.com/landing' },
   { id: 'cotizadorvip', url: 'https://client-production-a96b.up.railway.app/branding' },
+  { id: 'laburradacr', url: 'https://www.laburradacr.com/' },
   // Demos de apps y dashboards
   { id: 'powerbiquest', url: 'https://jcanalyticscr.github.io/PowerBIQuest/' },
   { id: 'leansixsigma', url: 'https://jeyrellt.github.io/JCAPP/#/projects/project-4' },
