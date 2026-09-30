@@ -17,6 +17,7 @@ export const EASE = [0.19, 1, 0.22, 1];
 export const NAV_LINKS = [
   { label: 'Trabajo', href: '#trabajo' },
   { label: 'Servicios', href: '#servicios' },
-  { label: 'Proceso', href: '#proceso' },
+  { label: 'Redes', href: '#redes' },
+  { label: 'Equipo', href: '#equipo' },
   { label: 'Cotizar', href: '#cotizar' },
 ];

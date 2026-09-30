@@ -7,14 +7,9 @@ import { useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { Label, MaskLines, Reveal } from './primitives';
 import { wa, EMAIL } from './links';
+import { TEAM } from '../../data/team';
 
-const NEEDS = ['Página web', 'Software / app', 'Dashboard', 'Automatización', 'Otro'];
-
-const TEAM = [
-  { name: 'Jeyrell Tardencilla', role: 'Data & Automation', img: 'jeyrell-tardencilla.webp' },
-  { name: 'Catalina González', role: 'Operaciones & CX', img: 'kathalina-gonzales.webp' },
-  { name: 'Alex Benedict', role: 'Implementación', img: 'alex-benedict.webp' },
-];
+const NEEDS = ['Página web', 'Redes sociales', 'Software / app', 'Dashboard', 'Automatización', 'Otro'];
 
 const Contact = () => {
   const [need, setNeed] = useState('Página web');
@@ -27,7 +22,7 @@ const Contact = () => {
   return (
     <section id="contacto" className="scroll-mt-24 bg-lime text-ink pt-20 sm:pt-32 pb-16 sm:pb-24 rounded-t-[2rem] sm:rounded-t-[3rem] -mt-8 relative z-10">
       <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
-        <Label className="text-ink/60">(05) Contacto</Label>
+        <Label className="text-ink/60">(08) Contacto</Label>
         <h2 className="mt-4 font-display font-semibold tracking-[-0.05em] leading-[0.86] text-[clamp(3.6rem,15vw,13rem)]">
           <MaskLines lines={['¿Hablamos?']} />
         </h2>
@@ -97,7 +92,7 @@ const Contact = () => {
                 {TEAM.map((t) => (
                   <img
                     key={t.name}
-                    src={import.meta.env.BASE_URL + t.img}
+                    src={t.avatar}
                     alt={t.name}
                     title={`${t.name} · ${t.role}`}
                     width={400}
@@ -110,7 +105,8 @@ const Contact = () => {
               </div>
               <p className="text-[15px] leading-snug text-ink/70">
                 Te responde el equipo,<br />
-                <span className="font-semibold text-ink">no un bot.</span>
+                <span className="font-semibold text-ink">no un bot.</span>{' '}
+                <a href="#equipo" className="underline underline-offset-4 decoration-ink/30 hover:decoration-ink">Conocelos</a>
               </p>
             </div>
           </Reveal>

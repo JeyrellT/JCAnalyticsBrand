@@ -752,3 +752,17 @@ body { background: var(--color-paper); }
   .spin-slow { animation: none !important; }
   .work-card__shot { transition: none; }
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   v3.1 · Automatización en vivo, redes y equipo
+   ──────────────────────────────────────────────────────────────────────────── */
+/* Retratos del equipo: ligero zoom en hover, sin filtro de color (caras reales). */
+.team-portrait { transition: transform 1.1s cubic-bezier(0.19, 1, 0.22, 1); }
+@media (hover: hover) {
+  .group:hover .team-portrait { transform: scale(1.04); }
+}
+/* Flujo de automatización: en móvil los nodos van en columna y el conector es vertical. */
+.auto-flow li:last-child .auto-flow__link { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .team-portrait { transition: none; }
+}

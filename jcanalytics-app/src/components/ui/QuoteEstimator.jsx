@@ -11,6 +11,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 const _MOTION = motion;
 import {
   BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settings, Lightbulb, Receipt, Globe,
+  Clapperboard, Megaphone,
   ArrowRight, Clock, CheckCircle, ShieldCheck, Calculator, MessageSquare, ChevronUp,
 } from 'lucide-react';
 import {
@@ -20,7 +21,7 @@ import { FX_UPDATED } from '../../data/currencies';
 import { useCurrency } from '../../hooks/useCurrency';
 import CurrencySelector from './CurrencySelector';
 
-const ICONS = { BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settings, Lightbulb, Receipt, Globe };
+const ICONS = { BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settings, Lightbulb, Receipt, Globe, Clapperboard, Megaphone };
 
 const ACCENT = {
   blue:    { card: 'border-blue-500/60 bg-blue-500/10',       icon: 'text-blue-400' },
@@ -32,6 +33,7 @@ const ACCENT = {
   orange:  { card: 'border-orange-500/60 bg-orange-500/10',   icon: 'text-orange-400' },
   green:   { card: 'border-green-500/60 bg-green-500/10',     icon: 'text-green-400' },
   violet:  { card: 'border-violet-500/60 bg-violet-500/10',   icon: 'text-violet-400' },
+  pink:    { card: 'border-pink-500/60 bg-pink-500/10',       icon: 'text-pink-400' },
 };
 const DOT = {
   emerald: 'bg-lime-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]',
@@ -150,9 +152,9 @@ export default function QuoteEstimator() {
 
   function handleQuoteRequest(e) {
     if (e) e.preventDefault();
-    const usd = singlePrice
+    const usd = (singlePrice
       ? `$${result.investUSD.high.toLocaleString('en-US')}`
-      : `$${result.investUSD.low.toLocaleString('en-US')} – $${result.investUSD.high.toLocaleString('en-US')}`;
+      : `$${result.investUSD.low.toLocaleString('en-US')} – $${result.investUSD.high.toLocaleString('en-US')}`) + result.unitSuffix;
     const localLabel = activeCode === 'USD' ? '' : `  (≈ ${range.label} ${activeCode})`;
     const body = [
       '--- Contacto ---',
@@ -168,7 +170,7 @@ export default function QuoteEstimator() {
       '',
       '--- Estimado mostrado al cliente ---',
       `Inversión preliminar (USD): ${usd}${localLabel}`,
-      `Ventana de entrega: ${result.delivery.display}`,
+      `${result.delivery.label}: ${result.delivery.display}`,
       '',
       'Nota: estimado no vinculante; afinamos el alcance en la sesión sin costo.',
     ].join('\n');
@@ -181,7 +183,7 @@ export default function QuoteEstimator() {
     ? `https://wa.me/50670330596?text=${encodeURIComponent(
         `Hola, coticé un proyecto (${svc.label}) y quiero afinar el alcance. Estimado: ${
           singlePrice ? `$${result.investUSD.high}` : `$${result.investUSD.low}–$${result.investUSD.high}`
-        } USD, ${result.delivery.display}.`,
+        }${result.unitSuffix} USD, ${result.delivery.display}.`,
       )}`
     : 'https://wa.me/50670330596';
 
@@ -195,7 +197,7 @@ export default function QuoteEstimator() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10 sm:mb-16">
         <div>
-          <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-paper/45">(04) Cotizador</span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-paper/45">(07) Cotizador</span>
           <h2 className="mt-4 font-display font-semibold tracking-[-0.04em] leading-[0.92] text-[clamp(2.6rem,7vw,6rem)]">
             Cotizá en <span className="font-serif italic font-normal text-lime">3 clics.</span>
           </h2>
@@ -301,6 +303,9 @@ export default function QuoteEstimator() {
               className="font-display text-3xl sm:text-[2.5rem] font-black leading-none tracking-tight mb-1 text-transparent bg-clip-text bg-gradient-to-r from-lime-300 to-lime-300"
             >
               {singlePrice ? range.max : (<>{range.min}<span className="text-neutral-600 mx-1.5">–</span>{range.max}</>)}
+              {result.unitSuffix && (
+                <span className="ml-1.5 font-sans text-base sm:text-lg font-semibold text-neutral-400 tracking-normal">{result.unitSuffix}</span>
+              )}
             </motion.div>
             <div className="flex items-center justify-between gap-3 mt-3">
               <span className="text-[11px] text-neutral-500 leading-snug">Preliminar · no vinculante · tasas ref. ({FX_UPDATED})</span>
@@ -310,10 +315,14 @@ export default function QuoteEstimator() {
             {/* Ventana de entrega */}
             <div className="mt-5 bg-neutral-900/70 border-l-4 border-l-lime-500 rounded-xl p-4">
               <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1">
-                <Clock size={13} className="text-lime-400" /> Ventana de entrega
+                <Clock size={13} className="text-lime-400" /> {result.delivery.label}
               </div>
               <div className="font-mono text-xl font-bold text-white">{result.delivery.display}</div>
-              <p className="text-[11px] text-neutral-500 mt-1">Incluye ~media semana de arranque en cola — equipo enfocado.</p>
+              <p className="text-[11px] text-neutral-500 mt-1">
+                {result.unit === 'mes'
+                  ? 'Tiempo para levantar marca, calendario y accesos antes del primer mes.'
+                  : 'Incluye ~media semana de arranque en cola — equipo enfocado.'}
+              </p>
             </div>
 
             {/* Meter de detalle */}
@@ -417,7 +426,7 @@ export default function QuoteEstimator() {
                   transition={{ duration: reduce ? 0 : 0.25 }}
                   className="font-mono text-sm font-bold text-lime-300 truncate leading-tight"
                 >
-                  {singlePrice ? range.max : range?.label}
+                  {singlePrice ? range.max : range?.label}{result.unitSuffix}
                   <span className="ml-2 font-sans font-medium text-[10px] text-neutral-400 normal-case">{result.delivery.display}</span>
                 </motion.div>
               </div>
