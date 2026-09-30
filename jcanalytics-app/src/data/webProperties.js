@@ -5,7 +5,7 @@
 //    CLIENT_SITES   → sitios que hicimos para un cliente y él opera.
 //    DEMO_SITES     → apps y dashboards nuestros, abiertos para probar.
 //  WEB_PROPERTIES se usa además fuera de la sección #sitios (cross-link del
-//  footer en App.jsx y casos reales del modal en data/caseStudies.js), así que
+//  footer y del hero en components/site/), así que
 //  los otros dos grupos van aparte y no se mezclan en ese array.
 //
 //  IMÁGENES: capturas reales en public/sites/, generadas con

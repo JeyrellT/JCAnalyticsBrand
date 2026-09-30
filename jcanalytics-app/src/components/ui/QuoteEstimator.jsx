@@ -24,23 +24,23 @@ const ICONS = { BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settin
 
 const ACCENT = {
   blue:    { card: 'border-blue-500/60 bg-blue-500/10',       icon: 'text-blue-400' },
-  emerald: { card: 'border-emerald-500/60 bg-emerald-500/10', icon: 'text-emerald-400' },
+  emerald: { card: 'border-lime-500/60 bg-lime-500/10', icon: 'text-lime-400' },
   amber:   { card: 'border-amber-500/60 bg-amber-500/10',     icon: 'text-amber-400' },
   purple:  { card: 'border-purple-500/60 bg-purple-500/10',   icon: 'text-purple-400' },
-  cyan:    { card: 'border-cyan-500/60 bg-cyan-500/10',       icon: 'text-cyan-400' },
+  cyan:    { card: 'border-lime-500/60 bg-lime-500/10',       icon: 'text-lime-400' },
   red:     { card: 'border-red-500/60 bg-red-500/10',         icon: 'text-red-400' },
   orange:  { card: 'border-orange-500/60 bg-orange-500/10',   icon: 'text-orange-400' },
   green:   { card: 'border-green-500/60 bg-green-500/10',     icon: 'text-green-400' },
   violet:  { card: 'border-violet-500/60 bg-violet-500/10',   icon: 'text-violet-400' },
 };
 const DOT = {
-  emerald: 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]',
+  emerald: 'bg-lime-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]',
   amber:   'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]',
   red:     'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]',
   blue:    'bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]',
 };
 const SEG_ACTIVE = {
-  emerald: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300',
+  emerald: 'bg-lime-500/10 border-lime-500/30 text-lime-300',
   amber:   'bg-amber-500/10 border-amber-500/30 text-amber-300',
   red:     'bg-red-500/10 border-red-500/30 text-red-300',
   blue:    'bg-blue-500/10 border-blue-500/30 text-blue-300',
@@ -58,10 +58,10 @@ function SegmentedToggle({ options, value, onChange }) {
             onClick={() => onChange(o.id)}
             className={`tap-press flex-1 flex flex-col items-center justify-center py-3 px-2 min-h-12 text-xs font-bold rounded-xl border transition-all duration-300 ${
               active ? SEG_ACTIVE[o.dot] || SEG_ACTIVE.blue
-                     : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-700/40 active:bg-slate-700/60'
+                     : 'border-transparent text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700/40 active:bg-neutral-700/60'
             }`}
           >
-            <span className={`w-2 h-2 rounded-full mb-1.5 transition-colors ${active ? DOT[o.dot] || DOT.blue : 'bg-slate-600'}`} />
+            <span className={`w-2 h-2 rounded-full mb-1.5 transition-colors ${active ? DOT[o.dot] || DOT.blue : 'bg-neutral-600'}`} />
             {o.label}
           </button>
         );
@@ -188,21 +188,20 @@ export default function QuoteEstimator() {
   const scrollToResult = () =>
     resultRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
 
-  const block = 'bg-slate-900/60 p-5 sm:p-6 rounded-[2rem] border border-slate-800';
+  const block = 'bg-neutral-900/60 p-5 sm:p-6 rounded-[2rem] border border-neutral-800';
 
   return (
     <div ref={rootRef} className="max-w-7xl mx-auto px-4 relative z-10 pb-6 lg:pb-0">
       {/* Header */}
-      <div className="text-center mb-10 sm:mb-14">
-        <div className="inline-flex items-center gap-2 px-5 py-2 bg-white/5 border border-white/10 rounded-full text-sm font-bold mb-5 backdrop-blur-md text-emerald-300">
-          <Calculator size={16} /> Cotizador preliminar · proyectos desde $30
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10 sm:mb-16">
+        <div>
+          <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-paper/45">(04) Cotizador</span>
+          <h2 className="mt-4 font-display font-semibold tracking-[-0.04em] leading-[0.92] text-[clamp(2.6rem,7vw,6rem)]">
+            Cotizá en <span className="font-serif italic font-normal text-lime">3 clics.</span>
+          </h2>
         </div>
-        <h2 className="font-display text-[1.75rem] sm:text-4xl md:text-5xl font-black mb-4 tracking-tight max-w-3xl mx-auto">
-          3 clics y mirá tu inversión{' '}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">en vivo.</span>
-        </h2>
-        <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto">
-          Elegí qué necesitás, qué tan grande es y qué tan complejo. El estimado se ajusta solo — rango preliminar y sin compromiso. La cifra final la cerramos juntos en una sesión sin costo.
+        <p className="max-w-xs text-paper/55 text-lg leading-snug">
+          Rango preliminar y sin compromiso. Desde $30.
         </p>
       </div>
 
@@ -211,8 +210,8 @@ export default function QuoteEstimator() {
         <div className="space-y-5 sm:space-y-6">
           {/* 1. Tipo de solución */}
           <div className={block}>
-            <p className="text-sm font-bold text-slate-300 mb-1"><span className="text-emerald-400 font-mono mr-1.5">1.</span> ¿Qué necesitás?</p>
-            <p className="text-xs text-slate-500 mb-4">Elegí el tipo de solución más parecido a tu necesidad.</p>
+            <p className="text-sm font-bold text-neutral-300 mb-1"><span className="text-lime-400 font-mono mr-1.5">1.</span> ¿Qué necesitás?</p>
+            <p className="text-xs text-neutral-500 mb-4">Elegí el tipo de solución más parecido a tu necesidad.</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5" role="radiogroup" aria-label="Tipo de solución">
               {SERVICE_ORDER.map((key) => {
                 const s = SERVICES[key];
@@ -226,16 +225,16 @@ export default function QuoteEstimator() {
                     whileHover={reduce ? undefined : { scale: 1.02 }}
                     whileTap={reduce ? undefined : { scale: 0.97 }}
                     className={`text-left p-3 min-h-[4.5rem] rounded-2xl border transition-colors h-full flex flex-col gap-2 ${
-                      active ? a.card : 'border-slate-800 bg-slate-900/40 hover:border-slate-700 active:bg-slate-800/60'
+                      active ? a.card : 'border-neutral-800 bg-neutral-900/40 hover:border-neutral-700 active:bg-neutral-800/60'
                     }`}
                   >
-                    <Icon size={20} className={active ? a.icon : 'text-slate-400'} />
-                    <span className={`text-xs font-bold leading-tight ${active ? 'text-white' : 'text-slate-300'}`}>{s.label}</span>
+                    <Icon size={20} className={active ? a.icon : 'text-neutral-400'} />
+                    <span className={`text-xs font-bold leading-tight ${active ? 'text-white' : 'text-neutral-300'}`}>{s.label}</span>
                   </motion.button>
                 );
               })}
             </div>
-            <p className="text-xs text-slate-500 mt-3 flex items-center gap-1.5">
+            <p className="text-xs text-neutral-500 mt-3 flex items-center gap-1.5">
               {svc.isMajor && <span className="font-bold text-amber-300">Proyecto mayor ·</span>}
               {svc.micro}
             </p>
@@ -244,7 +243,7 @@ export default function QuoteEstimator() {
           {/* 2. Tamaño */}
           <div className={block}>
             <div className="flex items-end justify-between mb-2">
-              <p className="text-sm font-bold text-slate-300"><span className="text-emerald-400 font-mono mr-1.5">2.</span> ¿Qué tan grande es?</p>
+              <p className="text-sm font-bold text-neutral-300"><span className="text-lime-400 font-mono mr-1.5">2.</span> ¿Qué tan grande es?</p>
               <span className="font-mono text-lg font-bold text-white">{SIZE_UI[sizeIdx]?.label}</span>
             </div>
             <input
@@ -260,26 +259,26 @@ export default function QuoteEstimator() {
                   key={v.idx} type="button"
                   onClick={() => { setSizeIdx(v.idx); touch('size'); }}
                   className={`tap-press text-[10px] font-mono uppercase tracking-wider px-1.5 py-3 -my-1 -mx-1.5 min-h-11 rounded-lg transition-colors ${
-                    v.idx === sizeIdx ? 'text-emerald-300 font-bold' : 'text-slate-500 hover:text-slate-300'
+                    v.idx === sizeIdx ? 'text-lime-300 font-bold' : 'text-neutral-500 hover:text-neutral-300'
                   }`}
                 >
                   {v.label}
                 </button>
               ))}
             </div>
-            <p className="text-xs text-slate-500 mt-1">{SIZE_UI[sizeIdx]?.hint}</p>
+            <p className="text-xs text-neutral-500 mt-1">{SIZE_UI[sizeIdx]?.hint}</p>
           </div>
 
           {/* 3. Complejidad */}
           <div className={block}>
-            <p className="text-sm font-bold text-slate-300 mb-3"><span className="text-emerald-400 font-mono mr-1.5">3.</span> ¿Qué tan complejo?</p>
+            <p className="text-sm font-bold text-neutral-300 mb-3"><span className="text-lime-400 font-mono mr-1.5">3.</span> ¿Qué tan complejo?</p>
             <SegmentedToggle options={COMPLEXITY_UI} value={complexityId} onChange={(id) => { setComplexityId(id); touch('complexity'); }} />
-            <p className="text-xs text-slate-500 mt-3">{COMPLEXITY_UI.find((c) => c.id === complexityId)?.sub}</p>
+            <p className="text-xs text-neutral-500 mt-3">{COMPLEXITY_UI.find((c) => c.id === complexityId)?.sub}</p>
           </div>
 
           {/* Urgencia (opcional) */}
           <div className={block}>
-            <p className="text-sm font-bold text-slate-300 mb-3">¿Para cuándo? <span className="font-normal text-slate-500">(opcional)</span></p>
+            <p className="text-sm font-bold text-neutral-300 mb-3">¿Para cuándo? <span className="font-normal text-neutral-500">(opcional)</span></p>
             <SegmentedToggle options={URGENCY_UI} value={urgency} onChange={(id) => { setUrgency(id); touch('urgency'); }} />
           </div>
         </div>
@@ -288,57 +287,57 @@ export default function QuoteEstimator() {
         <div className="lg:sticky lg:top-24" ref={resultRef}>
           <div className="glass-premium rounded-[2rem] p-6 sm:p-7" aria-live="polite">
             <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/10">
-              <span className="text-xs font-mono uppercase tracking-[0.18em] text-slate-400">JC Analytics · Estimado</span>
-              <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">preliminar</span>
+              <span className="text-xs font-mono uppercase tracking-[0.18em] text-neutral-400">JC Analytics · Estimado</span>
+              <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-lime-500/10 text-lime-300 border border-lime-500/20">preliminar</span>
             </div>
 
             {/* Rango / precio */}
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Inversión estimada</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-2">Inversión estimada</p>
             <motion.div
               key={`${result.investUSD.low}-${result.investUSD.high}-${activeCode}`}
               initial={reduce ? false : { opacity: 0.35, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: reduce ? 0 : 0.3 }}
-              className="font-display text-3xl sm:text-[2.5rem] font-black leading-none tracking-tight mb-1 text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-cyan-300"
+              className="font-display text-3xl sm:text-[2.5rem] font-black leading-none tracking-tight mb-1 text-transparent bg-clip-text bg-gradient-to-r from-lime-300 to-lime-300"
             >
-              {singlePrice ? range.max : (<>{range.min}<span className="text-slate-600 mx-1.5">–</span>{range.max}</>)}
+              {singlePrice ? range.max : (<>{range.min}<span className="text-neutral-600 mx-1.5">–</span>{range.max}</>)}
             </motion.div>
             <div className="flex items-center justify-between gap-3 mt-3">
-              <span className="text-[11px] text-slate-500 leading-snug">Preliminar · no vinculante · tasas ref. ({FX_UPDATED})</span>
+              <span className="text-[11px] text-neutral-500 leading-snug">Preliminar · no vinculante · tasas ref. ({FX_UPDATED})</span>
               <CurrencySelector activeCode={activeCode} onChange={setActiveCode} currencies={currencyList} />
             </div>
 
             {/* Ventana de entrega */}
-            <div className="mt-5 bg-slate-900/70 border-l-4 border-l-cyan-500 rounded-xl p-4">
-              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                <Clock size={13} className="text-cyan-400" /> Ventana de entrega
+            <div className="mt-5 bg-neutral-900/70 border-l-4 border-l-lime-500 rounded-xl p-4">
+              <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1">
+                <Clock size={13} className="text-lime-400" /> Ventana de entrega
               </div>
               <div className="font-mono text-xl font-bold text-white">{result.delivery.display}</div>
-              <p className="text-[11px] text-slate-500 mt-1">Incluye ~media semana de arranque en cola — equipo enfocado.</p>
+              <p className="text-[11px] text-neutral-500 mt-1">Incluye ~media semana de arranque en cola — equipo enfocado.</p>
             </div>
 
             {/* Meter de detalle */}
             <div className="mt-5">
-              <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1.5">
+              <div className="flex items-center justify-between text-[11px] text-neutral-400 mb-1.5">
                 <span>Detalle del alcance</span><span>{Math.round(confidence * 100)}%</span>
               </div>
-              <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+              <div className="h-1.5 rounded-full bg-neutral-800 overflow-hidden">
                 <motion.div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-400"
+                  className="h-full rounded-full bg-gradient-to-r from-lime-500 to-lime-400"
                   animate={{ width: `${confidence * 100}%` }}
                   transition={{ duration: reduce ? 0 : 0.4 }}
                 />
               </div>
-              <p className="text-[11px] text-slate-500 mt-1.5">Entre más detalle nos das, más afinamos el alcance en la sesión.</p>
+              <p className="text-[11px] text-neutral-500 mt-1.5">Entre más detalle nos das, más afinamos el alcance en la sesión.</p>
             </div>
 
             {/* Qué incluye */}
             <div className="mt-5">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Qué incluye</p>
+              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2.5">Qué incluye</p>
               <ul className="space-y-2">
                 {bullets.map((b, i) => (
-                  <li key={`${b}-${i}`} className="flex items-start gap-2 text-sm text-slate-300">
-                    <CheckCircle size={15} className="text-emerald-400 shrink-0 mt-0.5" /> <span>{b}</span>
+                  <li key={`${b}-${i}`} className="flex items-start gap-2 text-sm text-neutral-300">
+                    <CheckCircle size={15} className="text-lime-400 shrink-0 mt-0.5" /> <span>{b}</span>
                   </li>
                 ))}
               </ul>
@@ -350,31 +349,31 @@ export default function QuoteEstimator() {
                 {sent ? (
                   <motion.div key="sent" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                     className="flex flex-col items-center text-center gap-2 py-4">
-                    <CheckCircle size={28} className="text-emerald-400" />
+                    <CheckCircle size={28} className="text-lime-400" />
                     <p className="text-sm font-bold text-white">¡Listo! Te enviamos el resumen a tu correo.</p>
-                    <p className="text-xs text-slate-400">Te respondemos en menos de 24 h hábiles.</p>
-                    <a href={whatsappHref} target="_blank" rel="noreferrer" className="mt-1 text-xs font-bold text-emerald-400 hover:text-emerald-300">o escribinos por WhatsApp →</a>
+                    <p className="text-xs text-neutral-400">Te respondemos en menos de 24 h hábiles.</p>
+                    <a href={whatsappHref} target="_blank" rel="noreferrer" className="mt-1 text-xs font-bold text-lime-400 hover:text-lime-300">o escribinos por WhatsApp →</a>
                   </motion.div>
                 ) : showForm ? (
                   <motion.form key="form" onSubmit={handleQuoteRequest}
                     initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
                     className="space-y-3 overflow-hidden">
-                    <p className="text-xs text-slate-400">Dejanos tus datos y te enviamos el resumen de esta cotización.</p>
+                    <p className="text-xs text-neutral-400">Dejanos tus datos y te enviamos el resumen de esta cotización.</p>
                     {/* text-base (16px): debajo de eso iOS hace zoom automático al enfocar */}
                     <input type="text" required autoComplete="organization" placeholder="Nombre y empresa" value={qName} onChange={(e) => setQName(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white text-base sm:text-sm placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60" />
+                      className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white text-base sm:text-sm placeholder:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60" />
                     <input type="email" required autoComplete="email" placeholder="tu@empresa.com" value={qEmail} onChange={(e) => setQEmail(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white text-base sm:text-sm placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60" />
+                      className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white text-base sm:text-sm placeholder:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60" />
                     <input type="tel" inputMode="tel" autoComplete="tel" placeholder="WhatsApp (opcional)" value={qPhone} onChange={(e) => setQPhone(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white text-base sm:text-sm placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60" />
-                    <button type="submit" className="btn-sheen glow-hover w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2">
+                      className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white text-base sm:text-sm placeholder:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60" />
+                    <button type="submit" className="btn-sheen glow-hover w-full bg-lime hover:bg-white text-ink font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2">
                       Enviar cotización <ArrowRight size={18} />
                     </button>
                   </motion.form>
                 ) : (
                   <motion.div key="cta" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                     <button type="button" onClick={() => setShowForm(true)}
-                      className="tap-press btn-sheen glow-hover w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-4 rounded-xl transition-colors flex items-center justify-center gap-2">
+                      className="tap-press btn-sheen glow-hover w-full bg-lime hover:bg-white active:bg-lime-dark text-ink font-bold py-4 rounded-xl transition-colors flex items-center justify-center gap-2">
                       <Calculator size={18} /> Solicitar cotización formal
                     </button>
                   </motion.div>
@@ -382,12 +381,12 @@ export default function QuoteEstimator() {
               </AnimatePresence>
 
               <a href={whatsappHref} target="_blank" rel="noreferrer"
-                className="tap-press mt-2 w-full inline-flex items-center justify-center gap-2 min-h-11 rounded-xl text-sm font-bold text-slate-300 hover:text-white active:bg-white/5 transition-colors">
-                <MessageSquare size={16} className="text-emerald-400" /> o escribinos por WhatsApp
+                className="tap-press mt-2 w-full inline-flex items-center justify-center gap-2 min-h-11 rounded-xl text-sm font-bold text-neutral-300 hover:text-white active:bg-white/5 transition-colors">
+                <MessageSquare size={16} className="text-lime-400" /> o escribinos por WhatsApp
               </a>
 
-              <p className="mt-4 text-[11px] text-slate-500 leading-snug flex items-start gap-1.5">
-                <ShieldCheck size={13} className="text-slate-400 shrink-0 mt-0.5" />
+              <p className="mt-4 text-[11px] text-neutral-500 leading-snug flex items-start gap-1.5">
+                <ShieldCheck size={13} className="text-neutral-400 shrink-0 mt-0.5" />
                 Estimado preliminar y no vinculante. La cifra final puede ajustarse según el alcance real; la definimos juntos sin costo en la primera sesión.
               </p>
             </div>
@@ -407,23 +406,23 @@ export default function QuoteEstimator() {
             className="lg:hidden fixed bottom-0 inset-x-0 z-40 glass-nav border-t border-white/10 px-4 pt-3 pb-safe"
           >
             {/* Filo superior con acento de marca */}
-            <div aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent" />
+            <div aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-lime-400/70 to-transparent" />
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500 mb-0.5">Estimado en vivo</div>
+                <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-neutral-500 mb-0.5">Estimado en vivo</div>
                 <motion.div
                   key={`${range?.label}-bar`}
                   initial={reduce ? false : { opacity: 0.4, y: 3 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: reduce ? 0 : 0.25 }}
-                  className="font-mono text-sm font-bold text-emerald-300 truncate leading-tight"
+                  className="font-mono text-sm font-bold text-lime-300 truncate leading-tight"
                 >
                   {singlePrice ? range.max : range?.label}
-                  <span className="ml-2 font-sans font-medium text-[10px] text-slate-400 normal-case">{result.delivery.display}</span>
+                  <span className="ml-2 font-sans font-medium text-[10px] text-neutral-400 normal-case">{result.delivery.display}</span>
                 </motion.div>
               </div>
               <button type="button" onClick={scrollToResult}
-                className="tap-press shrink-0 inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-sm font-bold px-4 py-2.5 min-h-11 rounded-full transition-colors">
+                className="tap-press shrink-0 inline-flex items-center gap-1.5 bg-lime hover:bg-white active:bg-lime-dark text-ink text-sm font-bold px-4 py-2.5 min-h-11 rounded-full transition-colors">
                 Ver desglose <ChevronUp size={16} />
               </button>
             </div>

@@ -13,7 +13,6 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor-charts': ['recharts'],
           'vendor-motion': ['framer-motion'],
           'vendor-gsap': ['gsap', 'lenis'],
         },
