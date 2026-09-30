@@ -14,7 +14,7 @@ const STEPS = [
 const Process = () => (
   <section id="proceso" className="scroll-mt-24 bg-paper text-ink py-20 sm:py-32">
     <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
-      <Label className="text-ink/50">(03) Proceso</Label>
+      <Label className="text-ink/50">(06) Proceso</Label>
       <h2 className="mt-4 mb-12 sm:mb-20 font-display font-semibold tracking-[-0.04em] leading-[0.92] text-[clamp(2.6rem,7vw,6rem)]">
         <MaskLines lines={['Así de', <span key="b" className="font-serif italic font-normal">simple.</span>]} />
       </h2>

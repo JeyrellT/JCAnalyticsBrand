@@ -105,7 +105,7 @@ const Hero = () => {
         <div className="mt-8 sm:mt-12 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-7">
           <Reveal delay={0.55} className="max-w-md">
             <p className="text-lg sm:text-xl text-ink/65 leading-snug">
-              Diseño web, software y automatización para negocios que quieren crecer.
+              Diseño web, software, automatización y redes sociales para negocios que quieren crecer.
             </p>
           </Reveal>
           <Reveal delay={0.7} className="flex flex-col sm:flex-row gap-3">

@@ -5,6 +5,9 @@
 //  Excel $30 · documentos $40 · tesis/proyectos $50 · Alteryx/KNIME $65 ·
 //  Power Platform $85 · Power BI $125 · web con reservas $900 ·
 //  software a la medida $2.000. Tope global $6.000 (USD).
+//  Servicios con unidad propia (sep-26): edición de video $45 por pieza y
+//  community manager $150 por mes (plan recurrente, `unit: 'mes'`). Sus
+//  bandas son de referencia: ajustar aquí si el dueño fija otra tarifa.
 //  Cada servicio tiene su sub-banda [priceMin, priceMax]; tamaño y complejidad
 //  interpolan dentro de ella. El extremo bajo NUNCA baja del "desde" publicado.
 //  El cliente ve SOLO el rango (USD/su moneda) + ventana de entrega.
@@ -94,6 +97,20 @@ export const SERVICES = {
     priceMin: 150, priceMax: 2500, weeksMin: 2, weeksMax: 7,
     bullets: ['Factura electrónica v4.4 + rechazos de Hacienda', 'Cálculo de CCSS y cierre de planilla', 'Validado contra la normativa tributaria CR'],
   },
+  video_edicion: {
+    label: 'Edición de video', icon: 'Clapperboard', accent: 'pink',
+    micro: 'Reels, anuncios y videos cortos editados con tu marca. Desde $45 por pieza.',
+    priceMin: 45, priceMax: 600, weeksMin: 0.5, weeksMax: 2,
+    unit: 'pieza',
+    bullets: ['Corte, ritmo y subtítulos con tu marca', 'Música, voz y llamado a la acción', 'Formatos para Reels, TikTok, YouTube y anuncios'],
+  },
+  community_manager: {
+    label: 'Community manager', icon: 'Megaphone', accent: 'orange',
+    micro: 'Plan mensual: contenido, publicación, atención a clientes y Meta Ads. Desde $150 al mes.',
+    priceMin: 150, priceMax: 900, weeksMin: 1, weeksMax: 2,
+    unit: 'mes',
+    bullets: ['Calendario y diseño de contenido con tu marca', 'Publicación, respuesta a mensajes y comentarios', 'Campañas en Meta Ads con reporte mensual'],
+  },
   pagina_web: {
     label: 'Página web con reservas', icon: 'Globe', accent: 'violet',
     micro: 'Sitio personalizado con tu marca y citas que se agendan solas. Desde $900.',
@@ -116,8 +133,8 @@ export const SERVICES = {
 
 // Orden de las cards (de más accesible a más complejo, por precio de entrada)
 export const SERVICE_ORDER = [
-  'excel_vba', 'doc_generation', 'analisis_tfg', 'alteryx_knime', 'power_automate',
-  'power_bi', 'fiscal_planilla', 'pagina_web', 'python_pipeline', 'software_medida',
+  'excel_vba', 'doc_generation', 'video_edicion', 'analisis_tfg', 'alteryx_knime', 'power_automate',
+  'power_bi', 'fiscal_planilla', 'community_manager', 'pagina_web', 'python_pipeline', 'software_medida',
 ];
 
 // Garantías SIEMPRE presentes en "qué incluye"
@@ -168,11 +185,19 @@ export function estimate(input) {
   const weeksLow = Math.max(1, floorHalf(wAdj * 0.85));
   const weeksHigh = Math.max(weeksLow, ceilHalf(wAdj * 1.15));
 
+  const unit = s.unit ?? null; // 'mes' | 'pieza' | null (proyecto único)
+  const weeksText = weeksLow === weeksHigh ? `${weeksHigh} semanas` : `${weeksLow}–${weeksHigh} semanas`;
+
   return {
     investUSD: { low, high },
+    unit,
+    // Sufijo para mostrar junto al precio: "/mes", "/pieza" o nada.
+    unitSuffix: unit ? `/${unit}` : '',
     delivery: {
       weeksLow, weeksHigh,
-      display: weeksLow === weeksHigh ? `${weeksHigh} semanas` : `${weeksLow}–${weeksHigh} semanas`,
+      // Para un plan mensual la ventana es el arranque, no la entrega.
+      label: unit === 'mes' ? 'Arranque del plan' : 'Ventana de entrega',
+      display: weeksText,
     },
     _internal: { score, mid },
   };

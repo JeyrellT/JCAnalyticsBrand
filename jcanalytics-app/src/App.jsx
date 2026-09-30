@@ -2,8 +2,8 @@
 //  src/App.jsx · JC Analytics — rediseño v3 (sep-26)
 //  Dirección: estudio de diseño web + sistemas. Editorial, poco texto y una
 //  acción al final de cada bloque. Paleta: papel · tinta · lima.
-//  Orden: Hero → cinta → cifras → Trabajo → Servicios → Proceso → Cotizador
-//         → Contacto → Footer.
+//  Orden: Hero → cinta → cifras → Trabajo → Servicios → Automatización (en
+//         vivo) → Redes (demo) → Equipo → Proceso → Cotizador → Contacto → Footer.
 // ============================================================================
 import { useEffect } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -15,6 +15,9 @@ import Nav from './components/site/Nav';
 import Hero from './components/site/Hero';
 import Work from './components/site/Work';
 import Services from './components/site/Services';
+import Automation from './components/site/Automation';
+import Social from './components/site/Social';
+import Team from './components/site/Team';
 import Process from './components/site/Process';
 import Contact from './components/site/Contact';
 import Footer from './components/site/Footer';
@@ -26,7 +29,7 @@ import { WEB_STATS } from './data/webProperties';
 // eslint (sin plugin de react) no reconoce a `motion` usado solo como <motion.x>.
 const _MOTION = motion;
 
-const TICKER = ['Diseño web', 'Reservas en línea', 'Pedidos por WhatsApp', 'Dashboards', 'Automatización', 'Software a la medida'];
+const TICKER = ['Diseño web', 'Reservas en línea', 'Redes sociales', 'Edición de video', 'Meta Ads', 'Dashboards', 'Automatización', 'Software a la medida'];
 
 // Cifras con respaldo: sitios en línea (conteo de data/webProperties.js) y
 // comprobantes validados (caso documentado del sitio anterior).
@@ -34,7 +37,7 @@ const STATS = [
   { value: WEB_STATS[0].value, label: 'sitios en línea hoy' },
   { value: '5.900+', label: 'comprobantes validados con Hacienda' },
   { value: '72 h', label: 'entre cada avance' },
-  { value: '30 días', label: 'de soporte incluido' },
+  { value: '4', label: 'personas reales, sin intermediarios' },
 ];
 
 const App = () => {
@@ -94,6 +97,9 @@ const App = () => {
 
         <Work />
         <Services />
+        <Automation />
+        <Social />
+        <Team />
         <Process />
 
         {/* Cotizador en vivo */}
