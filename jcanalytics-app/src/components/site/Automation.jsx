@@ -10,10 +10,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useInView, useReducedMotion } from 'framer-motion';
 import {
   Mail, ShieldCheck, Landmark, Database, MessageCircle, BarChart3,
-  UserPlus, FileText, Clock, Trophy, PenTool, CalendarClock, Send, MessagesSquare, ClipboardList,
+  UserPlus, FileText, Clock, Trophy, PenTool, CalendarClock, Send, MessagesSquare, ClipboardList, Pause, Play,
 } from 'lucide-react';
-import { CTA, Label, MaskLines, Reveal } from './primitives';
-import { wa, EASE } from './links';
+import { Label, MaskLines, Reveal } from './primitives';
+import { EASE } from './links';
+import ContactCTA from './ContactCTA';
 
 // eslint (sin plugin de react) no reconoce a `motion` usado solo como <motion.x>.
 const _MOTION = motion;
@@ -118,35 +119,33 @@ const Automation = () => {
   const [recipeId, setRecipeId] = useState('fiscal');
   const recipe = useMemo(() => RECIPES.find((r) => r.id === recipeId), [recipeId]);
 
-  // El contador del día persiste al cambiar de receta; el recorrido se
-  // reinicia porque Runner se monta de nuevo (key = recipe.id).
-  const [count, setCount] = useState(() => 1 + Math.floor(Math.random() * 40));
+  // Each recipe is an illustrative run. Pause preserves its current step.
+  const [paused, setPaused] = useState(false);
 
   return (
-    <section id="automatizacion" ref={ref} className="scroll-mt-24 bg-paper text-ink py-20 sm:py-32 rounded-t-[2rem] sm:rounded-t-[3rem] -mt-8 relative z-20">
+    <section id="automatizacion" ref={ref} className="automation-premium scroll-mt-24 bg-paper text-ink py-20 sm:py-32 rounded-t-[2rem] sm:rounded-t-[3rem] -mt-8 relative z-20">
       <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10 sm:mb-16">
           <div>
-            <Label className="text-ink/50">(03) Automatización</Label>
+            <Label className="text-ink/65">Sistemas en acción / Automatización</Label>
             <h2 className="mt-4 font-display font-semibold tracking-[-0.04em] leading-[0.92] text-[clamp(2.6rem,7vw,6rem)]">
               <MaskLines lines={['Mirá cómo', <span key="b" className="font-serif italic font-normal">trabaja solo.</span>]} />
             </h2>
           </div>
           <Reveal delay={0.2}>
             <p className="max-w-xs text-ink/55 text-lg leading-snug">
-              No es un video. Es una automatización corriendo en esta página, con la misma lógica que instalamos en tu negocio.
+              Explorá un flujo interactivo de ejemplo. Así conectamos las tareas que hoy te quitan tiempo.
             </p>
           </Reveal>
         </div>
 
         {/* Tabs de receta */}
-        <Reveal className="flex flex-wrap gap-2 mb-8 sm:mb-10" role="tablist" aria-label="Ejemplos de automatización">
+        <Reveal className="flex flex-wrap gap-2 mb-8 sm:mb-10" aria-label="Ejemplos de automatización">
           {RECIPES.map((r) => (
             <button
               key={r.id}
               type="button"
-              role="tab"
-              aria-selected={recipeId === r.id}
+              aria-pressed={recipeId === r.id}
               onClick={() => setRecipeId(r.id)}
               className={`tap-press h-11 px-5 rounded-full text-[15px] font-medium border transition-colors ${
                 recipeId === r.id ? 'bg-ink text-lime border-ink' : 'border-ink/20 hover:border-ink'
@@ -155,15 +154,16 @@ const Automation = () => {
               {r.tab}
             </button>
           ))}
+          {!reduce && <button type="button" onClick={() => setPaused((value) => !value)} aria-pressed={paused} className="demo-pause">{paused ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}{paused ? 'Reanudar demo' : 'Pausar demo'}</button>}
         </Reveal>
 
-        <Runner key={recipe.id} recipe={recipe} reduce={reduce} playing={inView} count={count} onCycle={() => setCount((c) => c + 1)} />
+        <Runner key={recipe.id} recipe={recipe} reduce={reduce} playing={inView && !paused} />
       </div>
     </section>
   );
 };
 
-const Runner = ({ recipe, reduce, playing, count, onCycle }) => {
+const Runner = ({ recipe, reduce, playing }) => {
   const [run, setRun] = useState(() => initialRun(recipe));
   const { step, log } = run;
 
@@ -173,12 +173,11 @@ const Runner = ({ recipe, reduce, playing, count, onCycle }) => {
     const id = setInterval(() => {
       setRun((r) => {
         const next = advance(recipe, r);
-        if (next.wrapped) onCycle();
         return next;
       });
     }, STEP_MS);
     return () => clearInterval(id);
-  }, [reduce, playing, recipe, onCycle]);
+  }, [reduce, playing, recipe]);
 
   const activeStep = reduce ? recipe.nodes.length - 1 : step;
   const staticLog = reduce ? recipe.logs.map((f, i) => ({ id: `s-${i}`, t: '—', text: f(0), warn: false })) : log;
@@ -262,28 +261,28 @@ const Runner = ({ recipe, reduce, playing, count, onCycle }) => {
             <div className="flex items-center justify-between gap-3">
               <span className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-paper/50">
                 <span className="relative flex w-2 h-2">
-                  {!reduce && <span className="absolute inset-0 rounded-full bg-lime animate-ping opacity-60" />}
+                  {!reduce && playing && <span className="absolute inset-0 rounded-full bg-lime animate-ping opacity-60" />}
                   <span className="relative w-2 h-2 rounded-full bg-lime" />
                 </span>
-                {reduce ? 'Bitácora' : 'En vivo'}
+                Demo interactiva
               </span>
               <span className="font-mono text-[11px] text-paper/40">bitácora · {recipe.tab.toLowerCase()}</span>
             </div>
 
             <div className="mt-5 flex items-baseline gap-3">
               <motion.span
-                key={count}
+                key={run.cycle}
                 initial={reduce ? false : { y: 8, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.4, ease: EASE }}
                 className="font-display text-5xl sm:text-6xl font-semibold tracking-[-0.05em] leading-none text-lime tabular-nums"
               >
-                {count}
+                {reduce ? 1 : run.cycle}
               </motion.span>
-              <span className="text-paper/55 text-[15px] leading-snug">{recipe.unit}<br />desde que abriste esta página</span>
+              <span className="text-paper/55 text-[15px] leading-snug">{recipe.unit}<br />en este ejemplo</span>
             </div>
 
-            <ul className="mt-6 space-y-2 font-mono text-[12.5px] leading-snug flex-1" aria-live="polite">
+            <ul className="mt-6 space-y-2 font-mono text-[12.5px] leading-snug flex-1" aria-label="Bitácora del ejemplo">
               <AnimatePresence initial={false}>
                 {staticLog.map((l) => (
                   <motion.li
@@ -303,9 +302,9 @@ const Runner = ({ recipe, reduce, playing, count, onCycle }) => {
             </ul>
 
             <div className="mt-6 pt-5 border-t border-paper/10 flex flex-col sm:flex-row sm:items-center gap-3">
-              <CTA href={wa(`Hola, vi la automatización de ${recipe.tab.toLowerCase()} en su sitio y quiero algo así para mi negocio.`)} variant="lime">
-                Quiero esto en mi negocio
-              </CTA>
+              <ContactCTA need="Automatización" source={`Automatización · ${recipe.tab}`} variant="lime">
+                Definir mi automatización
+              </ContactCTA>
               <span className="text-paper/45 text-[13px]">Diagnóstico sin costo. Avances cada 72 h.</span>
             </div>
           </Reveal>

@@ -77,7 +77,7 @@ export default function QuoteEstimator() {
   const { activeCode, setActiveCode, convert, currencyList } = useCurrency('USD');
 
   // ── Inputs (solo 3 decisiones + urgencia) ──────────────────────────────
-  const [service, setService] = useState('power_bi');
+  const [service, setService] = useState('software_medida');
   const [sizeIdx, setSizeIdx] = useState(1);            // 0..3 (Estándar por defecto)
   const [complexityId, setComplexityId] = useState('estandar');
   const [urgency, setUrgency] = useState('normal');
@@ -197,13 +197,13 @@ export default function QuoteEstimator() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10 sm:mb-16">
         <div>
-          <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-paper/45">(07) Cotizador</span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-paper/65">Planificá tu inversión / Cotizador</span>
           <h2 className="mt-4 font-display font-semibold tracking-[-0.04em] leading-[0.92] text-[clamp(2.6rem,7vw,6rem)]">
-            Cotizá en <span className="font-serif italic font-normal text-lime">3 clics.</span>
+            Tu proyecto, <span className="font-serif italic font-normal text-lime">con claridad.</span>
           </h2>
         </div>
         <p className="max-w-xs text-paper/55 text-lg leading-snug">
-          Rango preliminar y sin compromiso. Desde $30.
+          Elegí tu solución y explorá un rango preliminar, sin compromiso.
         </p>
       </div>
 
@@ -213,7 +213,7 @@ export default function QuoteEstimator() {
           {/* 1. Tipo de solución */}
           <div className={block}>
             <p className="text-sm font-bold text-neutral-300 mb-1"><span className="text-lime-400 font-mono mr-1.5">1.</span> ¿Qué necesitás?</p>
-            <p className="text-xs text-neutral-500 mb-4">Elegí el tipo de solución más parecido a tu necesidad.</p>
+            <p className="text-xs text-neutral-400 mb-4">Elegí el tipo de solución más parecido a tu necesidad. Para modelos financieros, machine learning o integración de IA, <a href="#contacto" className="text-lime underline underline-offset-4">conversemos sobre el alcance</a>.</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5" role="radiogroup" aria-label="Tipo de solución">
               {SERVICE_ORDER.map((key) => {
                 const s = SERVICES[key];
@@ -369,11 +369,11 @@ export default function QuoteEstimator() {
                     className="space-y-3 overflow-hidden">
                     <p className="text-xs text-neutral-400">Dejanos tus datos y te enviamos el resumen de esta cotización.</p>
                     {/* text-base (16px): debajo de eso iOS hace zoom automático al enfocar */}
-                    <input type="text" required autoComplete="organization" placeholder="Nombre y empresa" value={qName} onChange={(e) => setQName(e.target.value)}
+                    <input type="text" required aria-label="Nombre y empresa" autoComplete="organization" placeholder="Nombre y empresa" value={qName} onChange={(e) => setQName(e.target.value)}
                       className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white text-base sm:text-sm placeholder:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60" />
-                    <input type="email" required autoComplete="email" placeholder="tu@empresa.com" value={qEmail} onChange={(e) => setQEmail(e.target.value)}
+                    <input type="email" required aria-label="Correo electrónico" autoComplete="email" placeholder="tu@empresa.com" value={qEmail} onChange={(e) => setQEmail(e.target.value)}
                       className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white text-base sm:text-sm placeholder:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60" />
-                    <input type="tel" inputMode="tel" autoComplete="tel" placeholder="WhatsApp (opcional)" value={qPhone} onChange={(e) => setQPhone(e.target.value)}
+                    <input type="tel" aria-label="WhatsApp, opcional" inputMode="tel" autoComplete="tel" placeholder="WhatsApp (opcional)" value={qPhone} onChange={(e) => setQPhone(e.target.value)}
                       className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white text-base sm:text-sm placeholder:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60" />
                     <button type="submit" className="btn-sheen glow-hover w-full bg-lime hover:bg-white text-ink font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2">
                       Enviar cotización <ArrowRight size={18} />

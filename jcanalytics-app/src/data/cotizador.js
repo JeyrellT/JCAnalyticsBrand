@@ -112,10 +112,10 @@ export const SERVICES = {
     bullets: ['Calendario y diseño de contenido con tu marca', 'Publicación, respuesta a mensajes y comentarios', 'Campañas en Meta Ads con reporte mensual'],
   },
   pagina_web: {
-    label: 'Página web con reservas', icon: 'Globe', accent: 'violet',
-    micro: 'Sitio personalizado con tu marca y citas que se agendan solas. Desde $900.',
+    label: 'Web y plataforma a medida', icon: 'Globe', accent: 'violet',
+    micro: 'Tu marca en línea, con gestión adaptada a tu negocio según alcance. Desde $900.',
     priceMin: 900, priceMax: 3200, weeksMin: 2, weeksMax: 6,
-    bullets: ['Sitio responsive con tu marca y catálogo de servicios', 'Reservas en línea 24/7 con confirmación automática', 'Panel de citas y clientes + publicación con tu dominio'],
+    bullets: ['Web responsive con diseño propio y catálogo de servicios', 'Backend y panel de gestión según alcance acordado', 'Módulos de reservas, inventario, pedidos o procesos según alcance', 'Publicación con tu dominio'],
   },
   python_pipeline: {
     label: 'Pipeline Python', icon: 'Cpu', accent: 'purple',
@@ -125,16 +125,17 @@ export const SERVICES = {
   },
   software_medida: {
     label: 'Software a la medida', icon: 'MonitorSmartphone', accent: 'red',
-    micro: 'Web o app construida desde cero. A partir de $2.000.',
+    micro: 'Datos, permisos y procesos en un sistema propio. A partir de $2.000.',
     priceMin: 2000, priceMax: 5600, weeksMin: 5, weeksMax: 14, isMajor: true,
-    bullets: ['Interfaz + lógica + base de datos', 'Integraciones con tus sistemas', 'Despliegue + manual de uso'],
+    bullets: ['Interfaz, backend y base de datos para tus procesos', 'Roles, permisos y bitácora según alcance', 'Integraciones con tus sistemas según alcance acordado', 'Despliegue + manual de uso'],
   },
 };
 
-// Orden de las cards (de más accesible a más complejo, por precio de entrada)
+// Prioridad de negocio: sistemas, finanzas y datos; marketing como complemento.
 export const SERVICE_ORDER = [
-  'excel_vba', 'doc_generation', 'video_edicion', 'analisis_tfg', 'alteryx_knime', 'power_automate',
-  'power_bi', 'fiscal_planilla', 'community_manager', 'pagina_web', 'python_pipeline', 'software_medida',
+  'software_medida', 'pagina_web', 'fiscal_planilla', 'power_bi', 'python_pipeline',
+  'alteryx_knime', 'power_automate', 'excel_vba', 'doc_generation', 'analisis_tfg',
+  'community_manager', 'video_edicion',
 ];
 
 // Garantías SIEMPRE presentes en "qué incluye"

@@ -1,12 +1,6 @@
-// ============================================================================
-//  src/App.jsx · JC Analytics — rediseño v3 (sep-26)
-//  Dirección: estudio de diseño web + sistemas. Editorial, poco texto y una
-//  acción al final de cada bloque. Paleta: papel · tinta · lima.
-//  Orden: Hero → cinta → cifras → Trabajo → Servicios → Automatización (en
-//         vivo) → Redes (demo) → Equipo → Proceso → Cotizador → Contacto → Footer.
-// ============================================================================
+// JC Analytics: sistemas → finanzas y BI → ML e IA → portafolio → marketing.
 import { useEffect } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useReducedMotion } from 'framer-motion';
 import Lenis from 'lenis';
 import gsap from 'gsap';
 import { MessageCircle } from 'lucide-react';
@@ -14,6 +8,10 @@ import { MessageCircle } from 'lucide-react';
 import Nav from './components/site/Nav';
 import Hero from './components/site/Hero';
 import Work from './components/site/Work';
+import ProjectStart from './components/site/ProjectStart';
+import Systems from './components/site/Systems';
+import Finance from './components/site/Finance';
+import Intelligence from './components/site/Intelligence';
 import Services from './components/site/Services';
 import Automation from './components/site/Automation';
 import Social from './components/site/Social';
@@ -25,11 +23,11 @@ import QuoteEstimator from './components/ui/QuoteEstimator';
 import { Marquee, Reveal } from './components/site/primitives';
 import { wa } from './components/site/links';
 import { WEB_STATS } from './data/webProperties';
+import './styles/studio.css';
+import './styles/art-direction.css';
+import './styles/conversion.css';
 
-// eslint (sin plugin de react) no reconoce a `motion` usado solo como <motion.x>.
-const _MOTION = motion;
-
-const TICKER = ['Diseño web', 'Reservas en línea', 'Redes sociales', 'Edición de video', 'Meta Ads', 'Dashboards', 'Automatización', 'Software a la medida'];
+const TICKER = ['Desarrollo de sistemas', 'Diseño de interfaces', 'Backend a medida', 'Finanzas', 'Dashboards', 'Machine learning', 'Integración de IA'];
 
 // Cifras con respaldo: sitios en línea (conteo de data/webProperties.js) y
 // comprobantes validados (caso documentado del sitio anterior).
@@ -48,19 +46,22 @@ const App = () => {
   useEffect(() => {
     const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     if (!fine || reduce) return undefined;
-    const lenis = new Lenis({ lerp: 0.09, smoothWheel: true });
+    const lenis = new Lenis({ lerp: 0.09, smoothWheel: true, anchors: true });
     const tick = (t) => lenis.raf(t * 1000);
+    const menuState = (event) => event.detail.open ? lenis.stop() : lenis.start();
+    window.addEventListener('jca:menu-state', menuState);
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
     return () => {
       gsap.ticker.remove(tick);
+      window.removeEventListener('jca:menu-state', menuState);
       lenis.destroy();
     };
   }, [reduce]);
 
   return (
-    <div className="min-h-screen bg-paper text-ink font-sans antialiased selection:bg-lime selection:text-ink overflow-x-clip">
-      <a href="#trabajo" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:bg-ink focus:text-paper focus:px-4 focus:py-2 focus:rounded-full">
+    <div className="site-premium studio-v4 min-h-screen bg-paper text-ink font-sans antialiased selection:bg-lime selection:text-ink overflow-x-clip">
+      <a href="#plataformas" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:bg-ink focus:text-paper focus:px-4 focus:py-2 focus:rounded-full">
         Saltar al contenido
       </a>
 
@@ -70,20 +71,26 @@ const App = () => {
         <Hero />
 
         {/* Cinta: qué hacemos, en grande */}
-        <div className="bg-ink text-paper py-5 sm:py-7 -rotate-[1.5deg] scale-[1.03] relative z-10 mt-4 sm:mt-10" aria-label="Servicios">
-          <Marquee duration={45}>
+        <div className="capabilities-ribbon" aria-label="Servicios del estudio">
+          <Marquee duration={55}>
             {TICKER.map((t) => (
-              <span key={t} className="flex items-center font-display text-3xl sm:text-5xl font-semibold tracking-tight whitespace-nowrap">
+              <span key={t} className="flex items-center font-display text-xl sm:text-2xl font-medium tracking-tight whitespace-nowrap">
                 <span className="px-6 sm:px-10">{t}</span>
-                <span className="text-lime text-2xl sm:text-4xl" aria-hidden="true">✦</span>
+                <span className="text-lime text-sm" aria-hidden="true">✦</span>
               </span>
             ))}
           </Marquee>
         </div>
 
-        {/* Cifras */}
-        <section aria-label="Cifras" className="bg-paper pt-20 sm:pt-28">
-          <div className="mx-auto max-w-[1400px] px-4 sm:px-8 grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
+        <Systems />
+        <Finance />
+        <Intelligence />
+
+        {/* Cifras y proyectos: evidencia después de presentar las especialidades. */}
+        <section aria-label="El estudio en cifras" className="studio-proof bg-paper pt-16 sm:pt-24">
+          <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
+            <Reveal className="studio-proof__intro"><span>DE LA IDEA A LA IMPLEMENTACIÓN.</span><p>Esto ya está pasando.</p></Reveal>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
             {STATS.map((s, i) => (
               <Reveal key={s.label} delay={i * 0.08} className="border-t border-ink/15 pt-5">
                 <div className="font-display text-[clamp(2.6rem,6vw,4.75rem)] font-semibold tracking-[-0.05em] leading-none">
@@ -93,9 +100,11 @@ const App = () => {
               </Reveal>
             ))}
           </div>
+          </div>
         </section>
 
         <Work />
+        <ProjectStart />
         <Services />
         <Automation />
         <Social />
@@ -103,7 +112,7 @@ const App = () => {
         <Process />
 
         {/* Cotizador en vivo */}
-        <section id="cotizar" className="scroll-mt-24 bg-ink text-paper py-20 sm:py-32 rounded-t-[2rem] sm:rounded-t-[3rem] relative z-10">
+        <section id="cotizar" className="quote-premium scroll-mt-24 bg-ink text-paper py-20 sm:py-32 rounded-t-[2rem] sm:rounded-t-[3rem] relative z-10">
           <QuoteEstimator />
         </section>
 
@@ -118,7 +127,7 @@ const App = () => {
         target="_blank"
         rel="noreferrer"
         aria-label="Escribir por WhatsApp"
-        className="wa-fab tap-press fixed right-4 sm:right-6 z-50 grid place-items-center w-14 h-14 rounded-full bg-ink text-lime shadow-[0_12px_30px_-8px_rgba(10,10,11,0.55)] ring-2 ring-lime/70 hover:scale-105 transition-transform"
+        className="wa-fab tap-press fixed right-4 sm:right-6 z-50 grid place-items-center w-13 h-13 rounded-full bg-ink text-lime shadow-[0_12px_30px_-8px_rgba(7,26,54,0.4)] ring-1 ring-lime/40 hover:scale-105 transition-transform"
       >
         <MessageCircle size={24} strokeWidth={2.2} />
       </a>

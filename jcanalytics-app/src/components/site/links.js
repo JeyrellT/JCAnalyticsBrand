@@ -7,6 +7,10 @@
 export const PHONE = '50670330596';
 export const EMAIL = 'gerencia@jcanalytic.com';
 
+export const prepareContact = ({ need, source = '' }) => {
+  window.dispatchEvent(new CustomEvent('jca:contact-intent', { detail: { need, source } }));
+};
+
 // Link de WhatsApp con mensaje precargado: el visitante solo toca "enviar".
 export const wa = (text) =>
   `https://wa.me/${PHONE}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
@@ -15,9 +19,10 @@ export const wa = (text) =>
 export const EASE = [0.19, 1, 0.22, 1];
 
 export const NAV_LINKS = [
-  { label: 'Trabajo', href: '#trabajo' },
-  { label: 'Servicios', href: '#servicios' },
-  { label: 'Redes', href: '#redes' },
-  { label: 'Equipo', href: '#equipo' },
-  { label: 'Cotizar', href: '#cotizar' },
+  { label: 'Sistemas', href: '#plataformas' },
+  { label: 'Finanzas & BI', href: '#finanzas' },
+  { label: 'IA & ML', href: '#inteligencia' },
+  { label: 'Proyectos', href: '#trabajo' },
+  { label: 'Marketing', href: '#redes' },
+  { label: 'Contacto', href: '#contacto' },
 ];
