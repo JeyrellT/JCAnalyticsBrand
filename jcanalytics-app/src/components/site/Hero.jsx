@@ -1,178 +1,64 @@
-// ============================================================================
-//  src/components/site/Hero.jsx
-//  Titular gigante + collage de sitios reales que hicimos (capturas de
-//  public/sites/). El diseño se demuestra, no se describe.
-// ============================================================================
-import { useRef } from 'react';
-import { motion, useScroll, useTransform, useReducedMotion, useMotionValue, useSpring } from 'framer-motion';
-import { WEB_PROPERTIES, CLIENT_SITES } from '../../data/webProperties';
-import { CTA, MaskLines, Reveal } from './primitives';
-import { wa, EASE } from './links';
+import { Component, lazy, Suspense, useCallback, useRef, useState } from 'react';
+import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { ArrowDown, ArrowUpRight, Pause, Play } from 'lucide-react';
+import { CLIENT_SITES } from '../../data/webProperties';
+import { MaskLines, Reveal } from './primitives';
+import { prepareContact } from './links';
+import '../../styles/hero.css';
 
-// eslint (sin plugin de react) no reconoce a `motion` usado solo como <motion.x>.
 const _MOTION = motion;
-
-const byId = (id) => [...WEB_PROPERTIES, ...CLIENT_SITES].find((s) => s.id === id);
-
-// Ventana de navegador con una captura real adentro.
-const BrowserShot = ({ site, className = '', eager = false }) => (
-  <div className={`rounded-xl sm:rounded-2xl overflow-hidden bg-white shadow-[0_30px_80px_-20px_rgba(10,10,11,0.45)] ring-1 ring-ink/10 ${className}`}>
-    <div className="flex items-center gap-1.5 px-3 h-6 sm:h-7 bg-neutral-100 border-b border-ink/5">
-      <span className="w-2 h-2 rounded-full bg-ink/15" />
-      <span className="w-2 h-2 rounded-full bg-ink/15" />
-      <span className="w-2 h-2 rounded-full bg-ink/15" />
-      <span className="ml-2 flex-1 truncate font-mono text-[9px] sm:text-[10px] text-ink/40">{site.domain}</span>
-    </div>
-    <img
-      src={site.shotHero}
-      alt={`Sitio ${site.name}`}
-      width={1800}
-      height={1013}
-      loading={eager ? 'eager' : 'lazy'}
-      decoding="async"
-      className="block w-full aspect-[16/9] object-cover object-top"
-    />
-  </div>
-);
+const Sculpture = lazy(() => import('./StudioSculpture'));
+const PROJECT = CLIENT_SITES.find((site) => site.id === 'soporte2');
+const MODES = [
+  { label: 'Diseño', description: 'Experiencias que se sienten distintas desde el primer clic.' },
+  { label: 'Ingeniería', description: 'Frontend, backend y arquitectura pensados como un solo sistema.' },
+  { label: 'Inteligencia', description: 'Finanzas, datos e IA que conectan tu siguiente etapa.' },
+];
+class SculptureBoundary extends Component {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch() { this.props.onFallback(); }
+  render() { return this.state.failed ? null : this.props.children; }
+}
 
 const Hero = () => {
-  const reduce = useReducedMotion();
   const ref = useRef(null);
+  const reduce = useReducedMotion();
+  const [paused, setPaused] = useState(false);
+  const [mode, setMode] = useState(0);
+  const [ready, setReady] = useState(false);
+  const onReady = useCallback(() => setReady(true), []);
+  const onFallback = useCallback(() => setReady(false), []);
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
-
-  // Parallax por scroll: cada capa del collage se mueve a distinta velocidad.
-  const yBack = useTransform(scrollYProgress, [0, 1], ['0%', reduce ? '0%' : '-18%']);
-  const yFront = useTransform(scrollYProgress, [0, 1], ['0%', reduce ? '0%' : '-38%']);
-  const yPhone = useTransform(scrollYProgress, [0, 1], ['0%', reduce ? '0%' : '-60%']);
-
-  // Parallax por puntero (solo desktop): inclina el collage hacia el cursor.
-  const mx = useMotionValue(0);
-  const my = useMotionValue(0);
-  const sx = useSpring(mx, { stiffness: 80, damping: 20 });
-  const sy = useSpring(my, { stiffness: 80, damping: 20 });
-  const rotY = useTransform(sx, [-0.5, 0.5], [-6, 6]);
-  const rotX = useTransform(sy, [-0.5, 0.5], [5, -5]);
-
-  const onMove = (e) => {
-    if (reduce || e.pointerType !== 'mouse') return;
-    const r = e.currentTarget.getBoundingClientRect();
-    mx.set((e.clientX - r.left) / r.width - 0.5);
-    my.set((e.clientY - r.top) / r.height - 0.5);
-  };
-
-  const barber = byId('barberxcr');
-  const glow = byId('glowstudiocr');
-  const taller = byId('tallerticos');
-  const burrada = byId('laburradacr');
-
+  const objectY = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : 100]);
   return (
-    <section
-      id="top"
-      ref={ref}
-      onPointerMove={onMove}
-      className="relative bg-paper text-ink pt-28 sm:pt-36 lg:pt-40 overflow-hidden"
-    >
-      {/* Retícula de fondo muy tenue: el "papel" de diseño */}
-      <div aria-hidden="true" className="absolute inset-0 grid-paper pointer-events-none" />
-
-      <div className="relative mx-auto max-w-[1400px] px-4 sm:px-8">
-        <Reveal>
-          <div className="inline-flex items-center gap-2.5 rounded-full border border-ink/10 bg-white/60 backdrop-blur px-3.5 py-1.5 mb-7 sm:mb-10">
-            <span className="relative flex w-2 h-2">
-              <span className="absolute inset-0 rounded-full bg-lime-dark animate-ping motion-reduce:animate-none opacity-60" />
-              <span className="relative w-2 h-2 rounded-full bg-lime-dark" />
-            </span>
-            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink/70">
-              Estudio digital · <span className="hidden sm:inline">Heredia, </span>Costa Rica
-            </span>
-          </div>
-        </Reveal>
-
-        <h1 className="font-display font-semibold tracking-[-0.035em] leading-[0.92] text-[clamp(2.9rem,10.4vw,8.4rem)]">
-          <MaskLines
-            lines={[
-              'Webs que venden.',
-              'Sistemas que',
-              <>
-                <span className="font-serif italic font-normal tracking-[-0.02em]">trabajan solos</span>
-                <span className="inline-block align-middle ml-[0.18em] w-[0.5em] h-[0.5em] rounded-full bg-lime border-[0.05em] border-ink" aria-hidden="true" />
-              </>,
-            ]}
-            delay={0.25}
-          />
-        </h1>
-
-        <div className="mt-8 sm:mt-12 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-7">
-          <Reveal delay={0.55} className="max-w-md">
-            <p className="text-lg sm:text-xl text-ink/65 leading-snug">
-              Diseño web, software, automatización y redes sociales para negocios que quieren crecer.
-            </p>
-          </Reveal>
-          <Reveal delay={0.7} className="flex flex-col sm:flex-row gap-3">
-            <CTA href={wa('Hola, quiero una página web para mi negocio.')} variant="ink" size="lg">
-              Quiero mi web
-            </CTA>
-            <CTA href="#trabajo" variant="ghost" size="lg">
-              Ver trabajos
-            </CTA>
-          </Reveal>
+    <section id="top" ref={ref} className="studio-hero" aria-labelledby="hero-title">
+      <div className="studio-hero__grain" aria-hidden="true" />
+      <div className="studio-hero__topline"><span><i aria-hidden="true" /> INGENIERÍA + DISEÑO DIGITAL</span><span>INDEPENDIENTES. HECHOS EN COSTA RICA. <ArrowUpRight size={12} aria-hidden="true" /></span></div>
+      <div className="studio-hero__main">
+        <div className="studio-hero__copy">
+          <Reveal><p className="studio-hero__eyebrow">La buena tecnología también se siente.</p></Reveal>
+          <h1 id="hero-title"><MaskLines lines={['Sistemas', <em key="character">con carácter.</em>]} delay={0.1} /></h1>
+          <Reveal delay={0.25}><p className="studio-hero__description">Creamos lo que tu negocio necesita para ir más lejos. Desde una web excepcional hasta el backend, las finanzas y la inteligencia que la hacen funcionar.</p></Reveal>
+          <Reveal delay={0.35} className="studio-hero__actions"><a href="#contacto" className="studio-start" onClick={() => prepareContact({ need: 'Sistema / backend', source: 'Sistemas con carácter' })}>Conversemos sobre tu proyecto <span><ArrowUpRight size={21} aria-hidden="true" /></span></a><a href="#trabajo" className="studio-work-link">Explorar proyectos <ArrowDown size={15} aria-hidden="true" /></a></Reveal>
+          <p className="studio-hero__invitation">Primera conversación de 30 min, sin costo.</p>
+          <Reveal delay={0.45} className="studio-hero__signature"><span className="studio-signature-mark" aria-hidden="true">↳</span> Diseño intencional. Ingeniería a medida.</Reveal>
         </div>
-      </div>
-
-      {/* Collage de sitios reales */}
-      <div className="relative mt-14 sm:mt-20 mx-auto max-w-[1400px] px-4 sm:px-8" style={{ perspective: 1600 }}>
-        <motion.div
-          initial={reduce ? false : { opacity: 0, y: 80 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.3, delay: 0.5, ease: EASE }}
-          style={{ rotateX: rotX, rotateY: rotY, transformStyle: 'preserve-3d' }}
-          className="relative h-[62vw] sm:h-[52vw] lg:h-[560px] xl:h-[620px]"
-        >
-          <motion.div style={{ y: yBack }} className="absolute left-0 top-[8%] w-[46%] -rotate-[5deg]">
-            <BrowserShot site={glow} />
-          </motion.div>
-          <motion.div style={{ y: yBack }} className="absolute right-0 top-[4%] w-[46%] rotate-[4deg]">
-            <BrowserShot site={taller} />
-          </motion.div>
-          <motion.div style={{ y: yFront }} className="absolute left-1/2 -translate-x-1/2 top-[18%] w-[68%] z-10">
-            <BrowserShot site={barber} eager />
-          </motion.div>
-          <motion.div
-            style={{ y: yPhone }}
-            className="absolute right-[6%] sm:right-[10%] top-[34%] w-[20%] sm:w-[15%] z-20 rotate-[6deg]"
-          >
-            <div className="rounded-[1.4rem] sm:rounded-[2rem] bg-ink p-1 sm:p-1.5 shadow-[0_30px_60px_-15px_rgba(10,10,11,0.6)]">
-              <img
-                src={burrada.shotMobile}
-                alt={`Versión móvil de ${burrada.name}`}
-                width={390}
-                height={844}
-                decoding="async"
-                className="block w-full aspect-[9/19] object-cover object-top rounded-[1.15rem] sm:rounded-[1.6rem]"
-              />
-            </div>
-          </motion.div>
-
-          {/* Sticker giratorio: el guiño de "estudio de diseño" */}
-          <a
-            href="#cotizar"
-            aria-label="Cotizar mi proyecto"
-            className="absolute left-[4%] sm:left-[8%] bottom-[2%] sm:bottom-[6%] z-30 w-24 h-24 sm:w-36 sm:h-36 grid place-items-center rounded-full bg-lime text-ink shadow-xl hover:scale-105 transition-transform"
-          >
-            <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full spin-slow" aria-hidden="true">
-              <defs>
-                <path id="sticker-circle" d="M50,50 m-37,0 a37,37 0 1,1 74,0 a37,37 0 1,1 -74,0" />
-              </defs>
-              <text className="font-mono" fontSize="9.2" letterSpacing="2.4" fill="currentColor">
-                <textPath href="#sticker-circle">COTIZÁ EN 3 CLICS · COTIZÁ EN 3 CLICS ·</textPath>
-              </text>
-            </svg>
-            <span className="font-display text-2xl sm:text-4xl font-bold">↓</span>
-          </a>
+        <motion.div className={`studio-object ${ready ? 'studio-object--ready' : ''}`} style={{ y: objectY }}>
+          <div className="studio-object__halo" aria-hidden="true" />
+          <div className="studio-object__fallback" aria-hidden="true"><svg viewBox="0 0 600 600" fill="none"><defs><linearGradient id="object-fallback" x1="50" y1="90" x2="500" y2="510" gradientUnits="userSpaceOnUse"><stop stopColor="#d9ffe8" /><stop offset=".3" stopColor="#426fb0" /><stop offset=".5" stopColor="#d1f9ef" /><stop offset=".72" stopColor="#30526a" /><stop offset="1" stopColor="#8cdecf" /></linearGradient></defs><g stroke="url(#object-fallback)" strokeWidth="58"><ellipse cx="300" cy="300" rx="173" ry="91" transform="rotate(-50 300 300)" /><ellipse cx="300" cy="300" rx="173" ry="91" transform="rotate(50 300 300)" /><ellipse cx="300" cy="300" rx="173" ry="91" transform="rotate(90 300 300)" /></g></svg></div>
+          <SculptureBoundary onFallback={onFallback}><Suspense fallback={null}><Sculpture mode={mode} paused={paused || Boolean(reduce)} onReady={onReady} onFallback={onFallback} /></Suspense></SculptureBoundary>
+          <span className="studio-object__coordinate" aria-hidden="true">JC—001<br />FORMA / FUNCIÓN</span>
+          <div className="studio-object__badge" aria-hidden="true"><span>DISEÑO</span><svg viewBox="0 0 70 70" fill="none"><path d="M35 3V67M3 35H67M12 12L58 58M12 58L58 12" stroke="currentColor" strokeWidth="2" /></svg><span>EN MOVIMIENTO</span></div>
+          {!reduce && <button type="button" className="studio-motion-control" onClick={() => setPaused((value) => !value)} aria-pressed={paused} aria-label={paused ? 'Reanudar animación 3D' : 'Pausar animación 3D'}>{paused ? <Play size={13} aria-hidden="true" /> : <Pause size={13} aria-hidden="true" />}<span>{paused ? 'Reanudar' : 'Pausar'}</span></button>}
         </motion.div>
       </div>
+      <div className="studio-hero__bottom">
+        <div className="studio-materials"><div role="group" aria-label="Explorar diseño, ingeniería e inteligencia">{MODES.map((item, index) => <button key={item.label} type="button" onClick={() => setMode(index)} aria-pressed={mode === index}><span>0{index + 1}</span>{item.label}<i aria-hidden="true" /></button>)}</div><p aria-live="polite">{MODES[mode].description}</p></div>
+        <a href={PROJECT.url} target="_blank" rel="noreferrer" className="studio-latest"><img src={PROJECT.shotHero} alt="Sitio de Soporte 2.0" width={1800} height={1013} decoding="async" /><span><small>DEL ESTUDIO AL MUNDO</small><strong>Soporte 2.0 <ArrowUpRight size={15} aria-hidden="true" /></strong></span></a>
+      </div>
+      <div className="studio-scroll-note"><span>SCROLL PARA EXPLORAR</span><span aria-hidden="true">↓</span><span>DISEÑAMOS LO QUE VIENE.</span></div>
     </section>
   );
 };
-
 export default Hero;

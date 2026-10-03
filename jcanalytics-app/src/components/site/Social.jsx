@@ -10,17 +10,19 @@
 // ============================================================================
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useInView, useReducedMotion } from 'framer-motion';
-import { Play, Music2, Captions, Scissors, Heart, MessageCircle, Send, Bookmark, Check, CheckCheck, TrendingUp } from 'lucide-react';
+import { Play, Pause, Music2, Captions, Scissors, Heart, MessageCircle, Send, Bookmark, Check, CheckCheck, TrendingUp } from 'lucide-react';
 import { byId } from '../../data/team';
-import { CTA, Label, MaskLines, Reveal } from './primitives';
-import { wa, EASE } from './links';
+import { Label, MaskLines, Reveal } from './primitives';
+import { EASE } from './links';
+import ContactCTA from './ContactCTA';
+import { CampaignTile } from './StudioIllustrations';
 
 // eslint (sin plugin de react) no reconoce a `motion` usado solo como <motion.x>.
 const _MOTION = motion;
 
 // Escenas del reel: cada una es un "corte" con su propio fondo y texto.
 const SCENES = [
-  { ms: 2000, bg: 'bg-lime text-ink', kicker: 'Reel · 0:12', text: '3 señales de que tu Excel ya no da más', sub: 'Gancho en los primeros 3 s' },
+  { ms: 2000, bg: 'bg-lime text-ink', kicker: 'Reel · 0:10', text: '3 señales de que tu Excel ya no da más', sub: 'Gancho en los primeros 3 s' },
   { ms: 1800, bg: 'bg-ink text-paper', kicker: '01', text: 'Nadie sabe cuál versión es la buena.', sub: 'Corte seco + subtítulo' },
   { ms: 1800, bg: 'bg-white text-ink', kicker: '02', text: 'El reporte del lunes se arma el domingo.', sub: 'Zoom suave + música' },
   { ms: 1800, bg: 'bg-ink text-paper', kicker: '03', text: 'Si esa persona se enferma, se detiene todo.', sub: 'B-roll + voz en off' },
@@ -56,11 +58,12 @@ const BARS = [34, 41, 38, 52, 61, 58, 74];
 const Phone = ({ reduce, playing }) => {
   const [i, setI] = useState(0);
   const [progress, setProgress] = useState(0); // 0..1 del reel completo
+  const elapsedRef = useRef(0);
 
   useEffect(() => {
     if (reduce || !playing) return undefined;
     let raf;
-    const start = performance.now();
+    const start = performance.now() - elapsedRef.current;
     let last = 0;
     const loop = (now) => {
       raf = requestAnimationFrame(loop);
@@ -68,6 +71,7 @@ const Phone = ({ reduce, playing }) => {
       if (now - last < 50) return;
       last = now;
       const t = (now - start) % TOTAL_MS;
+      elapsedRef.current = t;
       let acc = 0;
       let idx = 0;
       for (let k = 0; k < SCENES.length; k += 1) {
@@ -84,8 +88,8 @@ const Phone = ({ reduce, playing }) => {
   const scene = SCENES[i];
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="mx-auto w-[min(100%,17rem)] rounded-[2.4rem] bg-neutral-950 p-2 shadow-[0_40px_80px_-30px_rgba(0,0,0,0.8)] ring-1 ring-white/10">
+    <div className="social-editing-desk flex flex-col gap-4">
+      <div className="social-phone mx-auto w-[min(100%,17rem)] rounded-[2.4rem] bg-neutral-950 p-2 shadow-[0_40px_80px_-30px_rgba(0,0,0,0.8)] ring-1 ring-white/10">
         <div className="relative rounded-[1.9rem] overflow-hidden bg-ink aspect-[9/17]">
           {/* Escena */}
           <AnimatePresence mode="popLayout" initial={false}>
@@ -95,14 +99,16 @@ const Phone = ({ reduce, playing }) => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className={`absolute inset-0 flex flex-col justify-between p-5 pt-12 ${scene.bg}`}
+              className={`social-reel__scene social-reel__scene--${i} absolute inset-0 flex flex-col justify-between p-5 pt-12 ${scene.bg}`}
             >
-              <span className="font-mono text-[10px] uppercase tracking-[0.2em] opacity-60">{scene.kicker}</span>
-              <div>
-                <p className="font-display text-[1.55rem] font-semibold tracking-[-0.03em] leading-[1.02]">{scene.text}</p>
+              <img className="social-reel__art" src={`${import.meta.env.BASE_URL}artwork/${i === 2 ? 'connected-materials-v2' : i === 4 ? 'project-gateway' : 'creative-orbit-v2'}.webp`} alt="" width={i === 2 || i === 4 ? 1200 : 900} height={i === 2 || i === 4 ? 800 : 1350} loading="lazy" decoding="async" />
+              <div className="social-reel__copy">
+                <span className="font-mono text-[10px] uppercase tracking-[0.2em]">{scene.kicker}</span>
+                <p className="social-reel__title font-display text-[1.55rem] font-semibold tracking-[-0.03em] leading-[1.02]">{scene.text}</p>
+                <span className="social-reel__rule" />
               </div>
               {/* Subtítulo "quemado" */}
-              <div className="mb-24">
+              <div className="social-reel__subtitle mb-24">
                 <span className="inline-block rounded-md bg-black/80 text-white px-2 py-1 text-[11px] font-semibold leading-tight">
                   {scene.text}
                 </span>
@@ -115,7 +121,7 @@ const Phone = ({ reduce, playing }) => {
             {SCENES.map((s, k) => {
               const before = SCENES.slice(0, k).reduce((n, x) => n + x.ms, 0) / TOTAL_MS;
               const w = s.ms / TOTAL_MS;
-              const fill = reduce ? 1 : Math.min(1, Math.max(0, (progress - before) / w));
+              const fill = reduce ? 0 : Math.min(1, Math.max(0, (progress - before) / w));
               return (
                 <span key={k} className="h-0.5 flex-1 rounded-full bg-white/30 overflow-hidden">
                   <span className="block h-full bg-white" style={{ width: `${fill * 100}%` }} />
@@ -143,10 +149,10 @@ const Phone = ({ reduce, playing }) => {
       </div>
 
       {/* Línea de tiempo del editor, sincronizada con el reel */}
-      <div className="rounded-2xl bg-neutral-950 ring-1 ring-white/10 p-3 sm:p-4">
+      <div className="social-timeline rounded-2xl bg-neutral-950 ring-1 ring-white/10 p-3 sm:p-4">
         <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.18em] text-paper/45 mb-3">
           <span>Edición · reel 9:16</span>
-          <span className="tabular-nums">{reduce ? '0:12' : `0:${String(Math.floor((progress * TOTAL_MS) / 1000)).padStart(2, '0')}`} / 0:{String(Math.round(TOTAL_MS / 1000)).padStart(2, '0')}</span>
+          <span className="tabular-nums">{reduce ? '0:00' : `0:${String(Math.floor((progress * TOTAL_MS) / 1000)).padStart(2, '0')}`} / 0:{String(Math.round(TOTAL_MS / 1000)).padStart(2, '0')}</span>
         </div>
         <div className="relative space-y-1.5">
           {TRACKS.map((t) => {
@@ -158,9 +164,9 @@ const Phone = ({ reduce, playing }) => {
                   {t.clips.map(([a, b], k) => (
                     <span
                       key={k}
-                      className={`absolute top-0.5 bottom-0.5 rounded ${t.name === 'Música' ? 'bg-violet-400/60' : t.name === 'Voz' ? 'bg-orange-400/70' : t.name === 'Subtítulos' ? 'bg-paper/40' : 'bg-lime/80'}`}
+                      className={`timeline-clip timeline-clip--${t.name === 'Video' ? 'video' : 'audio'} absolute top-0.5 bottom-0.5 rounded ${t.name === 'Música' ? 'bg-violet-400/60' : t.name === 'Voz' ? 'bg-orange-400/70' : t.name === 'Subtítulos' ? 'bg-paper/40' : 'bg-lime/80'}`}
                       style={{ left: `${a * 100}%`, width: `${(b - a) * 100}%` }}
-                    />
+                    >{t.name === 'Video' ? <img src={`${import.meta.env.BASE_URL}artwork/${k === 2 ? 'connected-materials-v2' : k === 4 ? 'project-gateway' : 'creative-orbit-v2'}.webp`} alt="" loading="lazy" decoding="async" /> : t.name === 'Música' || t.name === 'Voz' ? <svg viewBox="0 0 120 20" preserveAspectRatio="none" aria-hidden="true">{Array.from({ length: 32 }, (_, n) => { const height = 3 + (n * 7 % 13); return <path key={n} d={`M${n * 4} ${10 - height / 2}v${height}`} stroke="currentColor" strokeWidth="1.2" />; })}</svg> : null}</span>
                   ))}
                 </div>
               </div>
@@ -170,7 +176,7 @@ const Phone = ({ reduce, playing }) => {
           <span
             aria-hidden="true"
             className="absolute top-0 bottom-0 w-px bg-white pointer-events-none"
-            style={{ left: `calc(5.5rem + 0.5rem + (100% - 6rem) * ${reduce ? 0.35 : progress})` }}
+            style={{ left: `calc(4.6rem + 0.5rem + (100% - 5.1rem) * ${reduce ? 0 : progress})` }}
           >
             <span className="absolute -top-1 -left-1 w-2 h-2 rounded-sm bg-white" />
           </span>
@@ -185,43 +191,47 @@ const Social = () => {
   const ref = useRef(null);
   const inView = useInView(ref, { margin: '-10% 0px -10% 0px' });
   const hillary = byId('hillary');
+  const [paused, setPaused] = useState(false);
 
   return (
-    <section id="redes" ref={ref} className="scroll-mt-24 bg-ink text-paper py-20 sm:py-32 rounded-t-[2rem] sm:rounded-t-[3rem] -mt-8 relative z-30 overflow-hidden">
+    <section id="redes" ref={ref} className="social-premium social-art-direction scroll-mt-24 bg-ink text-paper py-20 sm:py-32 rounded-t-[2rem] sm:rounded-t-[3rem] -mt-8 relative z-30 overflow-hidden">
+      <svg className="social-orbit-mark" viewBox="0 0 500 500" fill="none" aria-hidden="true">{[0, 45, 90, 135].map(angle => <ellipse key={angle} cx="250" cy="250" rx="108" ry="235" transform={`rotate(${angle} 250 250)`} stroke="currentColor" />)}</svg>
       <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12 sm:mb-16">
           <div>
-            <Label className="text-paper/45">(04) Redes sociales</Label>
+            <Label className="text-paper/70">04 / Marketing digital · el siguiente impulso</Label>
             <h2 className="mt-4 font-display font-semibold tracking-[-0.04em] leading-[0.92] text-[clamp(2.6rem,7vw,6rem)]">
               <MaskLines lines={['Tus redes,', <span key="b" className="font-serif italic font-normal text-lime">con criterio.</span>]} />
             </h2>
           </div>
           <Reveal delay={0.2} className="max-w-sm">
             <p className="text-paper/55 text-lg leading-snug">
-              Community manager, diseño publicitario, video y Meta Ads. Hillary crea; el sistema publica, responde y mide.
+              Tu sistema ya tiene una base. Ahora, hagamos que más personas lo conozcan: contenido, community manager, diseño publicitario, video y Meta Ads.
             </p>
             <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.18em] text-paper/35">Lo de abajo es una demo · así se ve la entrega</p>
+            {!reduce && <button type="button" onClick={() => setPaused((value) => !value)} aria-pressed={paused} className="demo-pause demo-pause--dark">{paused ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}{paused ? 'Reanudar reel' : 'Pausar reel'}</button>}
           </Reveal>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,19rem)_1fr] gap-8 lg:gap-12 items-start">
+        <div className="social-production grid grid-cols-1 lg:grid-cols-[minmax(0,19rem)_1fr] gap-8 lg:gap-12 items-start">
           {/* Teléfono + editor */}
           <Reveal>
-            <Phone reduce={reduce} playing={inView} />
+            <Phone reduce={reduce} playing={inView && !paused} />
           </Reveal>
 
           {/* Calendario · Meta Ads · Atención */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
             {/* Calendario */}
-            <Reveal delay={0.05} className="md:col-span-2 rounded-[1.5rem] bg-white/5 ring-1 ring-white/10 p-5 sm:p-6">
+            <Reveal delay={0.05} className="social-calendar md:col-span-2 rounded-[1.5rem] bg-white/5 ring-1 ring-white/10 p-5 sm:p-6">
               <div className="flex items-center justify-between gap-3 mb-4">
                 <Label className="text-paper/50">Calendario de contenido · semana 1</Label>
                 <span className="font-mono text-[11px] text-lime">12 piezas / mes</span>
               </div>
-              <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+              <div className="social-calendar__week grid grid-cols-7 gap-1.5 sm:gap-2">
                 {WEEK.map((day, k) => (
                   <div key={k} className={`rounded-xl p-1.5 sm:p-2 min-h-[5.5rem] ${k === 3 ? 'bg-white/10 ring-1 ring-lime/50' : 'bg-white/[0.03]'}`}>
                     <div className="font-mono text-[10px] text-paper/40 mb-1.5">{day.d}</div>
+                    <CampaignTile variant={k} />
                     <div className="space-y-1">
                       {day.items.map((it) => (
                         <span key={it.t} className={`block rounded-md px-1.5 py-1 text-[10px] sm:text-[11px] font-semibold leading-none truncate ${it.c}`}>{it.t}</span>
@@ -234,7 +244,7 @@ const Social = () => {
             </Reveal>
 
             {/* Meta Ads */}
-            <Reveal delay={0.1} className="rounded-[1.5rem] bg-white/5 ring-1 ring-white/10 p-5 sm:p-6">
+            <Reveal delay={0.1} className="social-report rounded-[1.5rem] bg-white/5 ring-1 ring-white/10 p-5 sm:p-6">
               <div className="flex items-center justify-between gap-3 mb-4">
                 <Label className="text-paper/50">Meta Ads · reporte semanal</Label>
                 <span className="inline-flex items-center gap-1 font-mono text-[11px] text-lime"><TrendingUp size={12} /> optimizado</span>
@@ -248,7 +258,8 @@ const Social = () => {
                   </div>
                 ))}
               </div>
-              <div className="mt-5 flex items-end gap-1.5 h-16" aria-hidden="true">
+              <div className="social-report__chart mt-5 flex items-end gap-1.5 h-16" aria-hidden="true">
+                <svg className="social-report__trend" viewBox="0 0 350 100" preserveAspectRatio="none" fill="none"><path d="M0 85H350M0 55H350M0 25H350" stroke="currentColor" strokeOpacity=".13" strokeDasharray="2 5" /><motion.path d="M22 73L74 66L123 69L175 55L224 47L274 50L326 31" stroke="#eeb28d" strokeWidth="1.5" initial={reduce ? false : { pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true }} transition={{ duration: reduce ? 0 : 1.4 }} /><circle cx="326" cy="31" r="3.5" fill="#eeb28d" /></svg>
                 {BARS.map((h, k) => (
                   <motion.span
                     key={k}
@@ -264,7 +275,7 @@ const Social = () => {
             </Reveal>
 
             {/* Atención al cliente */}
-            <Reveal delay={0.15} className="rounded-[1.5rem] bg-white/5 ring-1 ring-white/10 p-5 sm:p-6 flex flex-col">
+            <Reveal delay={0.15} className="social-community rounded-[1.5rem] bg-white/5 ring-1 ring-white/10 p-5 sm:p-6 flex flex-col">
               <div className="flex items-center justify-between gap-3 mb-4">
                 <Label className="text-paper/50">Atención a clientes</Label>
                 <span className="font-mono text-[11px] text-lime">respondido en 4 min</span>
@@ -301,9 +312,9 @@ const Social = () => {
                   ))}
                 </ul>
               </div>
-              <CTA href={wa('Hola Hillary, quiero un plan de redes sociales para mi negocio.')} variant="ink" size="lg" className="justify-self-start md:justify-self-end">
-                Quiero mi plan de redes
-              </CTA>
+              <ContactCTA need="Marketing digital" source="Marketing · contenido, redes y campañas" variant="ink" size="lg" className="justify-self-start md:justify-self-end">
+                Armemos mi plan de marketing
+              </ContactCTA>
             </Reveal>
           </div>
         </div>

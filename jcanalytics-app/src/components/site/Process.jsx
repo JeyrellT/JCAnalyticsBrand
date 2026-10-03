@@ -1,50 +1,51 @@
-// ============================================================================
-//  src/components/site/Process.jsx
-//  Tres pasos, una línea cada uno. Reemplaza la metodología 4D larga.
-// ============================================================================
-import { CTA, Label, MaskLines, Reveal } from './primitives';
-import { wa } from './links';
+import { ArrowUpRight, Check, MessageCircle, Layers } from 'lucide-react';
+import { Label, MaskLines, Reveal } from './primitives';
+import ContactCTA from './ContactCTA';
 
 const STEPS = [
-  { n: '01', title: 'Hablamos', line: '30 minutos. Sin costo.' },
-  { n: '02', title: 'Construimos', line: 'Ves avances cada 72 h.' },
-  { n: '03', title: 'Lanzamos', line: 'Con 30 días de soporte.' },
+  { n: '01', title: 'Hablamos', line: '30 minutos. Sin costo.', detail: 'El punto de partida', icon: MessageCircle },
+  { n: '02', title: 'Construimos', line: 'Ves avances cada 72 h.', detail: 'La idea toma forma', icon: Layers },
+  { n: '03', title: 'Lanzamos', line: 'Con 30 días de soporte.', detail: 'Tu próximo capítulo', icon: Check },
 ];
-
 const Process = () => (
-  <section id="proceso" className="scroll-mt-24 bg-paper text-ink py-20 sm:py-32">
-    <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
-      <Label className="text-ink/50">(06) Proceso</Label>
-      <h2 className="mt-4 mb-12 sm:mb-20 font-display font-semibold tracking-[-0.04em] leading-[0.92] text-[clamp(2.6rem,7vw,6rem)]">
-        <MaskLines lines={['Así de', <span key="b" className="font-serif italic font-normal">simple.</span>]} />
-      </h2>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-        {STEPS.map((s, i) => (
-          <Reveal key={s.n} delay={i * 0.12}>
-            <div className={`group h-full rounded-[1.5rem] sm:rounded-[2rem] p-6 sm:p-8 flex flex-col justify-between min-h-[15rem] sm:min-h-[22rem] transition-colors duration-500 ${
-              i === 2 ? 'bg-lime' : 'bg-white ring-1 ring-ink/10 hover:bg-ink hover:text-paper'
-            }`}>
-              <span className="font-display text-[5rem] sm:text-[7.5rem] font-semibold leading-none tracking-[-0.06em]">
-                {s.n}
-              </span>
-              <div>
-                <h3 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">{s.title}</h3>
-                <p className={`mt-2 text-lg ${i === 2 ? 'text-ink/70' : 'text-ink/55 group-hover:text-paper/60'} transition-colors`}>{s.line}</p>
-              </div>
-            </div>
-          </Reveal>
-        ))}
+  <section id="proceso" className="process-section scroll-mt-24" aria-labelledby="process-title">
+    <div className="closing-container">
+      <div className="closing-heading process-heading">
+        <div>
+          <Label className="closing-label">Cómo lo hacemos / Proceso</Label>
+          <h2 id="process-title" className="closing-title font-display">
+            <MaskLines lines={['Así de', <span key="simple" className="font-serif italic font-normal">simple.</span>]} />
+          </h2>
+        </div>
+        <Reveal delay={0.15} className="process-heading__aside">
+          <span className="process-heading__index font-display">01 — 03</span>
+          <span className="closing-kicker">Una conversación. El siguiente paso.</span>
+        </Reveal>
       </div>
-
-      <Reveal delay={0.3} className="mt-10 sm:mt-14 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-        <CTA href={wa('Hola, quiero agendar la llamada gratis de 30 minutos.')} variant="ink" size="lg">
-          Agendar llamada gratis
-        </CTA>
-        <span className="text-ink/50 text-[15px]">Respondemos en menos de 24 h.</span>
+      <ol className="process-sequence">
+        {STEPS.map((step, index) => {
+          const Icon = step.icon;
+          return (
+            <li key={step.n} className="process-step">
+              <Reveal delay={index * 0.12} className="process-step__content">
+                <div className="process-step__top">
+                  <span className="process-step__number font-display">{step.n}</span>
+                  <span className="process-step__icon" aria-hidden="true"><Icon size={23} strokeWidth={1.5} /></span>
+                </div>
+                <div className="process-step__line" aria-hidden="true"><span /></div>
+                <span className="closing-kicker process-step__detail">{step.detail}</span>
+                <h3 className="font-display">{step.title}</h3><p>{step.line}</p>
+                <ArrowUpRight className="process-step__arrow" size={23} strokeWidth={1.4} aria-hidden="true" />
+              </Reveal>
+            </li>
+          );
+        })}
+      </ol>
+      <Reveal delay={0.2} className="process-action">
+        <ContactCTA need="Sistema / backend" source="Primera conversación de 30 minutos" variant="ink" size="lg">Coordinar primera llamada</ContactCTA>
+        <span>Respondemos en menos de 24 h.</span>
       </Reveal>
     </div>
   </section>
 );
-
 export default Process;

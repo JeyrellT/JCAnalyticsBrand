@@ -1,113 +1,95 @@
-// ============================================================================
-//  src/components/site/Contact.jsx
-//  Cierre en lima: titular gigante + mini-formulario de 2 pasos que arma el
-//  mensaje de WhatsApp. Menos campos = más conversaciones iniciadas.
-// ============================================================================
-import { useState } from 'react';
-import { ArrowUpRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowUpRight, ArrowRight, Check } from 'lucide-react';
 import { Label, MaskLines, Reveal } from './primitives';
 import { wa, EMAIL } from './links';
 import { TEAM } from '../../data/team';
 
-const NEEDS = ['Página web', 'Redes sociales', 'Software / app', 'Dashboard', 'Automatización', 'Otro'];
-
+const NEEDS = ['Sistema / backend', 'Página web', 'Finanzas', 'Dashboard', 'Machine learning', 'Integración de IA', 'Automatización', 'Marketing digital', 'Otro'];
 const Contact = () => {
-  const [need, setNeed] = useState('Página web');
+  const [need, setNeed] = useState('Sistema / backend');
   const [name, setName] = useState('');
-
-  const href = wa(
-    `Hola, soy ${name.trim() || '(nombre)'}. Me interesa: ${need}. ¿Hablamos?`,
-  );
-
+  const [objective, setObjective] = useState('');
+  const [source, setSource] = useState('');
+  useEffect(() => {
+    let focusFrame;
+    const receiveIntent = (event) => {
+      if (!NEEDS.includes(event.detail?.need)) return;
+      setNeed(event.detail.need);
+      setSource(typeof event.detail.source === 'string' ? event.detail.source : '');
+      window.cancelAnimationFrame(focusFrame);
+      focusFrame = window.requestAnimationFrame(() => document.getElementById('contact-title')?.focus({ preventScroll: true }));
+    };
+    window.addEventListener('jca:contact-intent', receiveIntent);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      window.removeEventListener('jca:contact-intent', receiveIntent);
+    };
+  }, []);
+  const message = [`Hola${name.trim() ? `, soy ${name.trim()}` : ''}. Me interesa: ${need}.`, objective.trim() ? `Quiero resolver: ${objective.trim()}` : '', source ? `Llegué desde: ${source}.` : '', 'Me gustaría conversar sobre el alcance y el siguiente paso.'].filter(Boolean).join('\n\n');
+  const href = wa(message);
   return (
-    <section id="contacto" className="scroll-mt-24 bg-lime text-ink pt-20 sm:pt-32 pb-16 sm:pb-24 rounded-t-[2rem] sm:rounded-t-[3rem] -mt-8 relative z-10">
-      <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
-        <Label className="text-ink/60">(08) Contacto</Label>
-        <h2 className="mt-4 font-display font-semibold tracking-[-0.05em] leading-[0.86] text-[clamp(3.6rem,15vw,13rem)]">
-          <MaskLines lines={['¿Hablamos?']} />
-        </h2>
-
-        <div className="mt-10 sm:mt-16 grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-10 lg:gap-16 items-end">
-          {/* Mini-formulario → WhatsApp */}
-          <Reveal>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                window.open(href, '_blank', 'noopener');
-              }}
-              className="space-y-6"
-            >
+    <section id="contacto" className="contact-section scroll-mt-24" aria-labelledby="contact-title">
+      <div className="contact-atmosphere" aria-hidden="true" />
+      <div className="closing-container contact-container">
+        <div className="contact-eyebrow">
+          <Label>Tu próximo proyecto / Contacto</Label><span className="closing-kicker">El comienzo de algo bueno.</span>
+        </div>
+        <div className="contact-heading">
+          <h2 id="contact-title" className="font-display" tabIndex={-1}><MaskLines lines={['¿Hablamos?']} /></h2>
+          <span className="contact-heading__arrow" aria-hidden="true"><ArrowUpRight strokeWidth={1} /></span>
+        </div>
+        <div className="contact-grid">
+          <Reveal className="contact-form-wrap">
+            <p className="contact-intro">Contanos la idea. En una primera conversación de 30 minutos, sin costo, podemos entender tu objetivo y definir por dónde empezar.</p>
+            <form onSubmit={(event) => {
+              event.preventDefault();
+              window.open(href, '_blank', 'noopener,noreferrer');
+            }} className="contact-form">
               <fieldset>
-                <legend className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink/60 mb-3">Necesito</legend>
-                <div className="flex flex-wrap gap-2">
-                  {NEEDS.map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => setNeed(n)}
-                      aria-pressed={need === n}
-                      className={`tap-press h-11 px-5 rounded-full text-[15px] font-medium border transition-colors ${
-                        need === n ? 'bg-ink text-lime border-ink' : 'border-ink/25 hover:border-ink'
-                      }`}
-                    >
-                      {n}
+                <legend className="contact-form__label"><span>01</span> ¿Qué tenés en mente?</legend>
+                <div className="contact-needs">
+                  {NEEDS.map((option) => (
+                    <button key={option} type="button" onClick={() => { setNeed(option); setSource(''); }} aria-pressed={need === option} className={`contact-need tap-press ${need === option ? 'contact-need--selected' : ''}`}>
+                      <Check size={14} aria-hidden="true" className={need === option ? '' : 'contact-need__check--hidden'} />{option}
                     </button>
                   ))}
                 </div>
+                <p className="contact-selection" role="status">Conversemos sobre: <strong>{need}</strong></p>
               </fieldset>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <label htmlFor="contacto-nombre" className="sr-only">Tu nombre</label>
-                <input
-                  id="contacto-nombre"
-                  type="text"
-                  autoComplete="name"
-                  placeholder="Tu nombre"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="flex-1 min-w-0 h-14 sm:h-16 rounded-full bg-transparent border border-ink/30 focus:border-ink px-6 text-lg placeholder:text-ink/45 outline-none"
-                />
-                <button
-                  type="submit"
-                  className="tap-press group inline-flex items-center justify-between gap-4 h-14 sm:h-16 rounded-full bg-ink text-paper pl-7 pr-2.5 text-lg font-semibold hover:bg-neutral-800 transition-colors"
-                >
-                  Enviar por WhatsApp
-                  <span className="grid place-items-center w-11 h-11 rounded-full bg-lime text-ink" aria-hidden="true">
-                    <ArrowUpRight size={20} strokeWidth={2.4} />
-                  </span>
-                </button>
+              <div className="contact-form__objective">
+                <label htmlFor="contacto-objetivo" className="contact-form__label"><span>02</span> ¿Qué querés resolver? <small>(opcional)</small></label>
+                <textarea id="contacto-objetivo" rows={3} maxLength={600} value={objective} onChange={(event) => setObjective(event.target.value)} placeholder="Por ejemplo: hoy llevamos los pedidos en Excel y queremos conectarlos con nuestra web." aria-describedby="contact-objective-note" />
+                <p id="contact-objective-note">Una idea en tus palabras es suficiente.</p>
               </div>
-              <p className="text-ink/60 text-[15px]">
-                ¿Preferís correo?{' '}
-                <a href={`mailto:${EMAIL}`} className="font-semibold underline underline-offset-4 decoration-ink/30 hover:decoration-ink">
-                  {EMAIL}
-                </a>
-              </p>
+              <div className="contact-form__name">
+                <label htmlFor="contacto-nombre" className="contact-form__label"><span>03</span> Tu nombre <small>(opcional)</small></label>
+                <input id="contacto-nombre" type="text" autoComplete="name" maxLength={100} placeholder="¿Cómo te llamás?" value={name} onChange={(event) => setName(event.target.value)} />
+              </div>
+              <button type="submit" className="contact-submit tap-press">
+                <span>Continuar en WhatsApp</span>
+                <span className="contact-submit__arrow" aria-hidden="true"><ArrowUpRight size={24} strokeWidth={1.8} /></span>
+              </button>
+              <p className="contact-send-note">Se abrirá WhatsApp con tu mensaje listo para revisar.</p>
+              <p className="contact-email">¿Preferís correo?{' '}<a href={`mailto:${EMAIL}?subject=${encodeURIComponent(`Consulta: ${need}`)}&body=${encodeURIComponent(message)}`}>{EMAIL}</a></p>
             </form>
           </Reveal>
-
-          {/* Equipo: caras reales, sin biografías */}
-          <Reveal delay={0.15}>
-            <div className="flex items-center gap-4">
-              <div className="flex -space-x-3">
-                {TEAM.map((t) => (
-                  <img
-                    key={t.name}
-                    src={t.avatar}
-                    alt={t.name}
-                    title={`${t.name} · ${t.role}`}
-                    width={400}
-                    height={400}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover object-top ring-4 ring-lime bg-ink/10"
-                  />
-                ))}
-              </div>
-              <p className="text-[15px] leading-snug text-ink/70">
-                Te responde el equipo,<br />
-                <span className="font-semibold text-ink">no un bot.</span>{' '}
-                <a href="#equipo" className="underline underline-offset-4 decoration-ink/30 hover:decoration-ink">Conocelos</a>
-              </p>
+          <Reveal delay={0.15} className="contact-people">
+            <div className="contact-people__heading"><span className="closing-kicker">Del otro lado, personas.</span><span aria-hidden="true" className="contact-people__line" /></div>
+            <div className="contact-avatars">
+              {TEAM.map((person) => <img key={person.id} src={person.avatar} alt={person.name} title={`${person.name} · ${person.role}`} width={400} height={400} loading="lazy" decoding="async" />)}
+            </div>
+            <p className="contact-people__copy font-display">Te responde<br />el <span className="font-serif italic font-normal">equipo.</span></p>
+            <p className="contact-people__note">No un bot. Las mismas personas que van a trabajar con vos.</p>
+            <a href="#equipo" className="contact-people__link">Conocelos <ArrowRight size={17} aria-hidden="true" /></a>
+            <p className="contact-people__response">Respondemos en menos de 24 h.</p>
+            <ol className="contact-next-steps" aria-label="Qué sigue después de escribirnos">
+              <li><span>01</span><div><strong>Entendemos tu objetivo.</strong><p>Qué querés mejorar y cómo trabajás hoy.</p></div></li>
+              <li><span>02</span><div><strong>Definimos el alcance.</strong><p>Prioridades, funcionalidades e integraciones.</p></div></li>
+              <li><span>03</span><div><strong>Acordamos el siguiente paso.</strong><p>Una propuesta para tu caso, con tiempos y costos claros.</p></div></li>
+            </ol>
+            <div className="contact-faq">
+              <details><summary>¿Todavía no tengo la idea definida?<span aria-hidden="true">+</span></summary><p>Podés contarnos el problema o lo que te gustaría mejorar. La primera conversación sirve para darle forma.</p></details>
+              <details><summary>¿Ya tengo una web o un sistema?<span aria-hidden="true">+</span></summary><p>Revisamos lo que existe y definimos qué conviene mejorar, integrar o desarrollar según el alcance.</p></details>
             </div>
           </Reveal>
         </div>
@@ -115,5 +97,4 @@ const Contact = () => {
     </section>
   );
 };
-
 export default Contact;

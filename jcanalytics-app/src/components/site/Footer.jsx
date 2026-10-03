@@ -1,53 +1,36 @@
-// ============================================================================
-//  src/components/site/Footer.jsx
-//  Footer oscuro con la marca a todo el ancho.
-// ============================================================================
+import { ArrowUpRight } from 'lucide-react';
 import { WEB_PROPERTIES } from '../../data/webProperties';
 import { wa, EMAIL, PHONE, NAV_LINKS } from './links';
 
 const Footer = () => (
-  <footer className="bg-ink text-paper pt-16 sm:pt-24 pb-[max(1.5rem,env(safe-area-inset-bottom))] overflow-hidden">
-    <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-[15px]">
+  <footer className="studio-footer">
+    <div className="closing-container">
+      <div className="footer-topline"><span>Sistemas bien diseñados. Negocios con más posibilidades.</span><span>Heredia, Costa Rica <span aria-hidden="true">↗</span></span></div>
+      <div className="footer-links-grid">
+        <nav aria-label="Menú del pie de página">
+          <p className="footer-label">Explorá</p>
+          <ul>{NAV_LINKS.map((link) => <li key={link.href}><a href={link.href}>{link.label}</a></li>)}</ul>
+        </nav>
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-paper/40 mb-4">Menú</p>
-          <ul className="space-y-2">
-            {NAV_LINKS.map((l) => (
-              <li key={l.href}><a href={l.href} className="text-paper/75 hover:text-lime transition-colors">{l.label}</a></li>
-            ))}
+          <p className="footer-label">Productos</p>
+          <ul>{WEB_PROPERTIES.map((property) => <li key={property.id}><a href={property.url} target="_blank" rel="noopener noreferrer">{property.name} <span aria-hidden="true">↗</span></a></li>)}</ul>
+        </div>
+        <div className="footer-contact">
+          <p className="footer-label">Contacto</p>
+          <ul>
+            <li><a href={wa()} target="_blank" rel="noreferrer">WhatsApp <span aria-hidden="true">↗</span></a></li>
+            <li><a href={`mailto:${EMAIL}`}>{EMAIL}</a></li>
+            <li><a href={`tel:+${PHONE}`}>+506 7033 0596</a></li>
           </ul>
         </div>
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-paper/40 mb-4">Productos</p>
-          <ul className="space-y-2">
-            {WEB_PROPERTIES.map((p) => (
-              <li key={p.id}><a href={p.url} target="_blank" rel="noopener" className="text-paper/75 hover:text-lime transition-colors">{p.name} ↗</a></li>
-            ))}
-          </ul>
-        </div>
-        <div className="col-span-2 md:col-span-1">
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-paper/40 mb-4">Contacto</p>
-          <ul className="space-y-2">
-            <li><a href={wa()} target="_blank" rel="noreferrer" className="text-paper/75 hover:text-lime transition-colors">WhatsApp ↗</a></li>
-            <li><a href={`mailto:${EMAIL}`} className="text-paper/75 hover:text-lime transition-colors ">{EMAIL}</a></li>
-            <li><a href={`tel:+${PHONE}`} className="text-paper/75 hover:text-lime transition-colors">+506 7033 0596</a></li>
-          </ul>
-        </div>
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-paper/40 mb-4">Estudio</p>
-          <p className="text-paper/75">Heredia, Costa Rica</p>
-          <p className="text-paper/40 mt-2">© {new Date().getFullYear()} JC Analytics</p>
+          <p className="footer-label">Estudio</p><p className="footer-location">Heredia, Costa Rica</p>
+          <a href="#top" className="footer-back-top">Volver arriba <ArrowUpRight size={17} aria-hidden="true" /></a>
         </div>
       </div>
-
-      {/* Marca gigante a todo el ancho */}
-      <a href="#top" aria-label="Volver arriba" className="block mt-16 sm:mt-24 pb-4 sm:pb-8 select-none">
-        <span className="block font-display font-semibold tracking-[-0.06em] leading-[0.8] text-[15.5vw] xl:text-[14rem] text-paper/95 hover:text-lime transition-colors duration-500 whitespace-nowrap">
-          JC Analytics
-        </span>
-      </a>
+      <a href="#top" aria-label="JC Analytics, volver arriba" className="footer-brand font-display"><span>JC <span className="footer-brand__light">Analytics</span></span></a>
+      <div className="footer-bottomline"><span>© {new Date().getFullYear()} JC Analytics</span><span>Ideas que toman forma.</span></div>
     </div>
   </footer>
 );
-
 export default Footer;

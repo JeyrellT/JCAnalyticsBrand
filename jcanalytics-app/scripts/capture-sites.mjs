@@ -28,6 +28,9 @@ const SITES = [
   { id: 'tallerticos', url: 'https://www.tallerticos.com/' },
   { id: 'glowstudiocr', url: 'https://glowstudiocr.com/' },
   // Sitios de clientes
+  { id: 'soporte2', url: 'https://www.soporte2.com/' },
+  { id: 'rafael-inclusive', url: 'https://www.rafael-inclusive.com/' },
+  { id: 'silglobalcr', url: 'https://silglobalcr.com/' },
   { id: 'uniquexcr', url: 'https://uniquexcr.com/landing' },
   { id: 'cotizadorvip', url: 'https://client-production-a96b.up.railway.app/branding' },
   { id: 'laburradacr', url: 'https://www.laburradacr.com/' },

@@ -1,113 +1,47 @@
-// ============================================================================
-//  src/components/site/Work.jsx
-//  Portafolio: sitios reales en línea. En hover la captura larga se desplaza
-//  como si alguien estuviera haciendo scroll; cada card abre el sitio en vivo.
-// ============================================================================
-import { ArrowUpRight } from 'lucide-react';
+import { useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { ArrowDown, ArrowUpRight, Check } from 'lucide-react';
 import { WEB_PROPERTIES, CLIENT_SITES, DEMO_SITES } from '../../data/webProperties';
-import { CTA, Label, MaskLines, Reveal } from './primitives';
-import { wa } from './links';
+import { Label, MaskLines, Reveal } from './primitives';
+import ContactCTA from './ContactCTA';
+import '../../styles/portfolio.css';
 
-// Orden editorial: los más visuales primero y alternando tamaños.
-const FEATURED = ['barberxcr', 'uniquexcr', 'laburradacr', 'glowstudiocr', 'tallerticos', 'cotizadorvip'];
+const _MOTION = motion;
 const ALL = [...WEB_PROPERTIES, ...CLIENT_SITES];
-const SITES = FEATURED.map((id) => ALL.find((s) => s.id === id)).filter(Boolean);
+const PRODUCTS = ['barberxcr', 'tallerticos', 'cotizadorvip'].map((id) => ALL.find((site) => site.id === id));
+const GALLERY = ['soporte2', 'rafael-inclusive', 'silglobalcr', 'uniquexcr', 'laburradacr', 'glowstudiocr'].map((id) => ALL.find((site) => site.id === id));
+const CLIENT_IDS = new Set(CLIENT_SITES.map((site) => site.id));
 
-// Patrón de la grilla (12 columnas en desktop): grande + chica, chica + grande…
-const SPANS = ['lg:col-span-7', 'lg:col-span-5', 'lg:col-span-5', 'lg:col-span-7', 'lg:col-span-7', 'lg:col-span-5'];
-
-const WorkCard = ({ site, index, span }) => (
-  <Reveal delay={(index % 2) * 0.12} className={`${span}`}>
-    <a
-      href={site.url}
-      target="_blank"
-      rel="noopener"
-      className="work-card group block"
-      style={{ '--accent': site.accent }}
-    >
-      <div className="relative rounded-[1.25rem] sm:rounded-[1.75rem] overflow-hidden bg-neutral-200 aspect-[4/3] lg:aspect-auto lg:h-[clamp(26rem,36vw,34rem)]">
-        {/* Captura larga (1200×2400): en hover se desplaza hacia abajo */}
-        <img
-          src={site.shot}
-          alt={`Captura de ${site.name}`}
-          width={1200}
-          height={2400}
-          loading="lazy"
-          decoding="async"
-          className="work-card__shot absolute inset-x-0 top-0 w-full h-auto"
-        />
-        <div className="absolute inset-0 ring-1 ring-inset ring-ink/10 rounded-[inherit] pointer-events-none" />
-        {/* Botón "Ver en vivo": aparece en hover (siempre visible en táctil) */}
-        <span className="work-card__cta absolute right-3 top-3 sm:right-4 sm:top-4 inline-flex items-center gap-1.5 rounded-full bg-ink text-paper pl-4 pr-1.5 h-10 text-sm font-semibold">
-          Ver en vivo
-          <span className="grid place-items-center w-7 h-7 rounded-full bg-lime text-ink">
-            <ArrowUpRight size={15} strokeWidth={2.4} />
-          </span>
-        </span>
-      </div>
-      <div className="pt-4 sm:pt-5">
-        <span className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-ink/50">
-          <span className="w-2 h-2 rounded-full" style={{ background: site.accent }} />
-          {site.sector}
-        </span>
-        <div className="mt-2 flex items-baseline justify-between gap-4">
-          <h3 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight leading-none">
-            {site.name}
-          </h3>
-          <span className="hidden sm:inline shrink-0 text-sm text-ink/45 group-hover:text-ink transition-colors">{site.domain.replace(/^www\./, '')} ↗</span>
-        </div>
-        <p className="mt-2 text-ink/55 text-[15px] leading-snug">{site.tagline}</p>
-      </div>
-    </a>
-  </Reveal>
-);
-
-const Work = () => (
-  <section id="trabajo" className="scroll-mt-24 bg-paper text-ink py-20 sm:py-32">
-    <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12 sm:mb-16">
-        <div>
-          <Label className="text-ink/50">(01) Trabajo</Label>
-          <h2 className="mt-4 font-display font-semibold tracking-[-0.04em] leading-[0.92] text-[clamp(2.6rem,7vw,6rem)]">
-            <MaskLines lines={['En línea.', <span key="b" className="font-serif italic font-normal">Abrilos.</span>]} />
-          </h2>
-        </div>
-        <Reveal delay={0.2}>
-          <CTA href={wa('Hola, vi su portafolio y quiero un sitio así para mi negocio.')} variant="ink">
-            Quiero uno así
-          </CTA>
-        </Reveal>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-6 gap-y-12 sm:gap-y-16">
-        {SITES.map((s, i) => (
-          <WorkCard key={s.id} site={s} index={i} span={SPANS[i] ?? 'lg:col-span-6'} />
-        ))}
-      </div>
-
-      {/* Demos: apps y dashboards para trastear — una sola fila compacta */}
-      <Reveal className="mt-16 sm:mt-24 border-t border-ink/10 pt-8">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-5 lg:gap-10">
-          <Label className="text-ink/50 shrink-0">Demos para probar →</Label>
-          <div className="flex flex-wrap gap-2.5">
-            {DEMO_SITES.map((d) => (
-              <a
-                key={d.id}
-                href={d.url}
-                target="_blank"
-                rel="noopener"
-                className="tap-press group inline-flex items-center gap-2.5 rounded-full border border-ink/15 hover:border-ink hover:bg-ink hover:text-paper pl-4 pr-2 h-11 text-[15px] font-medium transition-colors"
-              >
-                <span className="w-2 h-2 rounded-full" style={{ background: d.accent }} />
-                {d.name}
-                <ArrowUpRight size={16} className="opacity-50 group-hover:opacity-100" />
-              </a>
-            ))}
+const Work = () => {
+  const [active, setActive] = useState(0);
+  const [expanded, setExpanded] = useState(false);
+  const reduce = useReducedMotion();
+  const project = PRODUCTS[active];
+  return (
+    <section id="trabajo" className="case-section" aria-labelledby="work-title">
+      <div className="case-container">
+        <div className="case-heading"><div><Label>El trabajo habla / Selección del estudio</Label><h2 id="work-title"><MaskLines lines={['Ideas atrevidas.', <em key="real">Sistemas reales.</em>]} /></h2></div><Reveal className="case-heading__aside"><span className="case-count">{String(PRODUCTS.length + GALLERY.length).padStart(2, '0')}<span>PROYECTOS<br />PARA EXPLORAR</span></span><p>Productos que operamos. Marcas que acompañamos. Cada proyecto, una forma distinta de resolver algo importante.</p></Reveal></div>
+        <Reveal className="case-feature">
+          <div className="case-feature__top"><span>SISTEMAS DESARROLLADOS / EN PRODUCCIÓN</span><span>0{active + 1} — 03</span></div>
+          <div className="case-feature__layout">
+            <div className="case-feature__copy"><span className="case-feature__sector">{project.sector}</span><h3>{project.name}</h3><p>{project.tagline}</p><ul>{project.features.slice(0, 2).map((feature) => <li key={feature}><Check size={13} aria-hidden="true" />{feature}</li>)}</ul><a href={project.url} target="_blank" rel="noreferrer" className="case-feature__link">Explorar {project.name}<span><ArrowUpRight size={20} aria-hidden="true" /></span></a><ContactCTA need="Sistema / backend" source={`Proyecto de referencia: ${project.name}`} variant="ghost" className="case-feature__inquiry">Quiero una solución para mi negocio</ContactCTA></div>
+            <a href={project.url} target="_blank" rel="noreferrer" className="case-feature__visual" aria-label={`Visitar ${project.name}, abre en otra pestaña`} style={{ '--project-color': project.accent }}>
+              <span className="case-feature__halo" aria-hidden="true" />
+              <AnimatePresence mode="wait" initial={false}><motion.img key={project.id} src={project.shotHero} width={1800} height={1013} loading="lazy" alt={`Interfaz de ${project.name}`} initial={reduce ? false : { opacity: 0, y: 15, rotate: -1 }} animate={{ opacity: 1, y: 0, rotate: -3 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: reduce ? 0 : 0.35 }} /></AnimatePresence>
+              <span className="case-feature__url">{project.domain}<ArrowUpRight size={13} aria-hidden="true" /></span>
+            </a>
           </div>
-        </div>
-      </Reveal>
-    </div>
-  </section>
-);
-
+          <div className="case-feature__selector" role="group" aria-label="Elegir producto destacado">{PRODUCTS.map((item, index) => <button key={item.id} type="button" aria-pressed={active === index} onClick={() => setActive(index)}><span>0{index + 1}</span>{item.name}<ArrowUpRight size={16} aria-hidden="true" /></button>)}</div>
+        </Reveal>
+        <div className="case-gallery-label"><span>OTRAS FORMAS DE HACERLO DIFERENTE</span><span>WEB / DISEÑO / EXPERIENCIA</span></div>
+        <div className="case-gallery">{GALLERY.slice(0, expanded ? GALLERY.length : 3).map((site, index) => <Reveal key={site.id} className="case-card" delay={index % 2 * 0.1}><a href={site.url} target="_blank" rel="noreferrer" aria-label={`Explorar ${site.name}: ${site.tagline}`}>
+          <div className={`case-preview case-preview--${site.id}`} style={{ '--project-color': site.accent }}><span className="case-preview__serial">JC / 0{index + 4}</span><img src={site.shotHero} width={1800} height={1013} loading="lazy" alt={`Diseño de ${site.name} para escritorio`} className="case-preview__desktop" /><img src={site.shotMobile} width={390} height={844} loading="lazy" alt={`Versión móvil de ${site.name}`} className="case-preview__phone" /><span className="case-preview__open"><ArrowUpRight size={23} aria-hidden="true" /></span></div>
+          <div className="case-caption"><div><span>{CLIENT_IDS.has(site.id) ? 'CLIENTE' : 'PRODUCTO PROPIO'} / {site.sector}</span><h3>{site.name}</h3></div><ArrowUpRight size={25} strokeWidth={1.2} aria-hidden="true" /></div><p className="case-card__tagline">{site.tagline}</p><ul className="case-card__stack">{site.stack.slice(0, 3).map((tag) => <li key={tag}>{tag}</li>)}</ul>
+        </a></Reveal>)}</div>
+        <button type="button" className="case-expand" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}>{expanded ? 'Volver a la selección' : 'Explorar 3 proyectos más'}<ArrowDown size={18} aria-hidden="true" style={{ transform: expanded ? 'rotate(180deg)' : undefined }} /></button>
+        <Reveal className="case-demos"><div><Label>El laboratorio está abierto.</Label><p>Explorá. Probá. Imaginá lo siguiente.</p></div><div>{DEMO_SITES.map((site) => <a key={site.id} href={site.url} target="_blank" rel="noreferrer">{site.name}<ArrowUpRight size={16} aria-hidden="true" /></a>)}</div></Reveal>
+      </div>
+    </section>
+  );
+};
 export default Work;
