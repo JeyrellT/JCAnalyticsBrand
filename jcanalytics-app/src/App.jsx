@@ -26,6 +26,7 @@ import { WEB_STATS } from './data/webProperties';
 import './styles/studio.css';
 import './styles/art-direction.css';
 import './styles/conversion.css';
+import './styles/mobile.css';
 
 const TICKER = ['Desarrollo de sistemas', 'Diseño de interfaces', 'Backend a medida', 'Finanzas', 'Dashboards', 'Machine learning', 'Integración de IA'];
 

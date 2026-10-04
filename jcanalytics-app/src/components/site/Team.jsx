@@ -2,6 +2,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { TEAM } from '../../data/team';
 import { Label, MaskLines, Reveal } from './primitives';
 import { wa } from './links';
+import MobileRail from './MobileRail';
 import '../../styles/closing.css';
 
 const TeamCard = ({ person, index }) => (
@@ -43,9 +44,9 @@ const Team = () => (
           <p>Cuatro personas, sin intermediarios. Con la que hablás es la que hace el trabajo.</p>
         </Reveal>
       </div>
-      <div className="team-grid">
+      <MobileRail className="team-grid" label="Personas del equipo">
         {TEAM.map((person, index) => <TeamCard key={person.id} person={person} index={index} />)}
-      </div>
+      </MobileRail>
       <Reveal className="team-signature">
         <span className="closing-kicker">Un equipo. Una misma dirección.</span>
         <p className="font-display">

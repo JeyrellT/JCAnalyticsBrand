@@ -15,6 +15,7 @@ import { byId } from '../../data/team';
 import { Label, MaskLines, Reveal } from './primitives';
 import { EASE } from './links';
 import ContactCTA from './ContactCTA';
+import MobileRail from './MobileRail';
 import { CampaignTile } from './StudioIllustrations';
 
 // eslint (sin plugin de react) no reconoce a `motion` usado solo como <motion.x>.
@@ -220,7 +221,8 @@ const Social = () => {
           </Reveal>
 
           {/* Calendario · Meta Ads · Atención */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+          <div className="social-delivery grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+            <MobileRail className="social-delivery__examples" label="Ejemplos de marketing">
             {/* Calendario */}
             <Reveal delay={0.05} className="social-calendar md:col-span-2 rounded-[1.5rem] bg-white/5 ring-1 ring-white/10 p-5 sm:p-6">
               <div className="flex items-center justify-between gap-3 mb-4">
@@ -303,6 +305,7 @@ const Social = () => {
             </Reveal>
 
             {/* Qué incluye + CTA */}
+            </MobileRail>
             <Reveal delay={0.2} className="md:col-span-2 rounded-[1.5rem] bg-lime text-ink p-5 sm:p-7 grid md:grid-cols-[1fr_auto] gap-6 items-center">
               <div>
                 <Label className="text-ink/60">Plan mensual · qué incluye</Label>

@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUpRight, Check } from 'lucide-react';
 import { WEB_PROPERTIES, CLIENT_SITES, DEMO_SITES } from '../../data/webProperties';
 import { Label, MaskLines, Reveal } from './primitives';
 import ContactCTA from './ContactCTA';
+import MobileRail from './MobileRail';
 import '../../styles/portfolio.css';
 
 const _MOTION = motion;
@@ -34,10 +35,10 @@ const Work = () => {
           <div className="case-feature__selector" role="group" aria-label="Elegir producto destacado">{PRODUCTS.map((item, index) => <button key={item.id} type="button" aria-pressed={active === index} onClick={() => setActive(index)}><span>0{index + 1}</span>{item.name}<ArrowUpRight size={16} aria-hidden="true" /></button>)}</div>
         </Reveal>
         <div className="case-gallery-label"><span>OTRAS FORMAS DE HACERLO DIFERENTE</span><span>WEB / DISEÑO / EXPERIENCIA</span></div>
-        <div className="case-gallery">{GALLERY.slice(0, expanded ? GALLERY.length : 3).map((site, index) => <Reveal key={site.id} className="case-card" delay={index % 2 * 0.1}><a href={site.url} target="_blank" rel="noreferrer" aria-label={`Explorar ${site.name}: ${site.tagline}`}>
+        <MobileRail className="case-gallery" label="Proyectos del estudio">{GALLERY.slice(0, expanded ? GALLERY.length : 3).map((site, index) => <Reveal key={site.id} className="case-card" delay={index % 2 * 0.1}><a href={site.url} target="_blank" rel="noreferrer" aria-label={`Explorar ${site.name}: ${site.tagline}`}>
           <div className={`case-preview case-preview--${site.id}`} style={{ '--project-color': site.accent }}><span className="case-preview__serial">JC / 0{index + 4}</span><img src={site.shotHero} width={1800} height={1013} loading="lazy" alt={`Diseño de ${site.name} para escritorio`} className="case-preview__desktop" /><img src={site.shotMobile} width={390} height={844} loading="lazy" alt={`Versión móvil de ${site.name}`} className="case-preview__phone" /><span className="case-preview__open"><ArrowUpRight size={23} aria-hidden="true" /></span></div>
           <div className="case-caption"><div><span>{CLIENT_IDS.has(site.id) ? 'CLIENTE' : 'PRODUCTO PROPIO'} / {site.sector}</span><h3>{site.name}</h3></div><ArrowUpRight size={25} strokeWidth={1.2} aria-hidden="true" /></div><p className="case-card__tagline">{site.tagline}</p><ul className="case-card__stack">{site.stack.slice(0, 3).map((tag) => <li key={tag}>{tag}</li>)}</ul>
-        </a></Reveal>)}</div>
+        </a></Reveal>)}</MobileRail>
         <button type="button" className="case-expand" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}>{expanded ? 'Volver a la selección' : 'Explorar 3 proyectos más'}<ArrowDown size={18} aria-hidden="true" style={{ transform: expanded ? 'rotate(180deg)' : undefined }} /></button>
         <Reveal className="case-demos"><div><Label>El laboratorio está abierto.</Label><p>Explorá. Probá. Imaginá lo siguiente.</p></div><div>{DEMO_SITES.map((site) => <a key={site.id} href={site.url} target="_blank" rel="noreferrer">{site.name}<ArrowUpRight size={16} aria-hidden="true" /></a>)}</div></Reveal>
       </div>
