@@ -37,9 +37,9 @@ const Hero = () => {
       <div className="studio-hero__topline"><span><i aria-hidden="true" /> INGENIERÍA + DISEÑO DIGITAL</span><span>INDEPENDIENTES. HECHOS EN COSTA RICA. <ArrowUpRight size={12} aria-hidden="true" /></span></div>
       <div className="studio-hero__main">
         <div className="studio-hero__copy">
-          <Reveal><p className="studio-hero__eyebrow">La buena tecnología también se siente.</p></Reveal>
+          <Reveal className="studio-hero__lead"><p className="studio-hero__eyebrow">La buena tecnología también se siente.</p></Reveal>
           <h1 id="hero-title"><MaskLines lines={['Sistemas', <em key="character">con carácter.</em>]} delay={0.1} /></h1>
-          <Reveal delay={0.25}><p className="studio-hero__description">Creamos lo que tu negocio necesita para ir más lejos. Desde una web excepcional hasta el backend, las finanzas y la inteligencia que la hacen funcionar.</p></Reveal>
+          <Reveal delay={0.25} className="studio-hero__intro"><p className="studio-hero__description">Creamos lo que tu negocio necesita para ir más lejos. Desde una web excepcional hasta el backend, las finanzas y la inteligencia que la hacen funcionar.</p></Reveal>
           <Reveal delay={0.35} className="studio-hero__actions"><a href="#contacto" className="studio-start" onClick={() => prepareContact({ need: 'Sistema / backend', source: 'Sistemas con carácter' })}>Conversemos sobre tu proyecto <span><ArrowUpRight size={21} aria-hidden="true" /></span></a><a href="#trabajo" className="studio-work-link">Explorar proyectos <ArrowDown size={15} aria-hidden="true" /></a></Reveal>
           <p className="studio-hero__invitation">Primera conversación de 30 min, sin costo.</p>
           <Reveal delay={0.45} className="studio-hero__signature"><span className="studio-signature-mark" aria-hidden="true">↳</span> Diseño intencional. Ingeniería a medida.</Reveal>

@@ -81,6 +81,7 @@ const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
 
     let frame = 0;
     let visible = true;
+    let menuOpen = false;
     let disposed = false;
     let last = 0;
     let elapsed = 0;
@@ -90,7 +91,7 @@ const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
 
     const draw = (now = 0) => {
       frame = 0;
-      if (disposed || !visible || document.hidden) return;
+      if (disposed || !visible || menuOpen || document.hidden) return;
       const state = controlRef.current;
       const delta = last ? Math.min((now - last) / 1000, 0.05) : 0;
       last = now;
@@ -129,6 +130,11 @@ const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
     };
     const resetPointer = () => { pointer.x = 0; pointer.y = 0; };
     const lost = (event) => { event.preventDefault(); cancelAnimationFrame(frame); onFallback?.(); };
+    const onMenuState = (event) => {
+      menuOpen = event.detail.open;
+      if (menuOpen) cancelAnimationFrame(frame);
+      else { last = 0; schedule(); }
+    };
     const resizeObserver = new ResizeObserver(resize);
     const intersectionObserver = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
@@ -140,6 +146,7 @@ const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
     host.addEventListener('pointerleave', resetPointer);
     renderer.domElement.addEventListener('webglcontextlost', lost);
     document.addEventListener('visibilitychange', schedule);
+    window.addEventListener('jca:menu-state', onMenuState);
     resize();
 
     return () => {
@@ -151,6 +158,7 @@ const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
       host.removeEventListener('pointermove', move);
       host.removeEventListener('pointerleave', resetPointer);
       document.removeEventListener('visibilitychange', schedule);
+      window.removeEventListener('jca:menu-state', onMenuState);
       renderer.domElement.removeEventListener('webglcontextlost', lost);
       geometry.dispose(); cageGeometry.dispose(); haloGeometry.dispose(); markerGeometry.dispose();
       material.dispose(); cageMaterial.dispose(); haloMaterial.dispose(); markerMaterial.dispose();

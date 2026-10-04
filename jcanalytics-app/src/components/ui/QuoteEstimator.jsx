@@ -116,7 +116,8 @@ export default function QuoteEstimator() {
     );
     const resultObs = new IntersectionObserver(
       ([entry]) => setResultVisible(entry.isIntersecting),
-      { threshold: 0.35 }
+      // A tall result cannot reliably meet a percentage threshold on a phone.
+      { rootMargin: '-80px 0px -100px 0px', threshold: 0 }
     );
     sectionObs.observe(rootEl);
     resultObs.observe(resultEl);
@@ -188,7 +189,7 @@ export default function QuoteEstimator() {
     : 'https://wa.me/50670330596';
 
   const scrollToResult = () =>
-    resultRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    resultRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
 
   const block = 'bg-neutral-900/60 p-5 sm:p-6 rounded-[2rem] border border-neutral-800';
 
@@ -286,7 +287,7 @@ export default function QuoteEstimator() {
         </div>
 
         {/* ───────── DERECHA: resultado (recibo) ───────── */}
-        <div className="lg:sticky lg:top-24" ref={resultRef}>
+        <div className="quote-result lg:sticky lg:top-24" ref={resultRef}>
           <div className="glass-premium rounded-[2rem] p-6 sm:p-7" aria-live="polite">
             <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/10">
               <span className="text-xs font-mono uppercase tracking-[0.18em] text-neutral-400">JC Analytics · Estimado</span>
@@ -412,7 +413,7 @@ export default function QuoteEstimator() {
             animate={reduce ? { opacity: 1 } : { y: 0 }}
             exit={reduce ? { opacity: 0 } : { y: '110%' }}
             transition={reduce ? { duration: 0.15 } : { type: 'spring', stiffness: 380, damping: 34 }}
-            className="lg:hidden fixed bottom-0 inset-x-0 z-40 glass-nav border-t border-white/10 px-4 pt-3 pb-safe"
+            className="quote-mobile-summary lg:hidden fixed bottom-0 inset-x-0 z-40 glass-nav border-t border-white/10 px-4 pt-3 pb-safe"
           >
             {/* Filo superior con acento de marca */}
             <div aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-lime-400/70 to-transparent" />

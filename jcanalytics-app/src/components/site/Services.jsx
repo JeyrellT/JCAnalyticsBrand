@@ -204,7 +204,7 @@ const ServiceRow = ({ row, index, open, onToggle }) => {
 };
 
 const Services = () => {
-  const [open, setOpen] = useState('software');
+  const [open, setOpen] = useState(() => window.matchMedia('(max-width: 767px)').matches ? null : 'software');
   return (
     <section id="servicios" className="studio-services scroll-mt-24 bg-ink text-paper py-20 sm:py-32 rounded-t-[2rem] sm:rounded-t-[3rem] -mt-8 relative z-10">
       <div className="relative mx-auto max-w-[1400px] px-4 sm:px-8">

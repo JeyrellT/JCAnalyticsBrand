@@ -108,6 +108,7 @@ const DataConnections = ({ active, reduce }) => (
 
 const Systems = () => {
   const [active, setActive] = useState(0);
+  const [layer, setLayer] = useState('operation');
   const tabs = useRef([]);
   const id = useId();
   const reduce = useReducedMotion();
@@ -142,8 +143,12 @@ const Systems = () => {
           </Reveal>
         </div>
 
-        <Reveal className="systems-scene">
+        <Reveal className={`systems-scene systems-scene--${layer}`}>
           <div className="systems-scene__label"><span className="systems-example-dot" aria-hidden="true" />Ejemplo de solución · módulos a medida</div>
+          <div className="systems-mobile-switch" role="group" aria-label="Las dos caras de tu sistema">
+            <button type="button" aria-pressed={layer === 'experience'} onClick={() => setLayer('experience')}><Globe2 size={17} aria-hidden="true" /><span>La experiencia<small>Lo que ve tu cliente</small></span></button>
+            <button type="button" aria-pressed={layer === 'operation'} onClick={() => setLayer('operation')}><Layers3 size={17} aria-hidden="true" /><span>La operación<small>Lo que mueve todo</small></span></button>
+          </div>
           <div className="systems-layers">
             <div className="systems-public-layer">
               <div className="systems-layer-heading"><span>01 / EXPERIENCIA</span><Globe2 size={18} aria-hidden="true" /></div>
