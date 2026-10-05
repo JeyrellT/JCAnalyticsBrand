@@ -81,17 +81,24 @@ async function startServer() {
 
 const compact = (text) => text.replace(/\s+/g, ' ').trim();
 
-async function openPage(browser, origin, width, javascript = true) {
+async function openPage(browser, origin, width, javascript = true, options = {}) {
   const page = await browser.newPage();
   const errors = [];
   const badLocalRequests = [];
+  const delayedModule = { requests: 0, waiting: false };
   page.setDefaultTimeout(TIMEOUT);
   await page.setViewport({ width, height: width < 600 ? 844 : 1000, deviceScaleFactor: 1 });
   await page.setJavaScriptEnabled(javascript);
   await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
   await page.setRequestInterception(true);
-  page.on('request', (request) => {
+  page.on('request', async (request) => {
     const url = new URL(request.url());
+    if (url.origin === origin && options.delayJournalMs && /\/JournalApp-[^/]+\.js$/.test(url.pathname)) {
+      delayedModule.requests += 1;
+      delayedModule.waiting = true;
+      await delay(options.delayJournalMs);
+      delayedModule.waiting = false;
+    }
     if (url.origin === origin || ['data:', 'blob:', 'about:'].includes(url.protocol)) request.continue();
     else request.abort('blockedbyclient');
   });
@@ -108,6 +115,7 @@ async function openPage(browser, origin, width, javascript = true) {
   });
   return {
     page,
+    delayedModule,
     verifyErrors() {
       assert.deepEqual(errors, [], 'Uncaught browser errors');
       assert.deepEqual([...new Set(badLocalRequests)], [], 'Failed local assets or page requests');
@@ -604,7 +612,9 @@ async function checkArticleNavigation(browser, origin, language, width) {
   const route = routes.find((item) => item.type === 'article' && item.data.id === 'human-review' && item.language === language);
   const { page, verifyErrors } = await openPage(browser, origin, width);
   try {
-    await navigate(page, `${origin}${route.path}`);
+    // A new page with a deep link must land on its section after the route mounts.
+    await navigate(page, `${origin}${route.path}#measure`);
+    await checkFragmentViewport(page, 'measure');
     await checkMetadata(page, language, route);
     await checkSelector(page, language, 'header', route);
     await checkDiscussion(page, route);
@@ -619,9 +629,76 @@ async function checkArticleNavigation(browser, origin, language, width) {
     assert.equal(new URL(page.url()).pathname, alternatePath(route, other), 'Article language link preserves its equivalent article');
     assert.equal(new URL(page.url()).hash, '#discussion', 'Article language change preserves its section');
     await checkMetadata(page, other, equivalentRoute(route, other));
+    await checkFragmentViewport(page, 'discussion');
     await checkWidth(page);
     verifyErrors();
-    console.log(`[check-site] PASS article ${language} ${width}px: native discussion and equivalent language navigation`);
+    console.log(`[check-site] PASS article ${language} ${width}px: cold deep link, native discussion and visible section after language navigation`);
+  } finally {
+    await page.close();
+  }
+}
+
+async function checkFragmentViewport(page, id) {
+  try {
+    await page.waitForFunction((fragment) => {
+      const target = document.getElementById(fragment);
+      if (!target) return false;
+      const heading = target.querySelector('h2') || target;
+      const rect = heading.getBoundingClientRect();
+      const header = document.querySelector('.journal-nav')?.getBoundingClientRect();
+      return location.hash === `#${fragment}` && rect.top >= (header?.bottom || 0) - 1 && rect.bottom <= innerHeight;
+    }, { timeout: 5000 }, id);
+  } catch {
+    const position = await page.evaluate((fragment) => ({
+      hash: location.hash,
+      scroll: scrollY,
+      targetTop: document.getElementById(fragment)?.getBoundingClientRect().top,
+      headerBottom: document.querySelector('.journal-nav')?.getBoundingClientRect().bottom,
+      viewport: innerHeight,
+    }), id);
+    assert.fail(`Fragment #${id} must be visible below the navigation: ${JSON.stringify(position)}`);
+  }
+}
+
+async function checkDelayedArticleModule(browser, origin) {
+  const route = routes.find((item) => item.type === 'article' && item.data.id === 'human-review' && item.language === 'en');
+  const { page, verifyErrors, delayedModule } = await openPage(browser, origin, 1440, true, { delayJournalMs: 2500 });
+  try {
+    await page.setCacheEnabled(false);
+    await page.evaluateOnNewDocument(() => {
+      const audit = { headingSeen: false, missingHeading: false };
+      window.__staticHeadingAudit = audit;
+      new MutationObserver(() => {
+        const root = document.getElementById('root');
+        if (!root) return;
+        const count = root.querySelectorAll('h1').length;
+        if (count === 1) audit.headingSeen = true;
+        else if (audit.headingSeen) audit.missingHeading = true;
+      }).observe(document, { childList: true, subtree: true });
+    });
+    const navigation = page.goto(`${origin}${route.path}#discussion`, { waitUntil: 'networkidle0', timeout: 30_000 });
+    await page.waitForSelector('main h1');
+    const deadline = Date.now() + TIMEOUT;
+    while (!delayedModule.requests && Date.now() < deadline) await delay(25);
+    assert.equal(delayedModule.requests, 1, 'The editorial module request was actually delayed');
+    let samples = 0;
+    while (delayedModule.waiting) {
+      assert.equal(await page.$$eval('main h1', (nodes) => nodes.length), 1, 'Static heading remains present while the route module downloads');
+      assert.equal(compact(await page.$eval('main h1', (node) => node.innerText)), route.data.en.title);
+      await checkVisibleText(page, ['main h1']);
+      samples += 1;
+      await delay(100);
+    }
+    assert.ok(samples > 0, 'Heading visibility was observed during the delayed download');
+    const response = await navigation;
+    assert.equal(response.status(), 200);
+    const audit = await page.evaluate(() => window.__staticHeadingAudit);
+    assert.equal(audit.headingSeen, true);
+    assert.equal(audit.missingHeading, false, 'Mounting the page must never replace its heading with a loading placeholder');
+    await checkFragmentViewport(page, 'discussion');
+    await checkMetadata(page, 'en', route);
+    verifyErrors();
+    console.log('[check-site] PASS delayed article module: heading stays visible during a 2.5s download and the deep link is restored');
   } finally {
     await page.close();
   }
@@ -640,6 +717,7 @@ async function main() {
       args: ['--disable-background-networking', ...(process.env.CI ? ['--no-sandbox', '--disable-setuid-sandbox'] : [])],
     });
     await checkSitemap(browser, origin);
+    await checkDelayedArticleModule(browser, origin);
     const snapshots = new Map();
     for (const route of routes) await checkStaticRoute(browser, origin, route, snapshots);
     await checkInternalLinks(origin, snapshots);

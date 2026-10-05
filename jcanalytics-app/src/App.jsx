@@ -31,6 +31,7 @@ import './styles/mobile.css';
 import './styles/discovery.css';
 import { t } from './i18n/locale';
 import { trackContactClicks } from './seo/analytics';
+import { useInitialFragment } from './components/useInitialFragment';
 
 const TICKER = t(['Desarrollo de sistemas', 'Diseño de interfaces', 'Backend a medida', 'Finanzas', 'Dashboards', 'Machine learning', 'Integración de IA'], ['Software development', 'Interface design', 'Custom backend', 'Finance', 'Dashboards', 'Machine learning', 'AI integration']);
 
@@ -42,6 +43,7 @@ const STATS = [
 ];
 
 const App = () => {
+  useInitialFragment();
   const reduce = useReducedMotion();
   useEffect(trackContactClicks, []);
 

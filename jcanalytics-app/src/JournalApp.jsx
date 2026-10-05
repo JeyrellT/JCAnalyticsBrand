@@ -6,6 +6,7 @@ import { locale, t } from './i18n/locale';
 import { wa, EMAIL } from './components/site/links';
 import LanguageSwitcher from './components/ui/LanguageSwitcher';
 import { trackContactClicks } from './seo/analytics';
+import { useInitialFragment } from './components/useInitialFragment';
 import './styles/discovery.css';
 import './styles/journal.css';
 
@@ -83,6 +84,7 @@ function DocumentPage({ route }) {
 }
 
 export default function JournalApp({ route }) {
+  useInitialFragment();
   useEffect(trackContactClicks, []);
   useEffect(() => { if (!route) { document.title = '404 | JC Analytics'; document.querySelector('meta[name="robots"]')?.setAttribute('content', 'noindex, follow'); } }, [route]);
   return <div className="journal-site"><a className="journal-skip" href="#main-content">{t('Saltar al contenido', 'Skip to content')}</a><header className="journal-nav"><a className="journal-brand" href={homePath(locale)}><img src="/LogoMark.webp" alt="" width="162" height="200" /><span>JC Analytics<small>{t('EL ESTUDIO / LAS IDEAS', 'THE STUDIO / THE IDEAS')}</small></span></a><nav aria-label={t('Navegación principal', 'Main navigation')}><a href={homePath(locale)}>{t('Estudio', 'Studio')}</a><a href={journalPath(locale)} aria-current={route?.type === 'journal' ? 'page' : undefined}>{t('Ideas', 'Insights')}</a><a className="journal-nav-contact" href={`${homePath(locale)}#contacto`}>{t('Hablemos', 'Let’s talk')}<ArrowUpRight size={16} /></a></nav><LanguageSwitcher /></header>
