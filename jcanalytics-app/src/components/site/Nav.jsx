@@ -3,24 +3,27 @@ import { motion, AnimatePresence, useReducedMotion, useScroll } from 'framer-mot
 import { Menu, X, ArrowUpRight, ArrowRight, Grid2X2, Layers3, ChartNoAxesCombined, BrainCircuit, PanelsTopLeft, Sparkles, MessageCircle } from 'lucide-react';
 import { wa, EASE, PHONE, EMAIL, NAV_LINKS, prepareContact } from './links';
 import '../../styles/navigation.css';
+import { t, locale } from '../../i18n/locale';
+import { journalPath } from '../../seo/routes';
+import LanguageSwitcher from '../ui/LanguageSwitcher';
 
 const _MOTION = motion;
 const CHAPTERS = [
   { icon: Layers3, detail: 'Web + backend', need: 'Sistema / backend' },
-  { icon: ChartNoAxesCombined, detail: 'Datos que orientan', need: 'Dashboard' },
-  { icon: BrainCircuit, detail: 'Ideas con inteligencia', need: 'Integración de IA' },
-  { icon: PanelsTopLeft, detail: 'Del estudio al mundo', need: 'Sistema / backend' },
-  { icon: Sparkles, detail: 'Marcas que conectan', need: 'Marketing digital' },
-  { icon: MessageCircle, detail: 'Tu siguiente paso', need: 'Sistema / backend' },
+  { icon: ChartNoAxesCombined, detail: t('Datos que orientan', 'Data that guides you'), need: 'Dashboard' },
+  { icon: BrainCircuit, detail: t('Ideas con inteligencia', 'Intelligence at work'), need: 'Integración de IA' },
+  { icon: PanelsTopLeft, detail: t('Del estudio al mundo', 'From our studio to the world'), need: 'Sistema / backend' },
+  { icon: Sparkles, detail: t('Marcas que conectan', 'Brands that connect'), need: 'Marketing digital' },
+  { icon: MessageCircle, detail: t('Tu siguiente paso', 'Your next step'), need: 'Sistema / backend' },
 ];
-const SECTION_NAMES = { top: 'El estudio', empezar: 'Tu proyecto', servicios: 'Servicios', automatizacion: 'Automatización', equipo: 'El equipo', proceso: 'El proceso', cotizar: 'Cotizador' };
+const SECTION_NAMES = { top: t('El estudio', 'The studio'), empezar: t('Tu proyecto', 'Your project'), servicios: t('Servicios', 'Services'), automatizacion: t('Automatización', 'Automation'), equipo: t('El equipo', 'The team'), proceso: t('El proceso', 'Our process'), cotizar: t('Cotizador', 'Estimator'), preguntas: t('Preguntas', 'Questions') };
 
 const Brand = ({ onClick, className = '' }) => (
-  <a href="#top" onClick={onClick} className={`jca-brand ${className}`} aria-label="JC Analytics — inicio">
+  <a href="#top" onClick={onClick} className={`jca-brand ${className}`} aria-label={t('JC Analytics — inicio', 'JC Analytics — home')}>
     <span className="jca-brand__mark">
       <img src={`${import.meta.env.BASE_URL}LogoMark.webp`} alt="" width={162} height={200} decoding="async" />
     </span>
-    <span className="jca-brand__name">JC Analytics<span className="jca-brand__caption">Software · datos · inteligencia</span></span>
+    <span className="jca-brand__name">JC Analytics<span className="jca-brand__caption">{t('Software · datos · inteligencia', 'Software · data · intelligence')}</span></span>
   </a>
 );
 
@@ -146,7 +149,7 @@ const Nav = () => {
   const openMenu = (event) => { btnRef.current = event.currentTarget; setOpen(true); };
   const visit = (event, href) => { event.preventDefault(); destinationRef.current = href; setOpen(false); };
   const currentIndex = NAV_LINKS.findIndex(link => link.href === active);
-  const currentName = NAV_LINKS[currentIndex]?.label ?? SECTION_NAMES[active.slice(1)] ?? 'El estudio';
+  const currentName = NAV_LINKS[currentIndex]?.label ?? SECTION_NAMES[active.slice(1)] ?? t('El estudio', 'The studio');
 
   return (
     <>
@@ -156,7 +159,7 @@ const Nav = () => {
         <div className="jca-navigation__bar">
           <Brand />
           <span className="jca-navigation__chapter" aria-hidden="true">{currentName}</span>
-          <nav className="jca-navigation__links" aria-label="Navegación principal">
+          <nav className="jca-navigation__links" aria-label={t('Navegación principal', 'Main navigation')}>
             {NAV_LINKS.map((link) => (
               <a key={link.href} href={link.href} className="jca-navigation__link" aria-current={active === link.href ? 'location' : undefined}>
                 {link.label}<span aria-hidden="true" />
@@ -164,10 +167,12 @@ const Nav = () => {
             ))}
           </nav>
           <div className="jca-navigation__actions">
-            <a href={wa('Hola, quiero cotizar un proyecto con JC Analytics.')} target="_blank" rel="noreferrer" className="jca-nav-contact">
-              Hablemos<span aria-hidden="true"><ArrowUpRight size={17} strokeWidth={2.1} /></span>
+            <a className="nav-insights" href={journalPath(locale)}>{t('Ideas', 'Insights')}</a>
+            <LanguageSwitcher />
+            <a href={wa(t('Hola, quiero cotizar un proyecto con JC Analytics.', 'Hi, I would like a project estimate from JC Analytics.'))} target="_blank" rel="noreferrer" className="jca-nav-contact">
+              {t('Hablemos', "Let's talk")}<span aria-hidden="true"><ArrowUpRight size={17} strokeWidth={2.1} /></span>
             </a>
-            <button type="button" onClick={openMenu} aria-label="Abrir menú" aria-expanded={open} aria-controls="menu-movil" className="jca-menu-button">
+            <button type="button" onClick={openMenu} aria-label={t('Abrir menú', 'Open menu')} aria-expanded={open} aria-controls="menu-movil" className="jca-menu-button">
               <Menu size={21} strokeWidth={1.6} />
             </button>
           </div>
@@ -175,26 +180,27 @@ const Nav = () => {
         </div>
       </motion.header>
 
-      <nav className={`mobile-dock ${editing ? 'mobile-dock--editing' : ''}`} aria-label="Accesos rápidos" aria-hidden={open || editing || undefined} inert={open || editing || undefined}>
-        <button type="button" onClick={openMenu} aria-label="Explorar secciones" aria-expanded={open} aria-controls="menu-movil"><Grid2X2 size={19} aria-hidden="true" /><span>Explorar</span></button>
-        <a href="#trabajo" aria-current={active === '#trabajo' ? 'location' : undefined}><PanelsTopLeft size={19} aria-hidden="true" /><span>Proyectos</span></a>
-        <a className="mobile-dock__contact" href="#contacto" onClick={() => prepareContact({ need: CHAPTERS[currentIndex]?.need ?? 'Sistema / backend', source: `Navegación móvil · ${currentName}` })}><span>Tu proyecto</span><ArrowUpRight size={19} aria-hidden="true" /></a>
+      <nav className={`mobile-dock ${editing ? 'mobile-dock--editing' : ''}`} aria-label={t('Accesos rápidos', 'Quick links')} aria-hidden={open || editing || undefined} inert={open || editing || undefined}>
+        <button type="button" onClick={openMenu} aria-label={t('Explorar secciones', 'Explore sections')} aria-expanded={open} aria-controls="menu-movil"><Grid2X2 size={19} aria-hidden="true" /><span>{t('Explorar', 'Explore')}</span></button>
+        <a href="#trabajo" aria-current={active === '#trabajo' ? 'location' : undefined}><PanelsTopLeft size={19} aria-hidden="true" /><span>{t('Ejemplos', 'Examples')}</span></a>
+        <a className="mobile-dock__contact" href="#contacto" onClick={() => prepareContact({ need: CHAPTERS[currentIndex]?.need ?? 'Sistema / backend', source: `${t('Navegación móvil', 'Mobile navigation')} · ${currentName}` })}><span>{t('Tu proyecto', 'Your project')}</span><ArrowUpRight size={19} aria-hidden="true" /></a>
       </nav>
 
       <AnimatePresence>
         {open && (
           <motion.div className="jca-menu-layer" key="menu-layer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduce ? 0 : .2 }}>
           <div className="jca-menu-backdrop" aria-hidden="true" onClick={() => setOpen(false)} />
-          <motion.div key="menu-movil" ref={menuRef} id="menu-movil" role="dialog" aria-modal="true" aria-label="Menú principal" data-lenis-prevent
+          <motion.div key="menu-movil" ref={menuRef} id="menu-movil" role="dialog" aria-modal="true" aria-label={t('Menú principal', 'Main menu')} data-lenis-prevent
             initial={reduce ? { opacity: 0 } : { opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={reduce ? { opacity: 0 } : { opacity: 0, y: -16 }}
             transition={{ duration: reduce ? 0.12 : 0.4, ease: EASE }} className="jca-menu">
             <div className="jca-menu__top">
               <Brand onClick={(event) => visit(event, '#top')} />
-              <button ref={closeRef} type="button" onClick={() => setOpen(false)} aria-label="Cerrar menú" className="jca-menu-button jca-menu-button--close"><X size={23} strokeWidth={1.6} /></button>
+              <button ref={closeRef} type="button" onClick={() => setOpen(false)} aria-label={t('Cerrar menú', 'Close menu')} className="jca-menu-button jca-menu-button--close"><X size={23} strokeWidth={1.6} /></button>
             </div>
-            <div className="jca-menu__eyebrow"><span aria-hidden="true" />ESTÁS EN: {currentName}</div>
-            <p className="jca-menu__title">Elegí tu <em>próximo paso.</em></p>
-            <nav className="jca-menu__links" aria-label="Navegación móvil">
+            <LanguageSwitcher />
+            <div className="jca-menu__eyebrow"><span aria-hidden="true" />{t('ESTÁS EN:', 'YOU ARE HERE:')} {currentName}</div>
+            <p className="jca-menu__title">{t('Elegí tu', 'Choose your')} <em>{t('próximo paso.', 'next step.')}</em></p>
+            <nav className="jca-menu__links" aria-label={t('Navegación móvil', 'Mobile navigation')}>
               {NAV_LINKS.map((link, index) => (
                 <motion.a key={link.href} href={link.href} onClick={(event) => visit(event, link.href)} initial={reduce ? false : { y: 18, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.12 + index * 0.045, duration: 0.45, ease: EASE }} aria-current={active === link.href ? 'location' : undefined}>
@@ -202,13 +208,13 @@ const Nav = () => {
                 </motion.a>
               ))}
             </nav>
-            <div className="jca-menu__shortcuts"><a href="#cotizar" onClick={(event) => visit(event, '#cotizar')}>Estimar mi proyecto <ArrowRight size={15} aria-hidden="true" /></a><a href="#equipo" onClick={(event) => visit(event, '#equipo')}>El equipo <ArrowRight size={15} aria-hidden="true" /></a></div>
+            <div className="jca-menu__shortcuts"><a href="#cotizar" onClick={(event) => visit(event, '#cotizar')}>{t('Estimar mi proyecto', 'Estimate my project')} <ArrowRight size={15} aria-hidden="true" /></a><a href="#equipo" onClick={(event) => visit(event, '#equipo')}>{t('El equipo', 'The team')} <ArrowRight size={15} aria-hidden="true" /></a></div>
             <div className="jca-menu__bottom">
-              <a href={wa('Hola, quiero cotizar un proyecto con JC Analytics.')} target="_blank" rel="noreferrer" onClick={() => setOpen(false)} className="jca-menu__contact">
-                Conversemos sobre tu idea<span aria-hidden="true"><ArrowUpRight size={21} /></span>
+              <a href={wa(t('Hola, quiero cotizar un proyecto con JC Analytics.', 'Hi, I would like a project estimate from JC Analytics.'))} target="_blank" rel="noreferrer" onClick={() => setOpen(false)} className="jca-menu__contact">
+                {t('Conversemos sobre tu idea', "Let's talk about your idea")}<span aria-hidden="true"><ArrowUpRight size={21} /></span>
               </a>
               <div className="jca-menu__details"><a href={`mailto:${EMAIL}`}>{EMAIL}</a><a href={`tel:+${PHONE}`}>+506 7033 0596</a></div>
-              <span className="jca-menu__location">Costa Rica · Ideas sin fronteras</span>
+              <span className="jca-menu__location">{t('Costa Rica · Ideas sin fronteras', 'Costa Rica · Ideas without borders')}</span>
             </div>
           </motion.div>
           </motion.div>

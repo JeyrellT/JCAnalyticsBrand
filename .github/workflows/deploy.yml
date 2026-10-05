@@ -3,15 +3,15 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -32,38 +32,44 @@ jobs:
         working-directory: jcanalytics-app
         run: npm ci
 
-      - name: Build
+      - name: Lint
+        working-directory: jcanalytics-app
+        run: npm run lint
+
+      - name: Build all localized pages
         working-directory: jcanalytics-app
         run: npm run build
 
-      # Prerender desacoplado de npm ci: puppeteer se instala solo en este step
-      # (--no-save no toca el lock) y TODO es non-fatal. Si falla, se publica la SPA.
-      - name: Prerender (non-fatal — el HTML servido trae el contenido para bots/SEO)
+      - name: Verify bilingual pages and contact flows
         working-directory: jcanalytics-app
-        run: |
-          npm i puppeteer@^24 --no-save --no-audit --no-fund || true
-          node scripts/prerender.mjs || true
+        run: npm run check:site
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         uses: actions/upload-pages-artifact@v3
         with:
           path: jcanalytics-app/dist
 
   deploy:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
     steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
       # Mientras la fuente de Pages siga en "Deploy from a branch", GitHub lanza
       # en paralelo su propio "pages build and deployment" (publica la raíz de
       # main, sin index.html). El último en terminar gana: si es el automático,
-      # el sitio queda en 404. Esperar lo suficiente garantiza que este deploy
-      # aterrice de último. Fix definitivo: Settings → Pages → Source: GitHub Actions.
+      # el sitio puede quedar en 404. Se conserva la espera heredada como mitigación,
+      # hasta confirmar Settings → Pages → Source: GitHub Actions.
       - name: Esperar a que termine el deploy automático de rama
         run: sleep 150
 

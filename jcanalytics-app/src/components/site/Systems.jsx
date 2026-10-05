@@ -1,3 +1,4 @@
+import { t } from '../../i18n/locale';
 import { useId, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, Box, Check, ChevronRight, Globe2, Layers3, LockKeyhole, Settings2, ShieldCheck } from 'lucide-react';
@@ -9,46 +10,46 @@ import '../../styles/systems.css';
 const _MOTION = motion;
 const MODULES = [
   {
-    id: 'inventario', label: 'Inventario', icon: Box, title: 'Cada movimiento, en su lugar.',
-    benefit: 'Consultá existencias y registrá entradas y salidas desde un panel conectado a tu web.',
-    detail: 'Productos, insumos y movimientos, organizados según la operación de tu negocio.',
+    id: 'inventario', label: t("Inventario", "Inventory"), icon: Box, title: t("Cada movimiento, en su lugar.", "Every movement, in its place."),
+    benefit: t("Consultá existencias y registrá entradas y salidas desde un panel conectado a tu web.", "Check stock and record incoming and outgoing items from a dashboard connected to your website."),
+    detail: t("Productos, insumos y movimientos, organizados según la operación de tu negocio.", "Products, supplies and stock movements, organized around your business."),
   },
   {
-    id: 'procesos', label: 'Procesos', icon: Layers3, title: 'Sabé qué sigue. Y quién lo hace.',
-    benefit: 'Seguí el trabajo desde que llega una solicitud hasta que se completa, con etapas claras para tu equipo.',
-    detail: 'Estados, responsables y flujos de trabajo definidos para tu manera de operar.',
+    id: 'procesos', label: t("Procesos", "Processes"), icon: Layers3, title: t("Sabé qué sigue. Y quién lo hace.", "Know what comes next. And who owns it."),
+    benefit: t("Seguí el trabajo desde que llega una solicitud hasta que se completa, con etapas claras para tu equipo.", "Track work from the first request to completion, with clear stages for your team."),
+    detail: t("Estados, responsables y flujos de trabajo definidos para tu manera de operar.", "Statuses, owners and workflows built around the way you work."),
   },
   {
-    id: 'administracion', label: 'Administración', icon: Settings2, title: 'El control, en tus manos.',
-    benefit: 'Administrá contenido, usuarios y accesos desde un mismo lugar, con permisos según cada rol.',
-    detail: 'Un panel para gestionar tu plataforma y conectar sistemas cuando el alcance lo requiere.',
+    id: 'administracion', label: t("Administración", "Administration"), icon: Settings2, title: t("El control, en tus manos.", "Control, in your hands."),
+    benefit: t("Administrá contenido, usuarios y accesos desde un mismo lugar, con permisos según cada rol.", "Manage content, users and access in one place, with permissions for each role."),
+    detail: t("Un panel para gestionar tu plataforma y conectar sistemas cuando el alcance lo requiere.", "A dashboard to manage your platform and connect systems when your project requires it."),
   },
 ];
 
 const InventoryExample = () => (
   <div className="systems-inventory">
-    <div className="systems-preview-heading"><span>Existencias</span><span className="systems-example-tag">Ejemplo</span></div>
+    <div className="systems-preview-heading"><span>{t("Existencias", "Stock levels")}</span><span className="systems-example-tag">{t("Ejemplo", "Example")}</span></div>
     <table>
-      <caption className="sr-only">Datos ilustrativos de un módulo de inventario</caption>
-      <thead><tr><th scope="col">Artículo</th><th scope="col">Unidades</th><th scope="col">Estado</th></tr></thead>
+      <caption className="sr-only">{t("Datos ilustrativos de un módulo de inventario", "Illustrative inventory module data")}</caption>
+      <thead><tr><th scope="col">{t("Artículo", "Item")}</th><th scope="col">{t("Unidades", "Units")}</th><th scope="col">{t("Estado", "Status")}</th></tr></thead>
       <tbody>
-        <tr><th scope="row"><span className="systems-item-icon"><Box size={15} aria-hidden="true" /></span>Producto A</th><td>42</td><td><span className="systems-status">Disponible</span></td></tr>
-        <tr><th scope="row"><span className="systems-item-icon"><Box size={15} aria-hidden="true" /></span>Insumo B</th><td>18</td><td><span className="systems-status">Disponible</span></td></tr>
-        <tr><th scope="row"><span className="systems-item-icon"><Box size={15} aria-hidden="true" /></span>Empaque C</th><td>7</td><td><span className="systems-status systems-status--review">Revisar</span></td></tr>
+        <tr><th scope="row"><span className="systems-item-icon"><Box size={15} aria-hidden="true" /></span>{t("Producto A", "Product A")}</th><td>42</td><td><span className="systems-status">{t("Disponible", "Available")}</span></td></tr>
+        <tr><th scope="row"><span className="systems-item-icon"><Box size={15} aria-hidden="true" /></span>{t("Insumo B", "Supply B")}</th><td>18</td><td><span className="systems-status">{t("Disponible", "Available")}</span></td></tr>
+        <tr><th scope="row"><span className="systems-item-icon"><Box size={15} aria-hidden="true" /></span>{t("Empaque C", "Packaging C")}</th><td>7</td><td><span className="systems-status systems-status--review">{t("Revisar", "Review")}</span></td></tr>
       </tbody>
     </table>
-    <div className="systems-preview-foot"><span>Entradas / salidas</span><span>Registro de movimientos <ChevronRight size={14} aria-hidden="true" /></span></div>
+    <div className="systems-preview-foot"><span>{t("Entradas / salidas", "Stock in / out")}</span><span>{t("Registro de movimientos", "Movement history")} <ChevronRight size={14} aria-hidden="true" /></span></div>
   </div>
 );
 
 const ProcessExample = () => (
   <div className="systems-process-preview">
-    <div className="systems-preview-heading"><span>Flujo de trabajo</span><span className="systems-example-tag">Ejemplo</span></div>
+    <div className="systems-preview-heading"><span>{t("Flujo de trabajo", "Workflow")}</span><span className="systems-example-tag">{t("Ejemplo", "Example")}</span></div>
     <div className="systems-kanban">
       {[
-        { title: 'Recibido', task: 'Solicitud de cliente', owner: 'Por asignar', state: 'pending' },
-        { title: 'En proceso', task: 'Preparación de pedido', owner: 'Operaciones', state: 'active' },
-        { title: 'Listo', task: 'Revisión de entrega', owner: 'Responsable', state: 'done' },
+        { title: t("Recibido", "Received"), task: t("Solicitud de cliente", "Customer request"), owner: t("Por asignar", "Unassigned"), state: 'pending' },
+        { title: t("En proceso", "In progress"), task: t("Preparación de pedido", "Order preparation"), owner: t("Operaciones", "Operations"), state: 'active' },
+        { title: t("Listo", "Ready"), task: t("Revisión de entrega", "Delivery review"), owner: t("Responsable", "Owner"), state: 'done' },
       ].map((stage) => (
         <div key={stage.title} className={`systems-kanban__column systems-kanban__column--${stage.state}`}>
           <span className="systems-kanban__label"><i aria-hidden="true" />{stage.title}</span>
@@ -56,27 +57,27 @@ const ProcessExample = () => (
         </div>
       ))}
     </div>
-    <div className="systems-preview-foot"><span>Etapas a medida</span><span>Visibilidad para tu equipo <ChevronRight size={14} aria-hidden="true" /></span></div>
+    <div className="systems-preview-foot"><span>{t("Etapas a medida", "Custom stages")}</span><span>{t("Visibilidad para tu equipo", "Visibility for your team")} <ChevronRight size={14} aria-hidden="true" /></span></div>
   </div>
 );
 
 const AdministrationExample = () => (
   <div className="systems-admin-preview">
-    <div className="systems-preview-heading"><span>Roles y permisos</span><span className="systems-example-tag">Ejemplo</span></div>
+    <div className="systems-preview-heading"><span>{t("Roles y permisos", "Roles and permissions")}</span><span className="systems-example-tag">{t("Ejemplo", "Example")}</span></div>
     <ul className="systems-role-list">
       {[
-        { initial: 'A', role: 'Administración', access: 'Configuración y usuarios', full: true },
-        { initial: 'O', role: 'Operaciones', access: 'Inventario y procesos' },
-        { initial: 'C', role: 'Comercial', access: 'Consulta y seguimiento' },
+        { initial: 'A', role: t("Administración", "Administration"), access: t("Configuración y usuarios", "Settings and users"), full: true },
+        { initial: 'O', role: t("Operaciones", "Operations"), access: t("Inventario y procesos", "Inventory and processes") },
+        { initial: 'C', role: t("Comercial", "Sales"), access: t("Consulta y seguimiento", "View and follow up") },
       ].map((person) => (
         <li key={person.role}>
           <span className="systems-role-avatar" aria-hidden="true">{person.initial}</span>
           <span><strong>{person.role}</strong><small>{person.access}</small></span>
-          <span className="systems-role-access"><LockKeyhole size={13} aria-hidden="true" />{person.full ? 'Gestión' : 'Según rol'}</span>
+          <span className="systems-role-access"><LockKeyhole size={13} aria-hidden="true" />{person.full ? t("Gestión", "Management") : t("Según rol", "By role")}</span>
         </li>
       ))}
     </ul>
-    <div className="systems-preview-foot"><span>Accesos definidos</span><span><ShieldCheck size={14} aria-hidden="true" />Permisos a medida</span></div>
+    <div className="systems-preview-foot"><span>{t("Accesos definidos", "Defined access")}</span><span><ShieldCheck size={14} aria-hidden="true" />{t("Permisos a medida", "Custom permissions")}</span></div>
   </div>
 );
 
@@ -102,7 +103,7 @@ const DataConnections = ({ active, reduce }) => (
       <motion.path key={active} d={['M60 5 V16 C60 42 160 24 160 64', 'M160 5 V64', 'M260 5 V16 C260 42 160 24 160 64'][active]} stroke="#00a6b2" strokeWidth="2" initial={reduce ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: reduce ? 0 : 0.6 }} />
       <circle cx="160" cy="64" r="3" fill="#00a6b2" />
     </svg>
-    <span>Datos conectados</span>
+    <span>{t("Datos conectados", "Connected data")}</span>
   </div>
 );
 
@@ -132,53 +133,53 @@ const Systems = () => {
       <div className="systems-container">
         <div className="systems-heading">
           <div>
-            <Label className="systems-section-label">01 / Desarrollo de sistemas</Label>
+            <Label className="systems-section-label">{t("01 / Desarrollo de sistemas", "01 / Software development")}</Label>
             <h2 id={`${id}-heading`} className="systems-title font-display">
-              <MaskLines lines={['Del primer píxel', <em key="inside" className="font-serif font-normal">al último dato.</em>]} />
+              <MaskLines lines={[t("Del primer píxel", "From the first pixel"), <em key="inside" className="font-serif font-normal">{t("al último dato.", "to the last data point.")}</em>]} />
             </h2>
           </div>
           <Reveal delay={0.15} className="systems-intro">
-            <span className="systems-eyebrow">Frontend + backend + base de datos.</span>
-            <p>Diseñamos páginas web, aplicaciones y sistemas completos. Una experiencia visual propia por fuera; inventarios, procesos, APIs y administración conectados por dentro.</p>
+            <span className="systems-eyebrow">{t("Frontend + backend + base de datos.", "Frontend + backend + database.")}</span>
+            <p>{t("Diseñamos páginas web, aplicaciones y sistemas completos. Una experiencia visual propia por fuera; inventarios, procesos, APIs y administración conectados por dentro.", "We design websites, applications and complete systems. A distinct visual experience on the outside; connected inventory, workflows, APIs and administration on the inside.")}</p>
           </Reveal>
         </div>
 
         <Reveal className={`systems-scene systems-scene--${layer}`}>
-          <div className="systems-scene__label"><span className="systems-example-dot" aria-hidden="true" />Ejemplo de solución · módulos a medida</div>
-          <div className="systems-mobile-switch" role="group" aria-label="Las dos caras de tu sistema">
-            <button type="button" aria-pressed={layer === 'experience'} onClick={() => setLayer('experience')}><Globe2 size={17} aria-hidden="true" /><span>La experiencia<small>Lo que ve tu cliente</small></span></button>
-            <button type="button" aria-pressed={layer === 'operation'} onClick={() => setLayer('operation')}><Layers3 size={17} aria-hidden="true" /><span>La operación<small>Lo que mueve todo</small></span></button>
+          <div className="systems-scene__label"><span className="systems-example-dot" aria-hidden="true" />{t("Ejemplo ilustrativo · módulos a medida", "Illustrative example · custom modules")}</div>
+          <div className="systems-mobile-switch" role="group" aria-label={t("Las dos caras de tu sistema", "The two sides of your system")}>
+            <button type="button" aria-pressed={layer === 'experience'} onClick={() => setLayer('experience')}><Globe2 size={17} aria-hidden="true" /><span>{t("La experiencia", "The experience")}<small>{t("Lo que ve tu cliente", "What your customer sees")}</small></span></button>
+            <button type="button" aria-pressed={layer === 'operation'} onClick={() => setLayer('operation')}><Layers3 size={17} aria-hidden="true" /><span>{t("La operación", "The operation")}<small>{t("Lo que mueve todo", "What keeps it running")}</small></span></button>
           </div>
           <div className="systems-layers">
             <div className="systems-public-layer">
-              <div className="systems-layer-heading"><span>01 / EXPERIENCIA</span><Globe2 size={18} aria-hidden="true" /></div>
-              <h3 className="font-display">Lo que ve<br /><span className="font-serif italic">tu cliente.</span></h3>
+              <div className="systems-layer-heading"><span>{t("01 / EXPERIENCIA", "01 / EXPERIENCE")}</span><Globe2 size={18} aria-hidden="true" /></div>
+              <h3 className="font-display">{t("Lo que ve", "What your")}<br /><span className="font-serif italic">{t("tu cliente.", "customer sees.")}</span></h3>
               <div className="systems-website" aria-hidden="true">
-                <div className="systems-website__bar"><span><i /><i /><i /></span><span>tu-negocio.com</span><LockKeyhole size={10} /></div>
+                <div className="systems-website__bar"><span><i /><i /><i /></span><span>{t("tu-negocio.com", "your-business.com")}</span><LockKeyhole size={10} /></div>
                 <div className="systems-website__content">
-                  <div className="systems-website__nav"><span>Tu negocio<span className="systems-website__mark">.</span></span><span>Explorá <ArrowUpRight size={11} /></span></div>
-                  <span className="systems-website__eyebrow">Una experiencia a tu medida</span>
-                  <p className="font-display">Encontrá lo que<br /><span className="font-serif italic">necesitás.</span></p>
+                  <div className="systems-website__nav"><span>{t("Tu negocio", "Your business")}<span className="systems-website__mark">.</span></span><span>{t("Explorá", "Explore")} <ArrowUpRight size={11} /></span></div>
+                  <span className="systems-website__eyebrow">{t("Una experiencia a tu medida", "An experience built for you")}</span>
+                  <p className="font-display">{t("Encontrá lo que", "Find what")}<br /><span className="font-serif italic">{t("necesitás.", "you need.")}</span></p>
                   <div className="systems-website__art">
                     <img src={`${import.meta.env.BASE_URL}artwork/connected-materials-v2.webp`} alt="" width="1200" height="800" loading="lazy" decoding="async" />
-                    <span className="systems-website__art-index">OBJETO 001 / CONEXIÓN</span>
+                    <span className="systems-website__art-index">{t("OBJETO 001 / CONEXIÓN", "OBJECT 001 / CONNECTION")}</span>
                     <svg className="systems-website__reticle" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="15" stroke="currentColor" strokeWidth=".6" /><path d="M20 0V40M0 20H40" stroke="currentColor" strokeWidth=".6" /></svg>
-                    <div className="systems-website__art-caption"><span>Diseñado para conectar.</span><span>↗</span></div>
+                    <div className="systems-website__art-caption"><span>{t("Diseñado para conectar.", "Designed to connect.")}</span><span>↗</span></div>
                   </div>
-                  <div className="systems-website__action"><span>Ver opciones</span><ArrowUpRight size={15} /></div>
+                  <div className="systems-website__action"><span>{t("Ver opciones", "View options")}</span><ArrowUpRight size={15} /></div>
                 </div>
               </div>
-              <p className="systems-layer-note">Catálogo, reservas o consultas. La experiencia pública se diseña para tu servicio.</p>
+              <p className="systems-layer-note">{t("Catálogo, reservas o consultas. La experiencia pública se diseña para tu servicio.", "Catalogs, bookings or inquiries. The public experience is designed around your service.")}</p>
             </div>
 
             <DataConnections active={active} reduce={reduce} />
 
             <div className="systems-operation-layer">
-              <div className="systems-layer-heading"><span>02 / OPERACIÓN</span><Layers3 size={18} aria-hidden="true" /></div>
-              <h3 className="font-display">Lo que mueve<br /><span className="font-serif italic">tu negocio.</span></h3>
+              <div className="systems-layer-heading"><span>{t("02 / OPERACIÓN", "02 / OPERATIONS")}</span><Layers3 size={18} aria-hidden="true" /></div>
+              <h3 className="font-display">{t("Lo que mueve", "What drives")}<br /><span className="font-serif italic">{t("tu negocio.", "your business.")}</span></h3>
               <div className="systems-dashboard">
-                <div className="systems-dashboard__bar"><span><span className="systems-dashboard__mark">JC</span>Panel de gestión</span><span><LockKeyhole size={12} aria-hidden="true" />Acceso por rol</span></div>
-                <div className="systems-tabs" role="tablist" aria-label="Explorar módulos de ejemplo">
+                <div className="systems-dashboard__bar"><span><span className="systems-dashboard__mark">JC</span>{t("Panel de gestión", "Management dashboard")}</span><span><LockKeyhole size={12} aria-hidden="true" />{t("Acceso por rol", "Role-based access")}</span></div>
+                <div className="systems-tabs" role="tablist" aria-label={t("Explorar módulos de ejemplo", "Explore example modules")}>
                   {MODULES.map((module, index) => {
                     const Icon = module.icon;
                     return (
@@ -197,13 +198,13 @@ const Systems = () => {
                   </AnimatePresence>
                 </div>
               </div>
-              <div className="systems-capabilities"><span><Check size={13} aria-hidden="true" />Roles y permisos</span><span><Check size={13} aria-hidden="true" />Sistemas conectados según alcance</span></div>
+              <div className="systems-capabilities"><span><Check size={13} aria-hidden="true" />{t("Roles y permisos", "Roles and permissions")}</span><span><Check size={13} aria-hidden="true" />{t("Sistemas conectados según alcance", "Connected systems within your scope")}</span></div>
             </div>
           </div>
           <div className="systems-benefit" aria-live="polite" aria-atomic="true">
             <span className="systems-benefit__index font-display">0{active + 1}</span>
             <div>
-              <span className="systems-eyebrow">{selected.label} / a tu medida</span>
+              <span className="systems-eyebrow">{selected.label} {t("/ a tu medida", "/ built for you")}</span>
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div key={selected.id} initial={reduce ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: reduce ? 1 : 0 }} transition={{ duration: reduce ? 0 : 0.18 }}>
                   <h4 className="font-display">{selected.title}</h4><p>{selected.benefit}</p>
@@ -215,8 +216,8 @@ const Systems = () => {
         </Reveal>
 
         <Reveal className="systems-action">
-          <p>Las funcionalidades, integraciones, roles y permisos se definen con cada cliente. Los módulos se cotizan según alcance.</p>
-          <ContactCTA need="Sistema / backend" source={`Desarrollo de sistemas · ${selected.label}`} variant="ink" size="lg">Definamos mi sistema</ContactCTA>
+          <p>{t("Las funcionalidades, integraciones, roles y permisos se definen con cada cliente. Los módulos se cotizan según alcance.", "Features, integrations, roles and permissions are defined with each client. Modules are quoted according to scope.")}</p>
+          <ContactCTA need="Sistema / backend" source={`${t("Desarrollo de sistemas", "Software development")} · ${selected.label}`} variant="ink" size="lg">{t("Definamos mi sistema", "Let's define my system")}</ContactCTA>
         </Reveal>
       </div>
     </section>

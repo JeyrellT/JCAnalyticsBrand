@@ -2,9 +2,16 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
+import { resolveRoute } from './seo/routes.js'
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+const route = resolveRoute(window.location.pathname)
+
+async function mountPage() {
+  // Keep the complete static document visible while the editorial module loads.
+  const Page = route?.type === 'home' ? App : (await import('./JournalApp.jsx')).default
+  createRoot(document.getElementById('root')).render(
+    <StrictMode><Page route={route} /></StrictMode>,
+  )
+}
+
+mountPage().catch(error => console.error('Interactive page could not load; static content remains available.', error))

@@ -1,3 +1,4 @@
+import { t } from '../../i18n/locale';
 import { Children, useEffect, useId, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useReducedMotion } from 'framer-motion';
@@ -38,6 +39,6 @@ export default function MobileRail({ children, className, label }) {
       if (event.target !== event.currentTarget || !window.matchMedia('(max-width: 767px)').matches) return;
       if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { event.preventDefault(); go(index + (event.key === 'ArrowRight' ? 1 : -1)); }
     }}>{children}</div>
-    <div className="mobile-rail__controls"><span>Deslizá para descubrir <span aria-live="polite">{String(index + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}</span></span><div><button type="button" aria-label={`Anterior: ${label}`} aria-controls={id} disabled={index === 0} onClick={() => go(index - 1)}><ArrowLeft size={18} /></button><button type="button" aria-label={`Siguiente: ${label}`} aria-controls={id} disabled={index === count - 1} onClick={() => go(index + 1)}><ArrowRight size={18} /></button></div></div>
+    <div className="mobile-rail__controls"><span>{t('Deslizá para descubrir', 'Swipe to discover')} <span aria-live="polite">{String(index + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}</span></span><div><button type="button" aria-label={t(`Anterior: ${label}`, `Previous: ${label}`)} aria-controls={id} disabled={index === 0} onClick={() => go(index - 1)}><ArrowLeft size={18} /></button><button type="button" aria-label={t(`Siguiente: ${label}`, `Next: ${label}`)} aria-controls={id} disabled={index === count - 1} onClick={() => go(index + 1)}><ArrowRight size={18} /></button></div></div>
   </div>;
 }

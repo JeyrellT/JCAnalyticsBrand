@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --base=./",
+    "build": "vite build && node scripts/prerender.mjs",
     "prerender": "node scripts/prerender.mjs",
-    "build:prerender": "vite build --base=./ && node scripts/prerender.mjs",
+    "build:prerender": "npm run build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:site": "node scripts/check-site.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
@@ -38,6 +39,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "postcss": "^8.5.8",
+    "puppeteer": "^24.43.1",
     "tailwindcss": "^4.2.1",
     "vite": "^7.3.1"
   }

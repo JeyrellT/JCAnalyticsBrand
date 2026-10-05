@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Check } from 'lucide-react';
+import { t } from '../../i18n/locale';
 
 // eslint (sin plugin de react) no reconoce a `motion` usado solo como <motion.x>.
 const _MOTION = motion;
@@ -35,7 +36,7 @@ export default function CurrencySelector({ activeCode, onChange, currencies }) {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label={`Moneda: ${active.name}. Cambiar moneda`}
+        aria-label={t(`Moneda: ${active.name}. Cambiar moneda`, `Currency: ${active.name}. Change currency`)}
         className="tap-press inline-flex items-center gap-1.5 px-3 py-2 min-h-10 rounded-full bg-neutral-800/80 hover:bg-neutral-700 active:bg-neutral-600 border border-neutral-700 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60"
       >
         <span aria-hidden="true">{active.flag}</span>
@@ -47,7 +48,7 @@ export default function CurrencySelector({ activeCode, onChange, currencies }) {
         {open && (
           <motion.ul
             role="listbox"
-            aria-label="Monedas disponibles"
+            aria-label={t('Monedas disponibles', 'Available currencies')}
             initial={{ opacity: 0, y: -6, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
@@ -76,7 +77,7 @@ export default function CurrencySelector({ activeCode, onChange, currencies }) {
               );
             })}
             <li className="px-3 pt-2 pb-1 text-[10px] text-neutral-600 leading-snug">
-              Tasas referenciales. Tu cotización formal se cierra en USD.
+              {t('Tasas referenciales. Tu cotización formal se cierra en USD.', 'Reference exchange rates. Your final quote is agreed in USD.')}
             </li>
           </motion.ul>
         )}

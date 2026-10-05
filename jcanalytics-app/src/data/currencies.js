@@ -4,20 +4,22 @@
 //     editar CURRENCIES[x].rateFromUSD y la constante FX_UPDATED.
 // ============================================================================
 
-export const FX_UPDATED = 'jun 2026';
+import { t } from '../i18n/locale';
+
+export const FX_UPDATED = t('jun 2026', 'Jun 2026');
 
 export const CURRENCIES = {
-  USD: { code: 'USD', name: 'Dólar EE.UU.',    flag: '🇺🇸', symbol: '$',    rateFromUSD: 1.0,    locale: 'en-US', decimals: 0, roundTo: 50,    note: 'Base — no tocar' },
-  CRC: { code: 'CRC', name: 'Colón CR',        flag: '🇨🇷', symbol: '₡',    rateFromUSD: 515.0,  locale: 'es-CR', decimals: 0, roundTo: 5000,  note: 'BCCR tipo cambio venta' },
-  MXN: { code: 'MXN', name: 'Peso mexicano',   flag: '🇲🇽', symbol: 'MX$',  rateFromUSD: 18.5,   locale: 'es-MX', decimals: 0, roundTo: 500,   note: 'Banxico referencia' },
-  COP: { code: 'COP', name: 'Peso colombiano', flag: '🇨🇴', symbol: 'COP$', rateFromUSD: 4050.0, locale: 'es-CO', decimals: 0, roundTo: 50000, note: 'Banco de la República', scaleThreshold: 1000000 },
-  CLP: { code: 'CLP', name: 'Peso chileno',    flag: '🇨🇱', symbol: 'CLP$', rateFromUSD: 950.0,  locale: 'es-CL', decimals: 0, roundTo: 5000,  note: 'Banco Central de Chile' },
-  PEN: { code: 'PEN', name: 'Sol peruano',     flag: '🇵🇪', symbol: 'S/',   rateFromUSD: 3.75,   locale: 'es-PE', decimals: 0, roundTo: 50,    note: 'BCRP tipo referencial' },
-  ARS: { code: 'ARS', name: 'Peso argentino',  flag: '🇦🇷', symbol: 'AR$',  rateFromUSD: 1100.0, locale: 'es-AR', decimals: 0, roundTo: 10000, note: 'BCRA — alta volatilidad', referential: true, scaleThreshold: 500000 },
-  GTQ: { code: 'GTQ', name: 'Quetzal',         flag: '🇬🇹', symbol: 'Q',    rateFromUSD: 7.8,    locale: 'es-GT', decimals: 0, roundTo: 100,   note: 'Banguat' },
-  PAB: { code: 'PAB', name: 'Balboa',          flag: '🇵🇦', symbol: 'B/.',  rateFromUSD: 1.0,    locale: 'es-PA', decimals: 0, roundTo: 50,    note: 'Paridad 1:1 con USD', showUSDParenthetical: true },
-  BRL: { code: 'BRL', name: 'Real brasileño',  flag: '🇧🇷', symbol: 'R$',   rateFromUSD: 5.1,    locale: 'pt-BR', decimals: 0, roundTo: 100,   note: 'BCB PTAX' },
-  UYU: { code: 'UYU', name: 'Peso uruguayo',   flag: '🇺🇾', symbol: '$U',   rateFromUSD: 39.0,   locale: 'es-UY', decimals: 0, roundTo: 500,   note: 'BCU tipo interbancario' },
+  USD: { code: 'USD', name: t('Dólar EE.UU.', 'US dollar'),    flag: '🇺🇸', symbol: '$',    rateFromUSD: 1.0,    locale: 'en-US', decimals: 0, roundTo: 50,    note: t('Base — no tocar', 'Base currency — do not change') },
+  CRC: { code: 'CRC', name: t('Colón CR', 'Costa Rican colón'),        flag: '🇨🇷', symbol: '₡',    rateFromUSD: 515.0,  locale: 'es-CR', decimals: 0, roundTo: 5000,  note: t('BCCR tipo cambio venta', 'BCCR selling exchange rate') },
+  MXN: { code: 'MXN', name: t('Peso mexicano', 'Mexican peso'),   flag: '🇲🇽', symbol: 'MX$',  rateFromUSD: 18.5,   locale: 'es-MX', decimals: 0, roundTo: 500,   note: t('Banxico referencia', 'Banxico reference rate') },
+  COP: { code: 'COP', name: t('Peso colombiano', 'Colombian peso'), flag: '🇨🇴', symbol: 'COP$', rateFromUSD: 4050.0, locale: 'es-CO', decimals: 0, roundTo: 50000, note: 'Banco de la República', scaleThreshold: 1000000 },
+  CLP: { code: 'CLP', name: t('Peso chileno', 'Chilean peso'),    flag: '🇨🇱', symbol: 'CLP$', rateFromUSD: 950.0,  locale: 'es-CL', decimals: 0, roundTo: 5000,  note: 'Banco Central de Chile' },
+  PEN: { code: 'PEN', name: t('Sol peruano', 'Peruvian sol'),     flag: '🇵🇪', symbol: 'S/',   rateFromUSD: 3.75,   locale: 'es-PE', decimals: 0, roundTo: 50,    note: t('BCRP tipo referencial', 'BCRP reference rate') },
+  ARS: { code: 'ARS', name: t('Peso argentino', 'Argentine peso'),  flag: '🇦🇷', symbol: 'AR$',  rateFromUSD: 1100.0, locale: 'es-AR', decimals: 0, roundTo: 10000, note: t('BCRA — alta volatilidad', 'BCRA — high volatility'), referential: true, scaleThreshold: 500000 },
+  GTQ: { code: 'GTQ', name: t('Quetzal', 'Guatemalan quetzal'),         flag: '🇬🇹', symbol: 'Q',    rateFromUSD: 7.8,    locale: 'es-GT', decimals: 0, roundTo: 100,   note: 'Banguat' },
+  PAB: { code: 'PAB', name: t('Balboa', 'Panamanian balboa'),          flag: '🇵🇦', symbol: 'B/.',  rateFromUSD: 1.0,    locale: 'es-PA', decimals: 0, roundTo: 50,    note: t('Paridad 1:1 con USD', '1:1 parity with USD'), showUSDParenthetical: true },
+  BRL: { code: 'BRL', name: t('Real brasileño', 'Brazilian real'),  flag: '🇧🇷', symbol: 'R$',   rateFromUSD: 5.1,    locale: 'pt-BR', decimals: 0, roundTo: 100,   note: 'BCB PTAX' },
+  UYU: { code: 'UYU', name: t('Peso uruguayo', 'Uruguayan peso'),   flag: '🇺🇾', symbol: '$U',   rateFromUSD: 39.0,   locale: 'es-UY', decimals: 0, roundTo: 500,   note: t('BCU tipo interbancario', 'BCU interbank rate') },
 };
 
 export const CURRENCY_ORDER = ['USD', 'CRC', 'MXN', 'COP', 'CLP', 'PEN', 'ARS', 'GTQ', 'PAB', 'BRL', 'UYU'];

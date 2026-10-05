@@ -1,3 +1,4 @@
+import { t } from '../../i18n/locale';
 // ============================================================================
 //  src/components/site/Social.jsx
 //  Community manager y edición de video, mostrados en vez de descritos:
@@ -23,36 +24,36 @@ const _MOTION = motion;
 
 // Escenas del reel: cada una es un "corte" con su propio fondo y texto.
 const SCENES = [
-  { ms: 2000, bg: 'bg-lime text-ink', kicker: 'Reel · 0:10', text: '3 señales de que tu Excel ya no da más', sub: 'Gancho en los primeros 3 s' },
-  { ms: 1800, bg: 'bg-ink text-paper', kicker: '01', text: 'Nadie sabe cuál versión es la buena.', sub: 'Corte seco + subtítulo' },
-  { ms: 1800, bg: 'bg-white text-ink', kicker: '02', text: 'El reporte del lunes se arma el domingo.', sub: 'Zoom suave + música' },
-  { ms: 1800, bg: 'bg-ink text-paper', kicker: '03', text: 'Si esa persona se enferma, se detiene todo.', sub: 'B-roll + voz en off' },
-  { ms: 2200, bg: 'bg-lime text-ink', kicker: 'Cierre', text: 'Lo convertimos en un sistema. Escribinos.', sub: 'Llamado a la acción' },
+  { ms: 2000, bg: 'bg-lime text-ink', kicker: 'Reel · 0:10', text: t("3 señales de que tu Excel ya no da más", "3 signs your Excel sheet has reached its limit"), sub: t("Gancho en los primeros 3 s", "A hook in the first 3 seconds") },
+  { ms: 1800, bg: 'bg-ink text-paper', kicker: '01', text: t("Nadie sabe cuál versión es la buena.", "Nobody knows which version is right."), sub: t("Corte seco + subtítulo", "Hard cut + captions") },
+  { ms: 1800, bg: 'bg-white text-ink', kicker: '02', text: t("El reporte del lunes se arma el domingo.", "Monday's report gets built on Sunday."), sub: t("Zoom suave + música", "Gentle zoom + music") },
+  { ms: 1800, bg: 'bg-ink text-paper', kicker: '03', text: t("Si esa persona se enferma, se detiene todo.", "If that person gets sick, everything stops."), sub: t("B-roll + voz en off", "B-roll + voiceover") },
+  { ms: 2200, bg: 'bg-lime text-ink', kicker: t("Cierre", "Closing"), text: t("Lo convertimos en un sistema. Escribinos.", "We turn it into a system. Get in touch."), sub: t("Llamado a la acción", "Call to action") },
 ];
 const TOTAL_MS = SCENES.reduce((n, s) => n + s.ms, 0);
 
 const TRACKS = [
   { name: 'Video', icon: Scissors, clips: [[0, 0.22], [0.22, 0.42], [0.42, 0.61], [0.61, 0.8], [0.8, 1]] },
-  { name: 'Voz', icon: Play, clips: [[0.04, 0.2], [0.24, 0.4], [0.44, 0.6], [0.63, 0.78]] },
-  { name: 'Música', icon: Music2, clips: [[0, 1]] },
-  { name: 'Subtítulos', icon: Captions, clips: [[0.02, 0.21], [0.23, 0.41], [0.43, 0.6], [0.62, 0.79], [0.81, 0.98]] },
+  { name: t("Voz", "Voice"), icon: Play, clips: [[0.04, 0.2], [0.24, 0.4], [0.44, 0.6], [0.63, 0.78]] },
+  { name: t("Música", "Music"), icon: Music2, clips: [[0, 1]] },
+  { name: t("Subtítulos", "Captions"), icon: Captions, clips: [[0.02, 0.21], [0.23, 0.41], [0.43, 0.6], [0.62, 0.79], [0.81, 0.98]] },
 ];
 
 const WEEK = [
-  { d: 'L', items: [{ t: 'Reel', c: 'bg-lime text-ink' }] },
-  { d: 'M', items: [{ t: 'Historia', c: 'bg-paper/15' }, { t: 'Anuncio', c: 'bg-orange-400 text-ink' }] },
-  { d: 'M', items: [{ t: 'Carrusel', c: 'bg-paper/15' }] },
-  { d: 'J', items: [{ t: 'Reel', c: 'bg-lime text-ink' }, { t: 'Historia', c: 'bg-paper/15' }] },
-  { d: 'V', items: [{ t: 'Post', c: 'bg-paper/15' }] },
-  { d: 'S', items: [{ t: 'Historia', c: 'bg-paper/15' }] },
-  { d: 'D', items: [{ t: 'Reporte', c: 'bg-white text-ink' }] },
+  { d: t('L', 'M'), items: [{ t: 'Reel', c: 'bg-lime text-ink' }] },
+  { d: t('M', 'T'), items: [{ t: t("Historia", "Story"), c: 'bg-paper/15' }, { t: t("Anuncio", "Ad"), c: 'bg-orange-400 text-ink' }] },
+  { d: t('M', 'W'), items: [{ t: t("Carrusel", "Carousel"), c: 'bg-paper/15' }] },
+  { d: t('J', 'T'), items: [{ t: 'Reel', c: 'bg-lime text-ink' }, { t: t("Historia", "Story"), c: 'bg-paper/15' }] },
+  { d: t('V', 'F'), items: [{ t: 'Post', c: 'bg-paper/15' }] },
+  { d: 'S', items: [{ t: t("Historia", "Story"), c: 'bg-paper/15' }] },
+  { d: t('D', 'S'), items: [{ t: t("Reporte", "Report"), c: 'bg-white text-ink' }] },
 ];
 
 const KPIS = [
-  { label: 'Alcance', value: '48,2 k', delta: '+31 %' },
-  { label: 'Clics al WhatsApp', value: '1.930', delta: '+18 %' },
-  { label: 'Costo por clic', value: '₡96', delta: '−22 %' },
-  { label: 'Conversaciones', value: '214', delta: '+40 %' },
+  { label: t("Alcance", "Reach"), value: t("48,2 k", "48.2 k"), delta: '+31 %' },
+  { label: t("Clics al WhatsApp", "WhatsApp clicks"), value: t("1.930", "1,930"), delta: '+18 %' },
+  { label: t("Costo por clic", "Cost per click"), value: '₡96', delta: '−22 %' },
+  { label: t("Conversaciones", "Conversations"), value: '214', delta: '+40 %' },
 ];
 const BARS = [34, 41, 38, 52, 61, 58, 74];
 
@@ -136,10 +137,10 @@ const Phone = ({ reduce, playing }) => {
             <div className="flex items-center gap-2">
               <img src={import.meta.env.BASE_URL + 'LogoMark.webp'} alt="" width={162} height={200} className="w-5 h-auto bg-white rounded-full p-0.5" />
               <span className="text-[12px] font-semibold">jcanalytics</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/50">Seguir</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/50">{t("Seguir", "Follow")}</span>
             </div>
-            <p className="mt-1.5 text-[11px] leading-snug opacity-90">Editado por Hillary · subtítulos, música y CTA</p>
-            <p className="mt-1 flex items-center gap-1 text-[10px] opacity-75"><Music2 size={11} /> audio original · jcanalytics</p>
+            <p className="mt-1.5 text-[11px] leading-snug opacity-90">{t("Editado por Hillary · subtítulos, música y CTA", "Edited by Hillary · captions, music and CTA")}</p>
+            <p className="mt-1 flex items-center gap-1 text-[10px] opacity-75"><Music2 size={11} /> {t("audio original · jcanalytics", "original audio · jcanalytics")}</p>
           </div>
           <div className="absolute right-3 bottom-6 flex flex-col items-center gap-3 text-white">
             {[Heart, MessageCircle, Send, Bookmark].map((I, k) => (
@@ -152,22 +153,22 @@ const Phone = ({ reduce, playing }) => {
       {/* Línea de tiempo del editor, sincronizada con el reel */}
       <div className="social-timeline rounded-2xl bg-neutral-950 ring-1 ring-white/10 p-3 sm:p-4">
         <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.18em] text-paper/45 mb-3">
-          <span>Edición · reel 9:16</span>
+          <span>{t("Edición · reel 9:16", "Editing · 9:16 reel")}</span>
           <span className="tabular-nums">{reduce ? '0:00' : `0:${String(Math.floor((progress * TOTAL_MS) / 1000)).padStart(2, '0')}`} / 0:{String(Math.round(TOTAL_MS / 1000)).padStart(2, '0')}</span>
         </div>
         <div className="relative space-y-1.5">
-          {TRACKS.map((t) => {
-            const Icon = t.icon;
+          {TRACKS.map((track) => {
+            const Icon = track.icon;
             return (
-              <div key={t.name} className="grid grid-cols-[5.5rem_1fr] items-center gap-2">
-                <span className="flex items-center gap-1.5 text-[11px] text-paper/60"><Icon size={12} /> {t.name}</span>
+              <div key={track.name} className="grid grid-cols-[5.5rem_1fr] items-center gap-2">
+                <span className="flex items-center gap-1.5 text-[11px] text-paper/60"><Icon size={12} /> {track.name}</span>
                 <div className="relative h-5 rounded-md bg-white/5">
-                  {t.clips.map(([a, b], k) => (
+                  {track.clips.map(([a, b], k) => (
                     <span
                       key={k}
-                      className={`timeline-clip timeline-clip--${t.name === 'Video' ? 'video' : 'audio'} absolute top-0.5 bottom-0.5 rounded ${t.name === 'Música' ? 'bg-violet-400/60' : t.name === 'Voz' ? 'bg-orange-400/70' : t.name === 'Subtítulos' ? 'bg-paper/40' : 'bg-lime/80'}`}
+                      className={`timeline-clip timeline-clip--${track.name === 'Video' ? 'video' : 'audio'} absolute top-0.5 bottom-0.5 rounded ${track.name === t("Música", "Music") ? 'bg-violet-400/60' : track.name === t("Voz", "Voice") ? 'bg-orange-400/70' : track.name === t("Subtítulos", "Captions") ? 'bg-paper/40' : 'bg-lime/80'}`}
                       style={{ left: `${a * 100}%`, width: `${(b - a) * 100}%` }}
-                    >{t.name === 'Video' ? <img src={`${import.meta.env.BASE_URL}artwork/${k === 2 ? 'connected-materials-v2' : k === 4 ? 'project-gateway' : 'creative-orbit-v2'}.webp`} alt="" loading="lazy" decoding="async" /> : t.name === 'Música' || t.name === 'Voz' ? <svg viewBox="0 0 120 20" preserveAspectRatio="none" aria-hidden="true">{Array.from({ length: 32 }, (_, n) => { const height = 3 + (n * 7 % 13); return <path key={n} d={`M${n * 4} ${10 - height / 2}v${height}`} stroke="currentColor" strokeWidth="1.2" />; })}</svg> : null}</span>
+                    >{track.name === 'Video' ? <img src={`${import.meta.env.BASE_URL}artwork/${k === 2 ? 'connected-materials-v2' : k === 4 ? 'project-gateway' : 'creative-orbit-v2'}.webp`} alt="" loading="lazy" decoding="async" /> : track.name === t("Música", "Music") || track.name === t("Voz", "Voice") ? <svg viewBox="0 0 120 20" preserveAspectRatio="none" aria-hidden="true">{Array.from({ length: 32 }, (_, n) => { const height = 3 + (n * 7 % 13); return <path key={n} d={`M${n * 4} ${10 - height / 2}v${height}`} stroke="currentColor" strokeWidth="1.2" />; })}</svg> : null}</span>
                   ))}
                 </div>
               </div>
@@ -200,17 +201,17 @@ const Social = () => {
       <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12 sm:mb-16">
           <div>
-            <Label className="text-paper/70">04 / Marketing digital · el siguiente impulso</Label>
+            <Label className="text-paper/70">{t("04 / Marketing digital · el siguiente impulso", "04 / Digital marketing · the next step")}</Label>
             <h2 className="mt-4 font-display font-semibold tracking-[-0.04em] leading-[0.92] text-[clamp(2.6rem,7vw,6rem)]">
-              <MaskLines lines={['Tus redes,', <span key="b" className="font-serif italic font-normal text-lime">con criterio.</span>]} />
+              <MaskLines lines={[t("Tus redes,", "Your social media,"), <span key="b" className="font-serif italic font-normal text-lime">{t("con criterio.", "with purpose.")}</span>]} />
             </h2>
           </div>
           <Reveal delay={0.2} className="max-w-sm">
             <p className="text-paper/55 text-lg leading-snug">
-              Tu sistema ya tiene una base. Ahora, hagamos que más personas lo conozcan: contenido, community manager, diseño publicitario, video y Meta Ads.
+             {t("Tu sistema ya tiene una base. Ahora, hagamos que más personas lo conozcan: contenido, community manager, diseño publicitario, video y Meta Ads.", "Your system has a foundation. Now let's help more people discover it: content, community management, ad design, video and Meta Ads.")}
             </p>
-            <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.18em] text-paper/35">Lo de abajo es una demo · así se ve la entrega</p>
-            {!reduce && <button type="button" onClick={() => setPaused((value) => !value)} aria-pressed={paused} className="demo-pause demo-pause--dark">{paused ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}{paused ? 'Reanudar reel' : 'Pausar reel'}</button>}
+            <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.18em] text-paper/35">{t("Lo de abajo es una demo · así se ve la entrega", "The examples below are demos · this is what delivery looks like")}</p>
+            {!reduce && <button type="button" onClick={() => setPaused((value) => !value)} aria-pressed={paused} className="demo-pause demo-pause--dark">{paused ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}{paused ? t("Reanudar reel", "Resume reel") : t("Pausar reel", "Pause reel")}</button>}
           </Reveal>
         </div>
 
@@ -222,12 +223,12 @@ const Social = () => {
 
           {/* Calendario · Meta Ads · Atención */}
           <div className="social-delivery grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-            <MobileRail className="social-delivery__examples" label="Ejemplos de marketing">
+            <MobileRail className="social-delivery__examples" label={t("Ejemplos de marketing", "Marketing examples")}>
             {/* Calendario */}
             <Reveal delay={0.05} className="social-calendar md:col-span-2 rounded-[1.5rem] bg-white/5 ring-1 ring-white/10 p-5 sm:p-6">
               <div className="flex items-center justify-between gap-3 mb-4">
-                <Label className="text-paper/50">Calendario de contenido · semana 1</Label>
-                <span className="font-mono text-[11px] text-lime">12 piezas / mes</span>
+                <Label className="text-paper/50">{t("Calendario de contenido · semana 1", "Content calendar · week 1")}</Label>
+                <span className="font-mono text-[11px] text-lime">{t("12 piezas / mes", "12 pieces / month")}</span>
               </div>
               <div className="social-calendar__week grid grid-cols-7 gap-1.5 sm:gap-2">
                 {WEEK.map((day, k) => (
@@ -242,15 +243,16 @@ const Social = () => {
                   </div>
                 ))}
               </div>
-              <p className="mt-4 text-[13px] text-paper/50">Publicado a la hora que rinde en tu cuenta, no a la que alcanzó.</p>
+              <p className="mt-4 text-[13px] text-paper/50">{t("Publicado a la hora que rinde en tu cuenta, no a la que alcanzó.", "Published when your audience is most active.")}</p>
             </Reveal>
 
             {/* Meta Ads */}
             <Reveal delay={0.1} className="social-report rounded-[1.5rem] bg-white/5 ring-1 ring-white/10 p-5 sm:p-6">
               <div className="flex items-center justify-between gap-3 mb-4">
-                <Label className="text-paper/50">Meta Ads · reporte semanal</Label>
-                <span className="inline-flex items-center gap-1 font-mono text-[11px] text-lime"><TrendingUp size={12} /> optimizado</span>
+                <Label className="text-paper/50">{t("Meta Ads · reporte ilustrativo", "Meta Ads · illustrative report")}</Label>
+                <span className="inline-flex items-center gap-1 font-mono text-[11px] text-lime"><TrendingUp size={12} /> {t("optimizado", "optimized")}</span>
               </div>
+              <p className="mb-4 text-xs text-paper/65">{t('Datos ficticios para mostrar la experiencia. No son resultados de clientes.', 'Fictional data to illustrate the experience. These are not client results.')}</p>
               <div className="grid grid-cols-2 gap-3">
                 {KPIS.map((k) => (
                   <div key={k.label}>
@@ -273,33 +275,33 @@ const Social = () => {
                   />
                 ))}
               </div>
-              <p className="mt-3 text-[13px] text-paper/50">El presupuesto va donde hay conversaciones, no likes. Se ajusta cada semana.</p>
+              <p className="mt-3 text-[13px] text-paper/50">{t("El presupuesto va donde hay conversaciones, no likes. Se ajusta cada semana.", "The budget follows meaningful conversations and is adjusted every week.")}</p>
             </Reveal>
 
             {/* Atención al cliente */}
             <Reveal delay={0.15} className="social-community rounded-[1.5rem] bg-white/5 ring-1 ring-white/10 p-5 sm:p-6 flex flex-col">
               <div className="flex items-center justify-between gap-3 mb-4">
-                <Label className="text-paper/50">Atención a clientes</Label>
-                <span className="font-mono text-[11px] text-lime">respondido en 4 min</span>
+                <Label className="text-paper/50">{t("Conversación ilustrativa", "Illustrative conversation")}</Label>
+                <span className="font-mono text-[11px] text-lime">{t("respondido en 4 min", "answered in 4 min")}</span>
               </div>
               <div className="space-y-2.5 text-[13px] leading-snug flex-1">
                 <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-white/10 px-3.5 py-2.5">
-                  ¿Tienen espacio el sábado en la tarde? 🙏
+                 {t("¿Tienen espacio el sábado en la tarde? 🙏", "Do you have a slot on Saturday afternoon? 🙏")}
                   <span className="block mt-1 font-mono text-[10px] text-paper/40">10:12</span>
                 </div>
                 <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-lime text-ink px-3.5 py-2.5">
-                  ¡Sí! A las 3:00 p. m. queda perfecto. Reservá aquí 👉 <span className="underline">barberxcr.com/reservar</span>
+                 {t("¡Sí! A las 3:00 p. m. queda perfecto. Reservá aquí 👉", "Yes! 3:00 p.m. works perfectly. Book here 👉")} <span className="underline">example.com/reservar</span>
                   <span className="mt-1 flex items-center gap-1 justify-end font-mono text-[10px] text-ink/60">10:16 <CheckCheck size={12} /></span>
                 </div>
                 <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-white/10 px-3.5 py-2.5">
-                  Listo, reservado. ¡Gracias!
+                 {t("Listo, reservado. ¡Gracias!", "Done, booked. Thank you!")}
                   <span className="block mt-1 font-mono text-[10px] text-paper/40">10:19</span>
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-3">
                 <img src={hillary.avatar} alt={hillary.name} width={400} height={400} loading="lazy" decoding="async" className="w-10 h-10 rounded-full object-cover ring-2 ring-lime" />
                 <p className="text-[13px] text-paper/70 leading-snug">
-                  <span className="font-semibold text-paper">{hillary.name}</span> responde comentarios y mensajes con el tono de tu marca.
+                  <span className="font-semibold text-paper">{hillary.name}</span> {t("responde comentarios y mensajes con el tono de tu marca.", "replies to comments and messages in your brand's voice.")}
                 </p>
               </div>
             </Reveal>
@@ -308,15 +310,15 @@ const Social = () => {
             </MobileRail>
             <Reveal delay={0.2} className="md:col-span-2 rounded-[1.5rem] bg-lime text-ink p-5 sm:p-7 grid md:grid-cols-[1fr_auto] gap-6 items-center">
               <div>
-                <Label className="text-ink/60">Plan mensual · qué incluye</Label>
+                <Label className="text-ink/60">{t("Plan mensual · qué incluye", "Monthly plan · what's included")}</Label>
                 <ul className="mt-3 grid sm:grid-cols-2 gap-x-6 gap-y-2 text-[15px] font-medium">
-                  {['Calendario y diseño publicitario', 'Reels y videos cortos editados', 'Publicación y respuesta a mensajes', 'Meta Ads con seguimiento semanal', 'Reporte mensual con métricas', 'Una persona real: Hillary'].map((b) => (
+                  {[t("Calendario y diseño publicitario", "Content calendar and ad design"), t("Reels y videos cortos editados", "Edited reels and short videos"), t("Publicación y respuesta a mensajes", "Publishing and message replies"), t("Meta Ads con seguimiento semanal", "Meta Ads with weekly monitoring"), t("Reporte mensual con métricas", "Monthly metrics report"), t("Una persona real: Hillary", "A real person: Hillary")].map((b) => (
                     <li key={b} className="flex items-center gap-2"><Check size={16} strokeWidth={3} className="shrink-0" />{b}</li>
                   ))}
                 </ul>
               </div>
-              <ContactCTA need="Marketing digital" source="Marketing · contenido, redes y campañas" variant="ink" size="lg" className="justify-self-start md:justify-self-end">
-                Armemos mi plan de marketing
+              <ContactCTA need="Marketing digital" source={t("Marketing · contenido, redes y campañas", "Marketing · content, social media and campaigns")} variant="ink" size="lg" className="justify-self-start md:justify-self-end">
+               {t("Armemos mi plan de marketing", "Let's build my marketing plan")}
               </ContactCTA>
             </Reveal>
           </div>
