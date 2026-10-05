@@ -85,7 +85,7 @@ const Nav = () => {
     const previousPosition = document.body.style.position;
     const previousTop = document.body.style.top;
     const previousWidth = document.body.style.width;
-    const backgrounds = Array.from(document.querySelectorAll('main, footer, .wa-fab'));
+    const backgrounds = Array.from(document.querySelectorAll('main, footer, .assistant-launcher'));
     const previousInert = backgrounds.map((node) => node.inert);
     document.body.style.overflow = 'hidden';
     document.documentElement.style.overflow = 'hidden';

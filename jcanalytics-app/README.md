@@ -9,6 +9,8 @@ npm run dev
 
 Antes de publicar: `npm run lint`, `npm run build`, `npm run check:tools` y `npm run check:site`. El build necesita el Chromium de Puppeteer y debe generar 28 rutas de inicio, servicios e ideas en ambos idiomas. El catálogo contiene ocho artículos, dos de ellos con recursos prácticos locales. Ver [SEO, idiomas y publicación](docs/seo-and-languages.md) para mantenimiento, pruebas y pasos de Search Console.
 
+El botón flotante de la asistente está disponible en todas las páginas. Consulta DeepSeek mediante una API privada en Railway y deriva al WhatsApp +506 7033-0596 cuando falta información o se solicita al equipo. Ejecutar también `npm run check:assistant` después del build. La configuración y el mantenimiento están en [la documentación de la API](../assistant-api/README.md). Al actualizar servicios o preguntas frecuentes, ejecutar `npm run sync:assistant` y publicar el backend actualizado.
+
 ## Base técnica: React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

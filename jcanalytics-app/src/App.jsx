@@ -3,7 +3,6 @@ import { useEffect } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import Lenis from 'lenis';
 import gsap from 'gsap';
-import { MessageCircle } from 'lucide-react';
 
 import Nav from './components/site/Nav';
 import Hero from './components/site/Hero';
@@ -22,7 +21,6 @@ import Footer from './components/site/Footer';
 import FAQ from './components/site/FAQ';
 import QuoteEstimator from './components/ui/QuoteEstimator';
 import { Marquee, Reveal } from './components/site/primitives';
-import { wa } from './components/site/links';
 import KnowledgePreview from './components/site/KnowledgePreview';
 import './styles/studio.css';
 import './styles/art-direction.css';
@@ -57,11 +55,13 @@ const App = () => {
     const tick = (t) => lenis.raf(t * 1000);
     const menuState = (event) => event.detail.open ? lenis.stop() : lenis.start();
     window.addEventListener('jca:menu-state', menuState);
+    window.addEventListener('jca:assistant-state', menuState);
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
     return () => {
       gsap.ticker.remove(tick);
       window.removeEventListener('jca:menu-state', menuState);
+      window.removeEventListener('jca:assistant-state', menuState);
       lenis.destroy();
     };
   }, [reduce]);
@@ -130,16 +130,6 @@ const App = () => {
 
       <Footer />
 
-      {/* WhatsApp flotante — .wa-fab sube cuando la barra del cotizador está visible */}
-      <a
-        href={wa(t('Hola, vengo del sitio web de JC Analytics.', 'Hi, I found you on the JC Analytics website.'))}
-        target="_blank"
-        rel="noreferrer"
-        aria-label={t('Escribir por WhatsApp', 'Message us on WhatsApp')}
-        className="wa-fab tap-press fixed right-4 sm:right-6 z-50 grid place-items-center w-13 h-13 rounded-full bg-ink text-lime shadow-[0_12px_30px_-8px_rgba(7,26,54,0.4)] ring-1 ring-lime/40 hover:scale-105 transition-transform"
-      >
-        <MessageCircle size={24} strokeWidth={2.2} />
-      </a>
     </div>
   );
 };

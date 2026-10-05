@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "check:site": "node scripts/check-site.mjs",
-    "check:tools": "node --test scripts/test-reconcile.mjs scripts/test-retry-simulator.mjs"
+    "check:tools": "node --test scripts/test-reconcile.mjs scripts/test-retry-simulator.mjs",
+    "sync:assistant": "node scripts/sync-assistant-knowledge.mjs",
+    "check:assistant": "node --test ../assistant-api/server.test.mjs && node scripts/check-assistant.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",

@@ -20,6 +20,9 @@ export default defineConfig({
     tailwindcss(),
   ],
   base: '/',
+  server: {
+    proxy: { '/api/chat': 'http://127.0.0.1:3001' },
+  },
   build: {
     rollupOptions: {
       output: {

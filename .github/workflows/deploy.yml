@@ -44,6 +44,13 @@ jobs:
         working-directory: jcanalytics-app
         run: npm run check:tools
 
+      - name: Verify assistant API and bilingual chat
+        working-directory: jcanalytics-app
+        run: |
+          npm run sync:assistant
+          git diff --exit-code -- ../assistant-api/knowledge.json
+          npm run check:assistant
+
       - name: Verify bilingual pages and contact flows
         working-directory: jcanalytics-app
         run: npm run check:site

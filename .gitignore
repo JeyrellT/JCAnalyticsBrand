@@ -6,3 +6,9 @@ _scripts/
 .DS_Store
 Thumbs.db
 *.log
+
+# Secrets stay outside version control and browser builds.
+.env
+.env.*
+!.env.example
+.railway/
