@@ -32,11 +32,12 @@ import './styles/discovery.css';
 import { t } from './i18n/locale';
 import { trackContactClicks } from './seo/analytics';
 import { useInitialFragment } from './components/useInitialFragment';
+import { articles } from './content/catalog';
 
 const TICKER = t(['Desarrollo de sistemas', 'Diseño de interfaces', 'Backend a medida', 'Finanzas', 'Dashboards', 'Machine learning', 'Integración de IA'], ['Software development', 'Interface design', 'Custom backend', 'Finance', 'Dashboards', 'Machine learning', 'AI integration']);
 
 const STATS = [
-  { value: '6', label: t('guías para tomar mejores decisiones', 'guides for better decisions') },
+  { value: String(articles.length), label: t('guías para tomar mejores decisiones', 'guides for better decisions') },
   { value: '4', label: t('especialidades conectadas a tu negocio', 'specialties connected to your business') },
   { value: 'EN / ES', label: t('conversemos en tu idioma', 'let’s speak your language') },
   { value: '4', label: t('personas reales, sin intermediarios', 'real people, no middlemen') },

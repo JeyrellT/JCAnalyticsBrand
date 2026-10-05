@@ -40,6 +40,10 @@ jobs:
         working-directory: jcanalytics-app
         run: npm run build
 
+      - name: Verify public comparison and retry tools
+        working-directory: jcanalytics-app
+        run: npm run check:tools
+
       - name: Verify bilingual pages and contact flows
         working-directory: jcanalytics-app
         run: npm run check:site

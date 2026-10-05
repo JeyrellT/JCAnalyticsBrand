@@ -2,16 +2,16 @@
 
 La URL determina el idioma. El inicio en inglés vive en `https://www.jcanalytic.com/`; la variante española, en `https://www.jcanalytic.com/es/`. El selector visible EN/ES usa enlaces reales, conserva parámetros y fragmentos y lleva a la traducción del mismo contenido. No se redirige automáticamente por ubicación, cookies ni idioma del navegador.
 
-## Las 24 rutas públicas
+## Las 28 rutas públicas
 
 | Contenido | Inglés | Español | Total |
 | --- | --- | --- | --- |
 | Inicio | `/` | `/es/` | 2 |
 | Índice editorial | `/insights/` | `/es/ideas/` | 2 |
-| Seis guías | `/insights/{slug}/` | `/es/ideas/{slug}/` | 12 |
+| Ocho guías | `/insights/{slug}/` | `/es/ideas/{slug}/` | 16 |
 | Cuatro servicios | `/services/{slug}/` | `/es/servicios/{slug}/` | 8 |
 
-`src/content/catalog.js` reúne el contenido y `src/seo/routes.js` genera las rutas y sus equivalencias. El catálogo es la fuente para el prerender y el sitemap: al agregar una guía o servicio completo en ambos idiomas se incorporan sus dos documentos. Las 24 rutas corresponden al catálogo actual.
+`src/content/catalog.js` reúne el contenido y `src/seo/routes.js` genera las rutas y sus equivalencias. El catálogo es la fuente para el prerender y el sitemap: al agregar una guía o servicio completo en ambos idiomas se incorporan sus dos documentos. Las 28 rutas corresponden al catálogo actual.
 
 ## Implementación
 
@@ -19,8 +19,8 @@ La URL determina el idioma. El inicio en inglés vive en `https://www.jcanalytic
 - `src/seo/site.js` genera título, descripción, canonical propio, alternates `en`, `es` y `x-default`, Open Graph y Twitter por página. Las descripciones del inicio invitan a explorar servicios e ideas; los ejemplos conceptuales visibles no se presentan como proyectos de clientes.
 - El JSON-LD describe Organization, WebSite y WebPage. Cada guía individual tiene Article, autoría de JC Analytics como organización y su fecha editorial real. Los servicios tienen Service y el índice editorial, CollectionPage e ItemList. Las páginas interiores incluyen BreadcrumbList. No se agregan reseñas, resultados, dirección exacta ni fechas comerciales inventadas.
 - La FAQ de inicio comparte su contenido con el módulo SEO; no se utiliza como promesa de resultados enriquecidos.
-- `vite.config.js` aplica el SEO de la ruta también en desarrollo. `scripts/prerender.mjs` guarda HTML completo para las 24 páginas y detiene el build ante errores o contenido incompleto. La generación bloquea solicitudes externas y analítica.
-- El sitemap incluye las 24 URLs canónicas, sus variantes recíprocas y `x-default` al contenido equivalente en inglés. Solo los artículos aportan fechas de publicación o modificación verificables.
+- `vite.config.js` aplica el SEO de la ruta también en desarrollo. `scripts/prerender.mjs` guarda HTML completo para las 28 páginas y detiene el build ante errores o contenido incompleto. El HTML conserva también las hojas de estilos locales cargadas por los módulos de cada ruta, para mantener el diseño sin JavaScript. La generación bloquea solicitudes externas y analítica.
+- El sitemap incluye las 28 URLs canónicas, sus variantes recíprocas y `x-default` al contenido equivalente en inglés. Solo los artículos aportan fechas de publicación o modificación verificables.
 - `public/robots.txt` permite rastreo e indica el sitemap. `public/404.html` contiene `noindex`; en producción no se usa un fallback SPA que convierta rutas inexistentes en páginas válidas.
 - La animación decorativa 3D se carga después de la prioridad inicial en escritorio. En móvil y con movimiento reducido se conserva la figura SVG sin cargar Three.js.
 - `src/seo/analytics.js` registra `contact_click` con canal, idioma y sección en la etiqueta Google existente. Representa intención de contacto, no una venta ni un mensaje confirmado. No envía nombre, email ni contenido libre del formulario.
@@ -46,12 +46,13 @@ npm ci
 npm run dev
 npm run lint
 npm run build
+npm run check:tools
 npm run check:site
 ```
 
 Puppeteer está declarado y fijado en el lockfile. Si el entorno bloquea scripts de instalación o carece de Chromium, instalarlo con `npx puppeteer browsers install chrome` antes del build. La compilación requiere navegador y no publica silenciosamente una SPA vacía.
 
-El prerender comprueba un h1 por página. Para inicio requiere contacto y seis preguntas frecuentes; para páginas interiores, `#main-content` con más de 800 caracteres. `check:site` revisa el HTML estático, idiomas, metadatos, selector, móvil, imágenes y los flujos de contacto y cotización, sin enviar mensajes.
+El prerender comprueba un h1 por página. Para inicio requiere contacto y seis preguntas frecuentes; para páginas interiores, `#main-content` con más de 800 caracteres. `check:site` revisa el HTML estático, idiomas, metadatos, selector, móvil, imágenes y los flujos de contacto y cotización, sin enviar mensajes. También prueba los dos recursos prácticos en inglés y español a 390 y 1440 px: comparación de listas, escenarios de reintento y descargas, sin enviar datos de entrada a red o analítica. Las tarjetas, los grids adaptables y los controles de ambas herramientas se comprueban también con JavaScript desactivado.
 
 GitHub Actions ejecuta lint, build y comprobaciones para pull requests dirigidos a `main`, pushes a `main` y ejecuciones manuales. Los pull requests no suben artefactos de Pages, configuran Pages ni despliegan. Esos pasos se limitan a un push a `main` o una ejecución manual sobre `main`; los permisos de publicación pertenecen al job de despliegue. Las ejecuciones de PR tienen grupos de concurrencia distintos del despliegue de producción.
 
