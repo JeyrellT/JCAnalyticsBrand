@@ -13,6 +13,20 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/" />
   </url>
   <url>
+    <loc>https://www.jcanalytic.com/insights/compare-two-lists-without-false-matches/</loc>
+    <lastmod>2026-10-04</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/compare-two-lists-without-false-matches/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/comparar-dos-listas-sin-falsas-coincidencias/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/compare-two-lists-without-false-matches/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/insights/stop-duplicate-actions-on-retry/</loc>
+    <lastmod>2026-10-04</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/stop-duplicate-actions-on-retry/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/evitar-acciones-duplicadas-al-reintentar/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/stop-duplicate-actions-on-retry/" />
+  </url>
+  <url>
     <loc>https://www.jcanalytic.com/insights/data-quality-before-dashboards/</loc>
     <lastmod>2026-10-04</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/data-quality-before-dashboards/" />
@@ -89,6 +103,20 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/" />
     <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/es/ideas/comparar-dos-listas-sin-falsas-coincidencias/</loc>
+    <lastmod>2026-10-04</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/compare-two-lists-without-false-matches/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/comparar-dos-listas-sin-falsas-coincidencias/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/compare-two-lists-without-false-matches/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/es/ideas/evitar-acciones-duplicadas-al-reintentar/</loc>
+    <lastmod>2026-10-04</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/stop-duplicate-actions-on-retry/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/evitar-acciones-duplicadas-al-reintentar/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/stop-duplicate-actions-on-retry/" />
   </url>
   <url>
     <loc>https://www.jcanalytic.com/es/ideas/calidad-de-datos-antes-del-dashboard/</loc>

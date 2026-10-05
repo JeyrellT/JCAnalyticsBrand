@@ -7,16 +7,27 @@ import { wa, EMAIL } from './components/site/links';
 import LanguageSwitcher from './components/ui/LanguageSwitcher';
 import { trackContactClicks } from './seo/analytics';
 import { useInitialFragment } from './components/useInitialFragment';
+import ListReconciler from './components/tools/ListReconciler';
+import RetrySimulator from './components/tools/RetrySimulator';
 import './styles/discovery.css';
 import './styles/journal.css';
 
 const text = (item) => item[locale];
 const path = (item) => item.minutes ? articlePath(item, locale) : servicePath(item, locale);
 
+function PracticalTool({ tool }) {
+  const Component = tool === 'list-reconciler' ? ListReconciler : tool === 'retry-simulator' ? RetrySimulator : null;
+  if (!Component) return null;
+  return <div className="document-practical" id="practical-tool">
+    <noscript><p>{t('Activá JavaScript para usar la herramienta. La guía y los archivos de ejemplo siguen disponibles sin JavaScript.', 'Enable JavaScript to use the tool. The guide and example files remain available without JavaScript.')}</p></noscript>
+    <Component />
+  </div>;
+}
+
 function ArticleCard({ article }) {
   const copy = text(article);
   return <a className="journal-card" data-article={article.id} href={articlePath(article, locale)}>
-    <div className="journal-card__image"><img src={article.image} alt="" width="1536" height="1024" loading="lazy" decoding="async" /><span><ArrowUpRight size={22} /></span></div>
+    <div className="journal-card__image"><img src={article.image} alt="" width="1536" height="1024" loading="lazy" decoding="async" />{article.tool && <small className="journal-tool-badge">{t('Guía + herramienta', 'Guide + tool')}</small>}<span><ArrowUpRight size={22} /></span></div>
     <div className="journal-card__meta">{topics[article.topic][locale]}<span>{article.minutes} min</span></div>
     <h3>{copy.title}</h3><p>{copy.summary}</p>
   </a>;
@@ -48,7 +59,7 @@ function JournalHome() {
   const [query, setQuery] = useState('');
   const normalized = query.trim().toLocaleLowerCase(locale).normalize('NFD').replace(/\p{Diacritic}/gu, '');
   const filtered = articles.filter(article => (topic === 'all' || article.topic === topic) && `${text(article).title} ${text(article).summary}`.toLocaleLowerCase(locale).normalize('NFD').replace(/\p{Diacritic}/gu, '').includes(normalized));
-  const featured = articles.find(article => article.id === 'human-review');
+  const featured = articles.find(article => article.tool) ?? articles.find(article => article.id === 'human-review');
   return <>
     <section className="journal-hero"><div className="journal-container"><span className="journal-eyebrow"><span className="journal-dot" />JC ANALYTICS / {t('IDEAS ABIERTAS', 'OPEN IDEAS')}</span><div className="journal-hero__heading"><h1>{t('La tecnología empieza', 'Good technology starts')}<br /><em>{t('con una buena pregunta.', 'with a better question.')}</em></h1><p>{t('Notas para pensar mejor sobre datos, software e inteligencia artificial. Ideas prácticas para quienes toman decisiones.', 'Notes on data, software and artificial intelligence. Practical thinking for people making business decisions.')}</p></div>
       <a href={path(featured)} className="journal-feature"><div className="journal-feature__image"><img src={featured.image} alt="" width="1536" height="1024" fetchPriority="high" /></div><div className="journal-feature__copy"><span className="journal-eyebrow">01 / {t('EN FOCO', 'IN FOCUS')}</span><h2>{text(featured).title}</h2><p>{text(featured).summary}</p><span className="journal-text-link">{t('Explorar la idea', 'Explore the idea')}<ArrowUpRight size={22} /></span></div></a>
@@ -67,10 +78,11 @@ function DocumentPage({ route }) {
   const isArticle = route.type === 'article';
   const related = articles.filter(article => article.id !== item.id).sort((a, b) => Number(b.topic === item.topic) - Number(a.topic === item.topic)).slice(0, 3);
   return <div className="journal-container"><nav className="journal-breadcrumb" aria-label={t('Ruta de navegación', 'Breadcrumb')}><a href={homePath(locale)}>{t('Inicio', 'Home')}</a><span>/</span><a href={journalPath(locale)}>{t('Ideas', 'Insights')}</a><span>/</span><span>{topics[item.topic][locale]}</span></nav>
-    <article className="journal-document"><header className="document-heading"><span className="journal-eyebrow">{isArticle ? t('CUADERNO DE IDEAS', 'FIELD NOTES') : t('SERVICIOS / COSTA RICA', 'SERVICES / COSTA RICA')} · {topics[item.topic][locale]}</span><h1>{copy.title}</h1><p className="document-summary">{copy.summary}</p>{isArticle && <div className="document-byline"><span>JC Analytics</span><span>{item.minutes} min {t('de lectura', 'read')}</span><time dateTime={item.published}>{new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(`${item.published}T12:00:00Z`))}</time></div>}</header>
+    <article className="journal-document"><header className="document-heading"><span className="journal-eyebrow">{isArticle ? t('CUADERNO DE IDEAS', 'FIELD NOTES') : t('SERVICIOS / COSTA RICA', 'SERVICES / COSTA RICA')} · {topics[item.topic][locale]}</span><h1>{copy.title}</h1><p className="document-summary">{copy.summary}</p>{isArticle && <div className="document-byline"><span>JC Analytics</span><span>{item.minutes} min {t('de lectura', 'read')}</span><time dateTime={item.published}>{new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(`${item.published}T12:00:00Z`))}</time></div>}{item.tool && <a className="journal-button document-tool-link" href="#practical-tool">{t('Probar la herramienta', 'Try the tool')}<ArrowRight size={18} /></a>}</header>
       <figure className="document-cover"><img src={item.image} alt="" width="1536" height="1024" fetchPriority="high" /><figcaption>{t('Ilustración conceptual creada con IA. No representa proyectos ni datos de clientes.', 'Concept illustration created with AI. It does not depict client projects or data.')}</figcaption></figure>
-      <div className="document-layout"><aside className="document-toc"><span className="journal-eyebrow">{t('EN ESTA LECTURA', 'ON THIS PAGE')}</span><nav aria-label={t('Índice del contenido', 'Table of contents')}>{copy.sections.map((section, index) => <a href={`#${section.id}`} key={section.id}><span>0{index + 1}</span>{section.heading}</a>)}<a href="#discussion"><span>↗</span>{t('Para conversar', 'Let’s discuss')}</a></nav></aside>
+      <div className="document-layout"><aside className="document-toc"><span className="journal-eyebrow">{t('EN ESTA LECTURA', 'ON THIS PAGE')}</span><nav aria-label={t('Índice del contenido', 'Table of contents')}>{item.tool && <a className="document-toc__tool" href="#practical-tool"><span>↗</span>{t('Probar la herramienta', 'Try the tool')}</a>}{copy.sections.map((section, index) => <a href={`#${section.id}`} key={section.id}><span>0{index + 1}</span>{section.heading}</a>)}<a href="#discussion"><span>↗</span>{t('Para conversar', 'Let’s discuss')}</a></nav></aside>
         <div className="document-body"><div className="document-takeaway"><span className="journal-eyebrow">{t('LA IDEA CLAVE', 'THE KEY IDEA')}</span><p>{copy.takeaway}</p></div>
+          {item.tool && <PracticalTool tool={item.tool} />}
           {copy.sections.map(section => <section key={section.id} id={section.id}><h2>{section.heading}</h2>{section.paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}{section.bullets && <ul>{section.bullets.map(bullet => <li key={bullet}>{bullet}</li>)}</ul>}</section>)}
           <section className="document-discussion" id="discussion"><span className="journal-eyebrow">{t('LAS BUENAS IDEAS SE CONVERSAN', 'GOOD IDEAS START CONVERSATIONS')}</span><h2>{t('Llevá la pregunta a tu equipo.', 'Bring the question to your team.')}</h2><p>{t('Tres preguntas para explorar juntos. Abrí una y usala como punto de partida.', 'Three questions to explore together. Open one and use it to start a conversation.')}</p>{copy.discussion.map((question, index) => <details key={question}><summary><span>0{index + 1}</span>{question}<Plus size={18} /></summary><p>{t('Anotá una situación concreta, escuchá otra perspectiva y acordá un pequeño próximo paso. Si querés una mirada externa, podemos conversarlo.', 'Write down a specific situation, listen to another perspective and agree on a small next step. If you would like an outside perspective, we can talk it through.')}</p><a href={wa(t(`Hola, me gustaría conversar sobre «${copy.title}». Mi pregunta: ${question}`, `Hi, I would like to discuss “${copy.title}”. My question: ${question}`))} target="_blank" rel="noreferrer">{t('Conversar con el estudio', 'Discuss with the studio')}<ArrowUpRight size={16} /></a></details>)}</section>
           {copy.sources.length > 0 && <section className="document-sources"><h2>{t('Para seguir explorando', 'Further reading')}</h2><p>{t('Referencias públicas que amplían estas ideas.', 'Public references that explore these ideas further.')}</p><ul>{copy.sources.map(source => <li key={source.url}><a href={source.url} target="_blank" rel="noreferrer">{source.title}<ArrowUpRight size={14} /></a></li>)}</ul></section>}

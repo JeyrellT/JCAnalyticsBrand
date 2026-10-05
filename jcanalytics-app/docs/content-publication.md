@@ -14,11 +14,14 @@ Los archivos públicos deben contener únicamente material apto para publicació
 
 ## Generar y comprobar
 
+Las guías prácticas pueden incluir herramientas originales basadas en técnicas generales y ejemplos sintéticos. El catálogo las identifica con `tool`; cada herramienta documenta su alcance, valida las entradas y se prueba sin publicar código, datos ni métodos internos. El comparador funciona localmente y el simulador solo representa operaciones ficticias en memoria.
+
 Desde la carpeta de la aplicación:
 
 ```powershell
 npm run lint
 npm run build
+npm run check:tools
 npm run check:site
 ```
 

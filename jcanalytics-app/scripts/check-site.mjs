@@ -410,6 +410,34 @@ async function checkDiscussion(page, route) {
   assert.equal(await details[0].evaluate((node) => node.open), false, 'Native discussion closes without JavaScript');
 }
 
+async function checkStaticToolStyles(page, tool, width) {
+  const styles = await page.evaluate((kind) => {
+    const card = document.getElementById(kind);
+    const grid = card.querySelector(kind === 'list-reconciler' ? '.list-reconciler__inputs' : '.retry-lab__scenarios');
+    const style = getComputedStyle(card);
+    const gridStyle = getComputedStyle(grid);
+    const controls = Array.from(card.querySelectorAll('button, textarea'), (node) => ({
+      height: node.getBoundingClientRect().height,
+      width: node.getBoundingClientRect().width,
+    }));
+    return {
+      background: style.backgroundColor,
+      radius: parseFloat(style.borderTopLeftRadius),
+      padding: parseFloat(style.paddingLeft),
+      display: gridStyle.display,
+      columns: gridStyle.gridTemplateColumns.split(/\s+/).filter(Boolean).length,
+      controls,
+      cardWidth: card.getBoundingClientRect().width,
+    };
+  }, tool);
+  assert.ok(!['rgba(0, 0, 0, 0)', 'transparent'].includes(styles.background), `${tool} keeps its painted card without JavaScript`);
+  assert.ok(styles.radius >= 16 && styles.padding >= 14, `${tool} card CSS is applied without its JavaScript module`);
+  assert.equal(styles.display, 'grid', `${tool} layout stylesheet is present in the static page`);
+  const columns = width < 600 ? 1 : tool === 'list-reconciler' ? 2 : 3;
+  assert.equal(styles.columns, columns, `${tool} static controls adapt to ${width}px`);
+  assert.ok(styles.controls.length >= 3 && styles.controls.every((control) => control.height >= 44 && control.width > 0 && control.width <= styles.cardWidth), `${tool} controls keep visible, usable dimensions without JavaScript`);
+}
+
 async function checkStaticRoute(browser, origin, route, snapshots) {
   const { language } = route;
   const { page, verifyErrors } = await openPage(browser, origin, 1440, false);
@@ -445,16 +473,23 @@ async function checkStaticRoute(browser, origin, route, snapshots) {
         }
       }
       await checkDiscussion(page, route);
+      if (route.data.tool) {
+        assert.ok(await page.$('#practical-tool'), 'Practical resource is included in static article HTML');
+        assert.ok(await page.$('.document-toc a[href="#practical-tool"]'), 'Practical resource is linked from the article contents');
+        await checkVisibleText(page, ['#practical-tool h2']);
+      }
     }
     snapshots.set(route.path, await page.evaluate(() => ({
       ids: Array.from(document.querySelectorAll('[id]'), (node) => node.id),
       links: Array.from(document.querySelectorAll('a[href]'), (node) => node.href),
     })));
     await checkAssets(page, origin, false);
+    if (route.data?.tool) await checkStaticToolStyles(page, route.data.tool, 1440);
     await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     await checkSelector(page, language, 'header', route);
     await checkAssets(page, origin, false);
+    if (route.data?.tool) await checkStaticToolStyles(page, route.data.tool, 390);
     verifyErrors();
     console.log(`[check-site] PASS static ${route.path}: localized SEO, complete content, native details and 1440/390px`);
   } finally {
@@ -486,8 +521,10 @@ async function checkInternalLinks(origin, snapshots) {
 }
 
 async function checkSitemap(browser, origin) {
-  assert.equal(routes.length, 24, 'The public catalog contains 24 intended language routes');
-  assert.equal(new Set(routes.map((route) => route.path)).size, 24, 'Public routes are unique');
+  assert.equal(articles.length, 8, 'The public catalog contains eight intended bilingual articles');
+  assert.deepEqual(articles.filter((article) => article.tool).map((article) => article.tool).sort(), ['list-reconciler', 'retry-simulator'], 'Exactly two articles provide the intended practical tools');
+  assert.equal(routes.length, 28, 'The public catalog contains 28 intended language routes');
+  assert.equal(new Set(routes.map((route) => route.path)).size, routes.length, 'Public routes are unique');
   const response = await fetch(`${origin}/sitemap.xml`);
   assert.equal(response.status, 200);
   const xml = await response.text();
@@ -515,7 +552,7 @@ async function checkSitemap(browser, origin) {
   }
   const robots = await (await fetch(`${origin}/robots.txt`)).text();
   assert.ok(robots.includes(`Sitemap: ${PRODUCTION}/sitemap.xml`));
-  console.log('[check-site] PASS sitemap: all 24 routes with equivalent language alternates');
+  console.log(`[check-site] PASS sitemap: all ${routes.length} routes with equivalent language alternates`);
 }
 
 async function checkPublicPrivacy() {
@@ -704,6 +741,193 @@ async function checkDelayedArticleModule(browser, origin) {
   }
 }
 
+// Audit attempts as well as completed requests: blocking an upload must not hide a leak.
+async function beginToolPrivacyAudit(page) {
+  const requests = [];
+  const consoleMessages = [];
+  const onRequest = (request) => {
+    const url = new URL(request.url());
+    if (!['blob:', 'data:', 'about:'].includes(url.protocol)) requests.push({ url: request.url(), data: request.postData() || '' });
+  };
+  const onConsole = (message) => consoleMessages.push(message.text());
+  page.on('request', onRequest);
+  page.on('console', onConsole);
+  const session = await page.createCDPSession();
+  await session.send('Page.setDownloadBehavior', { behavior: 'deny' });
+  await page.evaluate(() => {
+    const state = { events: [], blobs: [], downloads: [] };
+    window.__toolPrivacyAudit = state;
+    window.gtag = (...args) => state.events.push(args);
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (blob) => {
+      const url = createObjectURL(blob);
+      state.blobs.push({ url, blob });
+      return url;
+    };
+    const anchorClick = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = function () {
+      if (this.download) state.downloads.push({ name: this.download, href: this.href });
+      return anchorClick.call(this);
+    };
+  });
+  return {
+    async downloads() {
+      return page.evaluate(async () => {
+        const state = window.__toolPrivacyAudit;
+        return Promise.all(state.downloads.map(async (download) => {
+          const entry = state.blobs.find((item) => item.url === download.href);
+          return { name: download.name, type: entry?.blob.type, text: entry ? await entry.blob.text() : null };
+        }));
+      });
+    },
+    async verify(privateValues = []) {
+      const telemetry = await page.evaluate(() => ({
+        events: window.__toolPrivacyAudit.events,
+        layer: Array.from(window.dataLayer || [], (entry) => Array.from(entry)),
+        location: location.href,
+        local: Object.entries(localStorage),
+        session: Object.entries(sessionStorage),
+      }));
+      assert.deepEqual(requests, [], 'Local tool interactions and exports must not start network requests');
+      const serialized = JSON.stringify({ ...telemetry, consoleMessages, requests });
+      for (const value of privateValues) assert.ok(!serialized.includes(value), 'Tool data must stay out of analytics, URL, browser storage and console logs');
+      page.off('request', onRequest);
+      page.off('console', onConsole);
+      await session.detach();
+    },
+  };
+}
+
+async function fillToolField(page, selector, value) {
+  await page.$eval(selector, (node, text) => {
+    const prototype = node.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    Object.getOwnPropertyDescriptor(prototype, 'value').set.call(node, text);
+    node.dispatchEvent(new Event('input', { bubbles: true }));
+  }, value);
+}
+
+async function checkListReconciler(browser, origin, language, width) {
+  const route = routes.find((item) => item.type === 'article' && item.data.id === 'list-reconciliation' && item.language === language);
+  assert.ok(route, 'The list comparison article is registered');
+  const { page, verifyErrors } = await openPage(browser, origin, width);
+  try {
+    await navigate(page, `${origin}${route.path}#practical-tool`);
+    await page.waitForSelector('#list-reconciler');
+    await checkAssets(page, origin);
+    await page.click('.document-toc a[href="#practical-tool"]');
+    await checkFragmentViewport(page, 'practical-tool');
+    const audit = await beginToolPrivacyAudit(page);
+    const canary = `QA-PRIVATE-${language.toUpperCase()}-${width}`;
+    const inputA = `reference;amount;currency\n001;10.00;USD\n${canary};12.50;USD\nDUP;3.00;USD\nDUP;3.00;USD\n=2+3;7.00;USD`;
+    const inputB = `referencia;importe;moneda\n001;10.00;USD\n${canary};13.00;USD\nDUP;3.00;USD\n1;10.00;USD`;
+    await fillToolField(page, '#reconciler-a', inputA);
+    await fillToolField(page, '#reconciler-b', inputB);
+    await page.click('#list-reconciler [data-action="compare"]');
+    await page.waitForSelector('#list-reconciler [data-result="success"]');
+    const groups = await page.$$eval('#list-reconciler tbody tr', (nodes) => nodes.map((node) => ({ reference: node.dataset.reference, status: node.dataset.status, text: node.textContent })));
+    assert.deepEqual(groups.map(({ reference, status }) => [reference, status]), [
+      ['001', 'match'], [canary, 'different'], ['DUP', 'ambiguous'], ['=2+3', 'only-a'], ['1', 'only-b'],
+    ], 'Browser comparison preserves exact identifiers and flags every ambiguous key');
+    assert.ok(groups.find((group) => group.reference === 'DUP').text.includes('3.00'), 'Ambiguous rows keep their source values available for review');
+    await checkWidth(page);
+    await page.click('#list-reconciler [data-action="export"]');
+    const downloads = await audit.downloads();
+    assert.equal(downloads.length, 1, 'Export creates one local download');
+    assert.match(downloads[0].name, /\.csv$/);
+    assert.match(downloads[0].type, /^text\/csv/);
+    const lines = downloads[0].text.replace(/^\uFEFF/, '').trimEnd().split(/\r?\n/);
+    assert.equal(lines[0], 'status;reference;source;line;amount;currency');
+    assert.equal(lines.length, 10, 'Report includes all nine source rows, not invented pairs');
+    assert.equal(lines.filter((line) => line.startsWith('"ambiguous";"DUP";')).length, 3, 'Every ambiguous source row survives export');
+    assert.ok(lines.some((line) => line.includes('"\'=2+3"')), 'Formula-like references export as text');
+    assert.ok(lines.some((line) => line.includes(`"${canary}"`)), 'The local report includes the requested comparison');
+    await fillToolField(page, '#reconciler-a', `reference;amount;currency\n${canary};1,20;USD`);
+    assert.equal(await page.$('#list-reconciler [data-result="success"]'), null, 'Editing inputs removes a stale successful result');
+    await page.click('#list-reconciler [data-action="compare"]');
+    await page.waitForSelector('#list-reconciler [data-result="error"]');
+    assert.equal(await page.$('#list-reconciler [data-action="export"]'), null, 'Invalid input cannot export a partial comparison');
+    assert.equal(await page.$('#list-reconciler tbody'), null, 'Invalid format blocks comparison results');
+    await page.click('#list-reconciler [data-action="reset"]');
+    assert.equal(await page.$eval('#reconciler-a', (node) => node.value), '');
+    assert.equal(await page.$eval('#reconciler-b', (node) => node.value), '');
+    await page.click('#list-reconciler [data-action="example"]');
+    assert.ok(await page.$eval('#reconciler-a', (node) => node.value.length > 0));
+    assert.ok(await page.$eval('#reconciler-b', (node) => node.value.length > 0));
+    await audit.verify([canary]);
+    const examples = await page.$$eval('.list-reconciler__downloads a[download]', (nodes) => nodes.map((node) => node.href));
+    assert.equal(examples.length, 2, 'Both sample lists are downloadable');
+    for (const [index, href] of examples.entries()) {
+      const response = await fetch(href);
+      assert.equal(response.status, 200, 'Sample download exists');
+      const loaded = await page.$eval(`#reconciler-${index ? 'b' : 'a'}`, (node) => node.value);
+      const normalize = (value) => value.replace(/^\uFEFF/, '').replaceAll('\r\n', '\n').trim();
+      assert.equal(normalize(await response.text()), normalize(loaded), 'Download matches the synthetic example loaded by the UI');
+    }
+    await checkWidth(page);
+    verifyErrors();
+    console.log(`[check-site] PASS list comparison ${language} ${width}px: ambiguity, exact keys, blocked invalid input, private local CSV download and reset`);
+  } finally {
+    await page.close();
+  }
+}
+
+async function checkRetrySimulator(browser, origin, language, width) {
+  const route = routes.find((item) => item.type === 'article' && item.data.id === 'safe-retries' && item.language === language);
+  assert.ok(route, 'The retry article is registered');
+  const { page, verifyErrors } = await openPage(browser, origin, width);
+  try {
+    await navigate(page, `${origin}${route.path}#practical-tool`);
+    await page.waitForSelector('#retry-simulator');
+    await checkAssets(page, origin);
+    await page.click('.document-toc a[href="#practical-tool"]');
+    await checkFragmentViewport(page, 'practical-tool');
+    const audit = await beginToolPrivacyAudit(page);
+    const fictionalKeys = await page.$$eval('#retry-simulator .retry-lab__request dd', (nodes) => nodes.slice(0, 2).map((node) => node.textContent));
+    const action = (value) => page.click(`#retry-simulator [data-retry-action="${value}"]`);
+    const state = async (outcome, attempts, actions, verifications = 0) => {
+      await page.waitForSelector(`#retry-result[data-retry-outcome="${outcome}"]`);
+      const counters = await page.$$eval('#retry-simulator [data-retry-count]', (nodes) => Object.fromEntries(nodes.map((node) => [node.dataset.retryCount, Number(node.textContent)])));
+      assert.deepEqual(counters, { attempts, actions, verifications });
+      await checkWidth(page);
+    };
+    await action('attempt');
+    await state('confirmed', 1, 1);
+    await action('retry');
+    await state('reused', 2, 1);
+    await page.click('#retry-simulator [data-retry-scenario="lost-response"]');
+    await state('idle', 0, 0);
+    await action('attempt');
+    await state('unknown', 1, 1);
+    await action('retry');
+    await state('held', 2, 1);
+    await action('verify');
+    await state('verified', 2, 1, 1);
+    await action('retry');
+    await state('reused', 3, 1, 1);
+    await page.click('#retry-simulator [data-retry-scenario="changed-payload"]');
+    await state('idle', 0, 0);
+    await action('attempt');
+    await state('confirmed', 1, 1);
+    await action('retry');
+    await state('conflict', 2, 1);
+    await action('reset');
+    await state('idle', 0, 0);
+    await audit.verify(fictionalKeys);
+    const scope = await page.$eval('#retry-simulator .retry-lab__footer', (node) => node.textContent);
+    assert.ok(scope.includes(language === 'es' ? 'en memoria' : 'in memory'), 'The lab describes its actual in-memory scope');
+    const downloadUrl = await page.$eval('#retry-simulator a[download]', (node) => node.href);
+    const response = await fetch(downloadUrl);
+    assert.equal(response.status, 200, 'The retry case worksheet is downloadable');
+    const worksheet = await response.text();
+    assert.ok(worksheet.includes('steps_en,pasos_es,expected_en,esperado_es'), 'Worksheet includes both languages');
+    for (const id of ['normal-repeat', 'lost-verify', 'changed-content', 'external-uncertainty']) assert.ok(worksheet.includes(`${id},`), `Worksheet includes ${id}`);
+    verifyErrors();
+    console.log(`[check-site] PASS retry simulation ${language} ${width}px: repeat, unknown outcome, verification, conflict and reset without network activity`);
+  } finally {
+    await page.close();
+  }
+}
+
 async function main() {
   await Promise.all(routes.map((route) => stat(join(DIST, route.path, 'index.html'))));
   await checkPublicPrivacy();
@@ -752,6 +976,8 @@ async function main() {
         }
         await checkJournalInteractions(browser, origin, language, width);
         await checkArticleNavigation(browser, origin, language, width);
+        await checkListReconciler(browser, origin, language, width);
+        await checkRetrySimulator(browser, origin, language, width);
       }
     }
     console.log('[check-site] All browser acceptance checks passed. No external messages or requests were sent.');

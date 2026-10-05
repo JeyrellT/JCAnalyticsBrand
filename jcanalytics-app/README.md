@@ -7,7 +7,7 @@ npm ci
 npm run dev
 ```
 
-Antes de publicar: `npm run lint`, `npm run build` y `npm run check:site`. El build necesita el Chromium de Puppeteer y debe generar las rutas de inicio, servicios e ideas en ambos idiomas. Ver [SEO, idiomas y publicación](docs/seo-and-languages.md) para mantenimiento, pruebas y pasos de Search Console.
+Antes de publicar: `npm run lint`, `npm run build`, `npm run check:tools` y `npm run check:site`. El build necesita el Chromium de Puppeteer y debe generar 28 rutas de inicio, servicios e ideas en ambos idiomas. El catálogo contiene ocho artículos, dos de ellos con recursos prácticos locales. Ver [SEO, idiomas y publicación](docs/seo-and-languages.md) para mantenimiento, pruebas y pasos de Search Console.
 
 ## Base técnica: React + Vite
 

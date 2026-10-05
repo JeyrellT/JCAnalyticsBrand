@@ -71,6 +71,10 @@ try {
           headings: root.querySelectorAll('h1').length,
           faqCount: root.querySelectorAll('#preguntas details').length,
           language: document.documentElement.lang,
+          stylesheets: [...document.querySelectorAll('link[rel="stylesheet"]')]
+            .map(link => new URL(link.href))
+            .filter(url => url.origin === window.location.origin && /^\/assets\/[a-zA-Z0-9_-]+\.css$/.test(url.pathname))
+            .map(url => url.pathname),
         };
       });
       const complete = route.type === 'home'
@@ -79,8 +83,14 @@ try {
       if (errors.length || !complete || snapshot.headings !== 1 || snapshot.language !== route.language) {
         throw new Error(`Incomplete ${route.path}: ${errors.join('; ')} (h1=${snapshot.headings}, FAQ=${snapshot.faqCount}, main=${snapshot.mainText.length}, lang=${snapshot.language})`);
       }
-      // The build-generated head is deterministic; only snapshot React's root.
-      const html = documents.get(route.path)
+      // Preserve metadata from the clean template, plus the local CSS loaded by
+      // this route's module. Otherwise a no-JS reader would lose tool styling.
+      const document = documents.get(route.path);
+      const routeStyles = [...new Set(snapshot.stylesheets)]
+        .filter(path => !document.includes(`"${path}"`))
+        .map(path => `<link rel="stylesheet" href="${path}" />`).join('\n');
+      const html = document
+        .replace('</head>', () => `${routeStyles}\n</head>`)
         .replace('<html lang=', '<html data-prerendered="true" lang=')
         .replace('<div id="root"></div>', () => `<div id="root">${snapshot.html}</div>`);
       await writeFile(documentPath(route), html, 'utf8');
