@@ -20,6 +20,7 @@ import {
 import { FX_UPDATED } from '../../data/currencies';
 import { useCurrency } from '../../hooks/useCurrency';
 import CurrencySelector from './CurrencySelector';
+import { t } from '../../i18n/locale';
 
 const ICONS = { BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settings, Lightbulb, Receipt, Globe, Clapperboard, Megaphone };
 
@@ -49,9 +50,9 @@ const SEG_ACTIVE = {
 };
 
 // Toggle segmentado (calca el patrón visual existente)
-function SegmentedToggle({ options, value, onChange }) {
+function SegmentedToggle({ options, value, onChange, label }) {
   return (
-    <div className="flex gap-2" role="radiogroup">
+    <div className="flex gap-2" role="radiogroup" aria-label={label}>
       {options.map((o) => {
         const active = o.id === value;
         return (
@@ -158,31 +159,31 @@ export default function QuoteEstimator() {
       : `$${result.investUSD.low.toLocaleString('en-US')} – $${result.investUSD.high.toLocaleString('en-US')}`) + result.unitSuffix;
     const localLabel = activeCode === 'USD' ? '' : `  (≈ ${range.label} ${activeCode})`;
     const body = [
-      '--- Contacto ---',
-      `Nombre / Empresa: ${qName || '(sin especificar)'}`,
-      `Email: ${qEmail || '(sin especificar)'}`,
-      `WhatsApp: ${qPhone || 'no indicado'}`,
+      t('--- Contacto ---', '--- Contact ---'),
+      `${t('Nombre / Empresa', 'Name / Company')}: ${qName || t('(sin especificar)', '(not specified)')}`,
+      `Email: ${qEmail || t('(sin especificar)', '(not specified)')}`,
+      `WhatsApp: ${qPhone || t('no indicado', 'not provided')}`,
       '',
-      '--- Proyecto cotizado (preliminar) ---',
-      `Tipo de solución: ${svc.label}`,
-      `Tamaño: ${SIZE_UI[sizeIdx]?.label}`,
-      `Complejidad: ${COMPLEXITY_UI.find((c) => c.id === complexityId)?.label}`,
-      `Urgencia: ${URGENCY_UI.find((u) => u.id === urgency)?.label}`,
+      t('--- Proyecto cotizado (preliminar) ---', '--- Project estimate (preliminary) ---'),
+      `${t('Tipo de solución', 'Solution type')}: ${svc.label}`,
+      `${t('Tamaño', 'Size')}: ${SIZE_UI[sizeIdx]?.label}`,
+      `${t('Complejidad', 'Complexity')}: ${COMPLEXITY_UI.find((c) => c.id === complexityId)?.label}`,
+      `${t('Urgencia', 'Urgency')}: ${URGENCY_UI.find((u) => u.id === urgency)?.label}`,
       '',
-      '--- Estimado mostrado al cliente ---',
-      `Inversión preliminar (USD): ${usd}${localLabel}`,
+      t('--- Estimado mostrado al cliente ---', '--- Estimate shown to the client ---'),
+      `${t('Inversión preliminar (USD)', 'Preliminary investment (USD)')}: ${usd}${localLabel}`,
       `${result.delivery.label}: ${result.delivery.display}`,
       '',
-      'Nota: estimado no vinculante; afinamos el alcance en la sesión sin costo.',
+      t('Nota: estimado no vinculante; afinamos el alcance en la sesión sin costo.', 'Note: this estimate is non-binding; we refine the scope during a free consultation.'),
     ].join('\n');
-    const subject = 'Solicitud de cotización preliminar — JC Analytics';
+    const subject = t('Solicitud de cotización preliminar — JC Analytics', 'Preliminary quote request — JC Analytics');
     window.location.href = `mailto:gerencia@jcanalytic.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     setSent(true);
   }
 
   const whatsappHref = result
     ? `https://wa.me/50670330596?text=${encodeURIComponent(
-        `Hola, coticé un proyecto (${svc.label}) y quiero afinar el alcance. Estimado: ${
+        `${t(`Hola, coticé un proyecto (${svc.label}) y quiero afinar el alcance. Estimado:`, `Hi, I estimated a project (${svc.label}) and would like to discuss the scope. Estimate:`)} ${
           singlePrice ? `$${result.investUSD.high}` : `$${result.investUSD.low}–$${result.investUSD.high}`
         }${result.unitSuffix} USD, ${result.delivery.display}.`,
       )}`
@@ -198,13 +199,13 @@ export default function QuoteEstimator() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10 sm:mb-16">
         <div>
-          <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-paper/65">Planificá tu inversión / Cotizador</span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-paper/65">{t('Planificá tu inversión / Cotizador', 'Plan your investment / Project estimator')}</span>
           <h2 className="mt-4 font-display font-semibold tracking-[-0.04em] leading-[0.92] text-[clamp(2.6rem,7vw,6rem)]">
-            Tu proyecto, <span className="font-serif italic font-normal text-lime">con claridad.</span>
+            {t('Tu proyecto,', 'Your project,')} <span className="font-serif italic font-normal text-lime">{t('con claridad.', 'with clarity.')}</span>
           </h2>
         </div>
         <p className="max-w-xs text-paper/55 text-lg leading-snug">
-          Elegí tu solución y explorá un rango preliminar, sin compromiso.
+          {t('Elegí tu solución y explorá un rango preliminar, sin compromiso.', 'Choose your solution and explore an initial price range, with no commitment.')}
         </p>
       </div>
 
@@ -213,9 +214,9 @@ export default function QuoteEstimator() {
         <div className="space-y-5 sm:space-y-6">
           {/* 1. Tipo de solución */}
           <div className={block}>
-            <p className="text-sm font-bold text-neutral-300 mb-1"><span className="text-lime-400 font-mono mr-1.5">1.</span> ¿Qué necesitás?</p>
-            <p className="text-xs text-neutral-400 mb-4">Elegí el tipo de solución más parecido a tu necesidad. Para modelos financieros, machine learning o integración de IA, <a href="#contacto" className="text-lime underline underline-offset-4">conversemos sobre el alcance</a>.</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5" role="radiogroup" aria-label="Tipo de solución">
+            <p className="text-sm font-bold text-neutral-300 mb-1"><span className="text-lime-400 font-mono mr-1.5">1.</span> {t('¿Qué necesitás?', 'What do you need?')}</p>
+            <p className="text-xs text-neutral-400 mb-4">{t('Elegí el tipo de solución más parecido a tu necesidad. Para modelos financieros, machine learning o integración de IA,', 'Choose the solution closest to your needs. For financial models, machine learning or AI integration,')} <a href="#contacto" className="text-lime underline underline-offset-4">{t('conversemos sobre el alcance', 'let’s discuss the scope')}</a>.</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5" role="radiogroup" aria-label={t('Tipo de solución', 'Solution type')}>
               {SERVICE_ORDER.map((key) => {
                 const s = SERVICES[key];
                 const Icon = ICONS[s.icon];
@@ -238,7 +239,7 @@ export default function QuoteEstimator() {
               })}
             </div>
             <p className="text-xs text-neutral-500 mt-3 flex items-center gap-1.5">
-              {svc.isMajor && <span className="font-bold text-amber-300">Proyecto mayor ·</span>}
+              {svc.isMajor && <span className="font-bold text-amber-300">{t('Proyecto mayor ·', 'Larger project ·')}</span>}
               {svc.micro}
             </p>
           </div>
@@ -246,14 +247,14 @@ export default function QuoteEstimator() {
           {/* 2. Tamaño */}
           <div className={block}>
             <div className="flex items-end justify-between mb-2">
-              <p className="text-sm font-bold text-neutral-300"><span className="text-lime-400 font-mono mr-1.5">2.</span> ¿Qué tan grande es?</p>
+              <p className="text-sm font-bold text-neutral-300"><span className="text-lime-400 font-mono mr-1.5">2.</span> {t('¿Qué tan grande es?', 'How big is the project?')}</p>
               <span className="font-mono text-lg font-bold text-white">{SIZE_UI[sizeIdx]?.label}</span>
             </div>
             <input
               type="range" min={0} max={3} step={1} value={sizeIdx}
               onChange={(e) => { setSizeIdx(Number(e.target.value)); touch('size'); }}
               style={{ '--pct': `${(sizeIdx / 3) * 100}%` }}
-              className="touch-slider w-full" aria-label="Tamaño del proyecto"
+              className="touch-slider w-full" aria-label={t('Tamaño del proyecto', 'Project size')} aria-valuetext={SIZE_UI[sizeIdx]?.label}
             />
             {/* Las etiquetas también son objetivos táctiles: tocar "Grande" mueve el slider */}
             <div className="flex justify-between mt-1">
@@ -274,15 +275,15 @@ export default function QuoteEstimator() {
 
           {/* 3. Complejidad */}
           <div className={block}>
-            <p className="text-sm font-bold text-neutral-300 mb-3"><span className="text-lime-400 font-mono mr-1.5">3.</span> ¿Qué tan complejo?</p>
-            <SegmentedToggle options={COMPLEXITY_UI} value={complexityId} onChange={(id) => { setComplexityId(id); touch('complexity'); }} />
+            <p className="text-sm font-bold text-neutral-300 mb-3"><span className="text-lime-400 font-mono mr-1.5">3.</span> {t('¿Qué tan complejo?', 'How complex is it?')}</p>
+            <SegmentedToggle label={t('Complejidad del proyecto', 'Project complexity')} options={COMPLEXITY_UI} value={complexityId} onChange={(id) => { setComplexityId(id); touch('complexity'); }} />
             <p className="text-xs text-neutral-500 mt-3">{COMPLEXITY_UI.find((c) => c.id === complexityId)?.sub}</p>
           </div>
 
           {/* Urgencia (opcional) */}
           <div className={block}>
-            <p className="text-sm font-bold text-neutral-300 mb-3">¿Para cuándo? <span className="font-normal text-neutral-500">(opcional)</span></p>
-            <SegmentedToggle options={URGENCY_UI} value={urgency} onChange={(id) => { setUrgency(id); touch('urgency'); }} />
+            <p className="text-sm font-bold text-neutral-300 mb-3">{t('¿Para cuándo?', 'When do you need it?')} <span className="font-normal text-neutral-500">{t('(opcional)', '(optional)')}</span></p>
+            <SegmentedToggle label={t('Urgencia del proyecto', 'Project urgency')} options={URGENCY_UI} value={urgency} onChange={(id) => { setUrgency(id); touch('urgency'); }} />
           </div>
         </div>
 
@@ -290,12 +291,12 @@ export default function QuoteEstimator() {
         <div className="quote-result lg:sticky lg:top-24" ref={resultRef}>
           <div className="glass-premium rounded-[2rem] p-6 sm:p-7" aria-live="polite">
             <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/10">
-              <span className="text-xs font-mono uppercase tracking-[0.18em] text-neutral-400">JC Analytics · Estimado</span>
-              <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-lime-500/10 text-lime-300 border border-lime-500/20">preliminar</span>
+              <span className="text-xs font-mono uppercase tracking-[0.18em] text-neutral-400">JC Analytics · {t('Estimado', 'Estimate')}</span>
+              <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-lime-500/10 text-lime-300 border border-lime-500/20">{t('preliminar', 'preliminary')}</span>
             </div>
 
             {/* Rango / precio */}
-            <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-2">Inversión estimada</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-2">{t('Inversión estimada', 'Estimated investment')}</p>
             <motion.div
               key={`${result.investUSD.low}-${result.investUSD.high}-${activeCode}`}
               initial={reduce ? false : { opacity: 0.35, y: 4 }}
@@ -309,7 +310,7 @@ export default function QuoteEstimator() {
               )}
             </motion.div>
             <div className="flex items-center justify-between gap-3 mt-3">
-              <span className="text-[11px] text-neutral-500 leading-snug">Preliminar · no vinculante · tasas ref. ({FX_UPDATED})</span>
+              <span className="text-[11px] text-neutral-500 leading-snug">{t('Preliminar · no vinculante · tasas ref.', 'Preliminary · non-binding · reference rates')} ({FX_UPDATED})</span>
               <CurrencySelector activeCode={activeCode} onChange={setActiveCode} currencies={currencyList} />
             </div>
 
@@ -321,15 +322,15 @@ export default function QuoteEstimator() {
               <div className="font-mono text-xl font-bold text-white">{result.delivery.display}</div>
               <p className="text-[11px] text-neutral-500 mt-1">
                 {result.unit === 'mes'
-                  ? 'Tiempo para levantar marca, calendario y accesos antes del primer mes.'
-                  : 'Incluye ~media semana de arranque en cola — equipo enfocado.'}
+                  ? t('Tiempo para levantar marca, calendario y accesos antes del primer mes.', 'Time to set up your brand, content calendar and access before the first month.')
+                  : t('Incluye ~media semana de arranque en cola — equipo enfocado.', 'Includes about half a week of scheduling before work begins.')}
               </p>
             </div>
 
             {/* Meter de detalle */}
             <div className="mt-5">
               <div className="flex items-center justify-between text-[11px] text-neutral-400 mb-1.5">
-                <span>Detalle del alcance</span><span>{Math.round(confidence * 100)}%</span>
+                <span>{t('Detalle del alcance', 'Scope detail')}</span><span>{Math.round(confidence * 100)}%</span>
               </div>
               <div className="h-1.5 rounded-full bg-neutral-800 overflow-hidden">
                 <motion.div
@@ -338,12 +339,12 @@ export default function QuoteEstimator() {
                   transition={{ duration: reduce ? 0 : 0.4 }}
                 />
               </div>
-              <p className="text-[11px] text-neutral-500 mt-1.5">Entre más detalle nos das, más afinamos el alcance en la sesión.</p>
+              <p className="text-[11px] text-neutral-500 mt-1.5">{t('Entre más detalle nos das, más afinamos el alcance en la sesión.', 'The more you share, the more precisely we can define your scope during the consultation.')}</p>
             </div>
 
             {/* Qué incluye */}
             <div className="mt-5">
-              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2.5">Qué incluye</p>
+              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2.5">{t('Qué incluye', 'What’s included')}</p>
               <ul className="space-y-2">
                 {bullets.map((b, i) => (
                   <li key={`${b}-${i}`} className="flex items-start gap-2 text-sm text-neutral-300">
@@ -360,31 +361,31 @@ export default function QuoteEstimator() {
                   <motion.div key="sent" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                     className="flex flex-col items-center text-center gap-2 py-4">
                     <CheckCircle size={28} className="text-lime-400" />
-                    <p className="text-sm font-bold text-white">¡Listo! Te enviamos el resumen a tu correo.</p>
-                    <p className="text-xs text-neutral-400">Te respondemos en menos de 24 h hábiles.</p>
-                    <a href={whatsappHref} target="_blank" rel="noreferrer" className="mt-1 text-xs font-bold text-lime-400 hover:text-lime-300">o escribinos por WhatsApp →</a>
+                    <p className="text-sm font-bold text-white">{t('Revisá y enviá la solicitud desde tu aplicación de correo.', 'Review and send the request from your email app.')}</p>
+                    <p className="text-xs text-neutral-400">{t('Al recibirla, te respondemos en menos de 24 h hábiles.', 'Once received, we’ll reply within 24 business hours.')}</p>
+                    <a href={whatsappHref} target="_blank" rel="noreferrer" className="mt-1 text-xs font-bold text-lime-400 hover:text-lime-300">{t('o escribinos por WhatsApp →', 'or message us on WhatsApp →')}</a>
                   </motion.div>
                 ) : showForm ? (
                   <motion.form key="form" onSubmit={handleQuoteRequest}
                     initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
                     className="space-y-3 overflow-hidden">
-                    <p className="text-xs text-neutral-400">Dejanos tus datos y te enviamos el resumen de esta cotización.</p>
+                    <p className="text-xs text-neutral-400">{t('Completá tus datos para preparar la solicitud en tu aplicación de correo.', 'Enter your details to prepare the request in your email app.')}</p>
                     {/* text-base (16px): debajo de eso iOS hace zoom automático al enfocar */}
-                    <input type="text" required aria-label="Nombre y empresa" autoComplete="organization" placeholder="Nombre y empresa" value={qName} onChange={(e) => setQName(e.target.value)}
+                    <input type="text" required aria-label={t('Nombre y empresa', 'Name and company')} autoComplete="organization" placeholder={t('Nombre y empresa', 'Name and company')} value={qName} onChange={(e) => setQName(e.target.value)}
                       className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white text-base sm:text-sm placeholder:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60" />
-                    <input type="email" required aria-label="Correo electrónico" autoComplete="email" placeholder="tu@empresa.com" value={qEmail} onChange={(e) => setQEmail(e.target.value)}
+                    <input type="email" required aria-label={t('Correo electrónico', 'Email address')} autoComplete="email" placeholder={t('tu@empresa.com', 'you@company.com')} value={qEmail} onChange={(e) => setQEmail(e.target.value)}
                       className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white text-base sm:text-sm placeholder:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60" />
-                    <input type="tel" aria-label="WhatsApp, opcional" inputMode="tel" autoComplete="tel" placeholder="WhatsApp (opcional)" value={qPhone} onChange={(e) => setQPhone(e.target.value)}
+                    <input type="tel" aria-label={t('WhatsApp, opcional', 'WhatsApp, optional')} inputMode="tel" autoComplete="tel" placeholder={t('WhatsApp (opcional)', 'WhatsApp (optional)')} value={qPhone} onChange={(e) => setQPhone(e.target.value)}
                       className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white text-base sm:text-sm placeholder:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60" />
                     <button type="submit" className="btn-sheen glow-hover w-full bg-lime hover:bg-white text-ink font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2">
-                      Enviar cotización <ArrowRight size={18} />
+                      {t('Preparar solicitud por correo', 'Prepare email request')} <ArrowRight size={18} />
                     </button>
                   </motion.form>
                 ) : (
                   <motion.div key="cta" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                     <button type="button" onClick={() => setShowForm(true)}
                       className="tap-press btn-sheen glow-hover w-full bg-lime hover:bg-white active:bg-lime-dark text-ink font-bold py-4 rounded-xl transition-colors flex items-center justify-center gap-2">
-                      <Calculator size={18} /> Solicitar cotización formal
+                      <Calculator size={18} /> {t('Solicitar cotización formal', 'Request a formal quote')}
                     </button>
                   </motion.div>
                 )}
@@ -392,12 +393,12 @@ export default function QuoteEstimator() {
 
               <a href={whatsappHref} target="_blank" rel="noreferrer"
                 className="tap-press mt-2 w-full inline-flex items-center justify-center gap-2 min-h-11 rounded-xl text-sm font-bold text-neutral-300 hover:text-white active:bg-white/5 transition-colors">
-                <MessageSquare size={16} className="text-lime-400" /> o escribinos por WhatsApp
+                <MessageSquare size={16} className="text-lime-400" /> {t('o escribinos por WhatsApp', 'or message us on WhatsApp')}
               </a>
 
               <p className="mt-4 text-[11px] text-neutral-500 leading-snug flex items-start gap-1.5">
                 <ShieldCheck size={13} className="text-neutral-400 shrink-0 mt-0.5" />
-                Estimado preliminar y no vinculante. La cifra final puede ajustarse según el alcance real; la definimos juntos sin costo en la primera sesión.
+                {t('Estimado preliminar y no vinculante. La cifra final puede ajustarse según el alcance real; la definimos juntos sin costo en la primera sesión.', 'This preliminary estimate is non-binding. The final price depends on the agreed scope, which we define together during your free first consultation.')}
               </p>
             </div>
           </div>
@@ -419,7 +420,7 @@ export default function QuoteEstimator() {
             <div aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-lime-400/70 to-transparent" />
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-neutral-500 mb-0.5">Estimado en vivo</div>
+                <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-neutral-500 mb-0.5">{t('Estimado en vivo', 'Live estimate')}</div>
                 <motion.div
                   key={`${range?.label}-bar`}
                   initial={reduce ? false : { opacity: 0.4, y: 3 }}
@@ -433,7 +434,7 @@ export default function QuoteEstimator() {
               </div>
               <button type="button" onClick={scrollToResult}
                 className="tap-press shrink-0 inline-flex items-center gap-1.5 bg-lime hover:bg-white active:bg-lime-dark text-ink text-sm font-bold px-4 py-2.5 min-h-11 rounded-full transition-colors">
-                Ver desglose <ChevronUp size={16} />
+                {t('Ver desglose', 'View breakdown')} <ChevronUp size={16} />
               </button>
             </div>
           </motion.div>

@@ -1,3 +1,4 @@
+import { t } from '../../i18n/locale';
 import { useId } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
@@ -8,10 +9,10 @@ const _MOTION = motion;
 export const ArchitectureBlueprint = ({ active }) => {
   const id = useId().replaceAll(':', '');
   const reduce = useReducedMotion();
-  const labels = ['Inventario', 'Procesos', 'Administración'];
+  const labels = [t("Inventario", "Inventory"), t("Procesos", "Processes"), t("Administración", "Administration")];
   return (
     <div className="architecture-blueprint" aria-hidden="true">
-      <div className="architecture-blueprint__caption"><span>ARQUITECTURA CONECTADA</span><span>0{active + 1} / 03</span></div>
+      <div className="architecture-blueprint__caption"><span>{t("ARQUITECTURA CONECTADA", "CONNECTED ARCHITECTURE")}</span><span>0{active + 1} / 03</span></div>
       <svg viewBox="0 0 600 198" fill="none">
         <defs>
           <linearGradient id={`${id}-top`} x1="90" y1="10" x2="220" y2="140" gradientUnits="userSpaceOnUse"><stop stopColor="#f8fff5" /><stop offset="1" stopColor="#afd3bb" /></linearGradient>
@@ -41,7 +42,7 @@ export const ArchitectureBlueprint = ({ active }) => {
           <path d={`M238 ${65 + index * 24}H${268 + index * 12}L${292 + index * 12} ${37 + index * 47}H365`} stroke={active === index ? '#427659' : '#90a994'} strokeWidth={active === index ? 1.5 : 1} />
           <circle cx="366" cy={37 + index * 47} r="3" fill={active === index ? '#da8058' : '#92ac98'} />
           <text x="384" y={40 + index * 47} fill="#294c37" fontSize="12" fontFamily="monospace">{label}</text>
-          <text x="384" y={55 + index * 47} fill="#637e69" fontSize="7" fontFamily="monospace">{['DATOS / EXISTENCIAS', 'LÓGICA / OPERACIÓN', 'ACCESOS / CONTROL'][index]}</text>
+          <text x="384" y={55 + index * 47} fill="#637e69" fontSize="7" fontFamily="monospace">{[t("DATOS / EXISTENCIAS", "DATA / INVENTORY"), t("LÓGICA / OPERACIÓN", "LOGIC / OPERATIONS"), t("ACCESOS / CONTROL", "ACCESS / CONTROL")][index]}</text>
         </g>)}
         <path d="M23 25H34M28.5 19.5V30.5M571 147H582M576.5 141.5V152.5" stroke="#72997c" strokeWidth=".8" />
       </svg>
@@ -57,7 +58,7 @@ export const IntelligenceAtlas = ({ selected, step }) => {
   const running = step >= 0 && step < 3;
   return (
     <div className={`intelligence-atlas ${running ? 'is-running' : ''} ${step === 3 ? 'is-complete' : ''}`} data-stage={step} aria-hidden="true">
-      <div className="intelligence-atlas__meta"><span>JC / NEURAL ATLAS</span><span>{['01 · PREDICCIÓN', '02 · CONOCIMIENTO', '03 · AUTOMATIZACIÓN'][selected]}</span></div>
+      <div className="intelligence-atlas__meta"><span>JC / NEURAL ATLAS</span><span>{[t("01 · PREDICCIÓN", "01 · PREDICTION"), t("02 · CONOCIMIENTO", "02 · KNOWLEDGE"), t("03 · AUTOMATIZACIÓN", "03 · AUTOMATION")][selected]}</span></div>
       <svg viewBox="0 0 640 282" fill="none">
         <defs>
           <radialGradient id={`${id}-aura`}><stop stopColor="#95d9ac" stopOpacity=".2" /><stop offset="1" stopColor="#95d9ac" stopOpacity="0" /></radialGradient>
@@ -81,7 +82,7 @@ export const IntelligenceAtlas = ({ selected, step }) => {
         </g>)}
         <g transform="translate(25 69)">
           <rect width="118" height="144" rx="6" fill="#11231b" stroke={step >= 0 ? '#8fbfa4' : '#385643'} />
-          <text x="13" y="21" fill="#b1cfbd" fontFamily="monospace" fontSize="8">{['DATA SOURCE', 'DOCUMENTOS', 'SOLICITUD'][selected]}</text>
+          <text x="13" y="21" fill="#b1cfbd" fontFamily="monospace" fontSize="8">{[t('FUENTE DE DATOS', 'DATA SOURCE'), t("DOCUMENTOS", "DOCUMENTS"), t("SOLICITUD", "REQUEST")][selected]}</text>
           <path d="M0 31H118" stroke="#345641" />
           {INPUT_POINTS.map((y, i) => <g key={y}>
             <rect x="13" y={y + 4} width="5" height="5" rx="1" fill={i === selected ? '#edac85' : '#6f9d7d'} />
@@ -103,29 +104,29 @@ export const IntelligenceAtlas = ({ selected, step }) => {
         </motion.g>
         <g transform="translate(497 69)">
           <rect width="118" height="144" rx="6" fill="#11231b" stroke={step === 3 ? '#d6ae88' : '#385643'} />
-          <text x="12" y="21" fill="#b1cfbd" fontFamily="monospace" fontSize="8">{['PROYECCIÓN', 'REFERENCIA', 'DESTINO'][selected]}</text>
+          <text x="12" y="21" fill="#b1cfbd" fontFamily="monospace" fontSize="8">{[t("PROYECCIÓN", "FORECAST"), t("REFERENCIA", "REFERENCE"), t("DESTINO", "DESTINATION")][selected]}</text>
           <path d="M0 31H118" stroke="#345641" />
           {selected === 0 ? <>
             {[62, 86, 110].map(y => <path key={y} d={`M12 ${y}H106`} stroke="#345641" strokeDasharray="2 3" />)}
             <path d="M13 113L29 99L45 105L61 77L77 83L93 53L105 63V126H13Z" fill={`url(#${id}-area)`} />
             <path d="M13 113L29 99L45 105L61 77L77 83L93 53L105 63" stroke="#b9edcc" strokeWidth="2" />
             <circle cx="93" cy="53" r="3" fill="#eeac7e" />
-            <text x="13" y="137" fill="#749e83" fontSize="7" fontFamily="monospace">JUL · AGO · SEP</text>
+            <text x="13" y="137" fill="#749e83" fontSize="7" fontFamily="monospace">{t("JUL · AGO · SEP", "JUL · AUG · SEP")}</text>
           </> : selected === 1 ? <>
             <path d="M23 47H76L91 62V115H23Z" fill="#a4d6b8" fillOpacity=".08" stroke="#76a48b" />
             <path d="M76 47V62H91M35 75H78M35 83H68M35 91H73" stroke="#a6ceb8" />
             <rect x="31" y="97" width="54" height="10" rx="2" fill="#edb088" fillOpacity=".28" />
-            <text x="13" y="137" fill="#749e83" fontSize="7" fontFamily="monospace">FUENTE / SECCIÓN 2</text>
+            <text x="13" y="137" fill="#749e83" fontSize="7" fontFamily="monospace">{t("FUENTE / SECCIÓN 2", "SOURCE / SECTION 2")}</text>
           </> : <>
             <path d="M22 61H39V94H54M39 61H54M39 94V119H54" stroke="#91bda1" />
             {[52, 85, 110].map((y, i) => <g key={y}><rect x="54" y={y} width="49" height="18" rx="3" fill={i === 1 ? '#b9edcc' : '#1e3c2c'} stroke="#5e886c" /><path d={`M61 ${y + 9}H94`} stroke={i === 1 ? '#274c35' : '#719c7d'} /></g>)}
             <circle cx="22" cy="61" r="4" fill="#edb088" />
           </>}
         </g>
-        <text x="320" y="244" textAnchor="middle" fill="#accfb8" fontFamily="monospace" fontSize="8" letterSpacing="2">{step === 3 ? 'RECORRIDO COMPLETO' : running ? 'PROCESANDO EJEMPLO' : 'LISTO PARA EXPLORAR'}</text>
+        <text x="320" y="244" textAnchor="middle" fill="#accfb8" fontFamily="monospace" fontSize="8" letterSpacing="2">{step === 3 ? t("RECORRIDO COMPLETO", "EXAMPLE COMPLETE") : running ? t("PROCESANDO EJEMPLO", "PROCESSING EXAMPLE") : t("LISTO PARA EXPLORAR", "READY TO EXPLORE")}</text>
         <path d="M20 20H30M25 15V25M610 262H620M615 257V267" stroke="#718e7c" />
       </svg>
-      <div className="intelligence-atlas__legend"><span><i />Datos de entrada</span><span><i />Modelo + contexto</span><span><i />Salida útil</span></div>
+      <div className="intelligence-atlas__legend"><span><i />{t("Datos de entrada", "Input data")}</span><span><i />{t("Modelo + contexto", "Model + context")}</span><span><i />{t("Salida útil", "Useful output")}</span></div>
     </div>
   );
 };

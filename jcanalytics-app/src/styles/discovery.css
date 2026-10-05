@@ -1,0 +1,35 @@
+/* Always-visible language navigation. Native links also work in static HTML. */
+.language-switcher { display: inline-flex; align-items: center; gap: 2px; padding: 3px; flex-shrink: 0; border: 1px solid #a4cfd444; border-radius: 999px; color: inherit; background: #9cdfe510; }
+.language-switcher > svg { margin: 0 5px 0 7px; opacity: .75; }
+.language-switcher a { display: grid; place-items: center; min-width: 38px; min-height: 38px; padding: 0 7px; border-radius: 999px; font: 600 11px var(--font-sans); letter-spacing: .03em; transition: background .2s; }
+.language-switcher a:hover { background: #9cdfe52b; }
+.language-switcher a[aria-current] { background: #9cdfe5; color: #071a36; }
+.language-switcher a:focus-visible { outline: 2px solid #00a6b2; outline-offset: 3px; }
+.jca-menu > .language-switcher { align-self: flex-start; margin-top: 16px; }
+.discovery-faq { padding: clamp(64px, 9vw, 130px) clamp(20px, 5vw, 80px); background: #edf3f7; color: #071a36; scroll-margin-top: 100px; }
+.discovery-faq__layout { max-width: 1240px; margin: auto; display: grid; grid-template-columns: .85fr 1.15fr; gap: clamp(32px, 7vw, 100px); }
+.discovery-faq h2 { margin: 22px 0; font: 500 clamp(32px, 3.8vw, 54px)/1.08 var(--font-display); letter-spacing: -.045em; }
+.discovery-faq h2 em { font-family: var(--font-serif); font-weight: 400; color: #087783; }
+.discovery-faq__intro > p { max-width: 34ch; font-size: 15px; line-height: 1.8; color: #526984; }
+.discovery-faq__intro > a { display: inline-flex; align-items: center; gap: 14px; min-height: 44px; margin-top: 22px; font-size: 13px; font-weight: 600; color: #0755b4; }
+.discovery-faq details { border-bottom: 1px solid #071a3620; }
+.discovery-faq details:first-child { border-top: 1px solid #071a3620; }
+.discovery-faq summary { display: flex; align-items: center; gap: 18px; padding: 23px 0; list-style: none; cursor: pointer; font-size: 15px; line-height: 1.5; font-weight: 550; }
+.discovery-faq summary::-webkit-details-marker { display: none; }
+.discovery-faq summary > svg { margin-left: auto; flex-shrink: 0; }
+.discovery-faq details[open] summary > svg { transform: rotate(45deg); }
+.discovery-faq__number { color: #087783; font: 10px var(--font-mono); }
+.discovery-faq details > p { padding: 0 30px 24px; color: #526984; font-size: 14px; line-height: 1.85; }
+html[lang="en"] .studio-hero h1 em { font-size: .85em; }
+@media (max-width: 1199px) and (min-width: 1024px) { .studio-v4 .jca-navigation__link { padding-inline: 7px; font-size: 12px; } .studio-v4 .jca-brand__caption { letter-spacing: 0; } .language-switcher > svg { display: none; } }
+@media (max-width: 767px) {
+  .studio-v4 .jca-navigation__chapter { display: none; }
+  .studio-v4 .jca-navigation__actions { gap: 3px; margin-left: auto; }
+  .studio-v4 .jca-navigation__bar { gap: 5px; }
+  .language-switcher a { min-height: 40px; min-width: 36px; }
+  .language-switcher > svg { display: none; }
+  html[lang="en"] .studio-hero h1 em { font-size: .8em; }
+  .discovery-faq__layout { grid-template-columns: 1fr; gap: 28px; }
+  .discovery-faq__intro > p { max-width: none; }
+}
+@media (max-width: 359px) { .studio-v4 .jca-navigation { padding-inline: 10px; } .studio-v4 .jca-brand { gap: 5px; } .studio-v4 .jca-brand__name { font-size: 15px; } }

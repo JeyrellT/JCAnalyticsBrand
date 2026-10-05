@@ -4,6 +4,8 @@
 //  para que Fast Refresh funcione).
 // ============================================================================
 
+import { t } from '../../i18n/locale';
+
 export const PHONE = '50670330596';
 export const EMAIL = 'gerencia@jcanalytic.com';
 
@@ -19,10 +21,10 @@ export const wa = (text) =>
 export const EASE = [0.19, 1, 0.22, 1];
 
 export const NAV_LINKS = [
-  { label: 'Sistemas', href: '#plataformas' },
-  { label: 'Finanzas & BI', href: '#finanzas' },
-  { label: 'IA & ML', href: '#inteligencia' },
-  { label: 'Proyectos', href: '#trabajo' },
+  { label: t('Sistemas', 'Software'), href: '#plataformas' },
+  { label: t('Finanzas & BI', 'Finance & BI'), href: '#finanzas' },
+  { label: t('IA & ML', 'AI & ML'), href: '#inteligencia' },
+  { label: t('Ejemplos', 'Examples'), href: '#trabajo' },
   { label: 'Marketing', href: '#redes' },
-  { label: 'Contacto', href: '#contacto' },
+  { label: t('Contacto', 'Contact'), href: '#contacto' },
 ];

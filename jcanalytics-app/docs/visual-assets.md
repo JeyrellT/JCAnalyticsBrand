@@ -1,31 +1,35 @@
-# Recursos visuales originales — JC Analytics
+# Recursos visuales de JC Analytics
 
-Fecha: 3 de octubre de 2026.
+La web utiliza ilustraciones conceptuales originales. Las imágenes editoriales y los ejemplos de interfaz son ilustrativos: no representan clientes, instalaciones ni resultados de proyectos.
 
-Dirección: vidrio verde, cromo, papel salvia y un acento coral; coherente con la portada «Sistemas con carácter». Se mantienen los titulares y textos principales de sistemas, IA y marketing.
+## Recursos públicos
 
-## Archivos finales
+- `public/images/journal/data.webp`: ilustración editorial para datos y decisiones.
+- `public/images/journal/systems.webp`: ilustración editorial para sistemas y experiencia web.
+- `public/images/journal/intelligence.webp`: ilustración editorial para inteligencia artificial.
+- `public/artwork/`: ilustraciones abstractas y recursos SVG de apoyo.
+- `public/team/`: retratos del equipo propio de JC Analytics.
 
-- [connected-materials.webp](../public/artwork/connected-materials.webp) — 1000 × 667 px, 38 030 bytes. Imagen del ejemplo web.
-- [creative-orbit.webp](../public/artwork/creative-orbit.webp) — 800 × 1200 px, 66 384 bytes. Arte del reel y del calendario.
-- [system-architecture.svg](../public/artwork/system-architecture.svg) — ilustración de arquitectura por capas, versión estática reutilizable.
-- [neural-atlas.svg](../public/artwork/neural-atlas.svg) — recorrido de datos, modelo y salida, versión estática reutilizable.
-- [campaign-orbit.svg](../public/artwork/campaign-orbit.svg) — motivo vectorial para piezas de marketing.
+Los textos alternativos explican las ilustraciones informativas. Las imágenes decorativas no repiten el contenido del texto cercano. El movimiento respeta la preferencia de movimiento reducido.
 
-Las versiones interactivas de los SVG están en [StudioIllustrations.jsx](../src/components/site/StudioIllustrations.jsx). Cambian con las pestañas y la ejecución del ejemplo de IA. Las imágenes se cargan de forma diferida; los originales generados se preservaron y las versiones para web se redimensionaron y comprimieron sin alterar su composición.
+## Publicación y privacidad
 
-## Generación
+Los ejemplos conceptuales enlazan a servicios y contenido editorial de JC Analytics. No se publican nombres, dominios, capturas ni datos de clientes, ni se presentan ilustraciones como evidencia de resultados.
 
-Modo utilizado: herramienta integrada **image_gen** mediante la habilidad **imagegen**, sin CLI ni API externa configurada. No se usaron las capturas del usuario como imágenes a modificar: sirvieron para identificar las secciones. Las imágenes son conceptuales originales, no fotografías de proyectos o instalaciones reales.
+Las capturas anteriores se conservaron fuera de `public/`, en el archivo local ignorado `_scripts/archive-public-assets/` de la raíz del repositorio. Ese archivo no forma parte del sitio ni debe incorporarse a la compilación. La herramienta `scripts/capture-sites.mjs` genera únicamente vistas previas del servidor local y las guarda en ese archivo privado.
 
-### Prompt final — connected-materials
+La documentación pública describe el uso y la procedencia conceptual de los recursos. Los prompts de producción y otros detalles internos quedan fuera del material publicable.
 
-Use case: stylized-concept. Asset type: original editorial visual inside a premium software and design studio's website showcase. Create a landscape 3:2 high-end architectural still-life: a sculptural modular assembly of three stacked translucent pale mint glass cubes, one brushed silver rectangular slab floating slightly apart above them, one smoked emerald glass sphere nestled at the base, a single small warm coral-orange sphere offset foreground. Precise engineered details, beautiful refractions, subtle caustics and real shadows on a pale warm sage studio floor, muted pale sage seamless background. Architectural model photography, close three-quarter view, tactile premium materials, meticulous bevelled edges, light from upper left, sophisticated art direction. Entire assembly centered in frame with generous breathing room around its silhouette, no cropping objects. This is a conceptual image for the connection of interface, backend and data; no literal computers. No text, no typography, no logos, no UI, no watermark. Palette sage, chrome, translucent mint, one tiny orange accent. Striking realistic 3D product render with editorial quality, not cartoon.
+## Descripción de las ilustraciones
 
-### Prompt final — creative-orbit
+Las tres ilustraciones editoriales se crearon con la generación de imágenes integrada (`image_gen`). Comparten una dirección visual de render 3D editorial, materiales de vidrio, cobre y piedra, y composiciones sin texto, personas ni identidades de clientes. Su resolución es 1536 × 1024 píxeles. Se codificaron en WebP para publicación sin cambiar la escena.
 
-Use case: stylized-concept. Asset type: portrait 2:3 editorial artwork for an original creative studio marketing reel. Create a striking tactile abstract still life, a single generous chrome ribbon curling like a fluid spiral around one translucent emerald glass orb and one smaller warm coral-orange disc, over a layered pale pistachio paper plinth. Deep ink green seamless background, dramatic controlled studio side-light, beautiful liquid silver highlights, micro-textures and believable shadows, sophisticated editorial art direction for an independent design and software studio. Main sculpture occupies center lower two-thirds, with dark green negative space at top and soft shadow falloff below so white UI text can be composited later. Slight low camera perspective. Contemporary collectible design object, highly realistic 3D render, artistic photography. Muted emerald and sage, chrome silver, orange accent. No letters, no typography, no logos, no UI, no watermark. Clean silhouette, detailed materiality, no clutter.
+Estas descripciones resumen los conceptos públicos; no reproducen prompts de producción ni procedimientos internos.
 
-## SVG
+| Recurso público | Concepto visual | Uso editorial |
+| --- | --- | --- |
+| `/images/journal/systems.webp` | Tres losas de vidrio aqua translúcido, conectadas mediante una cinta de cobre y una esfera, sobre piedra caliza y fondo verde oscuro. | Sistemas conectados y experiencia digital. |
+| `/images/journal/data.webp` | Lentes y prismas de color menta ordenan esferas de cobre dispersas en flujos paralelos sobre una base de piedra. | Organización de datos y lectura para decidir. |
+| `/images/journal/intelligence.webp` | Una esfera luminosa de color menta, con acabado escarchado y arcos de cobre abiertos, sobre un puente de piedra. | Asistencia de IA y supervisión humana como metáfora visual. |
 
-Autoría mediante código SVG local, sin dependencias añadidas. Las tres exportaciones incluyen sus gradientes y geometría. El HTML adyacente conserva la descripción accesible de cada ejemplo; la ilustración decorativa no duplica la lectura del contenido. El movimiento respeta la preferencia de movimiento reducido.
+Son ilustraciones conceptuales: no muestran un sistema real, su arquitectura interna, información de clientes ni resultados medidos. Las formas y conexiones sirven a la narración editorial de cada tema.

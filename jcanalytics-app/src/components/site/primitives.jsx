@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { motion, useInView, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, Pause, Play } from 'lucide-react';
 import { EASE } from './links';
+import { t } from '../../i18n/locale';
 import '../../styles/navigation.css';
 
 const _MOTION = motion;
@@ -66,7 +67,7 @@ export const Marquee = ({ children, className = '', duration = 40, reverse = fal
         <div className="jca-marquee__duplicate flex shrink-0 items-center" aria-hidden="true" inert>{children}</div>
       </div>
       {!reduce && <button type="button" className="jca-marquee__control" onClick={() => setPaused((value) => !value)}
-        aria-label={paused ? 'Reanudar cinta de servicios' : 'Pausar cinta de servicios'} aria-pressed={paused}>
+        aria-label={paused ? t('Reanudar cinta de servicios', 'Resume services ticker') : t('Pausar cinta de servicios', 'Pause services ticker')} aria-pressed={paused}>
         {paused ? <Play size={12} fill="currentColor" aria-hidden="true" /> : <Pause size={12} fill="currentColor" aria-hidden="true" />}
       </button>}
     </div>

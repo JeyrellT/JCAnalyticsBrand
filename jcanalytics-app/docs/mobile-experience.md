@@ -4,7 +4,7 @@ La identidad y el contenido del estudio se conservan. Hasta 767 px, la página c
 
 ## Navegación
 
-- Barra inferior con Explorar, Proyectos y Tu proyecto. El contacto conserva el contexto de la sección actual.
+- Barra inferior con Explorar, Ejemplos y Tu proyecto. El contacto conserva el contexto de la sección actual.
 - Mapa de seis destinos en un panel inferior, con accesos adicionales al equipo y al cotizador.
 - Cierre con botón, fondo o Escape; foco contenido en el diálogo, contenido exterior inerte y restauración de la posición de lectura.
 - Al elegir un destino, se enfoca su título y se actualiza el fragmento de la URL.
@@ -17,7 +17,7 @@ La identidad y el contenido del estudio se conservan. Hasta 767 px, la página c
 - Sistemas ofrece dos vistas móviles: experiencia pública y operación. En escritorio se siguen mostrando juntas.
 - Dashboard con métricas más legibles, resultado destacado y controles de al menos 44 px de alto.
 - Etapas de IA y procesos de operación en filas legibles, en lugar de reducir el texto de diagramas horizontales.
-- Proyectos, equipo y ejemplos de marketing en galerías táctiles con una tarjeta siguiente visible, contador y botones alternativos. También admiten flechas del teclado al enfocar la galería.
+- El equipo y los ejemplos de marketing usan galerías táctiles con una tarjeta siguiente visible, contador y botones alternativos. También admiten flechas del teclado al enfocar la galería. Los ejemplos conceptuales de servicios se eligen mediante botones identificados.
 - Servicios inicialmente cerrados en móvil; sus descripciones y precios permanecen visibles.
 - El cotizador lleva al inicio del resultado y detecta su visibilidad sin exigir un porcentaje de un panel más alto que la pantalla.
 - Campos de texto a 16 px para evitar el zoom involuntario al editar en iOS. Cierre del selector de moneda mediante eventos de puntero, compatibles con toque.

@@ -1,3 +1,4 @@
+import { t, locale } from '../../i18n/locale';
 // ============================================================================
 //  src/components/site/Services.jsx
 //  Lista editorial de servicios sobre fondo oscuro. Una línea por servicio,
@@ -9,6 +10,8 @@ import { useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, Check, Plus } from 'lucide-react';
 import { SERVICES } from '../../data/cotizador';
+import { servicePages } from '../../content/services';
+import { servicePath } from '../../seo/routes';
 import { CTA, Label, MaskLines, Reveal } from './primitives';
 import { wa, EASE } from './links';
 
@@ -16,98 +19,100 @@ import { wa, EASE } from './links';
 const _MOTION = motion;
 
 // Miles con punto, igual que el resto del sitio ($2.000).
-const fmt = (n) => `$${String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
+const fmt = (n) => '$' + n.toLocaleString(locale === 'es' ? 'es-CR' : 'en-US');
+
+const serviceHref = (id) => servicePath(servicePages.find((service) => service.id === id), locale);
 
 const ROWS = [
   {
     id: 'finanzas',
-    name: 'Análisis financiero',
-    desc: 'Flujo de caja, costos y presupuestos.',
-    includes: ['Modelos financieros adaptados a tu operación', 'Análisis de ingresos, costos y márgenes', 'Escenarios de presupuesto y flujo de caja', 'Reportes conectados a tus fuentes de datos'],
-    ideal: 'Negocios que necesitan entender sus números y planificar con información organizada.',
-    example: { label: 'Explorar el dashboard financiero', href: '#finanzas' },
-    time: 'Según fuentes de datos y alcance',
+    name: t("Análisis financiero", "Financial analysis"),
+    desc: t("Flujo de caja, costos y presupuestos.", "Cash flow, costs and budgets."),
+    includes: [t("Modelos financieros adaptados a tu operación", "Financial models tailored to your operations"), t("Análisis de ingresos, costos y márgenes", "Revenue, cost and margin analysis"), t("Escenarios de presupuesto y flujo de caja", "Budget and cash flow scenarios"), t("Reportes conectados a tus fuentes de datos", "Reports connected to your data sources")],
+    ideal: t("Negocios que necesitan entender sus números y planificar con información organizada.", "Businesses that need to understand their numbers and plan with organized information."),
+    example: { label: t("Explorar finanzas y dashboards", "Explore finance and dashboards"), href: serviceHref('business-intelligence') },
+    time: t("Según fuentes de datos y alcance", "Based on data sources and scope"),
   },
   {
     id: 'inteligencia',
-    name: 'Machine learning e IA',
-    desc: 'Modelos predictivos e IA en tus sistemas.',
-    includes: ['Evaluación del caso de uso y calidad de los datos', 'Modelos predictivos o asistentes con tus documentos', 'Integración a tus herramientas mediante APIs', 'Validación, permisos y revisión humana según el proceso'],
-    ideal: 'Equipos que quieren anticipar patrones o integrar IA a un proceso concreto del negocio.',
-    example: { label: 'Explorar ejemplos de IA', href: '#inteligencia' },
-    time: 'Según datos, validación e integraciones',
+    name: t("Machine learning e IA", "Machine learning & AI"),
+    desc: t("Modelos predictivos e IA en tus sistemas.", "Predictive models and AI in your systems."),
+    includes: [t("Evaluación del caso de uso y calidad de los datos", "Use case and data quality assessment"), t("Modelos predictivos o asistentes con tus documentos", "Predictive models or assistants using your documents"), t("Integración a tus herramientas mediante APIs", "Integration with your tools through APIs"), t("Validación, permisos y revisión humana según el proceso", "Validation, permissions and human review for your process")],
+    ideal: t("Equipos que quieren anticipar patrones o integrar IA a un proceso concreto del negocio.", "Teams that want to anticipate patterns or integrate AI into a specific business process."),
+    example: { label: t("Explorar integración de IA", "Explore AI integration"), href: serviceHref('ai-integration') },
+    time: t("Según datos, validación e integraciones", "Based on data, validation and integrations"),
   },
   {
     id: 'web',
-    name: 'Páginas web',
-    desc: 'Tu marca al frente. Tu operación conectada.',
+    name: t("Páginas web", "Websites"),
+    desc: t("Tu marca al frente. Tu operación conectada.", "Your brand in front. Your operations connected."),
     from: SERVICES.pagina_web.priceMin,
-    includes: ['Diseño propio con tu marca, jerarquía visual e interacción', 'Backend y panel administrativo según el alcance', 'Inventario, pedidos o procesos según tu negocio y alcance', 'Dominio, SEO base y publicación incluidos; integraciones según alcance'],
-    ideal: 'Empresas, comercios y servicios que necesitan una presencia propia y una operación conectada.',
-    example: { label: 'Explorar web y gestión', href: '#plataformas' },
-    time: '2 a 7 semanas',
+    includes: [t("Diseño propio con tu marca, jerarquía visual e interacción", "Custom design with your brand, visual hierarchy and interaction"), t("Backend y panel administrativo según el alcance", "Backend and admin dashboard according to scope"), t("Inventario, pedidos o procesos según tu negocio y alcance", "Inventory, orders or workflows tailored to your business and scope"), t("Dominio, SEO base y publicación incluidos; integraciones según alcance", "Domain, foundational SEO and launch included; integrations according to scope")],
+    ideal: t("Empresas, comercios y servicios que necesitan una presencia propia y una operación conectada.", "Companies, stores and service businesses that need their own presence and connected operations."),
+    example: { label: t("Explorar desarrollo web", "Explore web development"), href: serviceHref('web-development') },
+    time: t("2 a 7 semanas", "2 to 7 weeks"),
   },
   {
     id: 'software',
-    name: 'Software a la medida',
-    desc: 'Datos, roles y procesos conectados.',
+    name: t("Software a la medida", "Custom software"),
+    desc: t("Datos, roles y procesos conectados.", "Connected data, roles and processes."),
     from: SERVICES.software_medida.priceMin,
-    includes: ['Interfaz, backend y base de datos para tus procesos', 'Roles, permisos y bitácora de cambios', 'Integraciones con tus sistemas, WhatsApp o correo según alcance', 'Despliegue, manual y 30 días de soporte'],
-    ideal: 'Equipos que necesitan ordenar inventarios, pedidos y procesos con datos compartidos y responsabilidades claras.',
-    example: { label: 'Probar el cotizador VIP', href: 'https://client-production-a96b.up.railway.app/branding' },
-    time: '5 a 14 semanas',
+    includes: [t("Interfaz, backend y base de datos para tus procesos", "Interface, backend and database for your processes"), t("Roles, permisos y bitácora de cambios", "Roles, permissions and change history"), t("Integraciones con tus sistemas, WhatsApp o correo según alcance", "Integrations with your systems, WhatsApp or email according to scope"), t("Despliegue, manual y 30 días de soporte", "Deployment, documentation and 30 days of support")],
+    ideal: t("Equipos que necesitan ordenar inventarios, pedidos y procesos con datos compartidos y responsabilidades claras.", "Teams that need to organize inventory, orders and processes with shared data and clear responsibilities."),
+    example: { label: t("Explorar desarrollo a medida", "Explore custom development"), href: serviceHref('web-development') },
+    time: t("5 a 14 semanas", "5 to 14 weeks"),
   },
   {
     id: 'dashboards',
     name: 'Dashboards',
-    desc: 'Power BI conectado a tus datos.',
+    desc: t("Power BI conectado a tus datos.", "Power BI connected to your data."),
     from: SERVICES.power_bi.priceMin,
-    includes: ['Conexión a Excel, ERP, SQL o APIs', 'Modelo de datos y medidas DAX documentadas', 'Acceso por rol (RLS) y actualización programada', 'Un tablero por decisión, no cincuenta gráficos'],
-    ideal: 'Gerencias que hoy arman el reporte a mano cada lunes.',
-    example: { label: 'Abrir un dashboard demo', href: 'https://jeyrellt.github.io/DashboardBI' },
-    time: '1 a 6 semanas',
+    includes: [t("Conexión a Excel, ERP, SQL o APIs", "Connections to Excel, ERP, SQL or APIs"), t("Modelo de datos y medidas DAX documentadas", "Documented data model and DAX measures"), t("Acceso por rol (RLS) y actualización programada", "Role-based access (RLS) and scheduled refresh"), t("Un tablero por decisión, no cincuenta gráficos", "One dashboard for each decision, with focused visuals")],
+    ideal: t("Gerencias que hoy arman el reporte a mano cada lunes.", "Managers who currently build reports by hand every Monday."),
+    example: { label: t("Explorar dashboards y datos", "Explore dashboards and data"), href: serviceHref('business-intelligence') },
+    time: t("1 a 6 semanas", "1 to 6 weeks"),
   },
   {
     id: 'automatizacion',
-    name: 'Automatización',
-    desc: 'Excel, Power Automate y Python.',
+    name: t("Automatización", "Automation"),
+    desc: t("Excel, Power Automate y Python.", "Excel, Power Automate and Python."),
     from: SERVICES.excel_vba.priceMin,
-    includes: ['Reportes, correos y documentos que se generan solos', 'Flujos entre sistemas con aprobaciones y alertas', 'Manejo de errores, logs y reintentos', 'Documentación para que no dependa de nadie'],
-    ideal: 'Cualquier tarea repetitiva que alguien hace "a mano" más de una vez por semana.',
-    example: { label: 'Ver una automatización en vivo', href: '#automatizacion' },
-    time: '1 a 6 semanas',
+    includes: [t("Reportes, correos y documentos que se generan solos", "Reports, emails and documents generated automatically"), t("Flujos entre sistemas con aprobaciones y alertas", "Cross-system workflows with approvals and alerts"), t("Manejo de errores, logs y reintentos", "Error handling, logs and retries"), t("Documentación para que no dependa de nadie", "Documentation so knowledge stays with your team")],
+    ideal: t("Cualquier tarea repetitiva que alguien hace \"a mano\" más de una vez por semana.", "Any repetitive task someone performs manually more than once a week."),
+    example: { label: t("Explorar automatización", "Explore automation"), href: serviceHref('process-automation') },
+    time: t("1 a 6 semanas", "1 to 6 weeks"),
   },
   {
     id: 'fiscal',
-    name: 'Fiscal y planilla',
-    desc: 'Factura v4.4, CCSS y planilla CR.',
+    name: t("Fiscal y planilla", "Tax & payroll"),
+    desc: t("Factura v4.4, CCSS y planilla CR.", "E-invoicing v4.4, CCSS and Costa Rica payroll."),
     from: SERVICES.fiscal_planilla.priceMin,
-    includes: ['Validación de comprobantes contra el esquema v4.4', 'Conciliación de respuestas de Hacienda el mismo día', 'Cálculo de CCSS y archivo listo para SICERE', 'Alertas de rechazos y vencimientos'],
-    ideal: 'Contadores y PYMEs de Costa Rica que cierran el mes corriendo.',
-    example: { label: 'Ver el flujo fiscal', href: '#automatizacion' },
-    time: '2 a 7 semanas',
+    includes: [t("Validación de comprobantes contra el esquema v4.4", "Invoice validation against the v4.4 schema"), t("Conciliación de respuestas de Hacienda el mismo día", "Same-day reconciliation of Hacienda responses"), t("Cálculo de CCSS y archivo listo para SICERE", "CCSS calculations and a SICERE-ready file"), t("Alertas de rechazos y vencimientos", "Rejection and deadline alerts")],
+    ideal: t("Contadores y PYMEs de Costa Rica que cierran el mes corriendo.", "Accountants and small businesses in Costa Rica racing to close the month."),
+    example: { label: t("Explorar automatización de procesos", "Explore process automation"), href: serviceHref('process-automation') },
+    time: t("2 a 7 semanas", "2 to 7 weeks"),
   },
   {
     id: 'redes',
     name: 'Community manager',
-    desc: 'Redes sociales, contenido y Meta Ads.',
+    desc: t("Redes sociales, contenido y Meta Ads.", "Social media, content and Meta Ads."),
     from: SERVICES.community_manager.priceMin,
-    unit: '/mes',
-    includes: ['Calendario mensual y diseño publicitario con tu marca', 'Publicación, respuesta a mensajes y comentarios', 'Campañas en Meta Ads con seguimiento semanal', 'Reporte mensual con lo que funcionó y lo que no'],
-    ideal: 'Negocios que ya tienen clientes felices y nadie lo está contando.',
-    example: { label: 'Ver cómo lo hacemos', href: '#redes' },
-    time: 'Plan mensual · arranque en 1 a 2 semanas',
+    unit: t("/mes", "/month"),
+    includes: [t("Calendario mensual y diseño publicitario con tu marca", "Monthly calendar and branded ad design"), t("Publicación, respuesta a mensajes y comentarios", "Publishing and replies to messages and comments"), t("Campañas en Meta Ads con seguimiento semanal", "Meta Ads campaigns with weekly monitoring"), t("Reporte mensual con lo que funcionó y lo que no", "Monthly report showing what worked and what did not")],
+    ideal: t("Negocios que ya tienen clientes felices y nadie lo está contando.", "Businesses with happy customers whose stories deserve to be told."),
+    example: { label: t("Ver cómo lo hacemos", "See how we do it"), href: '#redes' },
+    time: t("Plan mensual · arranque en 1 a 2 semanas", "Monthly plan · starts in 1 to 2 weeks"),
   },
   {
     id: 'video',
-    name: 'Edición de video',
-    desc: 'Reels, anuncios y videos cortos.',
+    name: t("Edición de video", "Video editing"),
+    desc: t("Reels, anuncios y videos cortos.", "Reels, ads and short videos."),
     from: SERVICES.video_edicion.priceMin,
-    unit: '/pieza',
-    includes: ['Corte, ritmo y subtítulos que se leen sin sonido', 'Música, voz en off y gráficos con tu marca', 'Versiones para Reels, TikTok, YouTube y anuncios', 'Gancho en los primeros 3 segundos'],
-    ideal: 'Marcas que graban con el celular y quieren que se vea profesional.',
-    example: { label: 'Ver un reel de ejemplo', href: '#redes' },
-    time: '3 a 10 días por pieza',
+    unit: t("/pieza", "/video"),
+    includes: [t("Corte, ritmo y subtítulos que se leen sin sonido", "Editing, pacing and captions that work without sound"), t("Música, voz en off y gráficos con tu marca", "Music, voiceover and branded graphics"), t("Versiones para Reels, TikTok, YouTube y anuncios", "Versions for Reels, TikTok, YouTube and ads"), t("Gancho en los primeros 3 segundos", "A hook in the first 3 seconds")],
+    ideal: t("Marcas que graban con el celular y quieren que se vea profesional.", "Brands that shoot on a phone and want a professional finish."),
+    example: { label: t("Ver un reel de ejemplo", "Watch an example reel"), href: '#redes' },
+    time: t("3 a 10 días por pieza", "3 to 10 days per video"),
   },
 ];
 
@@ -134,8 +139,8 @@ const ServiceRow = ({ row, index, open, onToggle }) => {
         </span>
         <span className="studio-service__desc">{row.desc}</span>
         <span className="studio-service__price font-mono">
-          <span className="studio-service__from">{row.from ? 'Desde' : 'A medida'}</span>
-          {row.from ? fmt(row.from) : 'Según alcance'}<span className="studio-service__unit">{row.unit ?? ''}</span>
+          <span className="studio-service__from">{row.from ? t("Desde", "From") : t("A medida", "Custom")}</span>
+          {row.from ? fmt(row.from) : t("Según alcance", "Based on scope")}<span className="studio-service__unit">{row.unit ?? ''}</span>
         </span>
         <span
           aria-hidden="true"
@@ -160,7 +165,7 @@ const ServiceRow = ({ row, index, open, onToggle }) => {
           >
             <div className="studio-service__panel grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-8 lg:gap-14">
               <div>
-                <Label className="text-lime">Qué incluye</Label>
+                <Label className="text-lime">{t("Qué incluye", "What's included")}</Label>
                 <ul className="mt-4 grid sm:grid-cols-2 gap-x-8 gap-y-3">
                   {row.includes.map((b) => (
                     <li key={b} className="flex items-start gap-3 text-paper/85 text-[15px] leading-relaxed">
@@ -174,16 +179,16 @@ const ServiceRow = ({ row, index, open, onToggle }) => {
               </div>
               <div className="flex flex-col gap-5">
                 <div>
-                  <Label className="text-lime">Pensado para</Label>
+                  <Label className="text-lime">{t("Pensado para", "Designed for")}</Label>
                   <p className="mt-2 text-paper/80 text-[15px] leading-relaxed">{row.ideal}</p>
                 </div>
                 <div>
-                  <Label className="text-lime">Tiempo estimado</Label>
+                  <Label className="text-lime">{t("Tiempo estimado", "Estimated timeline")}</Label>
                   <p className="mt-2 font-mono text-sm text-paper/85">{row.time}</p>
                 </div>
                 <div className="flex flex-wrap gap-3 pt-1">
-                  <CTA href={wa(`Hola, me interesa: ${row.name}. ¿Me ayudan a cotizar?`)} variant="lime">
-                    Cotizar {row.name.toLowerCase()}
+                  <CTA href={wa(t(`Hola, me interesa: ${row.name}. ¿Me ayudan a cotizar?`, `Hi, I am interested in ${row.name}. Could you help me with a quote?`))} variant="lime">
+                   {t("Cotizar", "Get a quote for")} {row.name.toLowerCase()}
                   </CTA>
                   <a
                     href={row.example.href}
@@ -210,21 +215,21 @@ const Services = () => {
       <div className="relative mx-auto max-w-[1400px] px-4 sm:px-8">
         <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6 mb-12 sm:mb-20">
           <div>
-            <Label className="text-lime">Capacidades / Del concepto al sistema</Label>
+            <Label className="text-lime">{t("Capacidades / Del concepto al sistema", "Capabilities / From concept to system")}</Label>
             <h2 className="mt-5 font-display font-semibold tracking-[-0.045em] leading-[0.98] text-[clamp(2.6rem,6.8vw,6rem)]">
-              <MaskLines lines={['La idea es tuya.', <span key="b" className="text-lime">La construimos juntos.</span>]} />
+              <MaskLines lines={[t("La idea es tuya.", "The idea is yours."), <span key="b" className="text-lime">{t("La construimos juntos.", "Let's build it together.")}</span>]} />
             </h2>
           </div>
           <Reveal delay={0.2}>
             <p className="max-w-xs text-paper/75 text-base leading-relaxed">
-              Primero, sistemas. Después, finanzas, datos e inteligencia. Y para llevarlo más lejos, marketing y contenido.
+             {t("Primero, sistemas. Después, finanzas, datos e inteligencia. Y para llevarlo más lejos, marketing y contenido.", "First, systems. Then finance, data and intelligence. And to take it further, marketing and content.")}
             </p>
           </Reveal>
         </div>
 
         <div className="studio-services__legend">
-          <span>{String(ROWS.length).padStart(2, '0')} especialidades · un solo equipo</span>
-          <span>Elegí un servicio para conocerlo <span aria-hidden="true">↙</span></span>
+          <span>{String(ROWS.length).padStart(2, '0')} {t("especialidades · un solo equipo", "specialties · one team")}</span>
+          <span>{t("Elegí un servicio para conocerlo", "Choose a service to explore")} <span aria-hidden="true">↙</span></span>
         </div>
 
         <ul>
@@ -234,8 +239,8 @@ const Services = () => {
         </ul>
 
         <Reveal delay={0.2} className="mt-10 sm:mt-14 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-          <CTA href="#cotizar" variant="lime" size="lg">Estimar mi proyecto</CTA>
-          <span className="text-paper/70 text-[15px]">Un rango en tu moneda, sin dejar correo.</span>
+          <CTA href="#cotizar" variant="lime" size="lg">{t("Estimar mi proyecto", "Estimate my project")}</CTA>
+          <span className="text-paper/70 text-[15px]">{t("Un rango en tu moneda, sin dejar correo.", "A range in your currency, no email required.")}</span>
         </Reveal>
       </div>
     </section>

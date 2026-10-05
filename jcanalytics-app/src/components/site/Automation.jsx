@@ -1,7 +1,8 @@
+import { t, locale } from '../../i18n/locale';
 // ============================================================================
 //  src/components/site/Automation.jsx
 //  "Predicar con el ejemplo": una automatización corriendo en la página.
-//  Tres recetas reales (fiscal · ventas · redes). Un pulso recorre los nodos,
+//  Tres recorridos ilustrativos (fiscal · ventas · redes). Un pulso recorre los nodos,
 //  cada paso deja una línea en la bitácora y el contador sube. Todo es CSS +
 //  framer-motion; se pausa fuera del viewport y con reduced-motion queda
 //  estático (todos los nodos activos y la bitácora completa).
@@ -22,86 +23,86 @@ const _MOTION = motion;
 const RECIPES = [
   {
     id: 'fiscal',
-    tab: 'Fiscal',
-    title: 'Factura electrónica sin revisarla a mano',
-    sub: 'Cada comprobante que entra se valida, se registra y se reporta. Vos solo ves las excepciones.',
-    unit: 'comprobantes',
-    manual: { label: 'A mano', value: '6 h', per: 'por semana' },
-    auto: { label: 'Automatizado', value: '0 min', per: 'y alerta si algo falla' },
+    tab: t("Fiscal", "Tax"),
+    title: t("Un recorrido para revisar comprobantes", "A workflow for reviewing invoices"),
+    sub: t("Este ejemplo conecta la recepción, la revisión y el registro. Las reglas y las excepciones se definen con el equipo responsable.", "This example connects receipt, review and recording. Rules and exceptions are defined with the responsible team."),
+    unit: t("recorridos simulados", "simulated runs"),
+    manual: { label: t("Entrada", "Input"), value: t("Documento", "Document"), per: t("pendiente de revisión", "awaiting review") },
+    auto: { label: t("Salida posible", "Possible output"), value: t("Registro", "Record"), per: t("con excepciones por revisar", "with exceptions to review") },
     nodes: [
-      { icon: Mail, title: 'Llega el XML', sub: 'correo o carpeta' },
-      { icon: ShieldCheck, title: 'Validación v4.4', sub: 'esquema y montos' },
-      { icon: Landmark, title: 'Hacienda', sub: 'respuesta conciliada' },
-      { icon: Database, title: 'ERP', sub: 'asiento creado' },
-      { icon: MessageCircle, title: 'Alerta', sub: 'solo si hay rechazo' },
-      { icon: BarChart3, title: 'Dashboard', sub: 'al día, no a fin de mes' },
+      { icon: Mail, title: t("Llega el XML", "XML received"), sub: t("correo o carpeta", "email or folder") },
+      { icon: ShieldCheck, title: t("Revisión", "Review"), sub: t("campos y montos", "fields and amounts") },
+      { icon: Landmark, title: t("Respuesta", "Response"), sub: t("estado del documento", "document status") },
+      { icon: Database, title: 'ERP', sub: t("registro propuesto", "proposed record") },
+      { icon: MessageCircle, title: t("Alerta", "Alert"), sub: t("excepción por revisar", "exception to review") },
+      { icon: BarChart3, title: 'Dashboard', sub: t("estado visible", "visible status") },
     ],
     logs: [
-      (n) => `Comprobante …${String(4120 + n).padStart(5, '0')} recibido · Distribuidora Norte S.A.`,
-      () => 'XML válido contra esquema v4.4 · IVA 13 % cuadra',
-      (n) => (n % 7 === 3 ? 'Hacienda: RECHAZADO · cédula del receptor inválida' : 'Hacienda: aceptado · clave conciliada'),
-      () => 'Asiento contable creado en el ERP',
-      (n) => (n % 7 === 3 ? 'Alerta enviada a contabilidad por WhatsApp' : 'Sin excepciones · no se molesta a nadie'),
-      () => 'Dashboard fiscal actualizado',
+      () => t("Documento ficticio recibido en el ejemplo", "Fictional document received in the example"),
+      () => t("Simulación de revisión de campos y totales", "Simulated review of fields and totals"),
+      (n) => (n % 7 === 3 ? t("Alerta simulada: un campo requiere revisión", "Simulated alert: a field needs review") : t("Estado de ejemplo: revisión completada", "Example status: review complete")),
+      () => t("Registro de ejemplo preparado para el ERP", "Example record prepared for the ERP"),
+      () => t("Notificación simulada para el equipo responsable", "Simulated notification for the responsible team"),
+      () => t("Estado del recorrido actualizado en la demo", "Workflow status updated in the demo"),
     ],
   },
   {
     id: 'ventas',
-    tab: 'Ventas',
-    title: 'Ningún cliente se queda sin respuesta',
-    sub: 'Del mensaje en WhatsApp a la cotización y al seguimiento, sin que nadie lo tenga que recordar.',
-    unit: 'clientes atendidos',
-    manual: { label: 'A mano', value: '40 %', per: 'de mensajes sin seguimiento' },
-    auto: { label: 'Automatizado', value: '100 %', per: 'con seguimiento a las 48 h' },
+    tab: t("Ventas", "Sales"),
+    title: t("Un seguimiento más claro", "A clearer follow-up workflow"),
+    sub: t("Una solicitud ficticia recorre el registro, la propuesta y un recordatorio. Cada etapa conserva un responsable.", "A fictional request moves through registration, a proposal and a reminder. Each stage keeps a responsible owner."),
+    unit: t("recorridos simulados", "simulated runs"),
+    manual: { label: t("Entrada", "Input"), value: t("Consulta", "Inquiry"), per: t("con una necesidad por entender", "with a need to understand") },
+    auto: { label: t("Salida posible", "Possible output"), value: t("Próximo paso", "Next step"), per: t("asignado a una persona", "assigned to a person") },
     nodes: [
-      { icon: MessageCircle, title: 'WhatsApp', sub: 'mensaje nuevo' },
-      { icon: UserPlus, title: 'Cliente registrado', sub: 'nombre y necesidad' },
-      { icon: FileText, title: 'Cotización', sub: 'PDF con tu marca' },
-      { icon: Clock, title: 'Seguimiento', sub: 'a las 48 h' },
-      { icon: Trophy, title: 'Cierre', sub: 'al tablero de ventas' },
+      { icon: MessageCircle, title: 'WhatsApp', sub: t("mensaje nuevo", "new message") },
+      { icon: UserPlus, title: t("Cliente registrado", "Customer registered"), sub: t("nombre y necesidad", "name and need") },
+      { icon: FileText, title: t("Cotización", "Quote"), sub: t("PDF con tu marca", "branded PDF") },
+      { icon: Clock, title: t("Seguimiento", "Follow-up"), sub: t("plazo acordado", "agreed timing") },
+      { icon: Trophy, title: t("Cierre", "Closing"), sub: t("al tablero de ventas", "to the sales dashboard") },
     ],
     logs: [
-      (n) => `Nuevo mensaje · +506 8••• ${String(1000 + (n * 37) % 9000)} · "¿Cuánto cuesta…?"`,
-      () => 'Cliente creado en el CRM · etiqueta: cotización',
-      () => 'Cotización PDF generada y enviada · 3 opciones',
-      () => 'Recordatorio programado · viernes 9:00',
-      (n) => (n % 3 === 0 ? 'Cierre registrado · ₡185.000' : 'Seguimiento enviado · esperando respuesta'),
+      () => t("Consulta ficticia: «Necesito una propuesta»", "Fictional inquiry: “I need a proposal”"),
+      () => t("Solicitud de ejemplo clasificada en el CRM", "Example request classified in the CRM"),
+      () => t("Propuesta de ejemplo preparada para revisión", "Example proposal prepared for review"),
+      () => t("Recordatorio ilustrativo asignado al equipo", "Illustrative reminder assigned to the team"),
+      () => t("Estado simulado: pendiente de respuesta", "Simulated status: awaiting a response"),
     ],
   },
   {
     id: 'redes',
-    tab: 'Redes',
-    title: 'Hillary crea. El sistema publica y mide.',
-    sub: 'El contenido sale a la hora que rinde, los comentarios se atienden y el reporte llega solo cada lunes.',
-    unit: 'publicaciones',
-    manual: { label: 'A mano', value: '3 h', per: 'por publicación' },
-    auto: { label: 'Con el sistema', value: '20 min', per: 'y el reporte llega solo' },
+    tab: t("Redes", "Social media"),
+    title: t("Hillary crea. El sistema publica y mide.", "Hillary creates. The system publishes and measures."),
+    sub: t("Este recorrido ilustra cómo conectar aprobación, programación y revisión. El calendario y las respuestas se acuerdan con el equipo.", "This workflow illustrates how approval, scheduling and review can connect. The calendar and replies are agreed with the team."),
+    unit: t("recorridos simulados", "simulated runs"),
+    manual: { label: t("Entrada", "Input"), value: t("Contenido", "Content"), per: t("pendiente de aprobación", "awaiting approval") },
+    auto: { label: t("Salida posible", "Possible output"), value: t("Calendario", "Calendar"), per: t("con revisión y seguimiento", "with review and follow-up") },
     nodes: [
-      { icon: PenTool, title: 'Diseño', sub: 'Hillary, con tu marca' },
-      { icon: CalendarClock, title: 'Programado', sub: 'hora de mayor alcance' },
-      { icon: Send, title: 'Publicado', sub: 'Instagram · Facebook · TikTok' },
-      { icon: MessagesSquare, title: 'Comentarios', sub: 'respondidos en minutos' },
-      { icon: ClipboardList, title: 'Reporte', sub: 'lunes 7:00, en tu correo' },
+      { icon: PenTool, title: t("Diseño", "Design"), sub: t("Hillary, con tu marca", "Hillary, with your brand") },
+      { icon: CalendarClock, title: t("Programado", "Scheduled"), sub: t("hora acordada", "agreed time") },
+      { icon: Send, title: t("Publicado", "Published"), sub: 'Instagram · Facebook · TikTok' },
+      { icon: MessagesSquare, title: t("Comentarios", "Comments"), sub: t("asignados al equipo", "assigned to the team") },
+      { icon: ClipboardList, title: t("Reporte", "Report"), sub: t("frecuencia acordada", "agreed frequency") },
     ],
     logs: [
-      (n) => `Reel aprobado · "${['3 señales de que tu Excel ya no da más', 'Antes / después: agenda de una barbería', 'Cómo cotizamos en 3 clics'][n % 3]}"`,
-      () => 'Programado · martes 6:00 p. m. (mejor hora de la cuenta)',
-      () => 'Publicado en Instagram, Facebook y TikTok',
-      (n) => `${4 + (n * 5) % 9} comentarios · ${2 + (n * 3) % 6} mensajes respondidos`,
-      () => 'Reporte semanal generado · alcance, clics y conversaciones',
+      () => t("Contenido ficticio aprobado para el ejemplo", "Fictional content approved for the example"),
+      () => t("Espacio de ejemplo reservado en el calendario", "Example slot reserved in the calendar"),
+      () => t("Publicación simulada en los canales seleccionados", "Simulated publication on selected channels"),
+      () => t("Consulta ficticia asignada al equipo", "Fictional inquiry assigned to the team"),
+      () => t("Reporte ilustrativo preparado para revisión", "Illustrative report prepared for review"),
     ],
   },
 ];
 
 const STEP_MS = 1500;
 
-const fmtTime = (d) => d.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+const fmtTime = (d) => d.toLocaleTimeString(locale === "es" ? "es-CR" : "en-US", { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 
 // Estado del recorrido en un solo objeto: el intervalo produce el siguiente
 // estado completo (paso, ciclo y bitácora) y no hay setState dentro de effects.
 const makeLine = (recipe, step, cycle) => {
   const text = recipe.logs[step]?.(cycle) ?? '';
-  return { id: `${cycle}-${step}-${Date.now()}`, t: fmtTime(new Date()), text, warn: /RECHAZADO|Alerta/.test(text) };
+  return { id: `${cycle}-${step}-${Date.now()}`, t: fmtTime(new Date()), text, warn: /RECHAZADO|Alerta|REJECTED|Alert/.test(text) };
 };
 const initialRun = (recipe) => ({ step: 0, cycle: 0, log: [makeLine(recipe, 0, 0)] });
 const advance = (recipe, run) => {
@@ -127,20 +128,20 @@ const Automation = () => {
       <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10 sm:mb-16">
           <div>
-            <Label className="text-ink/65">Sistemas en acción / Automatización</Label>
+            <Label className="text-ink/65">{t("Sistemas en acción / Automatización", "Systems in action / Automation")}</Label>
             <h2 className="mt-4 font-display font-semibold tracking-[-0.04em] leading-[0.92] text-[clamp(2.6rem,7vw,6rem)]">
-              <MaskLines lines={['Mirá cómo', <span key="b" className="font-serif italic font-normal">trabaja solo.</span>]} />
+              <MaskLines lines={[t("Mirá cómo", "See how it"), <span key="b" className="font-serif italic font-normal">{t("trabaja solo.", "runs on its own.")}</span>]} />
             </h2>
           </div>
           <Reveal delay={0.2}>
             <p className="max-w-xs text-ink/55 text-lg leading-snug">
-              Explorá un flujo interactivo de ejemplo. Así conectamos las tareas que hoy te quitan tiempo.
+             {t("Explorá un flujo interactivo de ejemplo. Así conectamos las tareas que hoy te quitan tiempo.", "Explore an interactive example workflow. This is how we connect the tasks taking up your time today.")}
             </p>
           </Reveal>
         </div>
 
         {/* Tabs de receta */}
-        <Reveal className="flex flex-wrap gap-2 mb-8 sm:mb-10" aria-label="Ejemplos de automatización">
+        <Reveal className="flex flex-wrap gap-2 mb-8 sm:mb-10" aria-label={t("Ejemplos de automatización", "Automation examples")}>
           {RECIPES.map((r) => (
             <button
               key={r.id}
@@ -154,7 +155,7 @@ const Automation = () => {
               {r.tab}
             </button>
           ))}
-          {!reduce && <button type="button" onClick={() => setPaused((value) => !value)} aria-pressed={paused} className="demo-pause">{paused ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}{paused ? 'Reanudar demo' : 'Pausar demo'}</button>}
+          {!reduce && <button type="button" onClick={() => setPaused((value) => !value)} aria-pressed={paused} className="demo-pause">{paused ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}{paused ? t("Reanudar demo", "Resume demo") : t("Pausar demo", "Pause demo")}</button>}
         </Reveal>
 
         <Runner key={recipe.id} recipe={recipe} reduce={reduce} playing={inView && !paused} />
@@ -194,6 +195,7 @@ const Runner = ({ recipe, reduce, playing }) => {
                 exit={reduce ? undefined : { opacity: 0, y: -10 }}
                 transition={{ duration: 0.45, ease: EASE }}
               >
+                <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.1em] text-ink/55">{t("Ejemplo ilustrativo · sin datos de clientes", "Illustrative example · no customer data")}</p>
                 <h3 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight leading-tight">{recipe.title}</h3>
                 <p className="mt-2 text-ink/55 text-[15px] sm:text-base max-w-xl">{recipe.sub}</p>
               </motion.div>
@@ -235,22 +237,13 @@ const Runner = ({ recipe, reduce, playing }) => {
               })}
             </ol>
 
-            {/* Antes / después */}
+            {/* Entradas y posibles salidas del recorrido ilustrativo. */}
             <div className="mt-8 sm:mt-10 pt-6 border-t border-ink/10 grid grid-cols-2 gap-4 sm:gap-8">
               {[recipe.manual, recipe.auto].map((m, i) => (
                 <div key={m.label}>
                   <Label className={i ? 'text-lime-dark' : 'text-ink/45'}>{m.label}</Label>
-                  <div className={`mt-1 font-display text-3xl sm:text-4xl font-semibold tracking-tight ${i ? '' : 'text-ink/40 line-through decoration-2'}`}>{m.value}</div>
+                  <div className="mt-1 font-display text-xl sm:text-2xl font-semibold tracking-tight">{m.value}</div>
                   <div className="text-[13px] text-ink/50 mt-1">{m.per}</div>
-                  <div className="mt-3 h-1.5 rounded-full bg-ink/10 overflow-hidden">
-                    <motion.div
-                      className={`h-full rounded-full ${i ? 'bg-lime-dark' : 'bg-ink/30'}`}
-                      initial={{ width: 0 }}
-                      whileInView={{ width: i ? '12%' : '100%' }}
-                      viewport={{ once: true }}
-                      transition={{ duration: reduce ? 0 : 1.2, ease: EASE, delay: 0.2 }}
-                    />
-                  </div>
                 </div>
               ))}
             </div>
@@ -264,9 +257,9 @@ const Runner = ({ recipe, reduce, playing }) => {
                   {!reduce && playing && <span className="absolute inset-0 rounded-full bg-lime animate-ping opacity-60" />}
                   <span className="relative w-2 h-2 rounded-full bg-lime" />
                 </span>
-                Demo interactiva
+               {t("Ejemplo ilustrativo", "Illustrative example")}
               </span>
-              <span className="font-mono text-[11px] text-paper/40">bitácora · {recipe.tab.toLowerCase()}</span>
+              <span className="font-mono text-[11px] text-paper/40">{t("bitácora ·", "activity log ·")} {recipe.tab.toLowerCase()}</span>
             </div>
 
             <div className="mt-5 flex items-baseline gap-3">
@@ -279,10 +272,10 @@ const Runner = ({ recipe, reduce, playing }) => {
               >
                 {reduce ? 1 : run.cycle}
               </motion.span>
-              <span className="text-paper/55 text-[15px] leading-snug">{recipe.unit}<br />en este ejemplo</span>
+              <span className="text-paper/55 text-[15px] leading-snug">{recipe.unit}<br />{t("en este ejemplo", "in this example")}</span>
             </div>
 
-            <ul className="mt-6 space-y-2 font-mono text-[12.5px] leading-snug flex-1" aria-label="Bitácora del ejemplo">
+            <ul className="mt-6 space-y-2 font-mono text-[12.5px] leading-snug flex-1" aria-label={t("Bitácora del ejemplo", "Example activity log")}>
               <AnimatePresence initial={false}>
                 {staticLog.map((l) => (
                   <motion.li
@@ -302,10 +295,10 @@ const Runner = ({ recipe, reduce, playing }) => {
             </ul>
 
             <div className="mt-6 pt-5 border-t border-paper/10 flex flex-col sm:flex-row sm:items-center gap-3">
-              <ContactCTA need="Automatización" source={`Automatización · ${recipe.tab}`} variant="lime">
-                Definir mi automatización
+              <ContactCTA need="Automatización" source={`${t("Automatización", "Automation")} · ${recipe.tab}`} variant="lime">
+               {t("Definir mi automatización", "Define my automation")}
               </ContactCTA>
-              <span className="text-paper/45 text-[13px]">Diagnóstico sin costo. Avances cada 72 h.</span>
+              <span className="text-paper/45 text-[13px]">{t("Diagnóstico sin costo. Avances cada 72 h.", "Free assessment. Progress updates every 72 hours.")}</span>
             </div>
           </Reveal>
         </div>
