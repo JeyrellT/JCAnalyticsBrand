@@ -5,7 +5,7 @@
 
 import {
   PROJECT_KINDS, PROJECT_STATUS, SERVICES, UPDATE_CHANNELS, TASK_STATUS, TASK_PRIORITY,
-  APPOINTMENT_KINDS, APPOINTMENT_STATUS, canInvest,
+  APPOINTMENT_KINDS, APPOINTMENT_STATUS, SLA_STATUSES, canInvest,
 } from '../../shared/catalog.js';
 import { fail, invalid, has, text, oneOf, dateOnly, dateTime, id, minorAmount, url } from '../http.mjs';
 import { transaction } from '../db.mjs';
@@ -21,6 +21,8 @@ export function workRoutes(route, ctx) {
     if (!db.prepare('SELECT 1 FROM users WHERE id = ? AND active = 1').get(userId)) invalid(field, 'Persona no encontrada.');
     return userId;
   };
+  /** Valida solo si cambia: un responsable ya asignado y luego desactivado no impide editar. */
+  const keepOrCheck = (value, current, field) => (value != null && value === current ? value : userExists(value, field));
   const projectExists = (projectId, field = 'project_id') => {
     if (projectId == null) return null;
     if (!db.prepare('SELECT 1 FROM projects WHERE id = ?').get(projectId)) invalid(field, 'Proyecto no encontrado.');
@@ -53,7 +55,7 @@ export function workRoutes(route, ctx) {
       kind: pick('kind', (v) => oneOf(v, 'kind', PROJECT_KINDS, { required: true })),
       service: pick('service', (v) => oneOf(v, 'service', SERVICES)),
       status: pick('status', (v) => oneOf(v, 'status', PROJECT_STATUS, { required: true })),
-      owner_id: pick('owner_id', (v) => userExists(id(v, 'owner_id'), 'owner_id')),
+      owner_id: pick('owner_id', (v) => keepOrCheck(id(v, 'owner_id'), current.owner_id, 'owner_id')),
       start_date: pick('start_date', (v) => dateOnly(v, 'start_date')),
       due_date: pick('due_date', (v) => dateOnly(v, 'due_date')),
       delivered_at: pick('delivered_at', (v) => dateOnly(v, 'delivered_at')),
@@ -84,10 +86,10 @@ export function workRoutes(route, ctx) {
     const p = readProjectBody(body, { status: 'en_curso', kind: 'cliente', currency: 'CRC', owner_id: user.id });
     const at = ctx.nowIso();
     const { lastInsertRowid } = db.prepare(`INSERT INTO projects (name, client, kind, service, status, owner_id, start_date, due_date,
-      delivered_at, value_amount, currency, description, contact_name, contact_phone, url, created_by, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      delivered_at, value_amount, currency, description, contact_name, contact_phone, url, sla_started_at, created_by, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
       p.name, p.client, p.kind, p.service, p.status, p.owner_id, p.start_date, p.due_date, p.delivered_at,
-      p.value_amount, p.currency, p.description, p.contact_name, p.contact_phone, p.url, user.id, at, at,
+      p.value_amount, p.currency, p.description, p.contact_name, p.contact_phone, p.url, SLA_STATUSES.includes(p.status) ? at : null, user.id, at, at,
     );
     const projectId = Number(lastInsertRowid);
     ctx.log(user.id, 'project', projectId, 'created', `${user.name} creó el proyecto ${p.name}`);
@@ -113,11 +115,14 @@ export function workRoutes(route, ctx) {
     const current = getProject(params.id);
     const p = readProjectBody(body, current);
     const archived = has(body, 'archived') ? (body.archived ? 1 : 0) : current.archived;
+    // Al entrar en curso/revisión (desde prospecto, pausado…) arranca el reloj del avance de 72 h.
+    const entersSla = SLA_STATUSES.includes(p.status) && !SLA_STATUSES.includes(current.status);
+    const slaStartedAt = entersSla ? ctx.nowIso() : current.sla_started_at;
     db.prepare(`UPDATE projects SET name = ?, client = ?, kind = ?, service = ?, status = ?, owner_id = ?, start_date = ?, due_date = ?,
-      delivered_at = ?, value_amount = ?, currency = ?, description = ?, contact_name = ?, contact_phone = ?, url = ?, archived = ?, updated_at = ?
-      WHERE id = ?`).run(
+      delivered_at = ?, value_amount = ?, currency = ?, description = ?, contact_name = ?, contact_phone = ?, url = ?, archived = ?,
+      sla_started_at = ?, updated_at = ? WHERE id = ?`).run(
       p.name, p.client, p.kind, p.service, p.status, p.owner_id, p.start_date, p.due_date, p.delivered_at, p.value_amount,
-      p.currency, p.description, p.contact_name, p.contact_phone, p.url, archived, ctx.nowIso(), current.id,
+      p.currency, p.description, p.contact_name, p.contact_phone, p.url, archived, slaStartedAt, ctx.nowIso(), current.id,
     );
     const changes = [];
     if (p.status !== current.status) changes.push(`estado → ${PROJECT_STATUS[p.status].label}`);
@@ -201,7 +206,7 @@ export function workRoutes(route, ctx) {
       description: pick('description', (v) => text(v, 'description', { max: 4000 })),
       status: pick('status', (v) => oneOf(v, 'status', TASK_STATUS, { required: true })),
       priority: pick('priority', (v) => oneOf(v, 'priority', TASK_PRIORITY, { required: true })),
-      assignee_id: pick('assignee_id', (v) => userExists(id(v, 'assignee_id'), 'assignee_id')),
+      assignee_id: pick('assignee_id', (v) => keepOrCheck(id(v, 'assignee_id'), current.assignee_id, 'assignee_id')),
       project_id: pick('project_id', (v) => projectExists(id(v, 'project_id'))),
       due_date: pick('due_date', (v) => dateOnly(v, 'due_date')),
     };
@@ -274,7 +279,7 @@ export function workRoutes(route, ctx) {
         AND a.starts_at < ? AND a.ends_at > ? ORDER BY a.starts_at`).all(excludeId, ...attendeeIds, endsAt, startsAt);
   }
 
-  function readAppointmentBody(body, current = {}) {
+  function readAppointmentBody(body, current = {}, previousAttendees = []) {
     const pick = (key, fn) => (has(body, key) ? fn(body[key]) : current[key] ?? null);
     const a = {
       title: pick('title', (v) => text(v, 'title', { max: 160, min: 2, required: true })),
@@ -297,7 +302,10 @@ export function workRoutes(route, ctx) {
     let attendees = null;
     if (has(body, 'attendees')) {
       if (!Array.isArray(body.attendees) || body.attendees.length > 20) invalid('attendees', 'Lista inválida.');
-      attendees = [...new Set(body.attendees.map((v) => userExists(id(v, 'attendees', { required: true }), 'attendees')))];
+      attendees = [...new Set(body.attendees.map((v) => {
+        const uid = id(v, 'attendees', { required: true });
+        return previousAttendees.includes(uid) ? uid : userExists(uid, 'attendees');
+      }))];
     }
     return { a, attendees };
   }
@@ -338,8 +346,8 @@ export function workRoutes(route, ctx) {
 
   route('PATCH', '/api/appointments/:id', 'user', ({ user, body, params }) => {
     const current = getAppointment(params.id);
-    const { a, attendees } = readAppointmentBody(body, current);
     const previous = attendeesOf(current.id).map((p) => p.id);
+    const { a, attendees } = readAppointmentBody(body, current, previous);
     const people = attendees ?? previous;
     transaction(db, () => {
       db.prepare(`UPDATE appointments SET title = ?, kind = ?, status = ?, starts_at = ?, ends_at = ?, location = ?, meeting_url = ?, project_id = ?,

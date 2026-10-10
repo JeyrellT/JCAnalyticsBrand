@@ -20,9 +20,7 @@ export const invalid = (field, message) => fail(400, 'validation', { field, mess
 const MAX_BODY = 64 * 1024;
 
 export async function readJson(request) {
-  const type = request.headers['content-type']?.split(';')[0].trim();
   if (request.method === 'GET' || request.method === 'DELETE') return {};
-  if (type !== 'application/json') fail(415, 'json_required');
   const chunks = [];
   let size = 0;
   for await (const chunk of request) {
@@ -30,7 +28,10 @@ export async function readJson(request) {
     if (size > MAX_BODY) fail(413, 'body_too_large');
     chunks.push(chunk);
   }
+  // Una acción sin datos (cerrar sesión, restablecer contraseña) llega sin cuerpo.
   if (!size) return {};
+  const type = request.headers['content-type']?.split(';')[0].trim();
+  if (type !== 'application/json') fail(415, 'json_required');
   try {
     const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     if (!body || typeof body !== 'object' || Array.isArray(body)) fail(400, 'invalid_json');

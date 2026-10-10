@@ -82,5 +82,12 @@ export function createLoginLimiter({ max = 5, windowMs = 15 * 60_000, now = Date
       }
     },
     reset(keys) { for (const k of keys) buckets.delete(k); },
+    /** Devuelve un intento contado de antemano (login correcto). */
+    release(keys) {
+      for (const k of keys) {
+        const b = buckets.get(k);
+        if (b) b.count = Math.max(0, b.count - 1);
+      }
+    },
   };
 }

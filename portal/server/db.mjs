@@ -203,6 +203,11 @@ const MIGRATIONS = [
   );
   CREATE INDEX activity_created ON activity(created_at);
   `,
+  // 2 · El compromiso de 72 h corre desde que el proyecto entra en curso/revisión, no desde su creación.
+  `
+  ALTER TABLE projects ADD COLUMN sla_started_at TEXT;
+  UPDATE projects SET sla_started_at = COALESCE(last_update_at, updated_at) WHERE status IN ('en_curso','en_revision');
+  `,
 ];
 
 export const DEFAULT_SETTINGS = {

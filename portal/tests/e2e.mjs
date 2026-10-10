@@ -201,7 +201,7 @@ try {
   });
 
   // ── Colaboradora: sin acceso a inversiones ────────────────────────────────
-  await check('colaboradora no ve inversiones', async () => {
+  await check('colaboradora no ve inversiones y cerrar sesión la deja fuera', async () => {
     const p2 = await newPage({ width: 1440, height: 900 });
     await login(p2, 'hillary');
     assert.equal(await p2.getByRole('link', { name: 'Inversiones' }).count(), 0);
@@ -209,6 +209,12 @@ try {
     await p2.getByText('Esta sección no existe').waitFor();
     const api = await p2.request.get(`${base}/api/investments`);
     assert.equal(api.status(), 403);
+    // Cerrar sesión revoca la cookie en el servidor: al recargar sigue fuera.
+    await p2.getByRole('button', { name: 'Cerrar sesión' }).first().click();
+    await p2.getByRole('button', { name: 'Entrar' }).waitFor();
+    await p2.reload();
+    await p2.getByRole('button', { name: 'Entrar' }).waitFor();
+    assert.equal((await p2.request.get(`${base}/api/me`)).status(), 401);
     await p2.context().close();
   });
 

@@ -281,3 +281,84 @@ test('respaldo solo para administradores', async () => {
   assert.equal(bytes.subarray(0, 15).toString(), 'SQLite format 3');
   assert.ok(PASSWORD);
 });
+
+// ── Regresiones de la revisión de código ───────────────────────────────────
+test('cerrar sesión y restablecer contraseña funcionan sin cuerpo JSON', async () => {
+  const ana = await as('ana@jc.test');
+  const out = await ana.call('POST', '/api/auth/logout');
+  assert.equal(out.status, 200);
+  assert.equal((await ana.get('/api/me')).status, 401, 'la cookie quedó revocada en el servidor');
+  const admin = await as('jeyrell@jc.test');
+  const extra = env.addUser('reset@jc.test', 'Reset', 'colaborador');
+  const reset = await admin.call('POST', `/api/users/${extra}/reset-password`);
+  assert.equal(reset.status, 200, JSON.stringify(reset.data));
+  assert.ok(reset.data.temporary_password);
+});
+
+test('el límite de intentos no se esquiva con peticiones en paralelo', async () => {
+  env.addUser('paralelo@jc.test', 'Paralelo', 'socio');
+  const c = env.client();
+  const results = await Promise.all(Array.from({ length: 15 }, (_, i) => c.login('paralelo@jc.test', `incorrecta${i}x`)));
+  const evaluated = results.filter((r) => r.status === 401).length;
+  assert.ok(evaluated <= 5, `se evaluaron ${evaluated} contraseñas`);
+  assert.ok(results.some((r) => r.status === 429));
+  env.clock.t += 16 * 60_000;
+});
+
+test('un socio degradado a colaborador deja de recibir y ver avisos de dinero', async () => {
+  const admin = await as('jeyrell@jc.test');
+  const dora = env.addUser('dora@jc.test', 'Dora', 'socio');
+  const inv = (await admin.post('/api/investments', { name: 'Fondo Dora', category: 'otro' })).data.investment;
+  const doraClient = await as('dora@jc.test');
+  assert.ok((await doraClient.get('/api/notifications')).data.notifications.some((n) => n.kind === 'investment'));
+  await admin.patch(`/api/users/${dora}`, { role: 'colaborador' });
+  const m = (await admin.post(`/api/investments/${inv.id}/movements`, { type: 'aporte', partner_id: ids.admin, amount: 1000, message: 'Detalle confidencial' })).data.movement;
+  await admin.post(`/api/movements/${m.id}/messages`, { body: 'Otro dato confidencial' });
+  const list = (await doraClient.get('/api/notifications')).data.notifications;
+  assert.ok(list.every((n) => !['movement', 'investment', 'message'].includes(n.kind)), JSON.stringify(list.map((n) => n.title)));
+});
+
+test('repartir retorno funciona aunque un socio con capital esté inactivo', async () => {
+  const admin = await as('jeyrell@jc.test');
+  const eli = env.addUser('eli@jc.test', 'Eli', 'socio');
+  const beto = await as('beto@jc.test');
+  const eliClient = await as('eli@jc.test');
+  const inv = (await admin.post('/api/investments', { name: 'Fondo Eli', category: 'otro' })).data.investment;
+  const m1 = (await admin.post(`/api/investments/${inv.id}/movements`, { type: 'aporte', partner_id: ids.admin, amount: 30_000, message: 'Aporte admin' })).data.movement;
+  await beto.post(`/api/movements/${m1.id}/confirm`, {});
+  const m2 = (await eliClient.post(`/api/investments/${inv.id}/movements`, { type: 'aporte', partner_id: eli, amount: 10_000, message: 'Aporte Eli' })).data.movement;
+  await admin.post(`/api/movements/${m2.id}/confirm`, {});
+  await admin.patch(`/api/users/${eli}`, { active: false });
+  const dist = await admin.post(`/api/investments/${inv.id}/distribute`, { amount: 4_000, message: 'Retorno con socio inactivo' });
+  assert.equal(dist.status, 200, JSON.stringify(dist.data));
+  const eliShare = dist.data.movements.find((x) => x.partner_id === eli);
+  assert.equal(eliShare.amount, 1_000);
+  const conf = await beto.post(`/api/movements/${eliShare.id}/confirm`, { message: 'Custodio la parte de Eli' });
+  assert.equal(conf.data.movement.status, 'confirmado', 'otro socio custodia y confirma');
+});
+
+test('editar con una persona ya asignada y luego desactivada no falla', async () => {
+  const admin = await as('jeyrell@jc.test');
+  const fer = env.addUser('fer@jc.test', 'Fer', 'colaborador');
+  const p = (await admin.post('/api/projects', { name: 'Proyecto Fer', kind: 'interno', status: 'en_curso', owner_id: fer })).data.project;
+  const t = (await admin.post('/api/tasks', { title: 'Tarea Fer', assignee_id: fer })).data.task;
+  const a = (await admin.post('/api/appointments', { title: 'Cita Fer', kind: 'interna', starts_at: '2026-12-01T15:00:00Z', ends_at: '2026-12-01T16:00:00Z', attendees: [fer, ids.admin] })).data.appointment;
+  await admin.patch(`/api/users/${fer}`, { active: false });
+  assert.equal((await admin.patch(`/api/projects/${p.id}`, { name: 'Proyecto Fer v2', owner_id: fer })).status, 200);
+  assert.equal((await admin.patch(`/api/tasks/${t.id}`, { title: 'Tarea Fer v2', assignee_id: fer })).status, 200);
+  assert.equal((await admin.patch(`/api/appointments/${a.id}`, { title: 'Cita Fer v2', attendees: [fer, ids.admin] })).status, 200);
+  assert.equal((await admin.patch(`/api/tasks/${t.id}`, { assignee_id: ids.cata })).status, 200);
+  assert.equal((await admin.patch(`/api/tasks/${t.id}`, { assignee_id: fer })).status, 400, 'reasignar a alguien inactivo sí se rechaza');
+});
+
+test('el reloj de 72 h arranca al pasar a "en curso" y el límite de la bitácora se sanea', async () => {
+  const admin = await as('jeyrell@jc.test');
+  const p = (await admin.post('/api/projects', { name: 'Prospecto viejo', client: 'Cliente X', kind: 'cliente', status: 'prospecto' })).data.project;
+  env.clock.t += 10 * 24 * HOUR;
+  const admin2 = await as('jeyrell@jc.test');
+  const moved = (await admin2.patch(`/api/projects/${p.id}`, { status: 'en_curso' })).data.project;
+  assert.equal(moved.sla_state, 'ok');
+  assert.equal(moved.hours_since_update, 0);
+  assert.equal((await admin2.get('/api/activity?limit=1.5')).status, 200);
+  assert.equal((await admin2.get('/api/activity?limit=-1')).data.activity.length, 1);
+});

@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { readFile, rm } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { ROLES, MEMBER_COLORS, canInvest } from '../../shared/catalog.js';
-import { publicUser } from '../context.mjs';
+import { publicUser, SENSITIVE_KINDS } from '../context.mjs';
 import { fail, invalid, has, text, oneOf, email, color, id, number } from '../http.mjs';
 import { hashPassword, verifyPassword, passwordProblem, temporaryPassword, burnPasswordCheck } from '../auth.mjs';
 
@@ -21,10 +21,11 @@ export function coreRoutes(route, ctx, session) {
     const password = typeof body.password === 'string' ? body.password.slice(0, 200) : '';
     const keys = [`ip:${ip}`, `email:${mail}`];
     if (session.limiter.blocked(keys)) fail(429, 'too_many_attempts');
+    // Se cuenta antes de verificar: así varias peticiones en paralelo no esquivan el límite.
+    session.limiter.fail(keys);
     const row = mail ? db.prepare('SELECT * FROM users WHERE email = ?').get(mail) : null;
     const ok = row && row.active ? await verifyPassword(password, row.password_hash) : (await burnPasswordCheck(password), false);
     if (!ok) {
-      session.limiter.fail(keys);
       ctx.log(row?.id, 'auth', row?.id, 'login_failed', `Intento de acceso fallido${mail ? ` (${mail})` : ''}`);
       fail(401, 'invalid_credentials');
     }
@@ -43,7 +44,7 @@ export function coreRoutes(route, ctx, session) {
   route('GET', '/api/me', 'any', ({ user }) => ({
     user: publicUser(user),
     settings: ctx.settings(),
-    unread: db.prepare('SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND read_at IS NULL').get(user.id).n,
+    unread: unreadCount(user),
     pending_confirmations: canInvest(user) ? pendingForUser(ctx, user).length : 0,
   }));
 
@@ -145,9 +146,15 @@ export function coreRoutes(route, ctx, session) {
   });
 
   // ── Buzón ─────────────────────────────────────────────────────────────────
+  // Quien deja de ser socio (o es desactivado y reactivado como colaborador) tampoco ve avisos viejos de dinero.
+  const hiddenKinds = (user) => (canInvest(user) ? '' : `AND kind NOT IN (${SENSITIVE_KINDS.map((k) => `'${k}'`).join(',')})`);
+  function unreadCount(user) {
+    return db.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND read_at IS NULL ${hiddenKinds(user)}`).get(user.id).n;
+  }
+
   route('GET', '/api/notifications', 'user', ({ user }) => ({
-    notifications: db.prepare('SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 80').all(user.id),
-    unread: db.prepare('SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND read_at IS NULL').get(user.id).n,
+    notifications: db.prepare(`SELECT * FROM notifications WHERE user_id = ? ${hiddenKinds(user)} ORDER BY created_at DESC, id DESC LIMIT 80`).all(user.id),
+    unread: unreadCount(user),
   }));
 
   route('POST', '/api/notifications/read', 'user', ({ user, body }) => {
@@ -159,12 +166,12 @@ export function coreRoutes(route, ctx, session) {
       const stmt = db.prepare('UPDATE notifications SET read_at = ? WHERE id = ? AND user_id = ? AND read_at IS NULL');
       for (const raw of body.ids) stmt.run(at, id(raw, 'ids', { required: true }), user.id);
     }
-    return { unread: db.prepare('SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND read_at IS NULL').get(user.id).n };
+    return { unread: unreadCount(user) };
   });
 
   // ── Bitácora ──────────────────────────────────────────────────────────────
   route('GET', '/api/activity', 'user', ({ user, query }) => {
-    const limit = Math.min(Number(query.get('limit')) || 100, 300);
+    const limit = Math.max(1, Math.min(Math.trunc(Number(query.get('limit'))) || 100, 300));
     const entity = query.get('entity');
     const sensitive = canInvest(user) ? '' : 'AND a.sensitive = 0';
     const byEntity = entity ? 'AND a.entity = ?' : '';
@@ -196,8 +203,9 @@ export function coreRoutes(route, ctx, session) {
 
 /** Movimientos que este usuario debe confirmar (regla de doble control). */
 export function pendingForUser(ctx, user) {
-  return ctx.db.prepare(`SELECT m.* FROM movements m JOIN investments i ON i.id = m.investment_id
+  // Misma regla que canResolve() en routes/investments.mjs.
+  return ctx.db.prepare(`SELECT m.* FROM movements m JOIN users p ON p.id = m.partner_id
     WHERE m.status = 'pendiente' AND m.created_by <> ?
-      AND ((m.created_by = m.partner_id) OR (m.partner_id = ?))
+      AND (m.created_by = m.partner_id OR m.partner_id = ? OR p.active = 0 OR p.role NOT IN ('admin','socio'))
     ORDER BY m.created_at`).all(user.id, user.id);
 }

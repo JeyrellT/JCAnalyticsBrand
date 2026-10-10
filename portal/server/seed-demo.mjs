@@ -74,7 +74,7 @@ export async function seedDemo(dbPath) {
   const P = {};
   const project = async (key, api, body, lastUpdateHoursAgo) => {
     P[key] = (await api('POST', '/api/projects', body)).project.id;
-    if (lastUpdateHoursAgo != null) db.prepare('UPDATE projects SET last_update_at = ? WHERE id = ?').run(iso(-lastUpdateHoursAgo), P[key]);
+    if (lastUpdateHoursAgo != null) db.prepare('UPDATE projects SET last_update_at = ?, sla_started_at = ? WHERE id = ?').run(iso(-lastUpdateHoursAgo), iso(-lastUpdateHoursAgo - 24 * 7), P[key]);
   };
   await project('burrada', cata, { name: 'Pedidos en línea La Burrada', client: 'La Burrada Street Food', kind: 'cliente', service: 'pagina_web', status: 'en_curso', owner_id: U.alex, start_date: day(-18), due_date: day(9), value_amount: 46_350_000, currency: 'CRC', contact_name: 'Dueño La Burrada', contact_phone: '+506 8888-0000', url: 'https://www.laburradacr.com/', description: 'Menú digital, carrito sin cuenta y confirmación por WhatsApp. Fase 2: panel de pedidos para cocina.' }, 81);
   await project('uniquex', cata, { name: 'Landing narrativa Uniquex', client: 'Uniquex Costa Rica', kind: 'cliente', service: 'pagina_web', status: 'en_revision', owner_id: U.alex, start_date: day(-30), due_date: day(3), value_amount: 61_800_000, currency: 'CRC', url: 'https://uniquexcr.com/landing', description: 'Recorrido de un día en la casa con escenas interactivas y agenda de visita técnica.' }, 52);

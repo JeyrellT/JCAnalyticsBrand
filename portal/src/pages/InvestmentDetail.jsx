@@ -25,7 +25,7 @@ function MovementModal({ investment, type, onClose, onSaved }) {
   async function save(e) {
     e.preventDefault();
     const body = { type, partner_id: form.partner_id, amount: form.amount, date: form.date, message: form.message, reference: form.reference || null };
-    if (investment.currency === 'USD') body.fx_rate = Number(String(form.fx_rate).replace(',', '.'));
+    if (investment.currency === 'USD' && String(form.fx_rate ?? '').trim()) body.fx_rate = Number(String(form.fx_rate).replace(',', '.'));
     const res = await run(() => api(`/api/investments/${investment.id}/movements`, { method: 'POST', body }), { success: `Registrado. Queda por confirmar por ${confirmer}.` });
     if (res) { onSaved(); onClose(); }
   }
@@ -64,7 +64,7 @@ function DistributeModal({ investment, metrics, onClose, onSaved }) {
   async function save(e) {
     e.preventDefault();
     const body = { amount, date, message, reference: reference || null };
-    if (investment.currency === 'USD') body.fx_rate = Number(String(fx).replace(',', '.'));
+    if (investment.currency === 'USD' && String(fx ?? '').trim()) body.fx_rate = Number(String(fx).replace(',', '.'));
     const res = await run(() => api(`/api/investments/${investment.id}/distribute`, { method: 'POST', body }), { success: 'Retorno repartido. Cada socio debe confirmar su parte.' });
     if (res) { onSaved(); onClose(); }
   }

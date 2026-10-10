@@ -61,13 +61,15 @@ export function createPortalServer({ db, env = process.env, now = () => Date.now
   const limiterEmail = createLoginLimiter({ max: 5, now });
 
   const isSecure = (req) => req.headers['x-forwarded-proto'] === 'https' || (isProduction && env.PORTAL_INSECURE_COOKIE !== '1');
-  const clientIp = (req) => String(req.headers['x-real-ip'] || req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || '').trim();
+  // El último salto de X-Forwarded-For lo agrega el proxy de Railway; los anteriores (y X-Real-IP)
+  // los puede escribir el cliente, así que no sirven para limitar intentos.
+  const clientIp = (req) => String(req.headers['x-forwarded-for']?.split(',').at(-1) || req.socket.remoteAddress || '').trim();
 
   const session = {
     limiter: {
       blocked: ([ipKey, emailKey]) => limiterIp.blocked([ipKey]) || limiterEmail.blocked([emailKey]),
       fail: ([ipKey, emailKey]) => { limiterIp.fail([ipKey]); limiterEmail.fail([emailKey]); },
-      reset: ([, emailKey]) => limiterEmail.reset([emailKey]),
+      reset: ([ipKey, emailKey]) => { limiterEmail.reset([emailKey]); limiterIp.release([ipKey]); },
     },
     start(res, req, userId, ip) {
       const token = newSessionToken();

@@ -108,7 +108,7 @@ function ProfileCard() {
 }
 
 export default function Team() {
-  const { user, team, isAdmin, loadTeam } = useSession();
+  const { user, team, isAdmin, loadTeam, settings } = useSession();
   const [editing, setEditing] = useState(null);
   const [temp, setTemp] = useState(null);
   const [run, busy] = useAction();
@@ -153,7 +153,7 @@ export default function Team() {
 
       <div className="grid gap-6 xl:grid-cols-2">
         <ProfileCard />
-        {isAdmin && <SettingsCard />}
+        {isAdmin && <SettingsCard key={JSON.stringify(settings)} />}
       </div>
 
       {editing && <MemberModal member={editing === 'new' ? null : editing} onClose={() => setEditing(null)}

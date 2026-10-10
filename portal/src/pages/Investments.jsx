@@ -8,7 +8,7 @@ import { PageHeader, PageLoader, Stat, Badge, ProgressBar, Modal, Field, Select,
 import { StatusBadge, MoneyInput } from '../components/common.jsx';
 import CashflowChart from '../components/CashflowChart.jsx';
 import { INVESTMENT_CATEGORIES, INVESTMENT_STATUS } from '../../shared/catalog.js';
-import { formatMoney, formatPercent, formatMultiple, formatDate } from '../lib/format.js';
+import { formatMoney, formatPercent, formatMultiple, formatDate, todayKey } from '../lib/format.js';
 
 export function InvestmentForm({ investment, onClose, onSaved }) {
   const { data: pdata } = useResource('/api/projects');
@@ -151,7 +151,7 @@ export default function Investments() {
         ) : <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{list.map((i) => <InvestmentRow key={i.id} i={i} />)}</div>}
       </section>
 
-      <p className="flex items-start gap-2 text-xs text-muted"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />Tipo de cambio de referencia para nuevos movimientos en dólares: ₡{data.fx_usd_crc} (ajustable en Equipo y ajustes). Fecha de corte: {formatDate(new Date().toISOString().slice(0, 10))}.</p>
+      <p className="flex items-start gap-2 text-xs text-muted"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />Tipo de cambio de referencia para nuevos movimientos en dólares: ₡{data.fx_usd_crc} (ajustable en Equipo y ajustes). Fecha de corte: {formatDate(todayKey())}.</p>
 
       {creating && <InvestmentForm onClose={() => setCreating(false)} onSaved={(i) => navigate(`/inversiones/${i.id}`)} />}
     </div>

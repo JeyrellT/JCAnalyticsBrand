@@ -56,7 +56,7 @@ export function SessionProvider({ children }) {
     isAdmin: state.user?.role === 'admin',
     refresh,
     loadTeam,
-    signedIn: (user) => setState((s) => ({ ...s, status: 'ready', user })),
+    signedIn: (user) => { setState((s) => ({ ...s, status: 'ready', user })); refresh(); },
     logout: async () => {
       try { await api('/api/auth/logout', { method: 'POST' }); } finally { setState({ status: 'anonymous', user: null, settings: {}, unread: 0, pending: 0 }); setTeam([]); }
     },

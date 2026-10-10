@@ -7,6 +7,8 @@
 import { SLA_STATUSES } from '../shared/catalog.js';
 
 export const TIME_ZONE = 'America/Costa_Rica';
+/** Tipos de aviso con información de inversiones. */
+export const SENSITIVE_KINDS = ['movement', 'investment', 'message'];
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
@@ -25,9 +27,13 @@ export function createContext({ db, now = () => Date.now() }) {
   const insertNotification = db.prepare(
     'INSERT INTO notifications (user_id, kind, title, body, link, created_at) VALUES (?, ?, ?, ?, ?, ?)',
   );
-  /** Notifica a los usuarios indicados, nunca a quien hizo la acción. */
+  /** Notifica a los usuarios indicados, nunca a quien hizo la acción. Los avisos de dinero solo llegan a socios y admin activos. */
   function notify(userIds, actorId, { kind, title, body = null, link = null }) {
-    const unique = [...new Set(userIds.filter((u) => u && u !== actorId))];
+    let unique = [...new Set(userIds.filter((u) => u && u !== actorId))];
+    if (SENSITIVE_KINDS.includes(kind)) {
+      const allowed = new Set(investorIds());
+      unique = unique.filter((u) => allowed.has(u));
+    }
     const at = nowIso();
     for (const userId of unique) insertNotification.run(userId, kind, title, body, link, at);
     return unique.length;
@@ -51,7 +57,9 @@ export function createContext({ db, now = () => Date.now() }) {
   function projectSla(project) {
     if (project.kind !== 'cliente' || !SLA_STATUSES.includes(project.status)) return { sla_state: null, hours_since_update: null };
     const slaHours = numberSetting('update_sla_hours', 72);
-    const ref = project.last_update_at ?? (project.start_date ? `${project.start_date}T12:00:00Z` : project.created_at);
+    // El reloj corre desde el último avance o desde que el proyecto entró en curso, lo más reciente.
+    const marks = [project.last_update_at, project.sla_started_at].filter(Boolean).sort();
+    const ref = marks.at(-1) ?? project.created_at;
     const hours = Math.max(0, (now() - new Date(ref).getTime()) / HOUR);
     const state = hours > slaHours ? 'late' : hours > (slaHours * 2) / 3 ? 'warn' : 'ok';
     return { sla_state: state, hours_since_update: Math.round(hours) };

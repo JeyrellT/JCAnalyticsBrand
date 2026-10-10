@@ -8,7 +8,7 @@ Está separada del sitio público (`jcanalytics-app/`, GitHub Pages): el portal 
 
 **Centro de operaciones (`/`).** Agrupa todo lo que requiere acción hoy: proyectos de cliente sin avance en 72 h, tareas vencidas, citas sin confirmar en las próximas 24 h, plata esperando tu confirmación, soportes de 30 días por terminar. Muestra además la agenda de la semana, tus tareas y el pulso de las inversiones.
 
-**Proyectos (`/proyectos`).** Clientes (La Burrada, Uniquex…), productos propios (BarberXCR, Taller Ticos…) e internos. Cada uno tiene responsable, servicio del catálogo, valor en ₡ o $, fechas y contacto. Para proyectos de cliente en curso o en revisión aplica el **semáforo del compromiso público "avance cada 72 h"**. "Registrar avance" deja constancia, arma el mensaje de WhatsApp y reinicia el reloj. Al marcarlo entregado arranca el **soporte de 30 días**.
+**Proyectos (`/proyectos`).** Clientes (La Burrada, Uniquex…), productos propios (BarberXCR, Taller Ticos…) e internos. Cada uno tiene responsable, servicio del catálogo, valor en ₡ o $, fechas y contacto. Para proyectos de cliente en curso o en revisión aplica el **semáforo del compromiso público "avance cada 72 h"**. El reloj corre desde que el proyecto entra en curso o desde el último avance registrado. "Registrar avance" deja constancia, arma el mensaje de WhatsApp y reinicia el reloj. Al marcarlo entregado arranca el **soporte de 30 días**.
 
 **Tablero (`/tablero`).** Kanban con Backlog, Por hacer, En progreso, Revisión y Hecho. Se usa arrastrando en escritorio y con "Mover a" en el celular. Tiene **límites WIP** (Lean) configurables, filtros por proyecto, persona y vencidas, y comentarios con aviso a los involucrados.
 
@@ -19,7 +19,8 @@ Está separada del sitio público (`jcanalytics-app/`, GitHub Pages): el portal 
 1. Se registra un **aporte** (socio → inversión) o un **retorno** (inversión → socio) con **mensaje obligatorio** y referencia SINPE opcional.
 2. Queda **por confirmar**, con **doble control**:
    - si lo registra el mismo socio, lo confirma otro socio (quien recibió la plata);
-   - si lo registra otra persona, lo confirma el socio del movimiento.
+   - si lo registra otra persona, lo confirma el socio del movimiento;
+   - si ese socio ya no tiene acceso (desactivado o pasado a colaborador), lo confirma otro socio, que custodia su parte.
 3. Quien confirma responde con su **mensaje de vuelta** ("Recibido ✓…") u **objeta** con el motivo.
 4. **Solo lo confirmado** suma en los indicadores. Un movimiento confirmado no se edita: si hubo un error, un admin lo **anula con motivo** y queda en la bitácora.
 
@@ -139,11 +140,14 @@ Sesiones:
 - Cambiar la contraseña cierra las otras sesiones.
 
 Protección contra ataques:
-- **Fuerza bruta:** bloqueo de 15 min tras 5 intentos fallidos por correo (20 por IP). El tiempo de respuesta es igual exista o no el correo.
+- **Fuerza bruta:** bloqueo de 15 min tras 5 intentos fallidos por correo (20 por IP). Cada intento se cuenta antes de verificar la contraseña, así que enviar intentos en paralelo no esquiva el límite. La IP sale del último salto de `X-Forwarded-For`, el que agrega el proxy de Railway, porque el cliente no puede falsificarlo. El tiempo de respuesta es igual exista o no el correo.
 - **CSRF:** toda escritura exige el encabezado `X-Portal-Request` y un `Origin` propio.
 - **Permisos por rol** en cada ruta del servidor, no solo en la interfaz.
 - **Encabezados:** CSP estricta, `X-Frame-Options: DENY`, `noindex` y HSTS.
 - **Excel:** la exportación neutraliza fórmulas (`=`, `+`, `-`, `@`) para evitar inyección.
+
+Datos de dinero:
+- Si un socio pasa a colaborador, deja de recibir avisos de dinero y tampoco ve los anteriores.
 
 Auditoría:
 - La bitácora registra accesos fallidos, cambios de contraseña, altas y bajas de personas, respaldos, exportaciones y cada movimiento de dinero.

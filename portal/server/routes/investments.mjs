@@ -32,15 +32,22 @@ export function investmentRoutes(route, ctx) {
   const allMovements = () => db.prepare('SELECT * FROM movements').all();
   const crcOf = (m) => toCRC(m.amount, m.currency, m.fx_rate);
 
+  const isActiveInvestor = (userId) => !!db.prepare("SELECT 1 FROM users WHERE id = ? AND active = 1 AND role IN ('admin','socio')").get(userId);
+  /**
+   * Confirma "cualquier otro socio" cuando quien registró es el mismo socio, o cuando ese
+   * socio ya no tiene acceso (desactivado o colaborador): alguien debe custodiar su parte.
+   */
+  const anyInvestorConfirms = (m) => m.created_by === m.partner_id || !isActiveInvestor(m.partner_id);
+
   /** Quién puede confirmar u objetar un movimiento pendiente. */
   function canResolve(m, user) {
     if (m.status !== 'pendiente' || m.created_by === user.id) return false;
-    return m.created_by === m.partner_id || m.partner_id === user.id;
+    return anyInvestorConfirms(m) || m.partner_id === user.id;
   }
   const canAnnul = (m, user) => m.status !== 'anulado' && (user.role === 'admin' || (m.created_by === user.id && m.status !== 'confirmado'));
 
   function confirmersFor(m) {
-    return m.created_by === m.partner_id ? ctx.investorIds().filter((u) => u !== m.created_by) : [m.partner_id];
+    return anyInvestorConfirms(m) ? ctx.investorIds().filter((u) => u !== m.created_by) : [m.partner_id];
   }
 
   function partnerOrFail(partnerId) {
@@ -166,7 +173,7 @@ export function investmentRoutes(route, ctx) {
         messages: messages.get(m.id) ?? [],
         can_resolve: canResolve(m, user),
         can_annul: canAnnul(m, user),
-        awaiting: m.status === 'pendiente' ? (m.created_by === m.partner_id ? 'otro socio' : m.partner_name) : null,
+        awaiting: m.status === 'pendiente' ? (anyInvestorConfirms(m) ? 'otro socio' : m.partner_name) : null,
       })),
       notes: db.prepare(`SELECT n.*, u.name user_name, u.color user_color FROM investment_notes n JOIN users u ON u.id = n.user_id
         WHERE n.investment_id = ? ORDER BY n.created_at DESC, n.id DESC`).all(investment.id),
@@ -251,7 +258,8 @@ export function investmentRoutes(route, ctx) {
     const batchId = randomUUID();
     const created = transaction(db, () => holders.map((holder, i) => {
       if (!shares[i]) return null;
-      const partner = partnerOrFail(holder.partner_id);
+      // El capital de un socio que ya no está activo igual le corresponde: su parte se registra y la confirma otro socio.
+      const partner = db.prepare('SELECT * FROM users WHERE id = ?').get(holder.partner_id);
       const detail = `${message}\nTu parte: ${formatPercent(holder.share)} de ${formatMoney(amount, investment.currency)}.`;
       return insertMovement({ investment, partner, type: 'retorno', amount: shares[i], fxRate, date, message: detail, reference, batchId, user });
     }).filter(Boolean));
