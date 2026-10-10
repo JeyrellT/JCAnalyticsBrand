@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Portal JC Analytics · tokens de marca (misma paleta del sitio público)
+   ink #071a36 · azul #0065df · turquesa #00a6b2 · papel #f5f8fb
+   ────────────────────────────────────────────────────────────────────────── */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: #071a36;
+  --color-ink-soft: #1d3152;
+  --color-paper: #f5f8fb;
+  --color-line: #e2e8f0;
+  --color-muted: #5b6b82;
+  --color-brand: #0065df;
+  --color-brand-soft: #e6effc;
+  --color-teal: #00a6b2;
+  --color-teal-dark: #07838c;
+  --color-teal-soft: #e4f3f4;
+  --color-coral: #d65a45;
+  --color-coral-soft: #fbeae6;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+body {
+  @apply bg-paper text-ink font-sans antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+.tabular { font-variant-numeric: tabular-nums; }
+.font-display { letter-spacing: -0.02em; }
+
+:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; border-radius: 6px; }
+
+/* ── Componentes base ───────────────────────────────────────────────────── */
+@layer components {
+  .card { @apply rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgba(7,26,54,0.04)]; }
+  .card-pad { @apply p-4 sm:p-5; }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold transition
+      disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap select-none;
+    min-height: 40px;
+  }
+  .btn-primary { @apply bg-brand text-white hover:bg-[#0057c2] active:bg-[#004ba8]; }
+  .btn-dark { @apply bg-ink text-white hover:bg-ink-soft; }
+  .btn-ghost { @apply text-ink hover:bg-slate-100; }
+  .btn-outline { @apply border border-line bg-white text-ink hover:border-slate-300 hover:bg-slate-50; }
+  .btn-danger { @apply bg-coral text-white hover:bg-[#c04c38]; }
+  .btn-teal { @apply bg-teal-dark text-white hover:bg-[#066f77]; }
+  .btn-sm { min-height: 32px; @apply px-2.5 py-1 text-xs rounded-lg; }
+
+  .label { @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted; }
+  .input {
+    @apply w-full rounded-xl border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-slate-400
+      focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/10;
+    min-height: 40px;
+  }
+  textarea.input { @apply leading-relaxed; min-height: 84px; }
+
+  .chip { @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold leading-5 whitespace-nowrap; }
+  .tone-slate { @apply bg-slate-100 text-slate-700; }
+  .tone-blue { @apply bg-brand-soft text-brand; }
+  .tone-teal { @apply bg-teal-soft text-teal-dark; }
+  .tone-amber { @apply bg-amber-50 text-amber-700; }
+  .tone-red { @apply bg-coral-soft text-coral; }
+  .tone-violet { @apply bg-violet-50 text-violet-700; }
+  .tone-ink { @apply bg-ink text-white; }
+
+  .dot-slate { @apply bg-slate-400; } .dot-blue { @apply bg-brand; } .dot-teal { @apply bg-teal; }
+  .dot-amber { @apply bg-amber-500; } .dot-red { @apply bg-coral; } .dot-violet { @apply bg-violet-500; } .dot-ink { @apply bg-ink; }
+
+  .section-title { @apply font-display text-lg font-bold text-ink; }
+  .kpi-value { @apply font-display text-2xl font-bold tabular-nums sm:text-[28px]; }
+}
+
+/* Scroll horizontal del tablero con snap en móvil */
+.board-scroll { scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.board-scroll > * { scroll-snap-align: start; }
+
+/* Respeta usuarios que prefieren menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.animate-rise { animation: rise 0.22s ease-out both; }
+
+/* Los hijos de una grilla no deben ensancharla con texto truncado. */
+.grid > * { min-width: 0; }
+
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
