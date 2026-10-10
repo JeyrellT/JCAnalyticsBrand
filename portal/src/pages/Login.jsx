@@ -4,6 +4,7 @@ import { Lock, ShieldCheck, ArrowRight, KanbanSquare, CalendarDays, TrendingUp }
 import { api, errorMessage } from '../lib/api.js';
 import { useSession } from '../lib/session.jsx';
 import { Field, cx } from '../components/ui.jsx';
+import logoMark from '../assets/logo-mark.webp';
 
 function Shell({ children }) {
   return (
@@ -12,7 +13,7 @@ function Shell({ children }) {
         <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-brand/30 blur-3xl" />
         <div className="absolute -bottom-32 left-10 h-96 w-96 rounded-full bg-teal/25 blur-3xl" />
         <div className="relative flex items-center gap-3">
-          <img src="/LogoMark.webp" alt="" className="h-11 w-11 rounded-xl bg-white p-1" />
+          <img src={logoMark} alt="" className="h-11 w-11 rounded-xl bg-white p-1" />
           <span className="font-display text-xl font-bold">JC Analytics</span>
         </div>
         <div className="relative mt-auto max-w-lg">
@@ -28,7 +29,7 @@ function Shell({ children }) {
       <section className="flex items-center justify-center px-5 py-10">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <img src="/LogoMark.webp" alt="" className="h-10 w-10 rounded-xl bg-white p-1 shadow-sm" />
+            <img src={logoMark} alt="" className="h-10 w-10 rounded-xl bg-white p-1 shadow-sm" />
             <span className="font-display text-lg font-bold">Portal JC Analytics</span>
           </div>
           {children}

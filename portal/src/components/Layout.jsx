@@ -7,6 +7,7 @@ import { Link, useLocation } from '../lib/router.jsx';
 import { useSession } from '../lib/session.jsx';
 import { ROLES } from '../../shared/catalog.js';
 import { Avatar, cx } from './ui.jsx';
+import logoMark from '../assets/logo-mark.webp';
 
 const NAV = [
   { to: '/', label: 'Centro de operaciones', short: 'Inicio', icon: LayoutDashboard, exact: true },
@@ -35,7 +36,7 @@ function BadgeCount({ n, className }) {
 function Brand({ compact = false }) {
   return (
     <Link to="/" className="flex items-center gap-2.5">
-      <img src="/LogoMark.webp" alt="" className="h-9 w-9 rounded-xl bg-white object-contain p-1" />
+      <img src={logoMark} alt="" className="h-9 w-9 rounded-xl bg-white object-contain p-1" />
       {!compact && (
         <span className="leading-tight">
           <span className="block font-display text-[15px] font-bold text-white">JC Analytics</span>
