@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { UserPlus, KeyRound, Copy, ShieldCheck, Save, DatabaseBackup, Power, MessageCircle } from 'lucide-react';
 import { useSession } from '../lib/session.jsx';
 import { api } from '../lib/api.js';
-import { PageHeader, Modal, Field, Select, Avatar, Badge, useAction, useToast, cx } from '../components/ui.jsx';
+import { PageHeader, Modal, Field, Select, Avatar, Badge, useAction, useToast, useConfirm, cx } from '../components/ui.jsx';
 import { PasswordForm } from './Login.jsx';
 import { ROLES, MEMBER_COLORS } from '../../shared/catalog.js';
 import { timeAgo, whatsappLink } from '../lib/format.js';
@@ -112,14 +112,15 @@ export default function Team() {
   const [editing, setEditing] = useState(null);
   const [temp, setTemp] = useState(null);
   const [run, busy] = useAction();
+  const confirm = useConfirm();
 
   const reset = async (m) => {
-    if (!window.confirm(`¿Generar una contraseña temporal para ${m.name}? Se cerrarán sus sesiones abiertas.`)) return;
+    if (!(await confirm({ title: 'Nueva contraseña temporal', message: `Se genera una contraseña temporal para ${m.name} y se cierran sus sesiones abiertas.`, confirmLabel: 'Generar' }))) return;
     const res = await run(() => api(`/api/users/${m.id}/reset-password`, { method: 'POST' }));
     if (res) setTemp({ name: m.name, email: m.email, phone: m.phone, password: res.temporary_password });
   };
   const toggle = async (m) => {
-    if (m.active && !window.confirm(`¿Desactivar a ${m.name}? Perderá el acceso de inmediato; su historial se conserva.`)) return;
+    if (m.active && !(await confirm({ title: `Desactivar a ${m.name}`, message: 'Pierde el acceso de inmediato. Su historial se conserva.', confirmLabel: 'Desactivar', tone: 'danger' }))) return;
     if (await run(() => api(`/api/users/${m.id}`, { method: 'PATCH', body: { active: !m.active } }), { success: m.active ? 'Acceso desactivado' : 'Acceso reactivado' })) loadTeam();
   };
 

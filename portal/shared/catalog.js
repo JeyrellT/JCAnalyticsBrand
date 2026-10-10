@@ -31,6 +31,57 @@ export const SERVICES = {
   otro: 'Otro',
 };
 
+/** Áreas de negocio para agrupar el catálogo de servicios. */
+export const SERVICE_GROUPS = {
+  sistemas: { label: 'Sistemas y web', tone: 'blue' },
+  datos: { label: 'Datos y BI', tone: 'violet' },
+  automatizacion: { label: 'Automatización', tone: 'teal' },
+  finanzas: { label: 'Fiscal y finanzas', tone: 'amber' },
+  marketing: { label: 'Marketing y contenido', tone: 'red' },
+  academico: { label: 'Formación y tesis', tone: 'slate' },
+  productos: { label: 'Productos propios', tone: 'ink' },
+};
+
+/**
+ * Valores iniciales de cada línea de servicio (precios "desde" en US$ del
+ * cotizador público, jcanalytics-app/src/data/cotizador.js). El admin puede
+ * ajustarlos en el portal; estos solo siembran la tabla service_lines.
+ */
+export const SERVICE_DEFAULTS = {
+  software_medida: { group: 'sistemas', price_from_usd: 2000, unit: null },
+  pagina_web: { group: 'sistemas', price_from_usd: 900, unit: null },
+  fiscal_planilla: { group: 'finanzas', price_from_usd: 150, unit: null },
+  power_bi: { group: 'datos', price_from_usd: 125, unit: null },
+  python_pipeline: { group: 'datos', price_from_usd: 1200, unit: null },
+  alteryx_knime: { group: 'datos', price_from_usd: 65, unit: null },
+  power_automate: { group: 'automatizacion', price_from_usd: 85, unit: null },
+  excel_vba: { group: 'automatizacion', price_from_usd: 30, unit: null },
+  doc_generation: { group: 'automatizacion', price_from_usd: 40, unit: null },
+  analisis_tfg: { group: 'academico', price_from_usd: 50, unit: null },
+  community_manager: { group: 'marketing', price_from_usd: 150, unit: 'mes' },
+  video_edicion: { group: 'marketing', price_from_usd: 45, unit: 'pieza' },
+  producto_saas: { group: 'productos', price_from_usd: null, unit: null },
+  otro: { group: 'sistemas', price_from_usd: null, unit: null },
+};
+
+/** Rol de cada persona dentro de un proyecto. */
+export const PROJECT_ROLES = {
+  responsable: 'Responsable',
+  desarrollo: 'Desarrollo',
+  diseno: 'Diseño',
+  datos: 'Datos y BI',
+  contenido: 'Contenido y redes',
+  comercial: 'Comercial',
+  soporte: 'Soporte',
+  equipo: 'Equipo',
+};
+
+export const CLIENT_STATUS = {
+  prospecto: { label: 'Prospecto', tone: 'amber' },
+  activo: { label: 'Activo', tone: 'teal' },
+  inactivo: { label: 'Inactivo', tone: 'slate' },
+};
+
 export const PROJECT_KINDS = {
   cliente: { label: 'Cliente', hint: 'Lo construimos para un cliente.' },
   producto: { label: 'Producto propio', hint: 'BarberXCR, Taller Ticos, Glow Studio…' },

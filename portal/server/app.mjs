@@ -18,11 +18,8 @@ import { join, normalize, extname, sep } from 'node:path';
 import { createContext } from './context.mjs';
 import { HttpError, readJson, parseCookies, serializeCookie } from './http.mjs';
 import { createLoginLimiter, newSessionToken, hashToken } from './auth.mjs';
-import { coreRoutes } from './routes/core.mjs';
-import { workRoutes } from './routes/work.mjs';
-import { investmentRoutes } from './routes/investments.mjs';
-import { dashboardRoutes } from './routes/dashboard.mjs';
-import { canInvest } from '../shared/catalog.js';
+import { registerRoutes } from './routes/index.mjs';
+import { createRouter } from './router.mjs';
 
 const COOKIE = 'jcp_session';
 const IDLE_MS = 12 * 3_600_000;         // la sesión expira tras 12 h sin uso
@@ -48,12 +45,7 @@ const CSP = [
 
 export function createPortalServer({ db, env = process.env, now = () => Date.now(), staticDir = null, logger = console } = {}) {
   const ctx = createContext({ db, now });
-  const routes = [];
-  const route = (method, path, access, handler) => {
-    const keys = [];
-    const pattern = new RegExp(`^${path.replace(/\./g, '\\.').replace(/:(\w+)/g, (_, k) => { keys.push(k); return '(\\d+)'; })}$`);
-    routes.push({ method, pattern, keys, access, handler });
-  };
+  const router = createRouter();
 
   const isProduction = env.NODE_ENV === 'production';
   const allowedOrigins = new Set((env.PORTAL_ALLOWED_ORIGINS || '').split(',').map((o) => o.trim()).filter(Boolean));
@@ -110,10 +102,7 @@ export function createPortalServer({ db, env = process.env, now = () => Date.now
     return row;
   }
 
-  coreRoutes(route, ctx, session);
-  dashboardRoutes(route, ctx);
-  workRoutes(route, ctx);
-  investmentRoutes(route, ctx);
+  registerRoutes(router.route, ctx, session);
 
   function securityHeaders(res, req) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -139,29 +128,14 @@ export function createPortalServer({ db, env = process.env, now = () => Date.now
   }
 
   async function handleApi(req, res, pathname, query) {
-    const candidates = routes.filter((r) => r.pattern.test(pathname));
-    if (!candidates.length) return json(res, 404, { error: 'not_found' });
-    const match = candidates.find((r) => r.method === req.method);
-    if (!match) return json(res, 405, { error: 'method_not_allowed' });
-
+    const { route: found, params } = router.match(req.method, pathname);
     if (req.method !== 'GET') {
       if (req.headers['x-portal-request'] !== '1' || !originAllowed(req)) return json(res, 403, { error: 'csrf_blocked' });
     }
-
-    let user = null;
-    if (match.access !== 'public') {
-      user = currentUser(req);
-      if (!user) return json(res, 401, { error: 'unauthenticated' });
-      // Con contraseña temporal solo se permite ver el perfil, cambiarla o salir.
-      if (match.access !== 'any' && user.must_change_password) return json(res, 403, { error: 'password_change_required' });
-      if (match.access === 'invest' && !canInvest(user)) return json(res, 403, { error: 'forbidden' });
-      if (match.access === 'admin' && user.role !== 'admin') return json(res, 403, { error: 'forbidden' });
-    }
-
+    const user = found.access === 'public' ? null : currentUser(req);
+    router.authorize(found, user);
     const body = await readJson(req);
-    const values = match.pattern.exec(pathname).slice(1);
-    const params = Object.fromEntries(match.keys.map((k, i) => [k, Number(values[i])]));
-    const result = await match.handler({ req, res, user, params, query, body, ip: clientIp(req) });
+    const result = await found.handler({ req, res, user, params, query, body, ip: clientIp(req) });
     if (!res.headersSent) json(res, 200, result ?? { ok: true });
   }
 

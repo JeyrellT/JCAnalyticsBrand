@@ -5,7 +5,7 @@ import { Plus, Search, MessageSquare, CalendarClock, Trash2, Send, Filter, Kanba
 import { useResource, useSession } from '../lib/session.jsx';
 import { api } from '../lib/api.js';
 import { useLocation, navigate, Link } from '../lib/router.jsx';
-import { PageHeader, PageLoader, Badge, Modal, Field, Select, Avatar, useAction, cx } from '../components/ui.jsx';
+import { PageHeader, PageLoader, Badge, Modal, Field, Select, Avatar, useAction, useConfirm, cx } from '../components/ui.jsx';
 import { PersonSelect } from '../components/common.jsx';
 import { TASK_STATUS, TASK_STATUS_ORDER, TASK_PRIORITY } from '../../shared/catalog.js';
 import { dueLabel, timeAgo, todayKey } from '../lib/format.js';
@@ -47,6 +47,7 @@ function Comments({ taskId }) {
 
 function TaskModal({ task, defaults, projects, onClose, onSaved }) {
   const [run, busy] = useAction();
+  const confirm = useConfirm();
   const [form, setForm] = useState(() => task ?? { status: 'por_hacer', priority: 'media', ...defaults });
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -57,7 +58,7 @@ function TaskModal({ task, defaults, projects, onClose, onSaved }) {
     if (res) { onSaved(); onClose(); }
   }
   async function remove() {
-    if (!window.confirm('¿Eliminar esta tarea y sus comentarios?')) return;
+    if (!(await confirm({ title: 'Eliminar tarea', message: 'Se borran la tarea y sus comentarios. No se puede deshacer.', confirmLabel: 'Eliminar', tone: 'danger' }))) return;
     if (await run(() => api(`/api/tasks/${task.id}`, { method: 'DELETE' }), { success: 'Tarea eliminada' })) { onSaved(); onClose(); }
   }
 

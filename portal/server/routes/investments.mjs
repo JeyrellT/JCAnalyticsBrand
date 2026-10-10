@@ -19,7 +19,7 @@ import { randomUUID } from 'node:crypto';
 import { INVESTMENT_CATEGORIES, INVESTMENT_STATUS, MOVEMENT_TYPE_LABEL } from '../../shared/catalog.js';
 import { investmentMetrics, allocateProRata, cumulativeSeries, toCRC, formatMoney, formatPercent } from '../../shared/finance.js';
 import { fail, invalid, has, text, oneOf, dateOnly, id, minorAmount, number } from '../http.mjs';
-import { transaction } from '../db.mjs';
+import { transaction } from '../schema.mjs';
 import { pendingForUser } from './core.mjs';
 
 export function investmentRoutes(route, ctx) {

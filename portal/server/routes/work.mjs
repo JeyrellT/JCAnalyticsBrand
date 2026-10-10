@@ -8,7 +8,7 @@ import {
   APPOINTMENT_KINDS, APPOINTMENT_STATUS, SLA_STATUSES, canInvest,
 } from '../../shared/catalog.js';
 import { fail, invalid, has, text, oneOf, dateOnly, dateTime, id, minorAmount, url } from '../http.mjs';
-import { transaction } from '../db.mjs';
+import { transaction } from '../schema.mjs';
 
 const SUPPORT_DAYS = 30;
 const DAY = 86_400_000;

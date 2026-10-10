@@ -7,7 +7,7 @@ import {
 import { useResource, useSession } from '../lib/session.jsx';
 import { api } from '../lib/api.js';
 import { useLocation, navigate, Link } from '../lib/router.jsx';
-import { PageHeader, PageLoader, Badge, Modal, Field, Select, AvatarStack, EmptyState, useAction, cx } from '../components/ui.jsx';
+import { PageHeader, PageLoader, Badge, Modal, Field, Select, AvatarStack, EmptyState, useAction, useConfirm, cx } from '../components/ui.jsx';
 import { PeoplePicker, StatusBadge } from '../components/common.jsx';
 import { APPOINTMENT_KINDS, APPOINTMENT_STATUS } from '../../shared/catalog.js';
 import {
@@ -99,9 +99,10 @@ function AppointmentForm({ appointment, defaults, projects, onClose, onSaved }) 
 function AppointmentView({ a, onClose, onEdit, onChanged }) {
   const { user } = useSession();
   const [run, busy] = useAction();
+  const confirm = useConfirm();
   const setStatus = async (status, success) => { if (await run(() => api(`/api/appointments/${a.id}`, { method: 'PATCH', body: { status } }), { success })) onChanged(); };
   const remove = async () => {
-    if (!window.confirm('¿Eliminar la cita? Se avisará a los participantes.')) return;
+    if (!(await confirm({ title: 'Eliminar cita', message: 'Se avisará a los participantes.', confirmLabel: 'Eliminar', tone: 'danger' }))) return;
     if (await run(() => api(`/api/appointments/${a.id}`, { method: 'DELETE' }), { success: 'Cita eliminada' })) { onChanged(); onClose(); }
   };
   const reminder = whatsappLink(a.contact_phone, `Hola${a.contact_name ? ` ${a.contact_name.split(' ')[0]}` : ''}, te recordamos nuestra cita "${a.title}" el ${formatDateTime(a.starts_at)}${a.meeting_url ? `.\nEnlace: ${a.meeting_url}` : a.location ? ` en ${a.location}` : ''}.\n¿Nos confirmás tu asistencia?\n\n${user.name.split(' ')[0]} · JC Analytics`);

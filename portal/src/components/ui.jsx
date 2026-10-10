@@ -220,3 +220,32 @@ export function Tabs({ tabs, value, onChange, className }) {
     </div>
   );
 }
+
+// ── Confirmación dentro de la página ───────────────────────────────────────
+// Reemplaza window.confirm (bloqueado en vistas embebidas y poco claro en móvil).
+const ConfirmContext = createContext(() => Promise.resolve(false));
+
+export function ConfirmProvider({ children }) {
+  const [request, setRequest] = useState(null);
+  const confirm = useCallback((options) => new Promise((resolve) => {
+    setRequest({ title: '¿Confirmás?', confirmLabel: 'Confirmar', tone: 'primary', ...(typeof options === 'string' ? { message: options } : options), resolve });
+  }), []);
+  const close = (value) => { request?.resolve(value); setRequest(null); };
+  return (
+    <ConfirmContext.Provider value={confirm}>
+      {children}
+      {request && (
+        <Modal open onClose={() => close(false)} title={request.title} size="sm"
+          footer={<>
+            <button type="button" className="btn btn-ghost" onClick={() => close(false)}>Cancelar</button>
+            <button type="button" data-autofocus className={cx('btn', request.tone === 'danger' ? 'btn-danger' : 'btn-primary')} onClick={() => close(true)}>{request.confirmLabel}</button>
+          </>}>
+          {request.message && <p className="text-sm text-ink/80">{request.message}</p>}
+        </Modal>
+      )}
+    </ConfirmContext.Provider>
+  );
+}
+
+/** const confirm = useConfirm(); if (await confirm({ title, message, confirmLabel, tone: 'danger' })) … */
+export const useConfirm = () => useContext(ConfirmContext);
