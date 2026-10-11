@@ -11,6 +11,10 @@ import { ROLES, MEMBER_COLORS, canInvest } from '../../shared/catalog.js';
 import { publicUser, SENSITIVE_KINDS } from '../context.mjs';
 import { fail, invalid, has, text, oneOf, email, color, id, number } from '../http.mjs';
 import { hashPassword, verifyPassword, passwordProblem, temporaryPassword, burnPasswordCheck } from '../auth.mjs';
+import { pendingForUser } from './common.mjs';
+
+// La regla de doble control vive en common.mjs (también la usan las automatizaciones).
+export { pendingForUser };
 
 export function coreRoutes(route, ctx, session) {
   const { db } = ctx;
@@ -46,6 +50,7 @@ export function coreRoutes(route, ctx, session) {
     settings: ctx.settings(),
     unread: unreadCount(user),
     pending_confirmations: canInvest(user) ? pendingForUser(ctx, user).length : 0,
+    push_available: !!ctx.push,
   }));
 
   route('PATCH', '/api/me', 'user', ({ user, body }) => {
@@ -199,13 +204,4 @@ export function coreRoutes(route, ctx, session) {
       await rm(file, { force: true });
     }
   });
-}
-
-/** Movimientos que este usuario debe confirmar (regla de doble control). */
-export function pendingForUser(ctx, user) {
-  // Misma regla que canResolve() en routes/investments.mjs.
-  return ctx.db.prepare(`SELECT m.* FROM movements m JOIN users p ON p.id = m.partner_id
-    WHERE m.status = 'pendiente' AND m.created_by <> ?
-      AND (m.created_by = m.partner_id OR m.partner_id = ? OR p.active = 0 OR p.role NOT IN ('admin','socio'))
-    ORDER BY m.created_at`).all(user.id, user.id);
 }

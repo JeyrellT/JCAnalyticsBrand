@@ -1,0 +1,51 @@
+{
+  "id": "/",
+  "name": "Portal JC Analytics",
+  "short_name": "JC Portal",
+  "description": "Portal privado del equipo JC Analytics: tareas, agenda, proyectos y avisos al instante en tu celular.",
+  "lang": "es-CR",
+  "dir": "ltr",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#071a36",
+  "background_color": "#f5f8fb",
+  "categories": ["business", "productivity"],
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nueva tarea",
+      "short_name": "Tarea",
+      "description": "Crear una tarea en el tablero",
+      "url": "/tablero?nueva=1",
+      "icons": [{ "src": "/icons/shortcut-tarea-96.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Agendar cita",
+      "short_name": "Cita",
+      "description": "Agendar una cita en la agenda",
+      "url": "/agenda?nueva=1",
+      "icons": [{ "src": "/icons/shortcut-cita-96.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Buzón",
+      "short_name": "Buzón",
+      "description": "Ver mis avisos y confirmaciones",
+      "url": "/buzon",
+      "icons": [{ "src": "/icons/shortcut-buzon-96.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Registrar avance",
+      "short_name": "Avance",
+      "description": "Registrar el avance de un proyecto",
+      "url": "/proyectos",
+      "icons": [{ "src": "/icons/shortcut-avance-96.png", "sizes": "96x96", "type": "image/png" }]
+    }
+  ]
+}

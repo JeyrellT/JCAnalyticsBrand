@@ -2,6 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api, onUnauthenticated } from './api.js';
 import { canInvest } from '../../shared/catalog.js';
+import { useAppBadge, onPortalPush, unsubscribePush } from './pwa.js';
 
 const SessionContext = createContext(null);
 
@@ -35,6 +36,10 @@ export function SessionProvider({ children }) {
     return () => { alive = false; off(); };
   }, []);
 
+  // Globo del ícono instalado = avisos sin leer; un push recibido refresca los contadores.
+  useAppBadge(state.status === 'ready' ? state.unread : 0);
+  useEffect(() => onPortalPush(() => refresh()), [refresh]);
+
   const ready = state.status === 'ready' && !state.user?.must_change_password;
   useEffect(() => {
     if (!ready) return undefined;
@@ -58,7 +63,8 @@ export function SessionProvider({ children }) {
     loadTeam,
     signedIn: (user) => { setState((s) => ({ ...s, status: 'ready', user })); refresh(); },
     logout: async () => {
-      try { await api('/api/auth/logout', { method: 'POST' }); } finally { setState({ status: 'anonymous', user: null, settings: {}, unread: 0, pending: 0 }); setTeam([]); }
+      // En un celular compartido, este dispositivo deja de recibir los avisos de esta persona.
+      try { await unsubscribePush().catch(() => {}); await api('/api/auth/logout', { method: 'POST' }); } finally { setState({ status: 'anonymous', user: null, settings: {}, unread: 0, pending: 0 }); setTeam([]); }
     },
   }), [state, team, refresh, loadTeam]);
 

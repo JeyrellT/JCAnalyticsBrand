@@ -118,3 +118,12 @@ export function createHelpers(ctx) {
     listClients, getClient, clientExists,
   };
 }
+
+/** Movimientos que este usuario debe confirmar (regla de doble control). */
+export function pendingForUser(ctx, user) {
+  // Misma regla que canResolve() en routes/investments.mjs.
+  return ctx.db.prepare(`SELECT m.* FROM movements m JOIN users p ON p.id = m.partner_id
+    WHERE m.status = 'pendiente' AND m.created_by <> ?
+      AND (m.created_by = m.partner_id OR m.partner_id = ? OR p.active = 0 OR p.role NOT IN ('admin','socio'))
+    ORDER BY m.created_at`).all(user.id, user.id);
+}

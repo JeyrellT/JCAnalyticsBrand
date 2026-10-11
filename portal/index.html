@@ -8,7 +8,14 @@
     <meta name="description" content="Portal privado del equipo JC Analytics: proyectos, operaciones e inversiones." />
     <title>Portal JC Analytics</title>
     <link rel="icon" type="image/png" href="/favicon-32.png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- App instalable (PWA): Android usa el manifiesto; iPhone/iPad, además, estas etiquetas. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="application-name" content="JC Portal" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="JC Portal" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Inter:wght@400..700&display=swap" rel="stylesheet" />

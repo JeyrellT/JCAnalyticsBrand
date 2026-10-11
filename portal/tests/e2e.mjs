@@ -233,6 +233,53 @@ try {
     await shot(page, '17-cliente-detalle');
   });
 
+  await check('avisos y app: manifiesto, app instalable y preferencias', async () => {
+    const manifestHref = await page.locator('link[rel="manifest"]').getAttribute('href');
+    const manifest = await (await page.request.get(`${base}${manifestHref}`)).json();
+    assert.equal(manifest.display, 'standalone');
+    assert.ok(manifest.icons.some((i) => i.purpose?.includes('maskable')), 'ícono maskable para Android');
+    assert.ok(manifest.shortcuts?.length >= 3, 'atajos al mantener presionado el ícono');
+    const swReady = await page.evaluate(() => Promise.race([
+      navigator.serviceWorker.ready.then((r) => !!r.active),
+      new Promise((resolve) => setTimeout(() => resolve(false), 8000)),
+    ]));
+    assert.ok(swReady, 'el service worker queda activo (app instalable y sin conexión)');
+    await page.goto(`${base}/notificaciones`);
+    await page.getByRole('heading', { name: 'Avisos y app', level: 1 }).waitFor();
+    const tareas = page.getByRole('switch', { name: /Tareas y comentarios/ }).first();
+    await tareas.waitFor();
+    assert.equal(await tareas.getAttribute('aria-checked'), 'true');
+    await Promise.all([
+      page.waitForResponse((r) => r.url().includes('/api/me/notification-prefs') && r.request().method() === 'PATCH'),
+      tareas.click(),
+    ]);
+    const prefs = (await (await page.request.get(`${base}/api/me/notification-prefs`)).json()).prefs;
+    assert.equal(prefs.categories.tareas, false, 'la preferencia quedó guardada en el servidor');
+    await page.getByText('El servidor todavía no tiene avisos activos', { exact: false }).waitFor();
+    await shot(page, '18-avisos-y-app');
+  });
+
+  await check('automatizaciones: el admin prueba una y crea una tarea recurrente', async () => {
+    const adminPage = await newPage({ width: 1440, height: 900 });
+    await login(adminPage, 'jeyrell');
+    await adminPage.goto(`${base}/automatizaciones`);
+    await adminPage.getByRole('heading', { name: 'Automatizaciones', level: 1 }).waitFor();
+    await adminPage.getByRole('switch', { name: 'Recordatorio de citas' }).waitFor();
+    await shot(adminPage, '19-automatizaciones');
+    await adminPage.getByRole('button', { name: /Probar ahora: Tareas recurrentes/ }).click();
+    await adminPage.locator('[aria-live="polite"]').getByText(/./).first().waitFor();
+    await adminPage.getByRole('button', { name: 'Nueva tarea recurrente' }).first().click();
+    const dialog = adminPage.getByRole('dialog');
+    await dialog.getByLabel('Título').fill('Revisar pauta de BarberXCR');
+    await dialog.getByRole('radio', { name: 'Semanal' }).check({ force: true });
+    await dialog.getByRole('radio', { name: 'Lunes' }).check({ force: true });
+    await dialog.getByRole('button', { name: /Guardar|Crear/ }).last().click();
+    await adminPage.getByText('Revisar pauta de BarberXCR').first().waitFor();
+    const list = await (await adminPage.request.get(`${base}/api/recurring-tasks`)).json();
+    assert.ok(list.recurring.some((r) => r.title === 'Revisar pauta de BarberXCR' && r.frequency === 'semanal' && r.weekday === 1));
+    await adminPage.context().close();
+  });
+
   // ── Colaboradora: sin acceso a inversiones ────────────────────────────────
   await check('colaboradora no ve inversiones y cerrar sesión la deja fuera', async () => {
     const p2 = await newPage({ width: 1440, height: 900 });

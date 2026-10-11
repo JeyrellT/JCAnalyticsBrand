@@ -169,3 +169,42 @@ export const MOVEMENT_STATUS_META = {
 };
 
 export const MEMBER_COLORS = ['#0065df', '#00a6b2', '#8b5cf6', '#ff5a00', '#c0764f', '#39b51c', '#e8b32c', '#e694ae'];
+
+// ── v3: avisos push y automatizaciones (docs/v3-contrato.md) ────────────────
+
+/**
+ * Categorías de aviso que cada persona puede silenciar en el push. Cada una
+ * agrupa uno o más `notifications.kind`; el buzón recibe todo igual.
+ * `invest: true` = solo socios/admin (la categoría no aplica a colaboradores).
+ */
+export const NOTIFICATION_CATEGORIES = {
+  tareas: { label: 'Tareas y comentarios', hint: 'Tareas nuevas, asignaciones, vencimientos y comentarios.', kinds: ['task', 'comment'] },
+  agenda: { label: 'Citas y recordatorios', hint: 'Citas nuevas o movidas, recordatorios y citas sin confirmar.', kinds: ['appointment'] },
+  proyectos: { label: 'Proyectos, clientes y servicios', hint: 'Cuando te asignan o te suman a un proyecto o servicio.', kinds: ['project', 'service'] },
+  dinero: { label: 'Dinero de socios', hint: 'Aportes, retornos y mensajes por confirmar. Solo socios y admin.', kinds: ['movement', 'investment', 'message'], invest: true },
+  resumen: { label: 'Resumen "Mi día"', hint: 'Un aviso por la mañana con tus citas, tareas y confirmaciones.', kinds: ['digest'] },
+  automatizaciones: { label: 'Alertas automáticas', hint: 'Avance de 72 h, fin de soporte y tipo de cambio.', kinds: ['automation'] },
+};
+
+/** Categoría de un `notifications.kind` (los tipos desconocidos caen en "proyectos"). */
+export function notificationCategory(kind) {
+  for (const [cat, meta] of Object.entries(NOTIFICATION_CATEGORIES)) if (meta.kinds.includes(kind)) return cat;
+  return 'proyectos';
+}
+
+/** Las 9 automatizaciones incluidas (etiquetas compartidas con la interfaz). */
+export const AUTOMATIONS = {
+  resumen_diario: { name: 'Resumen "Mi día"', description: 'Cada mañana, a la hora de cada persona, un aviso con sus citas, tareas y confirmaciones de hoy. No se envía si todo está en cero.', category: 'resumen' },
+  recordatorio_citas: { name: 'Recordatorio de citas', description: 'Avisa a los participantes un rato antes de cada cita no cancelada.', category: 'agenda' },
+  cita_sin_confirmar: { name: 'Cita sin confirmar', description: 'Citas con clientes aún "programadas" que empiezan en menos de 24 h: recuerda confirmar con el cliente.', category: 'agenda' },
+  avance_72h: { name: 'Avance de 72 h', description: 'Proyectos de cliente: avisa al responsable a los 2/3 del plazo y, si vence, también a los admin.', category: 'automatizaciones' },
+  tareas_vencen: { name: 'Tareas que vencen hoy', description: 'Cada mañana avisa a cada persona de sus tareas abiertas que vencen hoy.', category: 'tareas' },
+  dinero_pendiente: { name: 'Dinero sin confirmar', description: 'Movimientos de socios pendientes por más de 24 h: recuerda a quien debe confirmarlos.', category: 'dinero' },
+  fin_soporte: { name: 'Fin del soporte de 30 días', description: 'Una semana antes de que termine el soporte de un proyecto entregado, avisa al responsable.', category: 'automatizaciones' },
+  tareas_recurrentes: { name: 'Tareas recurrentes', description: 'Crea en el tablero las tareas de las reglas activas que tocan hoy y avisa a la persona asignada.', category: 'tareas' },
+  tipo_cambio: { name: 'Tipo de cambio', description: 'Consulta el dólar (venta) en Hacienda y actualiza el tipo de cambio del portal si cambió.', category: 'automatizaciones' },
+};
+
+export const RECURRING_FREQUENCIES = { diaria: 'Diaria', semanal: 'Semanal', mensual: 'Mensual' };
+/** 1 = lunes … 7 = domingo (igual que recurring_tasks.weekday). */
+export const WEEKDAYS = { 1: 'lunes', 2: 'martes', 3: 'miércoles', 4: 'jueves', 5: 'viernes', 6: 'sábado', 7: 'domingo' };

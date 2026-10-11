@@ -43,8 +43,16 @@ const CSP = [
   "form-action 'self'",
 ].join('; ');
 
-export function createPortalServer({ db, env = process.env, now = () => Date.now(), staticDir = null, logger = console } = {}) {
-  const ctx = createContext({ db, now });
+/**
+ * @param {object} o
+ * @param {object|null} [o.push]  servicio Web Push (server/push.mjs); null = avisos solo en el buzón
+ * @param {(() => Promise<unknown>)|null} [o.fetchExchangeRate]  consulta del tipo de cambio para la automatización tipo_cambio
+ * El servidor devuelto expone `server.ctx` (y `server.ctx.automations`) para el programador de index.mjs y las pruebas.
+ */
+export function createPortalServer({
+  db, env = process.env, now = () => Date.now(), staticDir = null, logger = console, push = null, fetchExchangeRate = null,
+} = {}) {
+  const ctx = createContext({ db, now, push, fetchExchangeRate });
   const router = createRouter();
 
   const isProduction = env.NODE_ENV === 'production';
@@ -165,7 +173,7 @@ export function createPortalServer({ db, env = process.env, now = () => Date.now
     res.end(await readFile(file));
   }
 
-  return createServer({ requestTimeout: 30_000, headersTimeout: 15_000 }, async (req, res) => {
+  const server = createServer({ requestTimeout: 30_000, headersTimeout: 15_000 }, async (req, res) => {
     const started = Date.now();
     let pathname = '/';
     try {
@@ -189,4 +197,6 @@ export function createPortalServer({ db, env = process.env, now = () => Date.now
       if (env.PORTAL_LOG_REQUESTS === '1') logger.info(`[portal] ${req.method} ${pathname} ${res.statusCode} ${Date.now() - started}ms`);
     }
   });
+  server.ctx = ctx;
+  return server;
 }

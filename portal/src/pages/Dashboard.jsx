@@ -10,6 +10,8 @@ import { Link } from '../lib/router.jsx';
 import { PageLoader, Stat, Badge, AvatarStack, Avatar, EmptyState, cx } from '../components/ui.jsx';
 import { formatMoney, formatTime, formatDayLong, dayKey, todayKey, dueLabel, timeAgo } from '../lib/format.js';
 import { APPOINTMENT_KINDS, TASK_PRIORITY } from '../../shared/catalog.js';
+import { InstallBanner } from '../components/InstallPrompt.jsx';
+import { PortalTodayCard } from '../components/automations.jsx';
 
 const greeting = () => {
   const h = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Costa_Rica', hour: 'numeric', hourCycle: 'h23' }).format(new Date()));
@@ -82,6 +84,8 @@ export default function Dashboard() {
           <Link to="/agenda?nueva=1" className="btn btn-primary"><CalendarClock className="h-4 w-4" />Agendar cita</Link>
         </div>
       </header>
+
+      <InstallBanner />
 
       {/* Celular y tableta: "Hoy" en mosaicos grandes. */}
       <section aria-labelledby="today-title" className="lg:hidden">
@@ -209,6 +213,8 @@ export default function Dashboard() {
           )}
         </section>
       </div>
+
+      <PortalTodayCard />
 
       <div className="grid gap-6 xl:grid-cols-[1fr_1.25fr]">
         {investments && (

@@ -18,8 +18,10 @@ const DAY = 24 * HOUR;
  * @param {() => number} [o.now]
  * @param {object|null} [o.push]  servicio de envío Web Push (server/push.mjs) o un simulador en la demo;
  *        null = sin push (las notificaciones quedan solo en el buzón).
+ * @param {(() => Promise<unknown>)|null} [o.fetchExchangeRate]  consulta el tipo de cambio (automatización
+ *        tipo_cambio). En Node lo inyecta index.mjs con fetch; null = "sin conexión configurada".
  */
-export function createContext({ db, now = () => Date.now(), push = null }) {
+export function createContext({ db, now = () => Date.now(), push = null, fetchExchangeRate = null }) {
   /** Gancho que recibe cada aviso creado para decidir si además se envía como push. */
   let pushHook = null;
   const nowIso = () => new Date(now()).toISOString();
@@ -44,9 +46,11 @@ export function createContext({ db, now = () => Date.now(), push = null }) {
       unique = unique.filter((u) => allowed.has(u));
     }
     const at = nowIso();
-    for (const userId of unique) insertNotification.run(userId, kind, title, body, link, at);
+    /** id del aviso creado para cada persona (el push lo usa como etiqueta si no hay enlace). */
+    const ids = {};
+    for (const userId of unique) ids[userId] = Number(insertNotification.run(userId, kind, title, body, link, at).lastInsertRowid);
     if (unique.length && pushHook) {
-      try { pushHook(unique, { kind, title, body, link }); } catch { /* un fallo de push nunca rompe la acción */ }
+      try { pushHook(unique, { kind, title, body, link, ids }); } catch { /* un fallo de push nunca rompe la acción */ }
     }
     return unique.length;
   }
@@ -79,7 +83,9 @@ export function createContext({ db, now = () => Date.now(), push = null }) {
 
   return {
     db, now, nowIso, today, settings, numberSetting, notify, log, userName, investorIds, activeUserIds, projectSla,
-    push, setPushHook: (fn) => { pushHook = typeof fn === 'function' ? fn : null; },
+    // push y fetchExchangeRate se leen siempre como ctx.push / ctx.fetchExchangeRate: la demo puede
+    // reemplazarlos después de crear el contexto.
+    push, fetchExchangeRate, setPushHook: (fn) => { pushHook = typeof fn === 'function' ? fn : null; },
   };
 }
 

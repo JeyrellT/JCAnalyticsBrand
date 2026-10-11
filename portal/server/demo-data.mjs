@@ -108,6 +108,15 @@ export async function seedDemoData({ db, passwordHash, login, now: nowArg }) {
   ];
   for (const [api, body] of tasks) await api('POST', '/api/tasks', body);
 
+  // ── Tareas recurrentes y preferencias de avisos (v3) ──────────────────────
+  // Las tareas las crea la automatización "tareas_recurrentes" el día que toca (06:00 CR).
+  await hil('POST', '/api/recurring-tasks', { title: 'Calendario de contenido de la semana', frequency: 'semanal', weekday: 1, assignee_id: U.hillary, project_id: P.marca, priority: 'alta', due_in_days: 1 });
+  await jey('POST', '/api/recurring-tasks', { title: 'Revisar pendientes de socios y tipo de cambio', frequency: 'semanal', weekday: 5, assignee_id: U.jeyrell });
+  await cata('POST', '/api/recurring-tasks', { title: 'Reporte mensual de avance a clientes activos', frequency: 'mensual', monthday: 1, assignee_id: U.catalina, priority: 'alta', due_in_days: 3 });
+  await alex('POST', '/api/recurring-tasks', { title: 'Respaldo y revisión de servidores', frequency: 'mensual', monthday: 15, assignee_id: U.alex, project_id: P.barber, active: false });
+  await hil('PATCH', '/api/me/notification-prefs', { digest_time: '08:00', quiet_start: '20:00' });
+  await s5('PATCH', '/api/me/notification-prefs', { categories: { tareas: false, proyectos: false } });
+
   // ── Avances a clientes ────────────────────────────────────────────────────
   await cata('POST', `/api/projects/${P.vip}/updates`, { channel: 'reunion', note: 'Entrega formal y capacitación al equipo comercial. Inicia soporte de 30 días.' });
 

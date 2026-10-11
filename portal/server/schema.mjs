@@ -278,6 +278,75 @@ export const MIGRATIONS = [
   INSERT OR IGNORE INTO project_members (project_id, user_id, role)
     SELECT id, owner_id, 'responsable' FROM projects WHERE owner_id IS NOT NULL;
   `,
+  // 4 · Avisos push, preferencias, automatizaciones y tareas recurrentes (ver docs/v3-contrato.md).
+  `
+  CREATE TABLE push_subscriptions (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    platform TEXT,
+    user_agent TEXT,
+    created_at TEXT NOT NULL,
+    last_success_at TEXT,
+    last_error TEXT,
+    failures INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE INDEX push_subscriptions_user ON push_subscriptions(user_id);
+
+  CREATE TABLE notification_prefs (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    push_enabled INTEGER NOT NULL DEFAULT 1,
+    categories TEXT NOT NULL DEFAULT '{}',
+    quiet_start TEXT NOT NULL DEFAULT '21:00',
+    quiet_end TEXT NOT NULL DEFAULT '07:00',
+    digest_enabled INTEGER NOT NULL DEFAULT 1,
+    digest_time TEXT NOT NULL DEFAULT '07:30',
+    updated_at TEXT
+  );
+
+  CREATE TABLE automations (
+    key TEXT PRIMARY KEY,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    config TEXT NOT NULL DEFAULT '{}',
+    last_run_at TEXT,
+    last_result TEXT,
+    runs INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT
+  );
+
+  CREATE TABLE automation_log (
+    id INTEGER PRIMARY KEY,
+    automation_key TEXT NOT NULL,
+    dedupe_key TEXT UNIQUE,
+    summary TEXT NOT NULL,
+    recipients INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX automation_log_created ON automation_log(created_at);
+
+  CREATE TABLE recurring_tasks (
+    id INTEGER PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    project_id INTEGER REFERENCES projects(id) ON DELETE SET NULL,
+    assignee_id INTEGER REFERENCES users(id),
+    priority TEXT NOT NULL DEFAULT 'media',
+    frequency TEXT NOT NULL CHECK (frequency IN ('diaria','semanal','mensual')),
+    weekday INTEGER,
+    monthday INTEGER,
+    due_in_days INTEGER NOT NULL DEFAULT 0,
+    active INTEGER NOT NULL DEFAULT 1,
+    last_created_on TEXT,
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  -- Claves VAPID y otros secretos del servidor: ninguna ruta de la API los lee.
+  CREATE TABLE app_secrets (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+  `,
 ];
 
 export const DEFAULT_SETTINGS = {

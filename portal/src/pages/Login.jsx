@@ -29,7 +29,7 @@ function Shell({ children }) {
           </ul>
         </div>
       </section>
-      <section className="flex items-center justify-center px-5 py-10">
+      <section className="flex items-center justify-center px-5 py-10" style={{ paddingTop: 'max(2.5rem, calc(env(safe-area-inset-top) + 1rem))' }}>
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
             <img src={logoMark} alt="" className="h-10 w-10 rounded-xl bg-white p-1 shadow-sm" />

@@ -180,3 +180,78 @@ Cada ejecución actualiza `automations.last_run_at`, `last_result` y `runs`, y e
   - centro de automatizaciones: tarjetas con interruptor y "Probar ahora", ambos solo para admin;
   - historial "Lo que hizo el portal";
   - tareas recurrentes.
+
+## Notas de implementación (backend)
+
+**Variables de entorno** (también en `.env.example`):
+
+| Variable | Uso |
+|---|---|
+| `PORTAL_VAPID_PUBLIC_KEY` / `PORTAL_VAPID_PRIVATE_KEY` | Claves VAPID en base64url: la pública sin comprimir (65 bytes) y la privada como escalar `d` (32 bytes). Van juntas. Si faltan, se generan una vez y se guardan en `app_secrets`. Si son inválidas o no forman un par, el portal arranca **sin push** y lo dice en el log. |
+| `PORTAL_VAPID_SUBJECT` | `sub` del JWT VAPID. Por defecto, `mailto:gerencia@jcanalytic.com`. |
+| `PORTAL_FX_URL` | API del tipo de cambio. Por defecto, `https://api.hacienda.go.cr/indicadores/tc/dolar`. |
+| `PORTAL_SCHEDULER=0` | Apaga el programador. Por defecto, `runDue()` corre cada 60 s; la primera vez, 5 s después de arrancar. |
+
+**Cableado:**
+- `index.mjs` crea `createPushService({ db, env })` y un `fetchExchangeRate` con `fetch` (10 s de tope) y se los pasa a `createPortalServer({ push, fetchExchangeRate })`.
+- `createPortalServer` expone `server.ctx`.
+- `routes/index.mjs` llama a `installPushDispatch(ctx)` y deja el motor en `ctx.automations` (`list`, `get`, `configure`, `run`, `runDue`).
+- `ctx.push` y `ctx.fetchExchangeRate` se leen en cada uso, así que la demo puede asignarlos después de `createContext()`.
+- `ctx.notify` ahora pasa al gancho también `ids` (`{ [userId]: notificationId }`), que la etiqueta del push usa cuando no hay enlace.
+
+**Formas de respuesta:**
+- `GET /api/recurring-tasks` → `{ recurring }`.
+- `POST` y `PATCH /api/recurring-tasks/:id` → `{ recurring_task, recurring }`.
+- `DELETE /api/recurring-tasks/:id` → `{ ok, recurring }`.
+- `PATCH /api/automations/:key` → `{ automation }`.
+- `POST /api/automations/:key/run` → `{ result: { summary, recipients, error? }, automation }`. Si la automatización está desactivada, responde 409 `automation_disabled`.
+- `POST /api/push/unsubscribe` → `{ ok, removed }`.
+- `DELETE /api/push/devices/:id` → `{ ok, devices }`. Si el dispositivo no es de la persona, responde 404.
+- Cada `RecurringTask` también trae `created_by_name` y `next_date`, la próxima fecha en que se crea.
+- `log[]` trae `automation_name` y `dedupe_key`.
+
+**Payload del push:**
+- `ts` va en milisegundos, para usarlo como `timestamp` de la notificación.
+- `body` se corta a 300 caracteres y `title` a 120.
+- `POST /api/push/test` usa `category: 'prueba'` y `url: '/notificaciones'`, y no pasa por la política.
+
+**Política:**
+- Si `quiet_start` es igual a `quiet_end`, no hay horario tranquilo.
+- Los tipos de aviso desconocidos caen en la categoría `proyectos`.
+- Cada persona tiene un máximo de 20 dispositivos; al pasarse, se descartan los más viejos.
+- En la lista permitida, el host debe ser exactamente el sufijo o un subdominio con punto. Se rechazan las credenciales en la URL y los puertos explícitos.
+
+**Automatizaciones (precisiones sobre el contrato):**
+- **Historial:** `automation_log` guarda una línea por cada aviso o acción, con su `dedupe_key`, y una línea `Ejecución manual: …` (sin `dedupe_key`) por cada "Probar ahora". Las revisiones de cada minuto sin novedades solo actualizan `last_run_at`, `last_result` y `runs`, para no llenar el historial.
+- **Horario de las que tienen hora:** corren desde su `config.time` hasta el fin del día CR. La deduplicación evita repetir, y así lo que aparece más tarde (una tarea que vence hoy creada a las 10:00) igual se avisa.
+- **`resumen_diario`:** solo sale dentro de las 3 h siguientes a la `digest_time` de cada persona, para no llegar por la tarde tras un reinicio. `force` ignora esa ventana.
+  - "Tareas" cuenta las abiertas asignadas que vencen hoy o antes.
+  - "(K vencidas)" se omite si K = 0.
+  - El enlace es `/`.
+- **`recordatorio_citas`:** además de las canceladas, ignora las `realizada` y `no_asistio`. Va a los participantes, incluido quien la creó.
+- **`fin_soporte`:**
+  - Se agregó `config.time`, por defecto 08:30, para que el aviso no se cree a medianoche, cuando el horario tranquilo lo dejaría sin push.
+  - Avisa cuando el fin cae entre hoy y hoy + 7, igual que la alerta del tablero.
+  - Si no hay responsable, avisa a los admin.
+- **`tipo_cambio`:**
+  - Reclama `fx:<fecha>` en cada consulta exitosa, cambie o no el valor: hay una consulta por día.
+  - Si falla, reintenta cada 30 min.
+  - "Probar ahora" consulta igual y actualiza el valor, pero no repite el aviso del día.
+  - El valor se guarda redondeado a 2 decimales.
+  - Sin `fetchExchangeRate`, el resultado es "Sin conexión configurada".
+- **`tareas_recurrentes`:**
+  - Las tareas quedan con `created_by` = creador de la regla.
+  - La bitácora registra "El portal creó la tarea recurrente…" sin autor.
+  - Si quien la recibe está inactivo, la tarea queda sin asignar.
+  - Una regla creada después de las 06:00 de un día que le toca crea su tarea en el siguiente minuto.
+- **`dinero_pendiente`:** su historial y `last_result` no se muestran a colaboradores.
+
+**Seguridad:**
+- Ninguna ruta lee `app_secrets`; `GET /api/settings` sale de la tabla `settings`.
+- El respaldo `GET /api/admin/backup` (solo admin) copia la base completa, **incluida la clave VAPID privada**: tratarlo como secreto.
+
+**Demo:**
+- Crear el contexto con `createContext({ db, now, push: simulador })`, o asignar `backend.ctx.push = { publicKey: 'demo', deliver: async (sub, payload) => { …mostrar…; return { ok: true, status: 201, gone: false }; } }` después de `createDemoBackend()`.
+- Llamar `backend.ctx.automations.runDue()` con un intervalo propio.
+- La suscripción simulada debe pasar la lista permitida: por ejemplo, `endpoint: 'https://fcm.googleapis.com/fcm/send/demo'` y claves con el largo correcto (`p256dh` de 87 caracteres que empieza con `B`, `auth` de 22).
+- La siembra (`demo-data.mjs`) crea 4 reglas recurrentes y preferencias de ejemplo.
