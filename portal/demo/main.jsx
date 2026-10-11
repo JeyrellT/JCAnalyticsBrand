@@ -4,14 +4,16 @@
 //  2. Corre migraciones y siembra los datos ficticios por la API real.
 //  3. Conecta api() a ese backend (setTransport) y el router en modo memoria.
 //  4. Monta la misma <Root /> de la app con un selector de personas en el login.
+//  5. v3: push simulado (avisos tipo celular), motor de automatizaciones con su
+//     propio intervalo y "Simular aviso" en la barra de la demo.
 // ============================================================================
 
 import './polyfills.js';
-import { StrictMode, useSyncExternalStore } from 'react';
+import { StrictMode, useCallback, useState, useSyncExternalStore } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import initSqlJs from 'sql.js/dist/sql-asm.js';
-import { FlaskConical, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { FlaskConical, Loader2, AlertTriangle, RefreshCw, BellRing } from 'lucide-react';
 import '../src/index.css';
 import { Root } from '../src/App.jsx';
 import { api, setTransport, enableDemo } from '../src/lib/api.js';
@@ -20,6 +22,8 @@ import { ROLES } from '../shared/catalog.js';
 import logoMark from '../src/assets/logo-mark.webp';
 import { openDemoDatabase } from './sqljs-adapter.js';
 import { createDemoBackend, DEMO_PASSWORD, VIEWER } from './backend.js';
+import { createScenarios } from './scenarios.js';
+import { PhoneNotifications, SimulateSheet, showPhoneNotification } from './notifications.jsx';
 
 // ── Descargas: dentro de un artefacto no hay descargas ──────────────────────
 let noticeTimer;
@@ -85,25 +89,61 @@ function createViewerStore(backend) {
   };
 }
 
-function DemoBar({ store }) {
+function DemoBar({ store, scenarios }) {
   const viewer = useSyncExternalStore(store.subscribe, store.get);
+  const [simulating, setSimulating] = useState(false);
+  const closeSheet = useCallback(() => setSimulating(false), []);
   if (!viewer) return null;
   async function switchPersona() {
     try { await api('/api/auth/logout', { method: 'POST' }); } catch { /* ya sin sesión */ }
     // Un 401 avisa a la sesión de la app (onUnauthenticated) y vuelve al selector.
     await api('/api/me').catch(() => {});
   }
+  const chip = 'flex shrink-0 items-center gap-1 rounded-lg bg-white px-2.5 py-1 font-semibold text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100';
   return (
-    <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-1.5 text-xs text-amber-900 lg:px-6">
-      <FlaskConical className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-      <p className="min-w-0 flex-1 truncate">
-        <span className="font-bold">Demo</span> · {viewer.name.split(' ')[0]} <span className="text-amber-700">({ROLES[viewer.role]?.label ?? viewer.role})</span>
-      </p>
-      <button type="button" onClick={switchPersona} className="shrink-0 rounded-lg bg-white px-2.5 py-1 font-semibold text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100">
-        Cambiar de persona
-      </button>
-    </div>
+    <>
+      <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-1.5 text-xs text-amber-900 lg:px-6">
+        <FlaskConical className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <p className="min-w-0 flex-1 truncate">
+          <span className="font-bold">Demo</span> · {viewer.name.split(' ')[0]} <span className="text-amber-700">({ROLES[viewer.role]?.label ?? viewer.role})</span>
+        </p>
+        <button type="button" onClick={() => setSimulating(true)} className={chip} aria-haspopup="dialog">
+          <BellRing className="h-3.5 w-3.5" aria-hidden="true" />Simular aviso
+        </button>
+        <button type="button" onClick={switchPersona} className={chip} aria-label="Cambiar de persona">
+          <span className="sm:hidden">Cambiar</span><span className="hidden sm:inline">Cambiar de persona</span>
+        </button>
+      </div>
+      <SimulateSheet open={simulating} onClose={closeSheet} scenarios={scenarios} onNotice={showNotice} />
+    </>
   );
+}
+
+/**
+ * Motor de automatizaciones en la pestaña (en el servidor lo corre index.mjs cada
+ * minuto): arranca con la primera persona, corre ~3 s después de cada ingreso y
+ * luego cada 30 s. Nunca rompe la interfaz.
+ */
+function startAutomations(backend, viewer) {
+  let interval = null;
+  let soon = null;
+  let current = null;
+  const tick = () => {
+    try {
+      Promise.resolve(backend.ctx.automations.runDue()).catch((error) => console.warn('[demo] automatizaciones', error));
+    } catch (error) {
+      console.warn('[demo] automatizaciones', error);
+    }
+  };
+  viewer.subscribe(() => {
+    const id = viewer.get()?.id ?? null;
+    if (id === current) return;
+    current = id;
+    clearTimeout(soon);
+    if (id == null) return;
+    soon = setTimeout(tick, 3000);
+    interval ??= setInterval(tick, 30_000);
+  });
 }
 
 // ── Arranque ────────────────────────────────────────────────────────────────
@@ -150,17 +190,27 @@ async function boot() {
     await backend.seed();
     performance.mark?.('demo:seeded');
     const viewer = createViewerStore(backend);
+    // Avisos: el push simulado muestra en pantalla lo que la política envía a quien mira.
+    backend.simulatePush(showPhoneNotification);
+    const scenarios = createScenarios(backend);
     setTransport(async (path, options) => {
+      // "Probar ahora" del resumen se puede repetir en la demo (ver scenarios.freeDigest).
+      if (String(options?.method ?? 'GET').toUpperCase() === 'POST' && path.split('?')[0] === '/api/automations/resumen_diario/run') {
+        const id = backend.viewerId();
+        if (id != null) scenarios.freeDigest(id);
+      }
       const response = await backend.dispatch(path, options, VIEWER);
       viewer.sync();
       return response;
     });
+    startAutomations(backend, viewer);
     enableDemo({ personas: backend.personas(), password: DEMO_PASSWORD });
     setRouterMode('memory', { initialPath: '/' });
     root.render(
       <StrictMode>
-        <DemoBar store={viewer} />
+        <DemoBar store={viewer} scenarios={scenarios} />
         <Root />
+        <PhoneNotifications />
       </StrictMode>,
     );
   } catch (error) {

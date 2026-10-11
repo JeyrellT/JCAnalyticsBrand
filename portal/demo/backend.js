@@ -25,6 +25,25 @@ export const VIEWER = 'viewer';
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
+/** Navegador del "celular" simulado de cada persona (Mis dispositivos lo muestra como iPhone · App instalada). */
+const DEMO_DEVICE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+
+/** Bytes pseudoaleatorios fijos (por semilla) en base64url sin relleno: claves falsas con el largo correcto. */
+function fakeKey(length, seed, first = null) {
+  const bytes = new Uint8Array(length);
+  let x = (Math.imul(seed + 1, 2654435761) >>> 0) || 1;
+  for (let i = 0; i < length; i += 1) {
+    x ^= x << 13; x >>>= 0;
+    x ^= x >>> 17;
+    x ^= x << 5; x >>>= 0;
+    bytes[i] = x & 255;
+  }
+  if (first != null) bytes[0] = first;
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 /** Respuesta HTTP mínima: captura lo que las rutas escriben directo (CSV, respaldo). */
 function createResponse() {
   const chunks = [];
@@ -112,7 +131,8 @@ export function createDemoBackend({ db, now, onError = (error, where) => console
       const req = {
         method: verb,
         url: url.pathname + url.search,
-        headers: { 'user-agent': 'portal-demo', host: 'portal.demo' },
+        // El navegador real: "Mis dispositivos" describe bien el equipo que activa avisos en la demo.
+        headers: { 'user-agent': (typeof navigator !== 'undefined' && navigator.userAgent) || 'portal-demo', host: 'portal.demo' },
         sid,
       };
       const res = createResponse();
@@ -139,6 +159,35 @@ export function createDemoBackend({ db, now, onError = (error, where) => console
     };
   }
 
+  /**
+   * Corre fn(api) con una sesión lógica propia de otra persona (sin pasar por el
+   * login): los escenarios de la demo crean datos por las rutas reales "como" ella.
+   */
+  async function as(userId, fn) {
+    const sid = `as:${userId}:${Math.random().toString(36).slice(2)}`;
+    sessions.set(sid, userId);
+    try {
+      return await fn(client(sid));
+    } finally {
+      sessions.delete(sid);
+    }
+  }
+
+  /**
+   * Avisos visibles desde el primer momento: cada persona tiene un "celular" con
+   * avisos activos (suscripción falsa que pasa la lista permitida) y su horario
+   * tranquilo vacío (inicio = fin), para que la demo muestre avisos a cualquier hora.
+   */
+  async function seedDemoDevices() {
+    const createdAt = new Date(ctx.now() - 2 * 86_400_000).toISOString();
+    const insert = db.prepare(`INSERT OR IGNORE INTO push_subscriptions (user_id, endpoint, p256dh, auth, platform, user_agent, created_at, failures)
+      VALUES (?, ?, ?, ?, 'demo', ?, ?, 0)`);
+    for (const { id } of db.prepare('SELECT id FROM users WHERE active = 1 ORDER BY id').all()) {
+      await as(id, (api) => api('PATCH', '/api/me/notification-prefs', { quiet_start: '00:00', quiet_end: '00:00' }));
+      insert.run(id, `https://fcm.googleapis.com/fcm/send/demo-${id}`, fakeKey(65, id, 0x04), fakeKey(16, id + 97), DEMO_DEVICE_UA, createdAt);
+    }
+  }
+
   /** Carga los datos ficticios pasando por la API real y deja la demo sin sesión. */
   async function seed() {
     const passwordHash = await hashPassword(DEMO_PASSWORD);
@@ -148,12 +197,47 @@ export function createDemoBackend({ db, now, onError = (error, where) => console
       return client(sid);
     };
     const out = await seedDemoData({ db, passwordHash, login, now: now?.() });
+    await seedDemoDevices();
     sessions.clear();
     return out;
+  }
+
+  /** Id de la persona que mira la demo (sesión VIEWER) o null en el selector. */
+  const viewerId = () => sessions.get(VIEWER) ?? null;
+
+  /**
+   * Servicio de push simulado (misma forma que server/push.mjs): la política de
+   * avisos decide como en producción y aquí cada "envío" sale bien. Solo se
+   * muestra en pantalla lo que va a la persona que mira la demo (una vez por
+   * aviso aunque tenga varios dispositivos).
+   * @param {(payload: object) => void} onShow
+   */
+  let shownCount = 0;
+  function simulatePush(onShow) {
+    const shown = new WeakSet();
+    const touch = db.prepare('UPDATE push_subscriptions SET last_success_at = ?, failures = 0, last_error = NULL WHERE id = ?');
+    ctx.push = {
+      publicKey: 'demo',
+      async deliver(sub, payload) {
+        if (sub.user_id === viewerId() && payload && typeof payload === 'object' && !shown.has(payload)) {
+          shown.add(payload);
+          shownCount += 1;
+          try { onShow(payload); } catch (error) { onError(error, 'push simulado'); }
+        }
+        // Fuera de la transacción de quien avisó (ctx.notify corre dentro de algunas).
+        const at = ctx.nowIso();
+        queueMicrotask(() => { try { touch.run(at, sub.id); } catch { /* el dispositivo ya no existe */ } });
+        return { ok: true, status: 201, gone: false };
+      },
+    };
   }
 
   /** Personas para el selector de la demo, en el orden en que se crearon. */
   const personas = () => db.prepare('SELECT id, name, email, role, color FROM users WHERE active = 1 ORDER BY id').all();
 
-  return { db, ctx, router, dispatch, client, seed, personas, sessions };
+  return {
+    db, ctx, router, dispatch, client, seed, personas, sessions, as, viewerId, simulatePush,
+    /** Cuántos avisos se mostraron en pantalla hasta ahora (para saber si un escenario produjo alguno). */
+    pushShown: () => shownCount,
+  };
 }
