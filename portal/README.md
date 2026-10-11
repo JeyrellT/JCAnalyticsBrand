@@ -53,6 +53,34 @@ Los movimientos en dólares **guardan su tipo de cambio**, así el consolidado e
 
 **Bitácora (`/bitacora`).** Registro de quién hizo qué y cuándo. Los colaboradores no ven las entradas de dinero.
 
+**Automatizaciones (`/automatizaciones`).** El portal revisa la operación cada minuto y avisa a la persona correcta, en el buzón y en el celular. Cada aviso sale una sola vez. Hay 9 automatizaciones:
+
+| Automatización | Cuándo | A quién |
+|---|---|---|
+| Resumen "Mi día" | A la hora que elige cada persona (7:30 por defecto) | Cada persona: citas, tareas y plata por confirmar de hoy |
+| Recordatorio de citas | 60 min antes (ajustable) | Participantes |
+| Cita sin confirmar | Menos de 24 h antes, si sigue "programada" | Quien agendó y participantes |
+| Avance de 72 h | A los 2/3 del plazo y al vencer | Responsable; si vence, también los admin |
+| Tareas que vencen hoy | 8:00 | Asignado |
+| Dinero sin confirmar | 9:00, si lleva más de 24 h | Quien debe confirmarlo |
+| Fin del soporte de 30 días | 7 días antes, 8:30 | Responsable |
+| Tareas recurrentes | 6:00, según cada regla (diaria, semanal o mensual) | Crea la tarea y avisa al asignado |
+| Tipo de cambio | 8:15, desde la API de Hacienda | Actualiza el valor de referencia y avisa a los admin |
+
+El admin las pausa, ajusta su hora y las prueba con "Probar ahora". "Lo que hizo el portal" guarda el historial.
+
+**Avisos y app (`/notificaciones`).** Cada persona:
+- instala el portal en su celular;
+- activa los avisos en ese dispositivo;
+- elige qué le avisamos: tareas, citas, proyectos, dinero (solo socios), resumen y alertas;
+- define su horario tranquilo (21:00–7:00 por defecto). De noche solo suena la plata por confirmar; todo lo demás queda en el buzón.
+
+### Instalar en el celular
+
+- **Android (Chrome):** en "Avisos y app" tocá **Instalar**, o usá el menú ⋮ → *Instalar app*. Los avisos se activan desde ahí mismo.
+- **iPhone/iPad (iOS 16.4 o superior):** abrí el portal en **Safari** → *Compartir* → **Agregar a inicio** → abrí *JC Portal* desde el ícono. Recién ahí, en "Avisos y app", activá los avisos. Apple solo permite avisos en apps agregadas a la pantalla de inicio.
+- Al mantener presionado el ícono aparecen atajos: Nueva tarea, Agendar cita, Buzón y Registrar avance. El globo del ícono muestra los avisos sin leer.
+
 ### Roles
 
 - **Administrador.** Puede hacer todo, además de gestionar personas, ajustes y respaldos, y anular movimientos ya confirmados.
@@ -125,6 +153,11 @@ La E2E usa Chromium. Busca primero `PLAYWRIGHT_CHROMIUM`, después `/opt/pw-brow
    - `NODE_ENV=production` → cookies `Secure` y HSTS
    - `PORTAL_DB_PATH=/data/portal.sqlite`
    - `PORTAL_ADMIN_EMAIL=gerencia@jcanalytic.com`, `PORTAL_ADMIN_NAME=Jeyrell Tardencilla` y `PORTAL_ADMIN_PASSWORD=<temporal de 10+ caracteres con letras y números>`. Solo se usan si la base está vacía.
+   - Avisos push (recomendado): `PORTAL_VAPID_PUBLIC_KEY` y `PORTAL_VAPID_PRIVATE_KEY`.
+     - Sin estas variables, el portal genera las claves una vez y las guarda en la base.
+     - Si las claves cambian, cada persona debe volver a activar los avisos.
+     - Opcionales: `PORTAL_VAPID_SUBJECT` (por defecto `mailto:gerencia@jcanalytic.com`), `PORTAL_FX_URL` (API del tipo de cambio) y `PORTAL_SCHEDULER=0` para apagar las automatizaciones.
+   - Los avisos y la instalación exigen **HTTPS** y un dominio propio. Railway lo da por defecto.
 4. **Build:** `npm ci && npm run build` · **Start:** `npm start` · **Healthcheck:** `/health`.
 5. **Dominio:** generar uno de Railway o apuntar `portal.jcanalytic.com` (CNAME) al servicio.
 6. Primer ingreso: entrar con el correo del admin y la contraseña temporal. El portal pide cambiarla. **Después borrá `PORTAL_ADMIN_PASSWORD`** de las variables.
@@ -175,7 +208,8 @@ Auditoría:
 
 ## Próximas iteraciones sugeridas
 
-1. **Avisos por correo o WhatsApp Business API** para confirmaciones pendientes de más de 48 h. Hoy los avisos llegan dentro del portal y los mensajes de WhatsApp se abren con un toque.
+1. **Avisos por WhatsApp Business API o correo** como segundo canal, para quien no instale la app. Hoy los avisos llegan al buzón y por push.
+5. **Verificar en producción el formato de la API de Hacienda** para el tipo de cambio. Desde el entorno de desarrollo no hubo acceso; el lector acepta los formatos conocidos y, si no reconoce la respuesta, deja el valor anterior y lo registra.
 2. **Comprobantes adjuntos** (foto del SINPE) en cada movimiento, usando almacenamiento en Railway o Drive.
 3. **Respaldo automático diario** a Drive o a un bucket.
 4. **Tablero Power BI** conectado a la exportación CSV o a una vista de solo lectura.
