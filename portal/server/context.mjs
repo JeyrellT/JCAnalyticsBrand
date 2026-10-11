@@ -12,7 +12,16 @@ export const SENSITIVE_KINDS = ['movement', 'investment', 'message'];
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
-export function createContext({ db, now = () => Date.now() }) {
+/**
+ * @param {object} o
+ * @param {object} o.db
+ * @param {() => number} [o.now]
+ * @param {object|null} [o.push]  servicio de envío Web Push (server/push.mjs) o un simulador en la demo;
+ *        null = sin push (las notificaciones quedan solo en el buzón).
+ */
+export function createContext({ db, now = () => Date.now(), push = null }) {
+  /** Gancho que recibe cada aviso creado para decidir si además se envía como push. */
+  let pushHook = null;
   const nowIso = () => new Date(now()).toISOString();
   const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit' });
   /** Fecha AAAA-MM-DD en Costa Rica (UTC−6, sin horario de verano). */
@@ -36,6 +45,9 @@ export function createContext({ db, now = () => Date.now() }) {
     }
     const at = nowIso();
     for (const userId of unique) insertNotification.run(userId, kind, title, body, link, at);
+    if (unique.length && pushHook) {
+      try { pushHook(unique, { kind, title, body, link }); } catch { /* un fallo de push nunca rompe la acción */ }
+    }
     return unique.length;
   }
 
@@ -65,7 +77,10 @@ export function createContext({ db, now = () => Date.now() }) {
     return { sla_state: state, hours_since_update: Math.round(hours) };
   }
 
-  return { db, now, nowIso, today, settings, numberSetting, notify, log, userName, investorIds, activeUserIds, projectSla };
+  return {
+    db, now, nowIso, today, settings, numberSetting, notify, log, userName, investorIds, activeUserIds, projectSla,
+    push, setPushHook: (fn) => { pushHook = typeof fn === 'function' ? fn : null; },
+  };
 }
 
 export function publicUser(row) {

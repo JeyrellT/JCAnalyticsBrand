@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import {
   LayoutDashboard, FolderKanban, KanbanSquare, CalendarDays, TrendingUp, Inbox, Users, History, LogOut, Menu, X,
-  Building2, Layers, Plus, LayoutGrid,
+  Building2, Layers, Plus, LayoutGrid, Bot, BellRing,
 } from 'lucide-react';
 import { Link, useLocation } from '../lib/router.jsx';
 import { useSession } from '../lib/session.jsx';
@@ -35,7 +35,14 @@ const GROUPS = [
     ],
   },
   { label: 'Socios', invest: true, items: [{ to: '/inversiones', label: 'Inversiones', short: 'Inversiones', icon: TrendingUp }] },
-  { label: 'Control', items: [{ to: '/bitacora', label: 'Bitácora', short: 'Bitácora', icon: History }] },
+  {
+    label: 'Control',
+    items: [
+      { to: '/automatizaciones', label: 'Automatizaciones', short: 'Automatiz.', icon: Bot },
+      { to: '/notificaciones', label: 'Avisos y app', short: 'Avisos', icon: BellRing },
+      { to: '/bitacora', label: 'Bitácora', short: 'Bitácora', icon: History },
+    ],
+  },
 ];
 
 const ALL = GROUPS.flatMap((g) => g.items.map((n) => ({ ...n, invest: g.invest })));
@@ -43,7 +50,7 @@ const byPath = Object.fromEntries(ALL.map((n) => [n.to, n]));
 const TABS = ['/', '/tablero'].map((to) => byPath[to]);
 const TABS_END = [byPath['/agenda']];
 // Mosaicos de "Más", en el orden en que se piensa la empresa.
-const MORE = ['/proyectos', '/clientes', '/servicios', '/equipo', '/inversiones', '/buzon', '/bitacora'].map((to) => byPath[to]);
+const MORE = ['/proyectos', '/clientes', '/servicios', '/equipo', '/inversiones', '/buzon', '/automatizaciones', '/notificaciones', '/bitacora'].map((to) => byPath[to]);
 
 function useNav() {
   const { canInvest, unread, pending } = useSession();

@@ -22,6 +22,8 @@ const ServiceDetail = lazy(() => import('./pages/ServiceDetail.jsx'));
 const Clients = lazy(() => import('./pages/Clients.jsx'));
 const ClientDetail = lazy(() => import('./pages/ClientDetail.jsx'));
 const Person = lazy(() => import('./pages/Person.jsx'));
+const Automations = lazy(() => import('./pages/Automations.jsx'));
+const NotificationSettings = lazy(() => import('./pages/NotificationSettings.jsx'));
 
 const ROUTES = [
   ['/', Dashboard],
@@ -38,10 +40,12 @@ const ROUTES = [
   ['/servicios/:key', ServiceDetail],
   ['/clientes', Clients],
   ['/clientes/:id', ClientDetail],
+  ['/automatizaciones', Automations],
+  ['/notificaciones', NotificationSettings],
   ['/bitacora', Activity],
 ];
 
-const TITLES = { '/': 'Centro de operaciones', '/proyectos': 'Proyectos', '/clientes': 'Clientes', '/servicios': 'Servicios', '/tablero': 'Tablero', '/agenda': 'Agenda', '/inversiones': 'Inversiones', '/buzon': 'Buzón', '/equipo': 'Equipo', '/bitacora': 'Bitácora' };
+const TITLES = { '/': 'Centro de operaciones', '/proyectos': 'Proyectos', '/clientes': 'Clientes', '/servicios': 'Servicios', '/tablero': 'Tablero', '/agenda': 'Agenda', '/inversiones': 'Inversiones', '/buzon': 'Buzón', '/equipo': 'Equipo', '/bitacora': 'Bitácora', '/automatizaciones': 'Automatizaciones', '/notificaciones': 'Avisos y app' };
 
 function Router() {
   const { path } = useLocation();
