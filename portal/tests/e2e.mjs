@@ -194,10 +194,43 @@ try {
     await shot(page, '12-bitacora');
   });
 
-  await check('equipo y ajustes', async () => {
+  await check('equipo: directorio de personas, ficha y perfil', async () => {
     await page.goto(`${base}/equipo`);
-    await page.getByRole('heading', { name: 'Mi perfil' }).waitFor();
+    await page.getByRole('heading', { name: 'Equipo', level: 1 }).waitFor();
+    await page.getByRole('link', { name: 'Alex Benedict' }).first().waitFor();
     await shot(page, '13-equipo');
+    await page.getByRole('link', { name: 'Alex Benedict' }).first().click();
+    await page.getByRole('heading', { name: /Alex Benedict/, level: 1 }).waitFor();
+    await page.getByRole('heading', { name: /Proyectos/ }).first().waitFor();
+    await shot(page, '14-persona');
+    await page.goto(`${base}/equipo?tab=perfil`);
+    await page.getByRole('heading', { name: 'Mi perfil' }).waitFor();
+  });
+
+  await check('servicios: catálogo con líderes y detalle', async () => {
+    await page.goto(`${base}/servicios`);
+    await page.getByRole('heading', { name: 'Servicios', level: 1 }).waitFor();
+    await page.getByText('Dashboard Power BI').first().waitFor();
+    await shot(page, '15-servicios');
+    await page.getByRole('link', { name: /Dashboard Power BI/ }).first().click();
+    await page.getByRole('heading', { name: 'Dashboard Power BI', level: 1 }).waitFor();
+    await page.getByRole('heading', { name: 'Quién lo hace' }).waitFor();
+    await page.getByText('Jeyrell').first().waitFor();
+  });
+
+  await check('clientes: crear un cliente y abrir su ficha', async () => {
+    await page.goto(`${base}/clientes`);
+    await page.getByRole('heading', { name: 'Clientes', level: 1 }).waitFor();
+    await page.getByText('La Burrada Street Food').first().waitFor();
+    await shot(page, '16-clientes');
+    await page.getByRole('button', { name: 'Nuevo cliente' }).first().click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Nombre del cliente').fill('Soda La Esquina');
+    await dialog.getByLabel('Persona de contacto').fill('Doña Marta');
+    await dialog.getByLabel('WhatsApp / teléfono').fill('8811-2233');
+    await dialog.getByRole('button', { name: 'Crear cliente' }).click();
+    await page.getByRole('heading', { name: 'Soda La Esquina', level: 1 }).waitFor();
+    await shot(page, '17-cliente-detalle');
   });
 
   // ── Colaboradora: sin acceso a inversiones ────────────────────────────────
@@ -219,31 +252,65 @@ try {
   });
 
   // ── Móvil (390 px): Jeyrell (admin) ───────────────────────────────────────
-  await check('móvil: navegación inferior, tablero y agenda', async () => {
+  await check('móvil: Mi día, tablero por columnas, acciones rápidas y menú Más', async () => {
     const m = await newPage({ width: 390, height: 844 });
+    const nav = () => m.getByRole('navigation', { name: 'Accesos rápidos' });
+    const noOverflow = async (where) => {
+      const extra = await m.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      assert.ok(extra <= 1, `${where}: sin scroll horizontal (sobra ${extra}px)`);
+    };
     await login(m, 'jeyrell');
     await shot(m, '20-movil-centro');
-    const overflow = await m.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-    assert.ok(overflow <= 1, `sin scroll horizontal de página (sobra ${overflow}px)`);
-    await m.getByRole('navigation', { name: 'Accesos rápidos' }).getByRole('link', { name: 'Tablero' }).click();
+    await noOverflow('inicio');
+
+    // Tablero: una columna a la vez, se cambia con chips y "Mover a" sigue a la tarjeta.
+    await nav().getByRole('link', { name: 'Tablero' }).click();
     await m.getByRole('heading', { name: 'Tablero', level: 1 }).waitFor();
     await shot(m, '21-movil-tablero');
-    const boardOverflow = await m.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-    assert.ok(boardOverflow <= 1, `tablero: el scroll horizontal queda dentro de las columnas (sobra ${boardOverflow}px)`);
+    await noOverflow('tablero');
+    await m.getByRole('button', { name: /^Backlog/ }).click();
     const mobileCard = m.locator('article', { hasText: 'Recordatorios automáticos por WhatsApp' });
     await mobileCard.getByLabel(/Mover/).selectOption('por_hacer');
     await m.getByRole('region', { name: 'Por hacer' }).locator('article', { hasText: 'Recordatorios automáticos por WhatsApp' }).waitFor();
-    await m.getByRole('navigation', { name: 'Accesos rápidos' }).getByRole('link', { name: 'Agenda' }).click();
+
+    // Botón "+": crear una tarea desde cualquier pantalla.
+    await nav().getByRole('button', { name: 'Crear' }).click();
+    await m.getByRole('dialog', { name: 'Crear' }).getByRole('link', { name: /Nueva tarea/ }).click();
+    await m.getByRole('dialog', { name: 'Nueva tarea' }).waitFor();
+    await shot(m, '22-movil-nueva-tarea');
+    await m.keyboard.press('Escape');
+    await m.getByRole('dialog', { name: 'Nueva tarea' }).waitFor({ state: 'detached' });
+
+    await nav().getByRole('link', { name: 'Agenda' }).click();
     await m.getByRole('heading', { name: 'Agenda', level: 1 }).waitFor();
-    await shot(m, '22-movil-agenda');
-    await m.getByRole('navigation', { name: 'Accesos rápidos' }).getByRole('link', { name: 'Inversiones' }).click();
+    await shot(m, '23-movil-agenda');
+
+    // "Más": el resto de secciones en mosaicos grandes.
+    await nav().getByRole('button', { name: /^Más/ }).click();
+    await shot(m, '24-movil-mas');
+    await m.getByRole('dialog', { name: 'Más secciones' }).getByRole('link', { name: 'Inversiones' }).click();
     await m.getByText('Cuenta de cada socio').waitFor();
-    await shot(m, '23-movil-inversiones');
+    await shot(m, '25-movil-inversiones');
+    await nav().getByRole('button', { name: /^Más/ }).click();
+    await m.getByRole('dialog', { name: 'Más secciones' }).getByRole('link', { name: 'Clientes' }).click();
+    await m.getByRole('heading', { name: 'Clientes', level: 1 }).waitFor();
+    await noOverflow('clientes');
+    await shot(m, '26-movil-clientes');
+    await nav().getByRole('button', { name: /^Más/ }).click();
+    await m.getByRole('dialog', { name: 'Más secciones' }).getByRole('link', { name: 'Servicios' }).click();
+    await m.getByRole('heading', { name: 'Servicios', level: 1 }).waitFor();
+    await noOverflow('servicios');
+    await shot(m, '27-movil-servicios');
+
+    // Menú lateral → equipo → pestaña Ajustes (solo admin).
     await m.getByRole('button', { name: 'Abrir menú' }).click();
     await m.getByRole('dialog', { name: 'Menú' }).getByRole('link', { name: 'Equipo y ajustes' }).click();
+    await m.getByRole('heading', { name: 'Equipo', level: 1 }).waitFor();
+    await noOverflow('equipo');
+    await shot(m, '28-movil-equipo');
+    await m.getByRole('tab', { name: /Ajustes/ }).click();
     await m.getByRole('heading', { name: 'Ajustes operativos' }).waitFor();
-    const overflow2 = await m.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-    assert.ok(overflow2 <= 1, `equipo sin scroll horizontal (sobra ${overflow2}px)`);
+    await noOverflow('ajustes');
     await m.context().close();
   });
 

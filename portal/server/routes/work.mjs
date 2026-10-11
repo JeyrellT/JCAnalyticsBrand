@@ -4,54 +4,35 @@
 // ============================================================================
 
 import {
-  PROJECT_KINDS, PROJECT_STATUS, SERVICES, UPDATE_CHANNELS, TASK_STATUS, TASK_PRIORITY,
+  PROJECT_KINDS, PROJECT_STATUS, PROJECT_ROLES, SERVICES, UPDATE_CHANNELS, TASK_STATUS, TASK_PRIORITY,
   APPOINTMENT_KINDS, APPOINTMENT_STATUS, SLA_STATUSES, canInvest,
 } from '../../shared/catalog.js';
 import { fail, invalid, has, text, oneOf, dateOnly, dateTime, id, minorAmount, url } from '../http.mjs';
 import { transaction } from '../schema.mjs';
+import { createHelpers, sameName } from './common.mjs';
 
-const SUPPORT_DAYS = 30;
 const DAY = 86_400_000;
+const MAX_MEMBERS = 30;
 
 export function workRoutes(route, ctx) {
   const { db } = ctx;
+  const {
+    userExists, keepOrCheck, PROJECT_SELECT, getProjectFull, membersOf, decorateProject,
+    APPOINTMENT_SELECT, attendeesOf, decorateAppointment, getClient, clientExists,
+  } = createHelpers(ctx);
   const getProject = (projectId) => db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId) ?? fail(404, 'not_found');
-  const userExists = (userId, field) => {
-    if (userId == null) return null;
-    if (!db.prepare('SELECT 1 FROM users WHERE id = ? AND active = 1').get(userId)) invalid(field, 'Persona no encontrada.');
-    return userId;
-  };
-  /** Valida solo si cambia: un responsable ya asignado y luego desactivado no impide editar. */
-  const keepOrCheck = (value, current, field) => (value != null && value === current ? value : userExists(value, field));
   const projectExists = (projectId, field = 'project_id') => {
     if (projectId == null) return null;
     if (!db.prepare('SELECT 1 FROM projects WHERE id = ?').get(projectId)) invalid(field, 'Proyecto no encontrado.');
     return projectId;
   };
 
-  function decorateProject(p) {
-    const counts = db.prepare(`SELECT COUNT(*) total,
-        SUM(CASE WHEN status = 'hecho' THEN 1 ELSE 0 END) done,
-        SUM(CASE WHEN status <> 'hecho' AND due_date IS NOT NULL AND due_date < ? THEN 1 ELSE 0 END) overdue
-      FROM tasks WHERE project_id = ?`).get(ctx.today(), p.id);
-    const supportEnds = p.delivered_at ? new Date(new Date(`${p.delivered_at}T00:00:00Z`).getTime() + SUPPORT_DAYS * DAY).toISOString().slice(0, 10) : null;
-    return {
-      ...p,
-      archived: !!p.archived,
-      tasks_total: counts.total ?? 0,
-      tasks_done: counts.done ?? 0,
-      tasks_overdue: counts.overdue ?? 0,
-      progress: counts.total ? (counts.done ?? 0) / counts.total : 0,
-      support_ends: supportEnds,
-      ...ctx.projectSla(p),
-    };
-  }
-
   function readProjectBody(body, current = {}) {
     const pick = (key, fn) => (has(body, key) ? fn(body[key]) : current[key] ?? null);
     const out = {
       name: pick('name', (v) => text(v, 'name', { max: 120, min: 2, required: true })),
       client: pick('client', (v) => text(v, 'client', { max: 120 })),
+      client_id: current.client_id ?? null,
       kind: pick('kind', (v) => oneOf(v, 'kind', PROJECT_KINDS, { required: true })),
       service: pick('service', (v) => oneOf(v, 'service', SERVICES)),
       status: pick('status', (v) => oneOf(v, 'status', PROJECT_STATUS, { required: true })),
@@ -66,6 +47,17 @@ export function workRoutes(route, ctx) {
       contact_phone: pick('contact_phone', (v) => text(v, 'contact_phone', { max: 30 })),
       url: pick('url', (v) => url(v, 'url')),
     };
+    if (has(body, 'client_id')) {
+      // Con cliente del directorio, el nombre del proyecto sigue al de la ficha.
+      const linked = clientExists(id(body.client_id, 'client_id'));
+      out.client_id = linked?.id ?? null;
+      if (linked) out.client = linked.name;
+    } else if (has(body, 'client') && out.client_id) {
+      // Texto libre sin client_id: si ya no coincide con la ficha enlazada, se desenlaza.
+      const linked = db.prepare('SELECT name FROM clients WHERE id = ?').get(out.client_id);
+      if (linked && sameName(linked.name, out.client)) out.client = linked.name;
+      else out.client_id = null;
+    }
     if (!out.kind) invalid('kind', 'Campo requerido.');
     if (!out.status) invalid('status', 'Campo requerido.');
     if (out.start_date && out.due_date && out.due_date < out.start_date) invalid('due_date', 'La fecha de entrega es anterior al inicio.');
@@ -74,39 +66,86 @@ export function workRoutes(route, ctx) {
     return out;
   }
 
+  /**
+   * Equipo final del proyecto: `members` reemplaza el conjunto; sin `members`
+   * se conserva el actual. Solo el owner_id lleva el rol 'responsable' y
+   * siempre queda en el equipo; si el responsable cambia, el anterior pasa a 'equipo'.
+   */
+  function readMembers(body, ownerId, previous = []) {
+    const team = new Map();
+    if (has(body, 'members')) {
+      if (!Array.isArray(body.members) || body.members.length > MAX_MEMBERS) invalid('members', 'Lista inválida.');
+      const before = new Set(previous.map((m) => m.id));
+      for (const raw of body.members) {
+        const entry = raw && typeof raw === 'object' ? raw : { user_id: raw };
+        const userId = id(entry.user_id, 'members', { required: true });
+        const role = oneOf(entry.role, 'members', PROJECT_ROLES, { fallback: 'equipo' });
+        team.set(before.has(userId) ? userId : userExists(userId, 'members'), role);
+      }
+    } else {
+      for (const m of previous) team.set(m.id, m.role);
+    }
+    for (const [userId, role] of team) if (role === 'responsable' && userId !== ownerId) team.set(userId, 'equipo');
+    if (ownerId) team.set(ownerId, 'responsable');
+    return [...team].map(([userId, role]) => ({ user_id: userId, role }));
+  }
+
+  function saveMembers(projectId, team) {
+    db.prepare('DELETE FROM project_members WHERE project_id = ?').run(projectId);
+    const stmt = db.prepare('INSERT INTO project_members (project_id, user_id, role) VALUES (?, ?, ?)');
+    for (const m of team) stmt.run(projectId, m.user_id, m.role);
+  }
+
+  /** Avisa a quien se suma al equipo (el responsable nuevo recibe su propio aviso). */
+  function notifyNewMembers(team, previous, project, actor, skip = null) {
+    const before = new Set(previous.map((m) => m.id));
+    for (const m of team) {
+      if (before.has(m.user_id) || m.user_id === skip) continue;
+      ctx.notify([m.user_id], actor.id, {
+        kind: 'project', title: `Te sumaron a ${project.name}`, body: `${actor.name} te agregó como ${PROJECT_ROLES[m.role]}.`, link: `/proyectos/${project.id}`,
+      });
+    }
+  }
+
+  const sameTeam = (a, b) => a.length === b.length && a.every((m) => b.some((x) => x.id === m.user_id && x.role === m.role));
+
   // ── Proyectos ─────────────────────────────────────────────────────────────
   route('GET', '/api/projects', 'user', ({ query }) => {
     const archived = query.get('archived') === '1' ? 1 : 0;
-    const rows = db.prepare(`SELECT p.*, u.name owner_name, u.color owner_color FROM projects p
-      LEFT JOIN users u ON u.id = p.owner_id WHERE p.archived = ? ORDER BY p.updated_at DESC`).all(archived);
+    const rows = db.prepare(`${PROJECT_SELECT} WHERE p.archived = ? ORDER BY p.updated_at DESC`).all(archived);
     return { projects: rows.map(decorateProject) };
   });
 
   route('POST', '/api/projects', 'user', ({ user, body }) => {
     const p = readProjectBody(body, { status: 'en_curso', kind: 'cliente', currency: 'CRC', owner_id: user.id });
+    const team = readMembers(body, p.owner_id);
     const at = ctx.nowIso();
-    const { lastInsertRowid } = db.prepare(`INSERT INTO projects (name, client, kind, service, status, owner_id, start_date, due_date,
-      delivered_at, value_amount, currency, description, contact_name, contact_phone, url, sla_started_at, created_by, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-      p.name, p.client, p.kind, p.service, p.status, p.owner_id, p.start_date, p.due_date, p.delivered_at,
-      p.value_amount, p.currency, p.description, p.contact_name, p.contact_phone, p.url, SLA_STATUSES.includes(p.status) ? at : null, user.id, at, at,
-    );
-    const projectId = Number(lastInsertRowid);
-    ctx.log(user.id, 'project', projectId, 'created', `${user.name} creó el proyecto ${p.name}`);
+    const projectId = transaction(db, () => {
+      const { lastInsertRowid } = db.prepare(`INSERT INTO projects (name, client, client_id, kind, service, status, owner_id, start_date, due_date,
+        delivered_at, value_amount, currency, description, contact_name, contact_phone, url, sla_started_at, created_by, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+        p.name, p.client, p.client_id, p.kind, p.service, p.status, p.owner_id, p.start_date, p.due_date, p.delivered_at,
+        p.value_amount, p.currency, p.description, p.contact_name, p.contact_phone, p.url, SLA_STATUSES.includes(p.status) ? at : null, user.id, at, at,
+      );
+      saveMembers(Number(lastInsertRowid), team);
+      return Number(lastInsertRowid);
+    });
+    ctx.log(user.id, 'project', projectId, 'created', `${user.name} creó el proyecto ${p.name}${team.length > 1 ? ` (equipo de ${team.length})` : ''}`);
     if (p.owner_id) ctx.notify([p.owner_id], user.id, { kind: 'project', title: `Sos responsable de ${p.name}`, body: `${user.name} te asignó el proyecto.`, link: `/proyectos/${projectId}` });
-    return { project: decorateProject(getProject(projectId)) };
+    notifyNewMembers(team, [], { id: projectId, name: p.name }, user, p.owner_id);
+    return { project: decorateProject(getProjectFull(projectId)) };
   });
 
   route('GET', '/api/projects/:id', 'user', ({ user, params }) => {
-    const p = db.prepare(`SELECT p.*, u.name owner_name, u.color owner_color FROM projects p LEFT JOIN users u ON u.id = p.owner_id WHERE p.id = ?`).get(params.id)
-      ?? fail(404, 'not_found');
+    const p = getProjectFull(params.id);
     return {
       project: decorateProject(p),
+      client: p.client_id ? getClient(p.client_id) : null,
       tasks: db.prepare(`SELECT t.*, u.name assignee_name, u.color assignee_color FROM tasks t LEFT JOIN users u ON u.id = t.assignee_id
         WHERE t.project_id = ? ORDER BY CASE t.status WHEN 'hecho' THEN 1 ELSE 0 END, t.position`).all(p.id),
       updates: db.prepare(`SELECT pu.*, u.name user_name, u.color user_color FROM project_updates pu JOIN users u ON u.id = pu.user_id
         WHERE pu.project_id = ? ORDER BY pu.created_at DESC LIMIT 50`).all(p.id),
-      appointments: db.prepare(`SELECT * FROM appointments WHERE project_id = ? ORDER BY starts_at DESC LIMIT 20`).all(p.id),
+      appointments: db.prepare(`${APPOINTMENT_SELECT} WHERE a.project_id = ? ORDER BY a.starts_at DESC LIMIT 20`).all(p.id),
       investments: canInvest(user) ? db.prepare('SELECT id, name, status, currency FROM investments WHERE project_id = ?').all(p.id) : [],
     };
   });
@@ -114,24 +153,33 @@ export function workRoutes(route, ctx) {
   route('PATCH', '/api/projects/:id', 'user', ({ user, body, params }) => {
     const current = getProject(params.id);
     const p = readProjectBody(body, current);
+    const previous = membersOf(current.id);
+    const team = readMembers(body, p.owner_id, previous);
     const archived = has(body, 'archived') ? (body.archived ? 1 : 0) : current.archived;
     // Al entrar en curso/revisión (desde prospecto, pausado…) arranca el reloj del avance de 72 h.
     const entersSla = SLA_STATUSES.includes(p.status) && !SLA_STATUSES.includes(current.status);
     const slaStartedAt = entersSla ? ctx.nowIso() : current.sla_started_at;
-    db.prepare(`UPDATE projects SET name = ?, client = ?, kind = ?, service = ?, status = ?, owner_id = ?, start_date = ?, due_date = ?,
-      delivered_at = ?, value_amount = ?, currency = ?, description = ?, contact_name = ?, contact_phone = ?, url = ?, archived = ?,
-      sla_started_at = ?, updated_at = ? WHERE id = ?`).run(
-      p.name, p.client, p.kind, p.service, p.status, p.owner_id, p.start_date, p.due_date, p.delivered_at, p.value_amount,
-      p.currency, p.description, p.contact_name, p.contact_phone, p.url, archived, slaStartedAt, ctx.nowIso(), current.id,
-    );
+    const teamChanged = !sameTeam(team, previous);
+    transaction(db, () => {
+      db.prepare(`UPDATE projects SET name = ?, client = ?, client_id = ?, kind = ?, service = ?, status = ?, owner_id = ?, start_date = ?, due_date = ?,
+        delivered_at = ?, value_amount = ?, currency = ?, description = ?, contact_name = ?, contact_phone = ?, url = ?, archived = ?,
+        sla_started_at = ?, updated_at = ? WHERE id = ?`).run(
+        p.name, p.client, p.client_id, p.kind, p.service, p.status, p.owner_id, p.start_date, p.due_date, p.delivered_at, p.value_amount,
+        p.currency, p.description, p.contact_name, p.contact_phone, p.url, archived, slaStartedAt, ctx.nowIso(), current.id,
+      );
+      if (teamChanged) saveMembers(current.id, team);
+    });
     const changes = [];
     if (p.status !== current.status) changes.push(`estado → ${PROJECT_STATUS[p.status].label}`);
     if (archived !== current.archived) changes.push(archived ? 'archivado' : 'restaurado');
+    if (teamChanged) changes.push(`equipo de ${team.length}`);
     ctx.log(user.id, 'project', current.id, 'updated', `${user.name} actualizó ${p.name}${changes.length ? ` (${changes.join(', ')})` : ''}`);
-    if (p.owner_id && p.owner_id !== current.owner_id) {
+    const ownerChanged = p.owner_id && p.owner_id !== current.owner_id;
+    if (ownerChanged) {
       ctx.notify([p.owner_id], user.id, { kind: 'project', title: `Sos responsable de ${p.name}`, body: `${user.name} te asignó el proyecto.`, link: `/proyectos/${current.id}` });
     }
-    return { project: decorateProject(getProject(current.id)) };
+    notifyNewMembers(team, previous, { id: current.id, name: p.name }, user, ownerChanged ? p.owner_id : null);
+    return { project: decorateProject(getProjectFull(current.id)) };
   });
 
   route('POST', '/api/projects/:id/updates', 'user', ({ user, body, params }) => {
@@ -144,7 +192,7 @@ export function workRoutes(route, ctx) {
       db.prepare('UPDATE projects SET last_update_at = ?, updated_at = ? WHERE id = ?').run(at, at, p.id);
     });
     ctx.log(user.id, 'project', p.id, 'client_update', `${user.name} registró un avance a ${p.client || p.name} por ${UPDATE_CHANNELS[channel]}`);
-    return { project: decorateProject(getProject(p.id)) };
+    return { project: decorateProject(getProjectFull(p.id)) };
   });
 
   // ── Tablero (tareas) ──────────────────────────────────────────────────────
@@ -264,11 +312,7 @@ export function workRoutes(route, ctx) {
   });
 
   // ── Agenda ────────────────────────────────────────────────────────────────
-  function attendeesOf(appointmentId) {
-    return db.prepare(`SELECT u.id, u.name, u.color FROM appointment_attendees a JOIN users u ON u.id = a.user_id WHERE a.appointment_id = ? ORDER BY u.name`).all(appointmentId);
-  }
-  const decorateAppointment = (a) => ({ ...a, attendees: attendeesOf(a.id) });
-  const getAppointment = (appointmentId) => db.prepare(`SELECT a.*, p.name project_name FROM appointments a LEFT JOIN projects p ON p.id = a.project_id WHERE a.id = ?`).get(appointmentId) ?? fail(404, 'not_found');
+  const getAppointment = (appointmentId) => db.prepare(`${APPOINTMENT_SELECT} WHERE a.id = ?`).get(appointmentId) ?? fail(404, 'not_found');
 
   function conflictsFor(startsAt, endsAt, attendeeIds, excludeId = 0) {
     if (!attendeeIds.length) return [];
@@ -290,10 +334,22 @@ export function workRoutes(route, ctx) {
       location: pick('location', (v) => text(v, 'location', { max: 200 })),
       meeting_url: pick('meeting_url', (v) => url(v, 'meeting_url')),
       project_id: pick('project_id', (v) => projectExists(id(v, 'project_id'))),
+      client_id: pick('client_id', (v) => clientExists(id(v, 'client_id'))?.id ?? null),
       contact_name: pick('contact_name', (v) => text(v, 'contact_name', { max: 120 })),
       contact_phone: pick('contact_phone', (v) => text(v, 'contact_phone', { max: 30 })),
       notes: pick('notes', (v) => text(v, 'notes', { max: 4000 })),
     };
+    let fromClient = has(body, 'client_id');
+    if (!fromClient && has(body, 'project_id') && a.project_id && !a.client_id) {
+      // Una cita ligada a un proyecto hereda el cliente del proyecto.
+      a.client_id = db.prepare('SELECT client_id FROM projects WHERE id = ?').get(a.project_id)?.client_id ?? null;
+      fromClient = a.client_id != null;
+    }
+    if (fromClient && a.client_id && (!a.contact_name || !a.contact_phone)) {
+      const c = clientExists(a.client_id);
+      a.contact_name ??= c.contact_name;
+      a.contact_phone ??= c.contact_phone;
+    }
     if (!a.kind) invalid('kind', 'Campo requerido.');
     if (!a.starts_at || !a.ends_at) invalid('starts_at', 'Fecha y hora requeridas.');
     const duration = new Date(a.ends_at) - new Date(a.starts_at);
@@ -322,8 +378,7 @@ export function workRoutes(route, ctx) {
     const from = dateTime(query.get('from'), 'from') ?? new Date(ctx.now() - 7 * DAY).toISOString();
     const to = dateTime(query.get('to'), 'to') ?? new Date(ctx.now() + 60 * DAY).toISOString();
     if (new Date(to) - new Date(from) > 400 * DAY) invalid('to', 'Rango demasiado amplio.');
-    const rows = db.prepare(`SELECT a.*, p.name project_name FROM appointments a LEFT JOIN projects p ON p.id = a.project_id
-      WHERE a.starts_at < ? AND a.ends_at > ? ORDER BY a.starts_at`).all(to, from);
+    const rows = db.prepare(`${APPOINTMENT_SELECT} WHERE a.starts_at < ? AND a.ends_at > ? ORDER BY a.starts_at`).all(to, from);
     return { appointments: rows.map(decorateAppointment) };
   });
 
@@ -333,8 +388,8 @@ export function workRoutes(route, ctx) {
     const at = ctx.nowIso();
     const appointmentId = transaction(db, () => {
       const { lastInsertRowid } = db.prepare(`INSERT INTO appointments (title, kind, status, starts_at, ends_at, location, meeting_url, project_id,
-        contact_name, contact_phone, notes, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-        a.title, a.kind, a.status, a.starts_at, a.ends_at, a.location, a.meeting_url, a.project_id, a.contact_name, a.contact_phone, a.notes, user.id, at, at,
+        client_id, contact_name, contact_phone, notes, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+        a.title, a.kind, a.status, a.starts_at, a.ends_at, a.location, a.meeting_url, a.project_id, a.client_id, a.contact_name, a.contact_phone, a.notes, user.id, at, at,
       );
       saveAttendees(Number(lastInsertRowid), people);
       return Number(lastInsertRowid);
@@ -351,8 +406,8 @@ export function workRoutes(route, ctx) {
     const people = attendees ?? previous;
     transaction(db, () => {
       db.prepare(`UPDATE appointments SET title = ?, kind = ?, status = ?, starts_at = ?, ends_at = ?, location = ?, meeting_url = ?, project_id = ?,
-        contact_name = ?, contact_phone = ?, notes = ?, updated_at = ? WHERE id = ?`).run(
-        a.title, a.kind, a.status, a.starts_at, a.ends_at, a.location, a.meeting_url, a.project_id, a.contact_name, a.contact_phone, a.notes, ctx.nowIso(), current.id,
+        client_id = ?, contact_name = ?, contact_phone = ?, notes = ?, updated_at = ? WHERE id = ?`).run(
+        a.title, a.kind, a.status, a.starts_at, a.ends_at, a.location, a.meeting_url, a.project_id, a.client_id, a.contact_name, a.contact_phone, a.notes, ctx.nowIso(), current.id,
       );
       if (attendees) saveAttendees(current.id, attendees);
     });

@@ -128,6 +128,7 @@ export function Select({ options, value, onChange, placeholder, id, className, .
 }
 
 // ── Modal / hoja inferior en móvil ────────────────────────────────────────
+let openModals = 0;
 export function Modal({ open, onClose, title, children, footer, size = 'md' }) {
   const panel = useRef(null);
   useEffect(() => {
@@ -135,12 +136,16 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }) {
     const previous = document.activeElement;
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
+    // Con modales anidados (p. ej. "Nuevo cliente" sobre "Nuevo proyecto"), el scroll
+    // de la página se libera solo cuando se cierra el último.
+    openModals += 1;
     document.body.style.overflow = 'hidden';
     const first = panel.current?.querySelector('input:not([type=hidden]), select, textarea, button[data-autofocus]');
     first?.focus({ preventScroll: true });
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
+      openModals = Math.max(0, openModals - 1);
+      if (!openModals) document.body.style.overflow = '';
       previous?.focus?.({ preventScroll: true });
     };
   }, [open, onClose]);
@@ -173,7 +178,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={push}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-20 z-[60] flex flex-col items-center gap-2 px-4 lg:bottom-6" aria-live="polite">
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] z-[60] flex flex-col items-center gap-2 px-4 lg:bottom-6" aria-live="polite">
         {items.map((t) => (
           <div key={t.id} className={cx('animate-rise pointer-events-auto flex max-w-md items-start gap-2 rounded-2xl px-4 py-3 text-sm font-medium shadow-lg', t.tone === 'error' ? 'bg-coral text-white' : 'bg-ink text-white')}>
             {t.tone === 'error' ? <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> : <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal" />}

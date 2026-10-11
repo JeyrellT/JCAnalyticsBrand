@@ -1,15 +1,16 @@
-// Detalle del proyecto: avance al cliente (72 h), tareas, citas, historial e inversiones vinculadas.
-import { useState } from 'react';
+// Detalle del proyecto: avance al cliente (72 h), cliente, equipo, tareas, citas, historial e inversiones vinculadas.
+import { useEffect, useState } from 'react';
 import {
-  ArrowLeft, Pencil, Send, MessageCircle, Plus, ExternalLink, Archive, ArchiveRestore, CalendarPlus, Phone, User, CalendarDays, TrendingUp,
+  ArrowLeft, Pencil, Send, MessageCircle, Plus, ExternalLink, Archive, ArchiveRestore, CalendarPlus, Phone, User, CalendarDays, TrendingUp, Building2, ChevronRight, Users,
 } from 'lucide-react';
 import { useResource, useSession } from '../lib/session.jsx';
 import { api } from '../lib/api.js';
-import { Link } from '../lib/router.jsx';
-import { PageLoader, Badge, Modal, Field, Select, ProgressBar, useAction, cx } from '../components/ui.jsx';
+import { Link, navigate, useLocation } from '../lib/router.jsx';
+import { PageLoader, Badge, Avatar, AvatarStack, Modal, Field, Select, ProgressBar, useAction, cx } from '../components/ui.jsx';
 import { StatusBadge, SlaBadge, PersonChip } from '../components/common.jsx';
-import { ProjectForm } from './Projects.jsx';
-import { PROJECT_KINDS, PROJECT_STATUS, SERVICES, UPDATE_CHANNELS, TASK_STATUS, TASK_STATUS_ORDER, APPOINTMENT_KINDS, INVESTMENT_STATUS } from '../../shared/catalog.js';
+import { ClientStatusBadge, MembersEditor, clientWhatsapp, membersToForm, normalizeMembers } from '../components/clients.jsx';
+import { ProjectForm, projectClientName, projectMembers } from './Projects.jsx';
+import { PROJECT_KINDS, PROJECT_STATUS, PROJECT_ROLES, SERVICES, UPDATE_CHANNELS, TASK_STATUS, TASK_STATUS_ORDER, APPOINTMENT_KINDS, INVESTMENT_STATUS } from '../../shared/catalog.js';
 import { formatMoney, formatDate, formatDateTime, timeAgo, whatsappLink, dueLabel } from '../lib/format.js';
 
 function UpdateModal({ project, onClose, onSaved }) {
@@ -43,6 +44,29 @@ function UpdateModal({ project, onClose, onSaved }) {
   );
 }
 
+function TeamModal({ project, onClose, onSaved }) {
+  const [run, busy] = useAction();
+  const [members, setMembers] = useState(() => membersToForm(project.members));
+  async function save(e) {
+    e.preventDefault();
+    const res = await run(() => api(`/api/projects/${project.id}`, { method: 'PATCH', body: { members: normalizeMembers(members, project.owner_id) } }), { success: 'Equipo actualizado' });
+    if (res) { onSaved(); onClose(); }
+  }
+  return (
+    <Modal open onClose={onClose} title="Equipo del proyecto"
+      footer={<>
+        <button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+        <button type="submit" form="team-form" className="btn btn-primary" disabled={busy}>{busy ? 'Guardando…' : 'Guardar equipo'}</button>
+      </>}>
+      <form id="team-form" onSubmit={save} className="space-y-3">
+        <p className="text-sm text-muted">Sumá a quien trabaja en <span className="font-semibold text-ink">{project.name}</span> y elegí su rol. A quien agregués le llega un aviso.</p>
+        <MembersEditor value={members} onChange={setMembers} ownerId={project.owner_id} />
+        <p className="text-xs text-muted">Para cambiar el responsable usá «Editar» en el proyecto.</p>
+      </form>
+    </Modal>
+  );
+}
+
 function QuickTask({ projectId, onCreated }) {
   const [title, setTitle] = useState('');
   const [run, busy] = useAction();
@@ -61,13 +85,34 @@ function QuickTask({ projectId, onCreated }) {
 }
 
 export default function ProjectDetail({ params }) {
-  const { canInvest } = useSession();
+  const { canInvest, user } = useSession();
+  const { query } = useLocation();
   const { data, error, reload } = useResource(`/api/projects/${params.id}`);
   const [editing, setEditing] = useState(false);
-  const [updating, setUpdating] = useState(false);
+  const [editingTeam, setEditingTeam] = useState(false);
   const [run] = useAction();
+
+  // ?avance=1 (botón rápido del móvil) abre directo "Registrar avance", también si ya estábamos aquí.
+  const avance = query.get('avance') === '1';
+  const [updating, setUpdating] = useState(avance);
+  const [seenAvance, setSeenAvance] = useState(avance);
+  if (avance !== seenAvance) {
+    setSeenAvance(avance);
+    if (avance) setUpdating(true);
+  }
+  useEffect(() => { if (avance) navigate(`/proyectos/${params.id}`, { replace: true }); }, [avance, params.id]);
+
   if (!data) return <PageLoader error={error} onRetry={reload} />;
   const { project: p, tasks, updates, appointments, investments } = data;
+  // El detalle trae el cliente como objeto (data.client); se toleran variantes del API.
+  const client = data.client && typeof data.client === 'object' ? data.client : p.client && typeof p.client === 'object' ? p.client : null;
+  const clientName = projectClientName(p) || client?.name || '';
+  const clientId = p.client_id ?? client?.id ?? null;
+  const members = projectMembers(p);
+  const clientWa = clientWhatsapp(client, user.name);
+  const editable = { ...p, client: clientName };
+  // Para el WhatsApp del avance: si el proyecto no tiene contacto propio, se usa el del cliente.
+  const updateTarget = { ...editable, contact_name: p.contact_name || client?.contact_name || null, contact_phone: p.contact_phone || client?.contact_phone || null };
 
   const patch = async (body, success) => { if (await run(() => api(`/api/projects/${p.id}`, { method: 'PATCH', body }), { success })) reload(); };
   const grouped = TASK_STATUS_ORDER.map((s) => [s, tasks.filter((t) => t.status === s)]).filter(([, list]) => list.length);
@@ -78,7 +123,9 @@ export default function ProjectDetail({ params }) {
         <Link to="/proyectos" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink"><ArrowLeft className="h-4 w-4" />Proyectos</Link>
         <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-dark">{p.client || PROJECT_KINDS[p.kind].label}</p>
+            {clientId ? (
+              <Link to={`/clientes/${clientId}`} className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-dark hover:underline">{clientName || 'Ver cliente'}</Link>
+            ) : <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-dark">{clientName || PROJECT_KINDS[p.kind].label}</p>}
             <h1 className="font-display text-2xl font-bold sm:text-3xl">{p.name}</h1>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <StatusBadge map={PROJECT_STATUS} value={p.status} />
@@ -86,6 +133,12 @@ export default function ProjectDetail({ params }) {
               {p.service && <Badge tone="blue">{SERVICES[p.service]}</Badge>}
               {p.archived && <Badge tone="ink">Archivado</Badge>}
             </div>
+            {members.length > 0 && (
+              <a href="#equipo-proyecto" className="mt-3 flex min-w-0 items-center gap-2 text-xs text-muted hover:text-ink">
+                <AvatarStack people={members} size={26} max={5} />
+                <span className="truncate">{members.map((m) => m.name.split(' ')[0]).join(', ')}</span>
+              </a>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             <Select className="w-auto" aria-label="Cambiar estado" options={Object.entries(PROJECT_STATUS).map(([value, v]) => ({ value, label: v.label }))} value={p.status} onChange={(v) => patch({ status: v }, 'Estado actualizado')} />
@@ -161,6 +214,56 @@ export default function ProjectDetail({ params }) {
         </div>
 
         <aside className="space-y-6">
+          {clientId && (
+            <section className="card card-pad" aria-labelledby="client-title">
+              <div className="flex items-center justify-between gap-2">
+                <h2 id="client-title" className="section-title">Cliente</h2>
+                {client?.status && <ClientStatusBadge status={client.status} />}
+              </div>
+              <Link to={`/clientes/${clientId}`} className="mt-3 flex items-center gap-3 rounded-xl border border-line p-3 transition hover:border-slate-300 hover:bg-slate-50">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand"><Building2 className="h-5 w-5" /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">{clientName || 'Cliente'}</span>
+                  <span className="block truncate text-xs text-muted">{client?.sector || 'Ver ficha del cliente'}</span>
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
+              </Link>
+              {(client?.contact_name || client?.contact_phone) && (
+                <div className="mt-3 flex items-center gap-3 text-sm">
+                  <User className="h-4 w-4 shrink-0 text-muted" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{client.contact_name || 'Contacto'}</span>
+                    {client.contact_phone && <span className="block select-all text-xs tabular text-muted">{client.contact_phone}</span>}
+                  </span>
+                  {clientWa && <a href={clientWa} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm shrink-0"><MessageCircle className="h-3.5 w-3.5 text-teal-dark" />WhatsApp</a>}
+                </div>
+              )}
+            </section>
+          )}
+
+          <section id="equipo-proyecto" className="card card-pad scroll-mt-20" aria-labelledby="team-title">
+            <div className="flex items-center justify-between gap-2">
+              <h2 id="team-title" className="section-title">Equipo del proyecto</h2>
+              <button type="button" className="btn btn-outline btn-sm" onClick={() => setEditingTeam(true)}><Users className="h-3.5 w-3.5" />Editar equipo</button>
+            </div>
+            {members.length === 0 ? (
+              <p className="mt-2 text-sm text-muted">Nadie asignado todavía. Elegí un responsable y sumá al equipo.</p>
+            ) : (
+              <ul className="mt-3 space-y-1">
+                {members.map((m) => (
+                  <li key={m.id}>
+                    <Link to={`/equipo/${m.id}`} className="flex min-h-11 items-center gap-3 rounded-xl p-2 hover:bg-slate-50">
+                      <Avatar name={m.name} color={m.color} size={30} />
+                      <span className="min-w-0 flex-1 truncate text-sm font-semibold">{m.name}</span>
+                      <Badge tone={m.role === 'responsable' ? 'blue' : 'slate'}>{PROJECT_ROLES[m.role] ?? m.role}</Badge>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {members.length === 1 && <p className="mt-2 text-xs text-muted">¿Alguien más trabaja aquí? Sumalo con «Editar equipo».</p>}
+          </section>
+
           <section className="card card-pad">
             <h2 className="section-title">Ficha</h2>
             <dl className="mt-3 space-y-3 text-sm">
@@ -214,8 +317,9 @@ export default function ProjectDetail({ params }) {
         </aside>
       </div>
 
-      {editing && <ProjectForm open project={p} onClose={() => setEditing(false)} onSaved={reload} />}
-      {updating && <UpdateModal project={p} onClose={() => setUpdating(false)} onSaved={reload} />}
+      {editing && <ProjectForm open project={editable} onClose={() => setEditing(false)} onSaved={reload} />}
+      {editingTeam && <TeamModal project={p} onClose={() => setEditingTeam(false)} onSaved={reload} />}
+      {updating && <UpdateModal project={updateTarget} onClose={() => setUpdating(false)} onSaved={reload} />}
     </div>
   );
 }

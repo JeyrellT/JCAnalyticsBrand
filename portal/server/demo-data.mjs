@@ -45,19 +45,49 @@ export async function seedDemoData({ db, passwordHash, login, now: nowArg }) {
   const hil = await as('hillary');
   const s5 = await as('socio5');
 
-  // ── Proyectos ─────────────────────────────────────────────────────────────
+  // ── Clientes ──────────────────────────────────────────────────────────────
+  const C = {};
+  const client = async (key, api, body) => { C[key] = (await api('POST', '/api/clients', body)).client.id; };
+  await client('burrada', cata, { name: 'La Burrada Street Food', sector: 'Restaurante', status: 'activo', contact_name: 'Dueño La Burrada', contact_phone: '+506 8888-0000', owner_id: U.catalina, notes: 'Comida callejera en San Pedro. Pedidos por WhatsApp; quieren panel de cocina en la fase 2.' });
+  await client('uniquex', cata, { name: 'Uniquex Costa Rica', sector: 'Domótica', status: 'activo', contact_name: 'Gerencia Uniquex', owner_id: U.alex, notes: 'Automatización residencial. La landing narrativa debe generar visitas técnicas.' });
+  await client('vip', jey, { name: 'Freight forwarder VIP', sector: 'Logística', status: 'activo', contact_name: 'Gerencia comercial VIP', owner_id: U.jeyrell, notes: 'Agencia de carga internacional (FCL/LCL, aéreo y terrestre). En soporte de 30 días.' });
+  await client('roble', cata, { name: 'Ferretería El Roble', sector: 'Ferretería', status: 'prospecto', contact_name: 'Gerente El Roble', contact_phone: '+506 8800-1122', owner_id: U.catalina, notes: 'Prospecto: dashboard de ventas, margen y cuentas por cobrar.' });
+  await client('sonrisa', cata, { name: 'Clínica Dental Sonrisa Plena', sector: 'Salud', status: 'prospecto', contact_name: 'Administración Sonrisa Plena', contact_phone: '+506 8000-4321', contact_email: 'administracion@sonrisaplena.example', owner_id: U.catalina, notes: 'Prospecto ficticio de la demo: agenda en línea y recordatorios por WhatsApp.' });
+
+  // ── Proyectos (con cliente del directorio y equipo por rol) ───────────────
   const P = {};
   const project = async (key, api, body, lastUpdateHoursAgo) => {
     P[key] = (await api('POST', '/api/projects', body)).project.id;
     if (lastUpdateHoursAgo != null) db.prepare('UPDATE projects SET last_update_at = ?, sla_started_at = ? WHERE id = ?').run(iso(-lastUpdateHoursAgo), iso(-lastUpdateHoursAgo - 24 * 7), P[key]);
   };
-  await project('burrada', cata, { name: 'Pedidos en línea La Burrada', client: 'La Burrada Street Food', kind: 'cliente', service: 'pagina_web', status: 'en_curso', owner_id: U.alex, start_date: day(-18), due_date: day(9), value_amount: 46_350_000, currency: 'CRC', contact_name: 'Dueño La Burrada', contact_phone: '+506 8888-0000', url: 'https://www.laburradacr.com/', description: 'Menú digital, carrito sin cuenta y confirmación por WhatsApp. Fase 2: panel de pedidos para cocina.' }, 81);
-  await project('uniquex', cata, { name: 'Landing narrativa Uniquex', client: 'Uniquex Costa Rica', kind: 'cliente', service: 'pagina_web', status: 'en_revision', owner_id: U.alex, start_date: day(-30), due_date: day(3), value_amount: 61_800_000, currency: 'CRC', url: 'https://uniquexcr.com/landing', description: 'Recorrido de un día en la casa con escenas interactivas y agenda de visita técnica.' }, 52);
-  await project('vip', jey, { name: 'Cotizador Comercial VIP', client: 'Freight forwarder VIP', kind: 'cliente', service: 'software_medida', status: 'soporte', owner_id: U.jeyrell, start_date: day(-75), due_date: day(-26), delivered_at: day(-25), value_amount: 2_800_00, currency: 'USD', description: 'Cotizador FCL/LCL/aéreo/terrestre, routing order de 5 hitos y scorecard gerencial.' });
-  await project('roble', cata, { name: 'Dashboard financiero Ferretería El Roble', client: 'Ferretería El Roble (prospecto)', kind: 'cliente', service: 'power_bi', status: 'prospecto', owner_id: U.jeyrell, value_amount: 180_000_00, currency: 'CRC', description: 'Ventas, margen por categoría y cuentas por cobrar. Pendiente sesión de alcance.' });
-  await project('barber', jey, { name: 'BarberXCR · crecimiento', kind: 'producto', service: 'producto_saas', status: 'en_curso', owner_id: U.jeyrell, start_date: day(-60), url: 'https://barberxcr.com/', description: 'Plataforma de reservas para barberías. Meta: 25 barberías activas a fin de año.' });
-  await project('taller', alex, { name: 'Taller Ticos · lanzamiento talleres', kind: 'producto', service: 'producto_saas', status: 'en_curso', owner_id: U.alex, start_date: day(-20), due_date: day(40), url: 'https://www.tallerticos.com/' });
-  await project('marca', hil, { name: 'Contenido y pauta JC Analytics', kind: 'interno', service: 'community_manager', status: 'en_curso', owner_id: U.hillary, description: 'Calendario mensual, reels de casos y campañas Meta Ads.' });
+  const team = (...pairs) => pairs.map(([userId, role]) => ({ user_id: userId, role }));
+  await project('burrada', cata, { name: 'Pedidos en línea La Burrada', client_id: C.burrada, kind: 'cliente', service: 'pagina_web', status: 'en_curso', owner_id: U.alex, start_date: day(-18), due_date: day(9), value_amount: 46_350_000, currency: 'CRC', contact_name: 'Dueño La Burrada', contact_phone: '+506 8888-0000', url: 'https://www.laburradacr.com/', description: 'Menú digital, carrito sin cuenta y confirmación por WhatsApp. Fase 2: panel de pedidos para cocina.', members: team([U.catalina, 'comercial'], [U.hillary, 'contenido']) }, 81);
+  await project('uniquex', cata, { name: 'Landing narrativa Uniquex', client_id: C.uniquex, kind: 'cliente', service: 'pagina_web', status: 'en_revision', owner_id: U.alex, start_date: day(-30), due_date: day(3), value_amount: 61_800_000, currency: 'CRC', url: 'https://uniquexcr.com/landing', description: 'Recorrido de un día en la casa con escenas interactivas y agenda de visita técnica.', members: team([U.catalina, 'comercial'], [U.hillary, 'diseno']) }, 52);
+  await project('vip', jey, { name: 'Cotizador Comercial VIP', client_id: C.vip, kind: 'cliente', service: 'software_medida', status: 'soporte', owner_id: U.jeyrell, start_date: day(-75), due_date: day(-26), delivered_at: day(-25), value_amount: 2_800_00, currency: 'USD', description: 'Cotizador FCL/LCL/aéreo/terrestre, routing order de 5 hitos y scorecard gerencial.', members: team([U.alex, 'desarrollo'], [U.catalina, 'soporte']) });
+  await project('roble', cata, { name: 'Dashboard financiero Ferretería El Roble', client_id: C.roble, kind: 'cliente', service: 'power_bi', status: 'prospecto', owner_id: U.jeyrell, value_amount: 180_000_00, currency: 'CRC', description: 'Ventas, margen por categoría y cuentas por cobrar. Pendiente sesión de alcance.', members: team([U.catalina, 'comercial']) });
+  await project('barber', jey, { name: 'BarberXCR · crecimiento', kind: 'producto', service: 'producto_saas', status: 'en_curso', owner_id: U.jeyrell, start_date: day(-60), url: 'https://barberxcr.com/', description: 'Plataforma de reservas para barberías. Meta: 25 barberías activas a fin de año.', members: team([U.alex, 'desarrollo'], [U.socio5, 'comercial'], [U.hillary, 'contenido']) });
+  await project('taller', alex, { name: 'Taller Ticos · lanzamiento talleres', kind: 'producto', service: 'producto_saas', status: 'en_curso', owner_id: U.alex, start_date: day(-20), due_date: day(40), url: 'https://www.tallerticos.com/', members: team([U.jeyrell, 'datos']) });
+  await project('marca', hil, { name: 'Contenido y pauta JC Analytics', kind: 'interno', service: 'community_manager', status: 'en_curso', owner_id: U.hillary, description: 'Calendario mensual, reels de casos y campañas Meta Ads.', members: team([U.catalina, 'comercial']) });
+
+  // ── Líneas de servicio: líder y equipo (solo el admin las edita) ──────────
+  const services = [
+    ['software_medida', U.alex, [U.jeyrell], 'Sistemas internos, cotizadores y portales a la medida del proceso del cliente.'],
+    ['pagina_web', U.alex, [U.hillary, U.catalina], 'Sitios y plataformas web con pedidos, reservas o agenda integrada.'],
+    ['fiscal_planilla', U.jeyrell, [U.catalina], 'Planillas, cargas sociales y declaraciones de Costa Rica automatizadas.'],
+    ['power_bi', U.jeyrell, [U.catalina], 'Tableros de ventas, margen y cobro conectados a las fuentes del cliente.'],
+    ['python_pipeline', U.jeyrell, [U.alex], 'Extracción, limpieza y carga de datos programada en Python.'],
+    ['alteryx_knime', U.jeyrell, [], 'Flujos de preparación de datos en Alteryx o KNIME.'],
+    ['power_automate', U.jeyrell, [U.alex], 'Aprobaciones, formularios y alertas con Power Automate y Power Apps.'],
+    ['excel_vba', U.jeyrell, [U.catalina], 'Macros y plantillas de Excel que eliminan trabajo manual repetido.'],
+    ['doc_generation', U.catalina, [U.jeyrell], 'Contratos, cotizaciones y reportes generados a partir de datos.'],
+    ['analisis_tfg', U.catalina, [U.jeyrell], 'Acompañamiento de análisis de datos para tesis y proyectos académicos.'],
+    ['community_manager', U.hillary, [U.catalina], 'Calendario de contenido, publicaciones y pauta en redes.'],
+    ['video_edicion', U.hillary, [], 'Reels y videos cortos de casos, productos y testimonios.'],
+    ['producto_saas', U.jeyrell, [U.socio5, U.alex], 'Productos propios del estudio: BarberXCR, Taller Ticos y los que vengan.'],
+  ];
+  for (const [key, leadId, members, description] of services) await jey('PATCH', `/api/services/${key}`, { lead_id: leadId, members, description });
+  // Los avisos de asignación inicial no ensucian el buzón de la demo.
+  db.prepare("UPDATE notifications SET read_at = ? WHERE kind = 'service' AND read_at IS NULL").run(iso(0));
 
   // ── Tablero ───────────────────────────────────────────────────────────────
   const tasks = [
@@ -83,10 +113,11 @@ export async function seedDemoData({ db, passwordHash, login, now: nowArg }) {
 
   // ── Agenda ────────────────────────────────────────────────────────────────
   const appts = [
-    [cata, { title: 'Sesión de alcance · Ferretería El Roble', kind: 'alcance', status: 'confirmada', starts_at: crAt(0, 15), ends_at: crAt(0, 16), meeting_url: 'https://meet.google.com/abc-defg-hij', project_id: P.roble, contact_name: 'Gerente El Roble', contact_phone: '+506 8800-1122', attendees: [U.jeyrell, U.catalina] }],
-    [alex, { title: 'Demo del panel de cocina', kind: 'demo', starts_at: crAt(1, 10), ends_at: crAt(1, 10, 45), location: 'La Burrada, San Pedro', project_id: P.burrada, contact_name: 'Dueño La Burrada', contact_phone: '+506 8888-0000', attendees: [U.alex, U.catalina] }],
+    [cata, { title: 'Sesión de alcance · Ferretería El Roble', kind: 'alcance', status: 'confirmada', starts_at: crAt(0, 15), ends_at: crAt(0, 16), meeting_url: 'https://meet.google.com/abc-defg-hij', project_id: P.roble, client_id: C.roble, attendees: [U.jeyrell, U.catalina] }],
+    [alex, { title: 'Demo del panel de cocina', kind: 'demo', starts_at: crAt(1, 10), ends_at: crAt(1, 10, 45), location: 'La Burrada, San Pedro', project_id: P.burrada, client_id: C.burrada, attendees: [U.alex, U.catalina] }],
     [jey, { title: 'Reunión semanal de socios', kind: 'interna', status: 'confirmada', starts_at: crAt(2, 8), ends_at: crAt(2, 9), meeting_url: 'https://meet.google.com/jca-socios-sem', notes: 'Revisar portafolio de inversiones y pipeline.', attendees: [U.jeyrell, U.catalina, U.alex, U.socio5] }],
-    [cata, { title: 'Entrega landing Uniquex', kind: 'entrega', starts_at: crAt(3, 14), ends_at: crAt(3, 15), project_id: P.uniquex, attendees: [U.alex, U.catalina] }],
+    [cata, { title: 'Entrega landing Uniquex', kind: 'entrega', starts_at: crAt(3, 14), ends_at: crAt(3, 15), project_id: P.uniquex, client_id: C.uniquex, attendees: [U.alex, U.catalina] }],
+    [cata, { title: 'Sesión de alcance · Clínica Sonrisa Plena', kind: 'alcance', starts_at: crAt(5, 10), ends_at: crAt(5, 11), meeting_url: 'https://meet.google.com/jca-sonrisa-alc', client_id: C.sonrisa, notes: 'Primera sesión sin costo: agenda en línea y recordatorios.', attendees: [U.catalina, U.jeyrell] }],
     [hil, { title: 'Sesión de fotos para contenido', kind: 'otro', starts_at: crAt(4, 9), ends_at: crAt(4, 11), location: 'Oficina', attendees: [U.hillary, U.alex] }],
     [jey, { title: 'Seguimiento soporte Cotizador VIP', kind: 'seguimiento', status: 'realizada', starts_at: crAt(-2, 11), ends_at: crAt(-2, 11, 30), project_id: P.vip, attendees: [U.jeyrell] }],
   ];

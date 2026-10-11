@@ -8,6 +8,8 @@
 //  una ya publicada).
 // ============================================================================
 
+import { SERVICE_DEFAULTS } from '../shared/catalog.js';
+
 export const MIGRATIONS = [
   `
   CREATE TABLE users (
@@ -205,6 +207,77 @@ export const MIGRATIONS = [
   ALTER TABLE projects ADD COLUMN sla_started_at TEXT;
   UPDATE projects SET sla_started_at = COALESCE(last_update_at, updated_at) WHERE status IN ('en_curso','en_revision');
   `,
+  // 3 · Clientes, líneas de servicio con líder y equipo, y equipo por proyecto (ver docs/v2-contrato.md).
+  `
+  CREATE TABLE clients (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    sector TEXT,
+    status TEXT NOT NULL DEFAULT 'activo' CHECK (status IN ('prospecto','activo','inactivo')),
+    contact_name TEXT,
+    contact_phone TEXT,
+    contact_email TEXT,
+    notes TEXT,
+    owner_id INTEGER REFERENCES users(id),
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  ALTER TABLE projects ADD COLUMN client_id INTEGER REFERENCES clients(id);
+  ALTER TABLE appointments ADD COLUMN client_id INTEGER REFERENCES clients(id);
+  CREATE INDEX projects_client ON projects(client_id);
+  CREATE INDEX appointments_client ON appointments(client_id);
+
+  CREATE TABLE service_lines (
+    key TEXT PRIMARY KEY,
+    lead_id INTEGER REFERENCES users(id),
+    price_from_usd INTEGER,
+    unit TEXT,
+    description TEXT,
+    active INTEGER NOT NULL DEFAULT 1,
+    updated_at TEXT
+  );
+
+  CREATE TABLE service_members (
+    service_key TEXT NOT NULL REFERENCES service_lines(key) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    PRIMARY KEY (service_key, user_id)
+  );
+  CREATE INDEX service_members_user ON service_members(user_id);
+
+  CREATE TABLE project_members (
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    role TEXT NOT NULL DEFAULT 'equipo',
+    PRIMARY KEY (project_id, user_id)
+  );
+  CREATE INDEX project_members_user ON project_members(user_id);
+
+  -- Relleno: un cliente por cada projects.client distinto (sin distinguir mayúsculas ni espacios).
+  -- Prospecto si todos sus proyectos lo son; inactivo si ya no tiene proyectos vivos; si no, activo.
+  INSERT INTO clients (name, status, created_at, updated_at)
+    SELECT TRIM(client),
+      CASE WHEN SUM(CASE WHEN status = 'prospecto' THEN 1 ELSE 0 END) = COUNT(*) THEN 'prospecto'
+           WHEN SUM(CASE WHEN status <> 'cerrado' AND archived = 0 THEN 1 ELSE 0 END) = 0 THEN 'inactivo'
+           ELSE 'activo' END,
+      MIN(created_at), MAX(updated_at)
+    FROM projects WHERE client IS NOT NULL AND TRIM(client) <> ''
+    GROUP BY LOWER(TRIM(client)) ORDER BY MIN(created_at);
+  UPDATE projects SET client_id = (SELECT c.id FROM clients c WHERE LOWER(c.name) = LOWER(TRIM(projects.client)) ORDER BY c.id LIMIT 1)
+    WHERE client IS NOT NULL AND TRIM(client) <> '';
+  UPDATE clients SET
+    owner_id = (SELECT p.owner_id FROM projects p WHERE p.client_id = clients.id AND p.owner_id IS NOT NULL ORDER BY p.updated_at DESC LIMIT 1),
+    contact_name = (SELECT p.contact_name FROM projects p WHERE p.client_id = clients.id AND p.contact_name IS NOT NULL ORDER BY p.updated_at DESC LIMIT 1),
+    contact_phone = (SELECT p.contact_phone FROM projects p WHERE p.client_id = clients.id AND p.contact_phone IS NOT NULL ORDER BY p.updated_at DESC LIMIT 1),
+    created_by = (SELECT p.created_by FROM projects p WHERE p.client_id = clients.id ORDER BY p.created_at LIMIT 1);
+  -- Las citas ligadas a un proyecto heredan su cliente.
+  UPDATE appointments SET client_id = (SELECT p.client_id FROM projects p WHERE p.id = appointments.project_id)
+    WHERE project_id IS NOT NULL;
+  -- El responsable de cada proyecto entra como miembro con rol 'responsable'.
+  INSERT OR IGNORE INTO project_members (project_id, user_id, role)
+    SELECT id, owner_id, 'responsable' FROM projects WHERE owner_id IS NOT NULL;
+  `,
 ];
 
 export const DEFAULT_SETTINGS = {
@@ -230,6 +303,9 @@ export function migrate(db) {
   }
   const insert = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
   for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) insert.run(key, value);
+  // Una fila por línea de servicio del catálogo; las ediciones del admin no se pisan.
+  const service = db.prepare('INSERT OR IGNORE INTO service_lines (key, price_from_usd, unit) VALUES (?, ?, ?)');
+  for (const [key, d] of Object.entries(SERVICE_DEFAULTS)) service.run(key, d.price_from_usd ?? null, d.unit ?? null);
   return db;
 }
 

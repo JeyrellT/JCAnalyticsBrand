@@ -2,13 +2,14 @@
 // exporta a calendario (.ics) y arma el recordatorio de WhatsApp para el cliente.
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ChevronLeft, ChevronRight, Plus, Video, MapPin, Download, MessageCircle, CheckCircle2, XCircle, CalendarDays, AlertTriangle, Pencil, Trash2, Phone, FolderKanban,
+  ChevronLeft, ChevronRight, Plus, Video, MapPin, Download, MessageCircle, CheckCircle2, XCircle, CalendarDays, AlertTriangle, Pencil, Trash2, Phone, FolderKanban, Building2,
 } from 'lucide-react';
 import { useResource, useSession } from '../lib/session.jsx';
 import { api } from '../lib/api.js';
 import { useLocation, navigate, Link } from '../lib/router.jsx';
 import { PageHeader, PageLoader, Badge, Modal, Field, Select, AvatarStack, EmptyState, useAction, useConfirm, cx } from '../components/ui.jsx';
 import { PeoplePicker, StatusBadge } from '../components/common.jsx';
+import { ClientSelect } from '../components/clients.jsx';
 import { APPOINTMENT_KINDS, APPOINTMENT_STATUS } from '../../shared/catalog.js';
 import {
   todayKey, weekStart, addDays, startOfDayIso, dayKey, formatTime, formatDayShort, formatDayLong, formatDateTime, minutesOfDay, toLocalInput, fromLocalInput, whatsappLink, downloadIcs,
@@ -33,6 +34,22 @@ function AppointmentForm({ appointment, defaults, projects, onClose, onSaved }) 
     : { kind: 'alcance', status: 'programada', attendees: [user.id], ...defaults, start: toLocalInput(defaults.starts_at), end: toLocalInput(defaults.ends_at) });
   const [conflicts, setConflicts] = useState([]);
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+
+  // Al elegir el cliente se completa su contacto si todavía está vacío.
+  function pickClient(clientId, client) {
+    setForm((f) => ({
+      ...f,
+      client_id: clientId,
+      client_name: client?.name ?? null,
+      contact_name: f.contact_name || client?.contact_name || '',
+      contact_phone: f.contact_phone || client?.contact_phone || '',
+    }));
+  }
+  // Al elegir un proyecto de cliente, el cliente se toma del proyecto si no hay otro elegido.
+  function pickProject(projectId) {
+    const project = projects.find((p) => p.id === projectId);
+    setForm((f) => ({ ...f, project_id: projectId, client_id: f.client_id || project?.client_id || null, client_name: f.client_id ? f.client_name : project?.client ?? f.client_name }));
+  }
 
   // Al mover el inicio, el fin conserva la duración.
   function setStart(value) {
@@ -62,7 +79,7 @@ function AppointmentForm({ appointment, defaults, projects, onClose, onSaved }) 
     e.preventDefault();
     const body = {
       title: form.title, kind: form.kind, status: form.status, starts_at: fromLocalInput(form.start), ends_at: fromLocalInput(form.end),
-      location: form.location || null, meeting_url: form.meeting_url || null, project_id: form.project_id || null,
+      location: form.location || null, meeting_url: form.meeting_url || null, project_id: form.project_id || null, client_id: form.client_id || null,
       contact_name: form.contact_name || null, contact_phone: form.contact_phone || null, notes: form.notes || null, attendees: form.attendees,
     };
     const res = await run(() => api(appointment ? `/api/appointments/${appointment.id}` : '/api/appointments', { method: appointment ? 'PATCH' : 'POST', body }), { success: appointment ? 'Cita actualizada' : 'Cita agendada' });
@@ -87,9 +104,10 @@ function AppointmentForm({ appointment, defaults, projects, onClose, onSaved }) 
         )}
         <Field label="Enlace de videollamada">{(id) => <input id={id} className="input" value={form.meeting_url ?? ''} onChange={(e) => set('meeting_url')(e.target.value)} placeholder="https://meet.google.com/…" />}</Field>
         <Field label="Lugar">{(id) => <input id={id} className="input" value={form.location ?? ''} onChange={(e) => set('location')(e.target.value)} placeholder="Oficina, cliente, virtual…" />}</Field>
-        <Field label="Contacto del cliente">{(id) => <input id={id} className="input" value={form.contact_name ?? ''} onChange={(e) => set('contact_name')(e.target.value)} />}</Field>
+        <Field label="Cliente">{(id) => <ClientSelect id={id} value={form.client_id} selectedLabel={form.client_name} onChange={pickClient} placeholder="Sin cliente" />}</Field>
+        <Field label="Proyecto">{(id) => <Select id={id} options={projects.map((p) => ({ value: String(p.id), label: p.name }))} value={form.project_id ? String(form.project_id) : ''} onChange={(v) => pickProject(v ? Number(v) : null)} placeholder="Sin proyecto" />}</Field>
+        <Field label="Contacto del cliente" hint={form.client_id && !form.contact_name ? 'Si lo dejás vacío, se usa el contacto del cliente.' : null}>{(id) => <input id={id} className="input" value={form.contact_name ?? ''} onChange={(e) => set('contact_name')(e.target.value)} />}</Field>
         <Field label="WhatsApp del contacto">{(id) => <input id={id} className="input" inputMode="tel" value={form.contact_phone ?? ''} onChange={(e) => set('contact_phone')(e.target.value)} placeholder="8888-0000" />}</Field>
-        <Field label="Proyecto" className="sm:col-span-2">{(id) => <Select id={id} options={projects.map((p) => ({ value: String(p.id), label: p.name }))} value={form.project_id ? String(form.project_id) : ''} onChange={(v) => set('project_id')(v ? Number(v) : null)} placeholder="Sin proyecto" />}</Field>
         <Field label="Notas / agenda de la reunión" className="sm:col-span-2">{(id) => <textarea id={id} className="input" rows={3} value={form.notes ?? ''} onChange={(e) => set('notes')(e.target.value)} />}</Field>
       </form>
     </Modal>
@@ -131,7 +149,8 @@ function AppointmentView({ a, onClose, onEdit, onChanged }) {
         <dl className="space-y-2.5 rounded-2xl bg-paper p-4 text-sm">
           {a.meeting_url && <div className="flex items-center gap-2"><Video className="h-4 w-4 text-muted" /><a href={a.meeting_url} target="_blank" rel="noreferrer" className="truncate font-semibold text-brand hover:underline">Unirse a la videollamada</a></div>}
           {a.location && <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted" />{a.location}</div>}
-          {a.project_name && <div className="flex items-center gap-2"><FolderKanban className="h-4 w-4 text-muted" /><Link to={`/proyectos/${a.project_id}`} className="font-semibold text-brand hover:underline">{a.project_name}</Link></div>}
+          {a.client_id && <div className="flex items-center gap-2"><Building2 className="h-4 w-4 shrink-0 text-muted" /><Link to={`/clientes/${a.client_id}`} className="min-w-0 truncate font-semibold text-brand hover:underline">{a.client_name || 'Ver cliente'}</Link></div>}
+          {a.project_name && <div className="flex items-center gap-2"><FolderKanban className="h-4 w-4 shrink-0 text-muted" /><Link to={`/proyectos/${a.project_id}`} className="min-w-0 truncate font-semibold text-brand hover:underline">{a.project_name}</Link></div>}
           {(a.contact_name || a.contact_phone) && <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted" />{a.contact_name} {a.contact_phone && <span className="text-muted">· {a.contact_phone}</span>}</div>}
           <div className="flex items-center gap-2"><span className="text-muted">Equipo:</span><AvatarStack people={a.attendees} size={26} max={6} /><span className="text-xs text-muted">{a.attendees.map((p) => p.name.split(' ')[0]).join(', ')}</span></div>
         </dl>
@@ -163,11 +182,18 @@ export default function Agenda() {
   const { data: pdata } = useResource('/api/projects');
   const projects = pdata?.projects ?? [];
   const [editing, setEditing] = useState(null);
-  const [creating, setCreating] = useState(() => {
-    if (query.get('nueva') !== '1') return null;
+  // ?nueva=1 (&proyecto=ID, &cliente=ID) abre una cita nueva en la próxima hora; también si ya estábamos en la agenda.
+  const nueva = query.get('nueva') === '1';
+  const fromQuery = () => {
     const nextHour = Math.min(Math.max(Math.floor(minutesOfDay(new Date().toISOString()) / 60) + 1, 8), 17);
-    return { ...defaultSlot(todayKey(), nextHour), project_id: Number(query.get('proyecto')) || null };
-  });
+    return { ...defaultSlot(todayKey(), nextHour), project_id: Number(query.get('proyecto')) || null, client_id: Number(query.get('cliente')) || null };
+  };
+  const [creating, setCreating] = useState(() => (nueva ? fromQuery() : null));
+  const [seenNueva, setSeenNueva] = useState(nueva);
+  if (nueva !== seenNueva) {
+    setSeenNueva(nueva);
+    if (nueva) setCreating(fromQuery());
+  }
   const today = todayKey();
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(week, i)), [week]);
 
@@ -178,7 +204,6 @@ export default function Agenda() {
   const { data: wide } = useResource(citaId && data && !inWeek ? wideRange : null);
   const viewing = inWeek ?? wide?.appointments.find((a) => a.id === citaId) ?? null;
 
-  const nueva = query.get('nueva');
   useEffect(() => { if (nueva) navigate('/agenda', { replace: true }); }, [nueva]);
 
   const byDay = useMemo(() => {
@@ -271,7 +296,7 @@ export default function Agenda() {
                           <span className="w-[76px] shrink-0 font-display text-sm font-bold tabular">{formatTime(a.starts_at)}</span>
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-semibold">{a.title}</span>
-                            <span className="block truncate text-xs text-muted">{APPOINTMENT_KINDS[a.kind]?.label}{a.project_name ? ` · ${a.project_name}` : ''}</span>
+                            <span className="block truncate text-xs text-muted">{APPOINTMENT_KINDS[a.kind]?.label}{a.client_name ? ` · ${a.client_name}` : a.project_name ? ` · ${a.project_name}` : ''}</span>
                           </span>
                           <AvatarStack people={a.attendees} size={22} max={2} />
                         </button>

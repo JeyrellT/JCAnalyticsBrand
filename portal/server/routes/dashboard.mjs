@@ -33,8 +33,8 @@ export function dashboardRoutes(route, ctx) {
       .sort((a, b) => (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999') || priorityWeight[a.priority] - priorityWeight[b.priority])
       .slice(0, 8);
 
-    const upcoming = db.prepare(`SELECT a.*, p.name project_name FROM appointments a LEFT JOIN projects p ON p.id = a.project_id
-      WHERE a.ends_at >= ? AND a.starts_at <= ? AND a.status NOT IN ('cancelada') ORDER BY a.starts_at LIMIT 12`).all(nowIso, in7d)
+    const upcoming = db.prepare(`SELECT a.*, p.name project_name, c.name client_name FROM appointments a LEFT JOIN projects p ON p.id = a.project_id
+      LEFT JOIN clients c ON c.id = a.client_id WHERE a.ends_at >= ? AND a.starts_at <= ? AND a.status NOT IN ('cancelada') ORDER BY a.starts_at LIMIT 12`).all(nowIso, in7d)
       .map((a) => ({ ...a, attendees: db.prepare('SELECT u.id, u.name, u.color FROM appointment_attendees x JOIN users u ON u.id = x.user_id WHERE x.appointment_id = ?').all(a.id) }));
     const todayAppointments = upcoming.filter((a) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Costa_Rica' }).format(new Date(a.starts_at)) === today);
     const unconfirmedSoon = upcoming.filter((a) => a.status === 'programada' && a.starts_at <= in24h && a.kind !== 'interna');

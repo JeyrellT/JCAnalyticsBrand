@@ -90,3 +90,31 @@ body {
 .grid > * { min-width: 0; }
 
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* ── Móvil primero: hojas inferiores, barra de pestañas y botón Crear ──── */
+/* Espacio para que la barra inferior (y la zona segura del iPhone) no tape el contenido. */
+.main-safe { padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 64rem) { .main-safe { padding-bottom: 3rem; } }
+
+/* Hoja que sube desde abajo en el celular y aparece centrada desde 640 px. */
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes drawer-in { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.animate-sheet { animation: sheet-up 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@media (min-width: 40rem) { .animate-sheet { animation: rise 0.22s ease-out both; } }
+.animate-drawer { animation: drawer-in 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.animate-fade { animation: fade-in 0.2s ease-out both; }
+.sheet-panel { padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px)); }
+
+/* Filas de chips con scroll propio (sin barra visible) para no desbordar la página. */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Área táctil mínima de 44 px (en una capa, para que lg:min-h-* pueda achicarla en escritorio). */
+@layer components {
+  .tap { min-height: 44px; min-width: 44px; }
+}
+
+/* Botón redondo "Crear" de la barra inferior. */
+.fab { box-shadow: 0 8px 20px -6px rgba(0, 101, 223, 0.55), 0 0 0 4px #fff; }
+.fab:active { transform: scale(0.96); }

@@ -1,9 +1,11 @@
-// Equipo (personas y roles), mi perfil, contraseña y ajustes operativos (tipo de cambio, SLA, WIP, respaldo).
-import { useState } from 'react';
-import { UserPlus, KeyRound, Copy, ShieldCheck, Save, DatabaseBackup, Power, MessageCircle } from 'lucide-react';
-import { useSession } from '../lib/session.jsx';
+// Equipo: personas con su carga y servicios, mi perfil y contraseña, y ajustes operativos (tipo de cambio, SLA, WIP, respaldo).
+import { useMemo, useState } from 'react';
+import { UserPlus, KeyRound, Copy, ShieldCheck, Save, DatabaseBackup, Power, MessageCircle, Pencil, Users, UserX, AlertTriangle, ArrowRight } from 'lucide-react';
+import { useSession, useResource } from '../lib/session.jsx';
 import { api } from '../lib/api.js';
-import { PageHeader, Modal, Field, Select, Avatar, Badge, useAction, useToast, useConfirm, cx } from '../components/ui.jsx';
+import { Link, navigate, useLocation } from '../lib/router.jsx';
+import { PageHeader, PageLoader, EmptyState, Modal, Field, Select, Avatar, Tabs, useAction, useToast, useConfirm, cx } from '../components/ui.jsx';
+import { PersonCard, RoleBadge, LOAD_META } from '../components/people.jsx';
 import { PasswordForm } from './Login.jsx';
 import { ROLES, MEMBER_COLORS } from '../../shared/catalog.js';
 import { timeAgo, whatsappLink } from '../lib/format.js';
@@ -46,7 +48,7 @@ function MemberModal({ member, onClose, onSaved }) {
         <Field label="Rol" hint={ROLES[form.role]?.hint}>{(id) => <Select id={id} options={roleOptions} value={form.role} onChange={set('role')} />}</Field>
         <Field label="WhatsApp">{(id) => <input id={id} className="input" inputMode="tel" value={form.phone ?? ''} onChange={(e) => set('phone')(e.target.value)} placeholder="8888-0000" />}</Field>
         <Field label="Color" className="sm:col-span-2">
-          <div className="flex flex-wrap gap-2">{MEMBER_COLORS.map((c) => <button key={c} type="button" aria-label={`Color ${c}`} aria-pressed={form.color === c} onClick={() => set('color')(c)} className={cx('h-8 w-8 rounded-full ring-offset-2 transition', form.color === c && 'ring-2 ring-ink')} style={{ background: c }} />)}</div>
+          <div className="flex flex-wrap gap-2">{MEMBER_COLORS.map((c) => <button key={c} type="button" aria-label={`Color ${c}`} aria-pressed={form.color === c} onClick={() => set('color')(c)} className={cx('h-9 w-9 rounded-full ring-offset-2 transition', form.color === c && 'ring-2 ring-ink')} style={{ background: c }} />)}</div>
         </Field>
       </form>
     </Modal>
@@ -96,7 +98,7 @@ function ProfileCard() {
         <div className="flex items-center gap-3"><Avatar name={form.name} color={form.color} size={44} /><div><p className="font-semibold">{user.email}</p><p className="text-xs text-muted">{ROLES[user.role].label}</p></div></div>
         <Field label="Nombre">{(id) => <input id={id} className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />}</Field>
         <Field label="WhatsApp">{(id) => <input id={id} className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />}</Field>
-        <div className="flex flex-wrap gap-2">{MEMBER_COLORS.map((c) => <button key={c} type="button" aria-label={`Color ${c}`} aria-pressed={form.color === c} onClick={() => setForm({ ...form, color: c })} className={cx('h-7 w-7 rounded-full ring-offset-2', form.color === c && 'ring-2 ring-ink')} style={{ background: c }} />)}</div>
+        <div className="flex flex-wrap gap-2">{MEMBER_COLORS.map((c) => <button key={c} type="button" aria-label={`Color ${c}`} aria-pressed={form.color === c} onClick={() => setForm({ ...form, color: c })} className={cx('h-9 w-9 rounded-full ring-offset-2', form.color === c && 'ring-2 ring-ink')} style={{ background: c }} />)}</div>
         <button type="submit" className="btn btn-outline" disabled={busy}><Save className="h-4 w-4" />Guardar perfil</button>
       </form>
       <div className="mt-6 border-t border-line pt-5">
@@ -107,12 +109,116 @@ function ProfileCard() {
   );
 }
 
+const TABS = { personas: 'Personas', perfil: 'Mi perfil', ajustes: 'Ajustes' };
+
+/** Acciones del admin sobre una persona (editar, contraseña temporal, desactivar o reactivar). */
+function MemberActions({ member, me, busy, onEdit, onReset, onToggle }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      <button type="button" className="btn btn-outline btn-sm min-h-10 flex-1" onClick={() => onEdit(member)}><Pencil className="h-3.5 w-3.5" />Editar</button>
+      {member.active && <button type="button" className="btn btn-ghost btn-sm min-h-10 flex-1" onClick={() => onReset(member)} disabled={busy}><KeyRound className="h-3.5 w-3.5" />Contraseña</button>}
+      {member.id !== me && (
+        <button type="button" className={cx('btn btn-sm min-h-10 flex-1', member.active ? 'btn-ghost' : 'btn-teal')} onClick={() => onToggle(member)} disabled={busy}>
+          <Power className="h-3.5 w-3.5" />{member.active ? 'Desactivar' : 'Reactivar'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function accessNote(m) {
+  if (!m.active) return 'Acceso desactivado';
+  const base = m.last_login_at ? `Último ingreso ${timeAgo(m.last_login_at)}` : 'Aún no ingresa';
+  return m.must_change_password ? `${base} · contraseña temporal pendiente` : base;
+}
+
+function PeopleTab({ resource, actions }) {
+  const { user, team, activeTeam, isAdmin } = useSession();
+  const { data, error, reload } = resource;
+  const byId = useMemo(() => new Map(team.map((m) => [m.id, m])), [team]);
+  const inactive = team.filter((m) => !m.active);
+
+  // Si la carga de trabajo no responde, igual mostramos al equipo (sin contadores) para no bloquear la administración.
+  const people = data?.people ?? (error ? activeTeam : null);
+  if (!people) return <PageLoader />;
+  const counts = Object.fromEntries(Object.keys(LOAD_META).map((k) => [k, people.filter((p) => p.load === k).length]));
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 sm:flex-row sm:items-center sm:justify-between">
+          <p className="flex items-start gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />No pudimos cargar la carga de trabajo de cada persona.</p>
+          <button type="button" className="btn btn-outline" onClick={reload}>Reintentar</button>
+        </div>
+      )}
+
+      {data && people.length > 0 && (
+        <div className="flex flex-wrap gap-2 text-sm" aria-label="Resumen de carga">
+          <span className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1.5"><Users className="h-4 w-4 text-teal-dark" /><span className="font-bold tabular">{people.length}</span><span className="text-muted">{people.length === 1 ? 'persona' : 'personas'}</span></span>
+          {Object.entries(LOAD_META).filter(([k]) => counts[k]).map(([k, meta]) => (
+            <span key={k} className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1.5">
+              <span className={cx('h-2 w-2 rounded-full', `dot-${meta.tone}`)} /><span className="font-bold tabular">{counts[k]}</span><span className="text-muted">{counts[k] === 1 ? meta.label.toLowerCase() : meta.plural}</span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {people.length === 0 ? (
+        <EmptyState icon={Users} title="Todavía no hay personas activas"
+          action={isAdmin && <button type="button" className="btn btn-primary" onClick={() => actions.onEdit('new')}><UserPlus className="h-4 w-4" />Agregar persona</button>}>
+          Agregá a cada socio o colaborador para repartir proyectos, tareas y citas.
+        </EmptyState>
+      ) : (
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Personas">
+          {people.map((p) => {
+            const member = byId.get(p.id) ?? p;
+            return (
+              <PersonCard key={p.id} person={p} isMe={p.id === user.id} note={isAdmin ? accessNote(member) : null}>
+                {isAdmin && <MemberActions member={member} me={user.id} {...actions} />}
+              </PersonCard>
+            );
+          })}
+        </section>
+      )}
+
+      {isAdmin && inactive.length > 0 && (
+        <section aria-labelledby="sin-acceso" className="rounded-2xl border border-dashed border-line p-3 sm:p-4">
+          <h2 id="sin-acceso" className="mb-3 flex items-center gap-2 px-1 font-semibold text-muted"><UserX className="h-4 w-4" />Sin acceso <span className="font-normal">{inactive.length}</span></h2>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {inactive.map((m) => (
+              <article key={m.id} className="card flex flex-col gap-3 bg-white/70 p-4">
+                <div className="flex items-center gap-3 opacity-70">
+                  <Avatar name={m.name} color={m.color} size={40} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold">{m.name}</p>
+                    <p className="truncate text-xs text-muted">{m.email}</p>
+                  </div>
+                  <RoleBadge role={m.role} />
+                </div>
+                <p className="text-xs text-muted">Acceso desactivado. Su historial se conserva.</p>
+                <div className="border-t border-line pt-3"><MemberActions member={m} me={user.id} {...actions} /></div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
 export default function Team() {
-  const { user, team, isAdmin, loadTeam, settings } = useSession();
+  const { user, isAdmin, loadTeam, settings } = useSession();
+  const { query } = useLocation();
   const [editing, setEditing] = useState(null);
   const [temp, setTemp] = useState(null);
+  const people = useResource('/api/people');
   const [run, busy] = useAction();
   const confirm = useConfirm();
+
+  const requested = query.get('tab');
+  const tab = requested === 'perfil' || (requested === 'ajustes' && isAdmin) ? requested : 'personas';
+  const setTab = (value) => navigate(value === 'personas' ? '/equipo' : `/equipo?tab=${value}`, { replace: true });
+  const changed = () => { loadTeam(); people.reload(); };
 
   const reset = async (m) => {
     if (!(await confirm({ title: 'Nueva contraseña temporal', message: `Se genera una contraseña temporal para ${m.name} y se cierran sus sesiones abiertas.`, confirmLabel: 'Generar' }))) return;
@@ -121,44 +227,36 @@ export default function Team() {
   };
   const toggle = async (m) => {
     if (m.active && !(await confirm({ title: `Desactivar a ${m.name}`, message: 'Pierde el acceso de inmediato. Su historial se conserva.', confirmLabel: 'Desactivar', tone: 'danger' }))) return;
-    if (await run(() => api(`/api/users/${m.id}`, { method: 'PATCH', body: { active: !m.active } }), { success: m.active ? 'Acceso desactivado' : 'Acceso reactivado' })) loadTeam();
+    if (await run(() => api(`/api/users/${m.id}`, { method: 'PATCH', body: { active: !m.active } }), { success: m.active ? 'Acceso desactivado' : 'Acceso reactivado' })) changed();
   };
+  const actions = { busy, onEdit: setEditing, onReset: reset, onToggle: toggle };
+
+  const tabs = Object.entries(TABS).filter(([value]) => value !== 'ajustes' || isAdmin).map(([value, label]) => ({ value, label }));
 
   return (
-    <div className="space-y-6">
-      <PageHeader eyebrow="Equipo y ajustes" title="Equipo" subtitle="Personas con acceso al portal y su rol. Los colaboradores no ven inversiones."
-        actions={isAdmin && <button type="button" className="btn btn-primary" onClick={() => setEditing('new')}><UserPlus className="h-4 w-4" />Agregar persona</button>} />
+    <div className="space-y-5">
+      <PageHeader eyebrow="Quiénes somos" title="Equipo" subtitle="Quién hace qué, en qué servicios está y cuánta carga tiene. Tocá una persona para ver su ficha."
+        actions={isAdmin && tab === 'personas' && <button type="button" className="btn btn-primary" onClick={() => setEditing('new')}><UserPlus className="h-4 w-4" />Agregar persona</button>} />
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Personas">
-        {team.map((m) => (
-          <article key={m.id} className={cx('card flex flex-col gap-3 p-4', !m.active && 'opacity-60')}>
-            <div className="flex items-center gap-3">
-              <Avatar name={m.name} color={m.color} size={42} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold">{m.name}{m.id === user.id && <span className="ml-1.5 text-xs font-normal text-muted">(vos)</span>}</p>
-                <p className="truncate text-xs text-muted">{m.email}</p>
-              </div>
-              <Badge tone={m.role === 'admin' ? 'ink' : m.role === 'socio' ? 'blue' : 'slate'}>{ROLES[m.role].label}</Badge>
-            </div>
-            <p className="text-xs text-muted">{!m.active ? 'Acceso desactivado' : m.last_login_at ? `Último ingreso ${timeAgo(m.last_login_at)}` : 'Aún no ingresa'}{m.must_change_password && m.active ? ' · contraseña temporal pendiente' : ''}</p>
-            {isAdmin && (
-              <div className="flex flex-wrap gap-1.5 border-t border-line pt-3">
-                <button type="button" className="btn btn-outline btn-sm" onClick={() => setEditing(m)}>Editar</button>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => reset(m)} disabled={busy}><KeyRound className="h-3.5 w-3.5" />Contraseña</button>
-                {m.id !== user.id && <button type="button" className="btn btn-ghost btn-sm" onClick={() => toggle(m)} disabled={busy}><Power className="h-3.5 w-3.5" />{m.active ? 'Desactivar' : 'Reactivar'}</button>}
-              </div>
-            )}
-          </article>
-        ))}
-      </section>
+      <Tabs tabs={tabs} value={tab} onChange={setTab} />
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <ProfileCard />
-        {isAdmin && <SettingsCard key={JSON.stringify(settings)} />}
-      </div>
+      {tab === 'personas' && <PeopleTab resource={people} actions={actions} />}
+
+      {tab === 'perfil' && (
+        <div className="max-w-2xl space-y-3">
+          <Link to={`/equipo/${user.id}`} className="card flex min-h-14 items-center gap-3 px-4 py-3 text-sm font-semibold hover:bg-slate-50">
+            <Avatar name={user.name} color={user.color} size={32} />
+            <span className="min-w-0 flex-1">Ver mi ficha<span className="block text-xs font-normal text-muted">Mis servicios, proyectos, tareas y citas</span></span>
+            <ArrowRight className="h-4 w-4 text-muted" />
+          </Link>
+          <ProfileCard />
+        </div>
+      )}
+
+      {tab === 'ajustes' && isAdmin && <div className="max-w-3xl"><SettingsCard key={JSON.stringify(settings)} /></div>}
 
       {editing && <MemberModal member={editing === 'new' ? null : editing} onClose={() => setEditing(null)}
-        onSaved={(res, form) => { loadTeam(); if (res.temporary_password) setTemp({ name: res.user.name, email: res.user.email, phone: form.phone, password: res.temporary_password }); }} />}
+        onSaved={(res, form) => { changed(); if (res.temporary_password) setTemp({ name: res.user.name, email: res.user.email, phone: form.phone, password: res.temporary_password }); }} />}
       {temp && <TempPassword result={temp} onClose={() => setTemp(null)} />}
     </div>
   );
