@@ -7,7 +7,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   globalIgnores(['dist', 'data', 'test-results']),
   {
-    files: ['src/**/*.{js,jsx}', 'shared/**/*.js'],
+    files: ['src/**/*.{js,jsx}', 'shared/**/*.js', 'demo/**/*.{js,jsx}'],
     extends: [js.configs.recommended, reactHooks.configs.flat.recommended, reactRefresh.configs.vite],
     languageOptions: {
       ecmaVersion: 'latest',

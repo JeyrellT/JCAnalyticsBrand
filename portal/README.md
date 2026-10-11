@@ -6,11 +6,25 @@ Está separada del sitio público (`jcanalytics-app/`, GitHub Pages): el portal 
 
 ## Qué resuelve
 
-**Centro de operaciones (`/`).** Agrupa todo lo que requiere acción hoy: proyectos de cliente sin avance en 72 h, tareas vencidas, citas sin confirmar en las próximas 24 h, plata esperando tu confirmación, soportes de 30 días por terminar. Muestra además la agenda de la semana, tus tareas y el pulso de las inversiones.
+**Cómo se navega.** El menú sigue el orden de la empresa:
+- **Operación:** Inicio, Tablero, Agenda y Buzón.
+- **Empresa:** Proyectos, Clientes, Servicios y Equipo.
+- **Socios:** Inversiones.
+- **Control:** Bitácora.
+
+En el celular, la barra inferior trae Inicio, Tablero, un botón **"+"** de acciones rápidas, Agenda y **"Más"**. El botón "+" sirve para crear una tarea, agendar una cita, registrar el avance a un cliente, crear un cliente o registrar un aporte; "Más" abre el resto de secciones en mosaicos grandes.
+
+**Centro de operaciones (`/`).** En el celular funciona como "Mi día": tus citas de hoy, tus tareas y lo que espera tu confirmación. Agrupa todo lo que requiere acción hoy: proyectos de cliente sin avance en 72 h, tareas vencidas, citas sin confirmar en las próximas 24 h, plata esperando tu confirmación, soportes de 30 días por terminar. Muestra además la agenda de la semana, tus tareas y el pulso de las inversiones.
 
 **Proyectos (`/proyectos`).** Clientes (La Burrada, Uniquex…), productos propios (BarberXCR, Taller Ticos…) e internos. Cada uno tiene responsable, servicio del catálogo, valor en ₡ o $, fechas y contacto. Para proyectos de cliente en curso o en revisión aplica el **semáforo del compromiso público "avance cada 72 h"**. El reloj corre desde que el proyecto entra en curso o desde el último avance registrado. "Registrar avance" deja constancia, arma el mensaje de WhatsApp y reinicia el reloj. Al marcarlo entregado arranca el **soporte de 30 días**.
 
-**Tablero (`/tablero`).** Kanban con Backlog, Por hacer, En progreso, Revisión y Hecho. Se usa arrastrando en escritorio y con "Mover a" en el celular. Tiene **límites WIP** (Lean) configurables, filtros por proyecto, persona y vencidas, y comentarios con aviso a los involucrados.
+**Clientes (`/clientes`).** Ficha de cada cliente con contacto (WhatsApp y correo), quién lleva la relación, proyectos, valor abierto, último contacto, próxima cita e historial de avances. Los clientes se eligen desde proyectos y agenda, y la agenda completa el contacto sola.
+
+**Servicios (`/servicios`).** Catálogo de las líneas de negocio agrupadas por área: sistemas y web, datos y BI, automatización, fiscal, marketing, formación y productos propios. Cada línea muestra su precio "desde", el **líder**, el equipo, los proyectos activos, el valor activo y las tareas abiertas. El admin edita líder, equipo, precio y descripción.
+
+**Equipo (`/equipo`).** Directorio de personas con su **carga de trabajo** (disponible / con carga / saturado), los servicios que lideran y sus proyectos. Cada persona tiene una ficha (`/equipo/:id`) con servicios, proyectos y su rol en cada uno, tareas abiertas, próximas citas y actividad. Las pestañas *Mi perfil* y *Ajustes* reúnen la contraseña, el tipo de cambio, el plazo de 72 h, los límites WIP y el respaldo. Cada proyecto tiene además su **equipo con roles**: responsable, desarrollo, diseño, datos, contenido, comercial y soporte.
+
+**Tablero (`/tablero`).** Kanban con Backlog, Por hacer, En progreso, Revisión y Hecho. En escritorio se arrastra entre columnas. En el celular se ve una columna a la vez, se cambia con chips y cada tarjeta tiene "Mover a". Tiene **límites WIP** (Lean) configurables, filtros por proyecto, persona y vencidas, y comentarios con aviso a los involucrados.
 
 **Agenda (`/agenda`).** Vista semanal en escritorio y lista por día en móvil, siempre en hora de Costa Rica. Detecta **choques de horario por persona** antes de guardar. Ofrece descarga `.ics` para Google Calendar u Outlook y un recordatorio por WhatsApp al cliente con un toque.
 
@@ -36,8 +50,6 @@ Indicadores disponibles:
 Los movimientos en dólares **guardan su tipo de cambio**, así el consolidado en colones no cambia con el tiempo. La exportación a Excel usa separador `;` y BOM UTF-8.
 
 **Buzón (`/buzon`).** Reúne los movimientos por confirmar, con la respuesta en el mismo lugar, y los avisos (tareas asignadas, citas, comentarios, confirmaciones).
-
-**Equipo y ajustes (`/equipo`).** Gestión de personas y roles, perfil y contraseña. Los ajustes operativos son el tipo de cambio, el plazo del avance (72 h) y los límites WIP. Desde aquí se descarga el **respaldo** de la base.
 
 **Bitácora (`/bitacora`).** Registro de quién hizo qué y cuándo. Los colaboradores no ven las entradas de dinero.
 
@@ -84,6 +96,15 @@ npm run dev              # en otra terminal: interfaz en http://localhost:5173
 Las cuentas demo son `jeyrell@demo.jcanalytic.local` (admin), `catalina@…`, `alex@…`, `socio5@…` (socios) y `hillary@…` (colaboradora). La contraseña de todas es `DemoPortal2026`. Para recrear la base demo: `npm run seed:demo -- --reset`.
 
 En Windows (PowerShell): `$env:PORTAL_DB_PATH="data/demo.sqlite"; npm run dev:api`.
+
+### Demo para revisar en el celular
+
+```sh
+npm run build:demo       # → demo-dist/portal-demo.html (un solo archivo, ~2,3 MB)
+npm run dev:demo         # la misma demo con recarga en vivo: http://localhost:5173/demo/
+```
+
+Es el portal completo **sin servidor**: el backend real (migraciones, rutas y permisos de `server/`) corre dentro del navegador sobre SQLite en memoria (sql.js), con los datos ficticios de `server/demo-data.mjs`. Al abrirla se elige una persona (admin, socios o colaboradora) en lugar de usuario y contraseña; "Cambiar de persona" vuelve al selector. Los cambios se pierden al recargar y las descargas (Excel, respaldo, .ics) muestran un aviso. El archivo es un fragmento HTML pensado para publicarse como artefacto de claude.ai y abrirse en la app de Claude. Detalles en `demo/README.md`.
 
 ## Verificación antes de publicar
 

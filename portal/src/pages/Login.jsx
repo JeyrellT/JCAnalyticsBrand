@@ -1,9 +1,12 @@
 // Ingreso y cambio obligatorio de contraseña temporal.
+// En la demo del navegador (isDemo()) el ingreso es un selector de personas.
 import { useState } from 'react';
-import { Lock, ShieldCheck, ArrowRight, KanbanSquare, CalendarDays, TrendingUp } from 'lucide-react';
-import { api, errorMessage } from '../lib/api.js';
+import { Lock, ShieldCheck, ArrowRight, KanbanSquare, CalendarDays, TrendingUp, FlaskConical, Loader2 } from 'lucide-react';
+import { api, errorMessage, isDemo, demoInfo } from '../lib/api.js';
 import { useSession } from '../lib/session.jsx';
-import { Field, cx } from '../components/ui.jsx';
+import { navigate } from '../lib/router.jsx';
+import { ROLES } from '../../shared/catalog.js';
+import { Field, Avatar, cx } from '../components/ui.jsx';
 import logoMark from '../assets/logo-mark.webp';
 
 function Shell({ children }) {
@@ -40,6 +43,10 @@ function Shell({ children }) {
 }
 
 export function Login() {
+  return isDemo() ? <DemoLogin /> : <PasswordLogin />;
+}
+
+function PasswordLogin() {
   const { signedIn } = useSession();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
@@ -72,6 +79,68 @@ export function Login() {
         </button>
       </form>
       <p className="mt-8 flex items-start gap-2 text-xs text-muted"><Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" /> Acceso solo para el equipo. Tras 5 intentos fallidos el acceso se bloquea 15 minutos.</p>
+    </Shell>
+  );
+}
+
+/** Qué ve cada rol en la demo (una línea por persona). */
+const DEMO_SCOPE = {
+  admin: 'Ve todo: operaciones, inversiones y ajustes del equipo.',
+  socio: 'Operaciones del equipo e inversiones de socios.',
+  colaborador: 'Operaciones del equipo, sin acceso a inversiones.',
+};
+
+function DemoLogin() {
+  const { signedIn } = useSession();
+  const { personas, password } = demoInfo();
+  const [busy, setBusy] = useState(null);
+  const [error, setError] = useState('');
+
+  async function enter(persona) {
+    setBusy(persona.email);
+    setError('');
+    try {
+      const { user } = await api('/api/auth/login', { method: 'POST', body: { email: persona.email, password } });
+      navigate('/', { replace: true });
+      signedIn(user);
+    } catch (err) {
+      setError(errorMessage(err));
+      setBusy(null);
+    }
+  }
+
+  return (
+    <Shell>
+      <p className="flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-800 ring-1 ring-amber-200">
+        <FlaskConical className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>Demo con datos ficticios · los cambios se pierden al recargar</span>
+      </p>
+      <h2 className="mt-6 font-display text-2xl font-bold">¿Con quién querés entrar?</h2>
+      <p className="mt-1 text-sm text-muted">Elegí una persona del equipo para recorrer el portal con sus permisos. Podés cambiar de persona cuando quieras.</p>
+      <ul className="mt-6 space-y-2.5" aria-label="Personas de la demo">
+        {personas.map((p) => (
+          <li key={p.email}>
+            <button
+              type="button"
+              onClick={() => enter(p)}
+              disabled={busy !== null}
+              className="card flex min-h-[76px] w-full items-center gap-3 px-4 py-3 text-left transition hover:border-brand/40 hover:shadow-md active:scale-[0.99] disabled:opacity-60"
+            >
+              <Avatar name={p.name} color={p.color} size={44} />
+              <span className="min-w-0 flex-1">
+                <span className="flex flex-wrap items-baseline gap-x-2">
+                  <span className="font-semibold text-ink">{p.name}</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wide text-brand">{ROLES[p.role]?.label ?? p.role}</span>
+                </span>
+                <span className="mt-0.5 block text-[13px] leading-snug text-muted">{DEMO_SCOPE[p.role] ?? ROLES[p.role]?.hint}</span>
+              </span>
+              {busy === p.email ? <Loader2 className="h-5 w-5 shrink-0 animate-spin text-brand" /> : <ArrowRight className="h-5 w-5 shrink-0 text-slate-400" />}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {error && <p role="alert" className="mt-4 rounded-xl bg-coral-soft px-3 py-2 text-sm font-medium text-coral">{error}</p>}
+      <p className="mt-6 text-xs text-muted">Todo corre dentro de esta página: nada se envía ni se guarda en el portal real.</p>
     </Shell>
   );
 }
