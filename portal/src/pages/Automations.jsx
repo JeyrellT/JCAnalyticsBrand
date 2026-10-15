@@ -5,16 +5,19 @@ import { Zap, BellRing, Repeat, Plus, ShieldCheck, Bot, Wand2, PauseCircle, Sett
 import { useResource, useSession } from '../lib/session.jsx';
 import { api, errorMessage } from '../lib/api.js';
 import { Link } from '../lib/router.jsx';
-import { PageHeader, PageLoader, EmptyState, useAction, useToast, useConfirm, cx } from '../components/ui.jsx';
+import { PageHeader, PageLoader, EmptyState, Stat, Badge, IconTile, useAction, useToast, useConfirm, cx } from '../components/ui.jsx';
 import {
   AUTOMATION_GROUPS, groupOf, readConfig, todayActivity, plural, formatClock,
-  LivePill, MiniStat, HowItWorks, AutomationCard, Timeline, RecurringCard,
+  LivePill, HowItWorks, AutomationCard, Timeline, RecurringCard,
 } from '../components/automations.jsx';
 import RecurringTaskForm, { RECURRING_TEMPLATES, recurringBody, recurringSentence } from '../components/RecurringTaskForm.jsx';
 
 const SUBTITLE = 'El portal vigila plazos, citas y plata, y avisa a la persona correcta en el momento justo.';
 
 const without = (obj, key) => { const next = { ...obj }; delete next[key]; return next; };
+
+// En escritorio los indicadores se estiran a la altura de "Cómo funciona": el número queda anclado abajo, junto a su barra de tono.
+const STAT = 'lg:flex lg:flex-col lg:[&>p:first-of-type]:mt-auto';
 
 export default function Automations() {
   const { user, isAdmin, team, refresh } = useSession();
@@ -116,7 +119,7 @@ export default function Automations() {
   }
 
   const header = (
-    <PageHeader eyebrow="Control" title="Automatizaciones" subtitle={SUBTITLE}
+    <PageHeader eyebrow="Control" title="Automatizaciones" subtitle={SUBTITLE} icon={Bot} tone="violet"
       actions={data && <LivePill active={automations.filter((a) => a.enabled).length} total={automations.length} />} />
   );
   if (!data) return <>{header}<PageLoader error={error} onRetry={reload} /></>;
@@ -130,12 +133,12 @@ export default function Automations() {
 
   const extraFor = (a) => {
     if (a.key === 'resumen_diario') {
-      return <Link to="/notificaciones" className="-my-1.5 inline-flex min-h-11 items-center gap-1.5 self-start text-xs font-semibold text-brand hover:underline"><Settings2 className="h-3.5 w-3.5" />Cada persona elige su hora en Avisos y app</Link>;
+      return <Link to="/notificaciones" className="link -my-1.5 inline-flex min-h-11 items-center gap-1.5 self-start text-xs"><Settings2 className="h-3.5 w-3.5" aria-hidden="true" />Cada persona elige su hora en Avisos y app</Link>;
     }
     if (a.key === 'tareas_recurrentes') {
       return (
-        <button type="button" onClick={scrollToRules} className="-my-1.5 inline-flex min-h-11 items-center gap-1.5 self-start text-xs font-semibold text-brand hover:underline">
-          <Repeat className="h-3.5 w-3.5" />{plural(activeRules, 'regla activa', 'reglas activas')} · Ver reglas
+        <button type="button" onClick={scrollToRules} className="link -my-1.5 inline-flex min-h-11 items-center gap-1.5 self-start text-xs">
+          <Repeat className="h-3.5 w-3.5" aria-hidden="true" />{plural(activeRules, 'regla activa', 'reglas activas')} · Ver reglas
         </button>
       );
     }
@@ -147,34 +150,34 @@ export default function Automations() {
       {header}
       <div className="space-y-6">
         <div className="grid gap-3 lg:grid-cols-2">
-          <div className="grid grid-cols-3 gap-2 sm:gap-3" role="group" aria-label="Resumen">
-            <MiniStat icon={Zap} tone="teal" value={enabledCount} label={'Automatiza­ciones activas'} hint={`de ${automations.length}`} />
-            <MiniStat icon={BellRing} tone="blue" value={today.recipients} label="Avisos enviados hoy"
-              hint={today.sources ? `de ${plural(today.sources, 'automatización', 'automatizaciones')}` : 'todavía nada'} />
-            <MiniStat icon={Repeat} tone="violet" value={activeRules} label="Tareas recurrentes activas" hint={`de ${rules.length}`} />
+          <div className="stagger grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3" role="group" aria-label="Resumen">
+            <Stat icon={Zap} tone="teal" value={enabledCount} label="Activas" hint={`de ${plural(automations.length, 'automatización', 'automatizaciones')}`} className={STAT} />
+            <Stat icon={BellRing} tone="blue" value={today.recipients} label="Avisos hoy"
+              hint={today.sources ? `de ${plural(today.sources, 'automatización', 'automatizaciones')}` : 'Todavía nada por avisar'} className={STAT} />
+            <Stat icon={Repeat} tone="violet" value={activeRules} label="Recurrentes" hint={`de ${plural(rules.length, 'regla', 'reglas')} de tareas`} className={cx(STAT, 'col-span-2 sm:col-span-1')} />
           </div>
           <HowItWorks />
         </div>
 
         {!isAdmin && (
-          <p className="flex items-start gap-2 rounded-2xl border border-line bg-white px-4 py-3 text-sm text-muted">
-            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-teal-dark" aria-hidden="true" />
-            <span>Solo un admin puede pausarlas, ajustarlas o probarlas. Lo que te llega a vos lo elegís en <Link to="/notificaciones" className="font-semibold text-brand hover:underline">Avisos y app</Link>.</span>
+          <p className="animate-rise flex items-start gap-2.5 rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-muted shadow-card">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-teal-ink" aria-hidden="true" />
+            <span>Solo un admin puede pausarlas, ajustarlas o probarlas. Lo que te llega a vos lo elegís en <Link to="/notificaciones" className="link">Avisos y app</Link>.</span>
           </p>
         )}
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:grid-rows-[auto_1fr]">
           {/* Automatizaciones por grupo */}
-          <div className="space-y-6 xl:col-start-1 xl:row-start-1">
-            {groups.length === 0 && <EmptyState icon={Bot} title="Todavía no hay automatizaciones">Cuando el servidor las registre, aparecen acá.</EmptyState>}
+          <div className="space-y-7 xl:col-start-1 xl:row-start-1">
+            {groups.length === 0 && <EmptyState icon={Bot} tone="violet" title="Todavía no hay automatizaciones">Cuando el servidor las registre, aparecen acá.</EmptyState>}
             {groups.map((g) => (
               <section key={g.key} aria-labelledby={`grupo-${g.key}`}>
-                <h2 id={`grupo-${g.key}`} className="section-title mb-3 flex items-center gap-2">
-                  <span className={cx('h-2.5 w-2.5 rounded-full', `dot-${g.tone}`)} aria-hidden="true" />
-                  {g.label}
-                  <span className="text-sm font-normal text-muted">{g.items.length}</span>
+                <h2 id={`grupo-${g.key}`} className="section-title mb-3 flex items-center gap-2.5">
+                  <span className={cx('h-2.5 w-2.5 shrink-0 rounded-full', `dot-${g.tone}`)} aria-hidden="true" />
+                  <span className="min-w-0 truncate">{g.label}</span>
+                  <Badge tone={g.tone}>{g.items.length}</Badge>
                 </h2>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="stagger grid gap-3 sm:grid-cols-2">
                   {g.items.map((a) => (
                     <AutomationCard key={a.key} automation={a} isAdmin={isAdmin}
                       pending={!!togglingKey[a.key]} running={!!runningKey[a.key]}
@@ -186,49 +189,51 @@ export default function Automations() {
           </div>
 
           {/* Historial (columna lateral en escritorio) */}
-          <div className="xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:self-start">
+          <div className="animate-rise xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:self-start">
             <Timeline log={data.log ?? []} automations={automations} />
           </div>
 
           {/* Tareas recurrentes */}
           <section id="recurrentes" aria-labelledby="recurrentes-title" className="scroll-mt-20 xl:col-start-1 xl:row-start-2">
-            <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div className="min-w-0">
-                <h2 id="recurrentes-title" className="section-title flex items-center gap-2">
-                  <Repeat className="h-5 w-5 text-violet-600" aria-hidden="true" />Tareas recurrentes
-                  <span className="text-sm font-normal text-muted">{rules.length}</span>
-                </h2>
-                <p className="mt-0.5 text-sm text-muted">Lo que se repite, el portal lo pone solo en el tablero a las {formatClock(runTime)} del día que toca.</p>
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <IconTile icon={Repeat} tone="violet" className="mt-0.5" />
+                <div className="min-w-0">
+                  <h2 id="recurrentes-title" className="section-title flex items-center gap-2.5">
+                    <span className="min-w-0 truncate">Tareas recurrentes</span>
+                    <Badge tone="violet">{rules.length}</Badge>
+                  </h2>
+                  <p className="mt-0.5 text-sm text-muted">Lo que se repite, el portal lo pone solo en el tablero a las {formatClock(runTime)} del día que toca.</p>
+                </div>
               </div>
-              <button type="button" className="btn btn-primary min-h-11" onClick={() => setEditor({})}><Plus className="h-4 w-4" />Nueva tarea recurrente</button>
+              <button type="button" className="btn btn-primary min-h-11 shrink-0" onClick={() => setEditor({})}><Plus className="h-4 w-4" />Nueva tarea recurrente</button>
             </div>
 
             {recurringAuto && !recurringAuto.enabled && (
-              <p className="mb-3 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <p className="mb-4 flex items-start gap-2.5 rounded-2xl border border-amber/30 bg-amber-soft px-4 py-3 text-sm text-amber-ink">
                 <PauseCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                 La automatización «{recurringAuto.name}» está en pausa: estas reglas no crean tareas hasta que un admin la active.
               </p>
             )}
 
             <div className="mb-4" role="group" aria-labelledby="ideas-rapidas">
-              <p id="ideas-rapidas" className="mb-1.5 flex items-center gap-1 text-xs font-semibold text-muted"><Wand2 className="h-3.5 w-3.5" aria-hidden="true" />Ideas rápidas: un toque y queda lista</p>
+              <p id="ideas-rapidas" className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted"><Wand2 className="h-3.5 w-3.5" aria-hidden="true" />Ideas rápidas: un toque y queda lista</p>
               {/* En el celular, una fila que se desliza sola (sin mover la página); en pantallas grandes, se acomoda. */}
               <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
                 {RECURRING_TEMPLATES.map((t) => (
-                  <button key={t.key} type="button" onClick={() => setEditor({ template: t })}
-                    className="min-h-11 shrink-0 whitespace-nowrap rounded-full border border-line bg-white px-3.5 py-1.5 text-xs font-semibold text-ink transition hover:border-brand hover:text-brand">
-                    <Plus className="-ml-0.5 mr-1 inline h-3.5 w-3.5 align-[-3px] text-brand" aria-hidden="true" />{t.label}
+                  <button key={t.key} type="button" onClick={() => setEditor({ template: t })} className="btn btn-soft btn-sm min-h-11 shrink-0 lg:min-h-8">
+                    <Plus className="-ml-0.5 h-3.5 w-3.5" aria-hidden="true" />{t.label}
                   </button>
                 ))}
               </div>
             </div>
 
             {rules.length === 0 ? (
-              <EmptyState icon={Repeat} title="Todavía no hay tareas recurrentes">
+              <EmptyState icon={Repeat} tone="violet" title="Todavía no hay tareas recurrentes">
                 Creá una regla (o tocá una idea rápida) y el portal pone la tarea en el tablero el día que toca, con responsable y fecha.
               </EmptyState>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="stagger grid gap-3 sm:grid-cols-2">
                 {rules.map((r) => (
                   <RecurringCard key={r.id}
                     rule={r.summary ? r : { ...r, summary: recurringSentence(r, { time: runTime, assigneeName: r.assignee_name, projectName: r.project_name }) }}

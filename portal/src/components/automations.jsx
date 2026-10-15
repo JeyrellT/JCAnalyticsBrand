@@ -1,15 +1,15 @@
 // Piezas del centro de automatizaciones: íconos y grupos, interruptor accesible,
 // tarjetas de automatización y de tarea recurrente, historial "Lo que hizo el portal"
-// y la tarjeta resumen para el inicio.
+// y la tarjeta resumen para el inicio. Todo color pasa por tokens (claro y oscuro).
 import { useId, useMemo, useState } from 'react';
 import {
   Sunrise, AlarmClock, PhoneCall, Timer, CalendarCheck, Wallet, LifeBuoy, Repeat, Banknote, Bot,
   Clock3, Play, Loader2, Save, Radar, UsersRound, Smartphone, History, ArrowRight, Pencil, Trash2,
-  FolderKanban, BellRing, ChevronDown,
+  FolderKanban, BellRing, ChevronDown, CalendarClock, Sparkles,
 } from 'lucide-react';
 import { Link } from '../lib/router.jsx';
 import { useResource } from '../lib/session.jsx';
-import { Badge, Avatar, EmptyState, cx } from './ui.jsx';
+import { Badge, Avatar, EmptyState, IconTile, SectionHead, cx } from './ui.jsx';
 import { StatusBadge } from './common.jsx';
 import { TASK_PRIORITY } from '../../shared/catalog.js';
 import { dayKey, todayKey, addDays, formatDate, timeAgo } from '../lib/format.js';
@@ -105,8 +105,8 @@ export function Switch({ checked, onChange, label, disabled = false, id }) {
     <button id={id} type="button" role="switch" aria-checked={checked} aria-label={label} disabled={disabled}
       onClick={() => onChange(!checked)}
       className="tap -my-2 -mr-2 inline-flex shrink-0 items-center justify-center rounded-full disabled:cursor-not-allowed disabled:opacity-60">
-      <span className={cx('relative inline-flex h-7 w-12 items-center rounded-full transition-colors', checked ? 'bg-teal-dark' : 'bg-slate-300')}>
-        <span className={cx('absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all', checked ? 'left-6' : 'left-1')} />
+      <span className={cx('relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200', checked ? 'bg-teal-ink' : 'bg-line-strong')}>
+        <span className={cx('absolute top-1 h-5 w-5 rounded-full bg-white shadow-md transition-all duration-200', checked ? 'left-6' : 'left-1')} />
       </span>
     </button>
   );
@@ -117,37 +117,18 @@ export function StatePill({ on, onLabel = 'Activa', offLabel = 'Pausada' }) {
   return <Badge tone={on ? 'teal' : 'slate'} dot>{on ? onLabel : offLabel}</Badge>;
 }
 
-/** Punto "en vivo" del encabezado. */
+/** Píldora "en vivo" del encabezado: punto turquesa que late mientras haya algo en marcha. */
 export function LivePill({ active, total }) {
   const on = active > 0;
   return (
-    <span className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-white px-3.5 text-sm font-semibold">
-      <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
-        {on && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal opacity-60" />}
-        <span className={cx('relative inline-flex h-2.5 w-2.5 rounded-full', on ? 'bg-teal' : 'bg-slate-400')} />
-      </span>
+    <span className="inline-flex min-h-10 items-center gap-2.5 rounded-full border border-line bg-surface px-3.5 text-sm font-semibold text-ink shadow-card">
+      <span className={cx('inline-flex h-2.5 w-2.5 shrink-0 rounded-full', on ? 'pulse-dot bg-teal' : 'bg-slate')} aria-hidden="true" />
       {on ? (active === total ? 'En marcha · revisa cada minuto' : `En marcha · ${active} de ${total}`) : 'Todo en pausa'}
     </span>
   );
 }
 
-// ── Encabezado: números y "Cómo funciona" ─────────────────────────────────
-export function MiniStat({ icon: Icon, value, label, hint, tone = 'teal' }) {
-  const color = { teal: 'text-teal-dark', blue: 'text-brand', violet: 'text-violet-700' }[tone];
-  return (
-    <div className="card flex min-w-0 flex-col justify-between gap-2 p-3 sm:p-4">
-      <span className="flex items-start justify-between gap-1">
-        <span className={cx('font-display text-[26px] font-bold leading-none tabular sm:text-[28px] lg:text-[34px]', color)}>{value}</span>
-        <Icon className={cx('h-4 w-4 shrink-0', color)} aria-hidden="true" />
-      </span>
-      <span className="flex flex-col gap-0.5">
-        <span className="text-[12px] font-semibold leading-tight text-ink">{label}</span>
-        {hint && <span className="truncate text-[11px] leading-tight text-muted">{hint}</span>}
-      </span>
-    </div>
-  );
-}
-
+// ── "Cómo funciona": tres pasos unidos por una línea punteada ─────────────
 const STEPS = [
   { icon: Radar, title: 'Detecta', hint: 'Revisa plazos, citas y plata cada minuto.' },
   { icon: UsersRound, title: 'Decide a quién', hint: 'Responsable, participantes o socios.' },
@@ -156,25 +137,25 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section className="card p-3 sm:p-4" aria-labelledby="como-funciona">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 id="como-funciona" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">Cómo funciona</h2>
-        <Link to="/notificaciones" className="-my-2 inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-brand hover:underline">
-          <BellRing className="h-3.5 w-3.5" />Qué me llega
+    <section className="card flex flex-col p-4 sm:p-5" aria-labelledby="como-funciona">
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <h2 id="como-funciona" className="eyebrow">Cómo funciona</h2>
+        <Link to="/notificaciones" className="link -my-2 inline-flex min-h-11 items-center gap-1 text-xs">
+          <BellRing className="h-3.5 w-3.5" aria-hidden="true" />Qué me llega
         </Link>
       </div>
-      <ol className="relative grid grid-cols-3 gap-2">
-        {/* Línea punteada que une los pasos (detrás de los íconos). */}
-        <span className="absolute left-[16.6%] right-[16.6%] top-5 border-t-2 border-dashed border-line" aria-hidden="true" />
+      <ol className="relative my-auto grid grid-cols-3 gap-2">
+        {/* Línea punteada que une los pasos (detrás de los círculos). */}
+        <span className="absolute left-[16.6%] right-[16.6%] top-5 border-t-2 border-dashed border-line-strong" aria-hidden="true" />
         {STEPS.map((s, i) => (
           <li key={s.title} className="relative flex flex-col items-center text-center">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-ink text-white ring-4 ring-white">
+            <span className="icon-tile tile-brand rounded-full shadow-card ring-4 ring-surface">
               <s.icon className="h-[18px] w-[18px]" aria-hidden="true" />
             </span>
-            <span className="mt-2 text-[12px] font-bold leading-tight sm:text-sm">
+            <span className="mt-2.5 text-[12px] font-bold leading-tight sm:text-sm">
               <span className="sr-only">Paso {i + 1}: </span>{s.title}
             </span>
-            <span className="mt-0.5 hidden text-xs leading-snug text-muted sm:block">{s.hint}</span>
+            <span className="mt-1 hidden text-xs leading-snug text-muted sm:block">{s.hint}</span>
           </li>
         ))}
       </ol>
@@ -212,12 +193,12 @@ function ConfigEditor({ automation, onSave }) {
   }
 
   return (
-    <form onSubmit={save} className="flex flex-wrap items-end gap-2 rounded-xl bg-paper p-2.5">
+    <form onSubmit={save} className="card-sunken flex flex-wrap items-end gap-2 p-2.5">
       {schema.map((f) => {
         const id = `${baseId}-${f.key}`;
         const err = draft[f.key] !== '' && errors[f.key];
         return (
-          <div key={f.key} className="min-w-0">
+          <div key={f.key} className="min-w-0 flex-1 basis-32">
             <label htmlFor={id} className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-muted">
               {f.label}{f.type === 'number' && f.min != null && <span className="font-normal normal-case tracking-normal"> · {f.min} a {f.max}</span>}
             </label>
@@ -234,7 +215,7 @@ function ConfigEditor({ automation, onSave }) {
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Guardar
       </button>
       {!valid && schema.some((f) => draft[f.key] !== '' && errors[f.key]) && (
-        <p id={`${baseId}-error`} className="w-full text-xs font-semibold text-coral">
+        <p id={`${baseId}-error`} className="w-full text-xs font-semibold text-coral-ink">
           {schema.filter((f) => draft[f.key] !== '' && errors[f.key]).map((f) => `${f.label}: ${errors[f.key].toLowerCase()}`).join(' · ')}
         </p>
       )}
@@ -252,13 +233,13 @@ export function AutomationCard({ automation: a, isAdmin, pending, running, onTog
   const tone = enabled ? toneOf(a) : 'slate';
   const runs = Number(a.runs) || 0;
   return (
-    <article className="@container card flex h-full flex-col gap-3 p-4" aria-labelledby={`auto-${a.key}`}>
+    <article className={cx('@container card flex h-full flex-col gap-3 p-4 sm:p-5', !enabled && 'border-dashed')} aria-labelledby={`auto-${a.key}`}>
       <div className="flex items-start gap-3">
-        <span className={cx('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', `tone-${tone}`)}><Icon className="h-5 w-5" aria-hidden="true" /></span>
+        <IconTile icon={Icon} tone={tone} />
         <div className="min-w-0 flex-1">
-          <h3 id={`auto-${a.key}`} className={cx('font-display text-base font-bold leading-snug', !enabled && 'text-ink/70')}>{a.name}</h3>
-          <p className="mt-0.5 flex items-start gap-1 text-xs font-medium text-muted">
-            <Clock3 className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" /><span className="min-w-0">{a.schedule}</span>
+          <h3 id={`auto-${a.key}`} className={cx('font-display text-base font-bold leading-snug', enabled ? 'text-ink' : 'text-muted')}>{a.name}</h3>
+          <p className="mt-0.5 flex items-start gap-1.5 text-xs text-muted">
+            <CalendarClock className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" /><span className="min-w-0">{a.schedule}</span>
           </p>
         </div>
         {isAdmin
@@ -266,21 +247,26 @@ export function AutomationCard({ automation: a, isAdmin, pending, running, onTog
           : <StatePill on={enabled} />}
       </div>
 
-      <p className="text-sm leading-relaxed text-ink/80">{a.description}</p>
-      {isAdmin && !enabled && <p className="text-xs font-semibold text-muted">Pausada: no avisa a nadie hasta que la actives (y para probarla, activala primero).</p>}
-      {enabled && a.next_run_hint && <p className="flex items-center gap-1 text-xs font-semibold text-teal-dark"><ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />{a.next_run_hint}</p>}
+      <p className="text-sm leading-relaxed text-ink-2">{a.description}</p>
+      {isAdmin && !enabled && <p className="text-xs font-medium text-muted">Pausada: no avisa a nadie hasta que la actives (y para probarla, activala primero).</p>}
+      {enabled && a.next_run_hint && (
+        <p className="flex items-start gap-1.5 text-xs font-semibold text-brand-ink">
+          <Clock3 className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span className="min-w-0"><span className="font-medium text-muted">Próxima corrida · </span>{a.next_run_hint}</span>
+        </p>
+      )}
       {extra}
 
       {isAdmin && <ConfigEditor key={JSON.stringify(readConfig(a.config))} automation={a} onSave={(config) => onSaveConfig(a, config)} />}
 
       <div className="mt-auto flex flex-col gap-2 border-t border-line pt-3 @[20rem]:flex-row @[20rem]:items-end @[20rem]:justify-between @[20rem]:gap-3">
-        <div className="min-w-0 flex-1 text-xs">
+        <div className="min-w-0 flex-1 text-xs text-muted">
           {a.last_run_at ? (
             <>
-              <p className="text-muted"><span className="font-semibold text-ink">Última vez {timeAgo(a.last_run_at)}</span> · {runs === 1 ? '1 vez' : `${runs} veces`} en total</p>
-              {a.last_result && <p className={cx('mt-0.5 line-clamp-2 break-words', looksLikeError(a.last_result) ? 'font-medium text-coral' : 'text-muted')}>{a.last_result}</p>}
+              <p><span className="font-semibold text-ink-2">Última vez {timeAgo(a.last_run_at)}</span> · {runs === 1 ? '1 vez' : `${runs} veces`} en total</p>
+              {a.last_result && <p className={cx('mt-0.5 line-clamp-2 break-words', looksLikeError(a.last_result) ? 'font-medium text-coral-ink' : 'text-muted')}>{a.last_result}</p>}
             </>
-          ) : <p className="text-muted">Todavía no corrió.</p>}
+          ) : <p>Todavía no corrió.</p>}
         </div>
         {isAdmin && (
           <button type="button" className="btn btn-outline min-h-11 shrink-0" onClick={() => onRun(a)} disabled={running || !enabled} aria-label={`Probar ahora: ${a.name}`}>
@@ -315,61 +301,54 @@ export function Timeline({ log = [], automations = [] }) {
   }
 
   return (
-    <section className="card card-pad" aria-labelledby="historial-title">
-      <div className="mb-4 flex items-center gap-2">
-        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-ink text-white"><History className="h-4 w-4" aria-hidden="true" /></span>
-        <div className="min-w-0">
-          <h2 id="historial-title" className="section-title leading-tight">Lo que hizo el portal</h2>
-          <p className="text-xs text-muted">Cada aviso que mandó solo, del más reciente al más viejo.</p>
-        </div>
+    <section className="card overflow-hidden" aria-labelledby="historial-title">
+      <SectionHead flush id="historial-title" icon={History} tone="teal" title="Lo que hizo el portal" hint="Cada aviso que mandó solo." />
+      <div className="p-4 sm:p-5">
+        {sorted.length === 0 ? (
+          <EmptyState icon={Bot} tone="teal" title="Sin movimiento todavía">
+            Todavía no corrió ninguna automatización. La primera es el resumen de mañana a las 7:30.
+          </EmptyState>
+        ) : (
+          <div className="space-y-5">
+            {days.map((d) => (
+              <div key={d.key}>
+                <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-muted">{dayLabel(d.key)}</h3>
+                <ol>
+                  {d.items.map((e, i) => {
+                    const auto = byKey.get(e.automation_key);
+                    const Icon = AUTOMATION_ICONS[e.automation_key] ?? Bot;
+                    const n = Number(e.recipients) || 0;
+                    const last = i === d.items.length - 1;
+                    const manual = isManualRun(e);
+                    return (
+                      <li key={e.id ?? `${e.automation_key}-${e.created_at}`} className={cx('relative flex gap-3', !last && 'pb-4')}>
+                        {!last && <span className="absolute bottom-0 left-4 top-9 w-px bg-line" aria-hidden="true" />}
+                        <IconTile icon={Icon} tone={auto ? toneOf(auto) : 'slate'} size="sm" className="relative" />
+                        <div className="min-w-0 flex-1 pt-1">
+                          <p className="break-words text-sm leading-snug text-ink">
+                            {manual && <Badge tone="ink" className="mr-1.5 align-[1px]">Prueba</Badge>}
+                            {manual ? e.summary.replace(MANUAL_RE, '') : e.summary}
+                          </p>
+                          <p className="mt-0.5 text-xs text-muted">
+                            {auto?.name ?? e.automation_name ?? e.automation_key}
+                            {' · '}{n ? plural(n, 'aviso', 'avisos') : 'sin avisos'}
+                            {' · '}<time dateTime={e.created_at}>{timeAgo(e.created_at)}</time>
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+            ))}
+            {sorted.length > limit && (
+              <button type="button" className="btn btn-ghost min-h-11 w-full" onClick={() => setLimit((l) => l + TIMELINE_STEP * 2)}>
+                <ChevronDown className="h-4 w-4" />Ver más ({sorted.length - limit})
+              </button>
+            )}
+          </div>
+        )}
       </div>
-
-      {sorted.length === 0 ? (
-        <EmptyState icon={Bot} title="Sin movimiento todavía">
-          Todavía no corrió ninguna automatización. La primera es el resumen de mañana a las 7:30.
-        </EmptyState>
-      ) : (
-        <div className="space-y-4">
-          {days.map((d) => (
-            <div key={d.key}>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{dayLabel(d.key)}</h3>
-              <ol className="space-y-0">
-                {d.items.map((e, i) => {
-                  const auto = byKey.get(e.automation_key);
-                  const Icon = AUTOMATION_ICONS[e.automation_key] ?? Bot;
-                  const n = Number(e.recipients) || 0;
-                  const last = i === d.items.length - 1;
-                  const manual = isManualRun(e);
-                  return (
-                    <li key={e.id ?? `${e.automation_key}-${e.created_at}`} className="relative flex gap-3 pb-3">
-                      {!last && <span className="absolute bottom-0 left-4 top-9 w-px bg-line" aria-hidden="true" />}
-                      <span className={cx('relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full', `tone-${auto ? toneOf(auto) : 'slate'}`)}>
-                        <Icon className="h-4 w-4" aria-hidden="true" />
-                      </span>
-                      <div className="min-w-0 flex-1 pt-0.5">
-                        <p className="break-words text-sm leading-snug">
-                          {manual && <Badge tone="ink" className="mr-1.5 align-[1px]">Prueba</Badge>}
-                          {manual ? e.summary.replace(MANUAL_RE, '') : e.summary}
-                        </p>
-                        <p className="mt-0.5 text-xs text-muted">
-                          {auto?.name ?? e.automation_name ?? e.automation_key}
-                          {' · '}{n ? plural(n, 'aviso', 'avisos') : 'sin avisos'}
-                          {' · '}<time dateTime={e.created_at}>{timeAgo(e.created_at)}</time>
-                        </p>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ol>
-            </div>
-          ))}
-          {sorted.length > limit && (
-            <button type="button" className="btn btn-ghost min-h-11 w-full" onClick={() => setLimit((l) => l + TIMELINE_STEP * 2)}>
-              <ChevronDown className="h-4 w-4" />Ver más ({sorted.length - limit})
-            </button>
-          )}
-        </div>
-      )}
     </section>
   );
 }
@@ -378,11 +357,11 @@ export function Timeline({ log = [], automations = [] }) {
 export function RecurringCard({ rule: r, canEdit, color, pending, onToggle, onEdit, onDelete }) {
   const active = !!r.active;
   return (
-    <article className={cx('card flex h-full flex-col gap-3 p-4', !active && 'bg-white/70')} aria-labelledby={`rec-${r.id}`}>
+    <article className={cx('card flex h-full flex-col gap-3 p-4 sm:p-5', !active && 'border-dashed')} aria-labelledby={`rec-${r.id}`}>
       <div className="flex items-start gap-3">
-        <span className={cx('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', active ? 'tone-violet' : 'tone-slate')}><Repeat className="h-5 w-5" aria-hidden="true" /></span>
+        <IconTile icon={Repeat} tone={active ? 'violet' : 'slate'} />
         <div className="min-w-0 flex-1">
-          <h3 id={`rec-${r.id}`} className={cx('break-words font-semibold leading-snug', !active && 'text-ink/70')}>{r.title}</h3>
+          <h3 id={`rec-${r.id}`} className={cx('break-words font-display text-base font-bold leading-snug', active ? 'text-ink' : 'text-muted')}>{r.title}</h3>
           <p className="mt-0.5 text-xs text-muted">{r.summary}</p>
         </div>
         {canEdit
@@ -392,7 +371,7 @@ export function RecurringCard({ rule: r, canEdit, color, pending, onToggle, onEd
 
       <div className="flex flex-wrap items-center gap-2">
         {r.assignee_name
-          ? <span className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium"><Avatar name={r.assignee_name} color={color} size={24} /><span className="truncate">{r.assignee_name.split(' ')[0]}</span></span>
+          ? <span className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium text-ink"><Avatar name={r.assignee_name} color={color} size={24} /><span className="truncate">{r.assignee_name.split(' ')[0]}</span></span>
           : <span className="text-xs text-muted">Sin responsable</span>}
         {r.project_name && <Badge tone="slate" className="max-w-full"><FolderKanban className="h-3 w-3 shrink-0" /><span className="truncate">{r.project_name}</span></Badge>}
         <StatusBadge map={TASK_PRIORITY} value={r.priority} />
@@ -401,11 +380,11 @@ export function RecurringCard({ rule: r, canEdit, color, pending, onToggle, onEd
       <div className="mt-auto flex items-center justify-between gap-2 border-t border-line pt-2">
         <p className="min-w-0 text-xs text-muted">{r.last_created_on ? `Última creada: ${formatDate(r.last_created_on)}` : 'Todavía no se creó ninguna.'}</p>
         {canEdit && (
-          <div className="-mr-2 flex shrink-0 items-center">
-            <button type="button" className="tap flex items-center justify-center rounded-xl text-muted hover:bg-slate-100 hover:text-ink" onClick={() => onEdit(r)} aria-label={`Editar ${r.title}`}>
+          <div className="-mr-2 -my-1 flex shrink-0 items-center">
+            <button type="button" className="tap flex items-center justify-center rounded-xl text-muted transition hover:bg-surface-3 hover:text-ink" onClick={() => onEdit(r)} aria-label={`Editar ${r.title}`}>
               <Pencil className="h-4 w-4" />
             </button>
-            <button type="button" className="tap flex items-center justify-center rounded-xl text-muted hover:bg-coral-soft hover:text-coral" onClick={() => onDelete(r)} aria-label={`Eliminar ${r.title}`}>
+            <button type="button" className="tap flex items-center justify-center rounded-xl text-muted transition hover:bg-coral-soft hover:text-coral-ink" onClick={() => onDelete(r)} aria-label={`Eliminar ${r.title}`}>
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
@@ -422,30 +401,33 @@ export function PortalTodayCard({ className }) {
   const { real: entries, recipients, sources } = todayActivity(data.log ?? []);
   const byKey = new Map((data.automations ?? []).map((a) => [a.key, a]));
   return (
-    <section className={cx('card card-pad', className)} aria-labelledby="portal-hoy">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 id="portal-hoy" className="section-title flex items-center gap-2"><Bot className="h-5 w-5 text-teal-dark" aria-hidden="true" />Lo que hizo el portal hoy</h2>
-        <Link to="/automatizaciones" className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-brand hover:underline">Ver todo<ArrowRight className="h-4 w-4" /></Link>
-      </div>
+    <section className={cx('card animate-rise overflow-hidden', className)} aria-labelledby="portal-hoy">
+      <SectionHead flush id="portal-hoy" icon={Bot} tone="teal" title="Lo que hizo el portal hoy"
+        hint={entries.length ? `${plural(recipients, 'aviso', 'avisos')} de ${plural(sources, 'automatización', 'automatizaciones')}` : 'Vigila plazos, citas y plata por vos.'}
+        action={<Link to="/automatizaciones" className="link tap -my-2 hidden items-center gap-1 text-sm sm:flex">Ver todo<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
       {entries.length === 0 ? (
-        <p className="text-sm text-muted">Hoy todavía no hizo falta avisar nada. El portal sigue vigilando.</p>
+        <div className="flex items-center gap-3 px-4 py-5 text-sm text-teal-ink sm:px-5">
+          <Sparkles className="h-5 w-5 shrink-0" aria-hidden="true" />
+          Hoy todavía no hizo falta avisar nada. El portal sigue vigilando.
+        </div>
       ) : (
-        <>
-          <p className="mb-2 text-sm"><span className="font-bold tabular">{plural(recipients, 'aviso', 'avisos')}</span> <span className="text-muted">de {plural(sources, 'automatización', 'automatizaciones')}</span></p>
-          <ul className="space-y-2">
-            {entries.slice(0, 3).map((e) => {
-              const Icon = AUTOMATION_ICONS[e.automation_key] ?? Bot;
-              const auto = byKey.get(e.automation_key);
-              return (
-                <li key={e.id ?? e.created_at} className="flex items-start gap-2.5 text-sm">
-                  <span className={cx('flex h-7 w-7 shrink-0 items-center justify-center rounded-full', `tone-${auto ? toneOf(auto) : 'slate'}`)}><Icon className="h-3.5 w-3.5" aria-hidden="true" /></span>
-                  <span className="min-w-0 flex-1 leading-snug">{e.summary} <span className="whitespace-nowrap text-xs text-muted">· {timeAgo(e.created_at)}</span></span>
-                </li>
-              );
-            })}
-          </ul>
-        </>
+        <ul className="divide-y divide-line">
+          {entries.slice(0, 3).map((e) => {
+            const Icon = AUTOMATION_ICONS[e.automation_key] ?? Bot;
+            const auto = byKey.get(e.automation_key);
+            return (
+              <li key={e.id ?? e.created_at} className="flex items-start gap-3 px-4 py-3 sm:px-5">
+                <IconTile icon={Icon} tone={auto ? toneOf(auto) : 'slate'} size="sm" />
+                <p className="min-w-0 flex-1 pt-1 text-sm leading-snug text-ink">
+                  {e.summary}
+                  <span className="mt-0.5 block text-xs text-muted">{auto?.name ?? e.automation_name ?? e.automation_key} · {timeAgo(e.created_at)}</span>
+                </p>
+              </li>
+            );
+          })}
+        </ul>
       )}
+      <Link to="/automatizaciones" className="tap flex items-center justify-center gap-1.5 border-t border-line bg-surface-2/60 px-4 py-3 text-sm font-semibold text-brand-ink sm:hidden">Ver todo<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
     </section>
   );
 }

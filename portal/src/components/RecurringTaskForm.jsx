@@ -99,14 +99,14 @@ function ChoiceGroup({ legend, name, options, value, onChange, columns, compact 
   return (
     <fieldset className="min-w-0">
       <legend className="label">{legend}</legend>
-      <div className={cx('grid gap-1 rounded-xl border border-line bg-paper p-1', columns)}>
+      <div className={cx('grid gap-1 rounded-xl border border-line bg-surface-2 p-1', columns)}>
         {options.map((o) => {
           const on = String(value) === String(o.value);
           return (
             <label key={o.value} title={o.title}
               className={cx('relative flex min-h-11 cursor-pointer select-none items-center justify-center rounded-lg text-sm font-semibold transition',
                 'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand',
-                on ? 'bg-ink text-white shadow-sm' : 'text-muted hover:bg-white hover:text-ink', compact && 'px-0')}>
+                on ? 'bg-contrast text-contrast-fg shadow-card' : 'text-muted hover:bg-surface hover:text-ink', compact && 'px-0')}>
               <input type="radio" className="sr-only" name={name} value={o.value} checked={on} aria-label={o.ariaLabel}
                 onChange={() => onChange(o.value)} />
               {o.label}
@@ -175,7 +175,7 @@ export default function RecurringTaskForm({ rule, template, runTime = '06:00', o
               {RECURRING_TEMPLATES.map((t) => (
                 <button key={t.key} type="button" aria-pressed={picked === t.key} onClick={() => applyTemplate(t)}
                   className={cx('min-h-11 shrink-0 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-xs font-semibold transition',
-                    picked === t.key ? 'border-brand bg-brand-soft text-brand' : 'border-line bg-white text-ink hover:border-slate-300')}>
+                    picked === t.key ? 'border-brand bg-brand-soft text-brand-ink' : 'border-line bg-surface text-ink hover:border-line-strong hover:bg-surface-2')}>
                   {t.label}
                 </button>
               ))}
@@ -207,11 +207,11 @@ export default function RecurringTaskForm({ rule, template, runTime = '06:00', o
         <Field label="Vence en (días)" hint={due === 0 ? '0 = el mismo día que se crea.' : dueText(due).replace('vence', 'Vence') + '.'}>
           {(id) => (
             <div className="flex items-center gap-2">
-              <button type="button" className="tap flex items-center justify-center rounded-xl border border-line bg-white text-ink hover:bg-slate-50 disabled:opacity-40"
+              <button type="button" className="tap flex items-center justify-center rounded-xl border border-line bg-surface text-ink shadow-card transition hover:border-line-strong hover:bg-surface-2 disabled:opacity-40"
                 onClick={() => set('due_in_days')(Math.max(0, due - 1))} disabled={due <= 0} aria-label="Un día menos"><Minus className="h-4 w-4" /></button>
               <input id={id} type="number" inputMode="numeric" min={0} max={MAX_DUE} step={1} className="input min-h-11 w-20 text-center tabular"
                 value={form.due_in_days} onChange={(e) => set('due_in_days')(e.target.value === '' ? '' : Math.max(0, Math.min(MAX_DUE, Math.trunc(Number(e.target.value)) || 0)))} />
-              <button type="button" className="tap flex items-center justify-center rounded-xl border border-line bg-white text-ink hover:bg-slate-50 disabled:opacity-40"
+              <button type="button" className="tap flex items-center justify-center rounded-xl border border-line bg-surface text-ink shadow-card transition hover:border-line-strong hover:bg-surface-2 disabled:opacity-40"
                 onClick={() => set('due_in_days')(Math.min(MAX_DUE, due + 1))} disabled={due >= MAX_DUE} aria-label="Un día más"><Plus className="h-4 w-4" /></button>
             </div>
           )}
@@ -227,7 +227,7 @@ export default function RecurringTaskForm({ rule, template, runTime = '06:00', o
           {(id) => <textarea id={id} className="input" rows={2} value={form.description} onChange={(e) => set('description')(e.target.value)} placeholder="Qué hay que hacer, enlaces, criterio de terminado…" />}
         </Field>
 
-        <div className="flex items-center justify-between gap-4 rounded-2xl bg-paper p-3 sm:col-span-2">
+        <div className="card-sunken flex items-center justify-between gap-4 p-3 sm:col-span-2">
           <div className="min-w-0">
             <p id={`${uid}-active`} className="text-sm font-semibold">Activa</p>
             <p className="text-xs text-muted">{form.active ? 'El portal la crea sola cuando toca.' : 'Queda guardada, pero no crea tareas.'}</p>
@@ -235,7 +235,7 @@ export default function RecurringTaskForm({ rule, template, runTime = '06:00', o
           <Switch checked={!!form.active} label="Activa" onChange={set('active')} />
         </div>
 
-        <div className={cx('flex items-start gap-2.5 rounded-2xl p-3 text-sm leading-snug sm:col-span-2', form.active ? 'bg-teal-soft text-teal-dark' : 'bg-slate-100 text-slate-600')}>
+        <div className={cx('flex items-start gap-2.5 rounded-2xl p-3 text-sm leading-snug sm:col-span-2', form.active ? 'bg-teal-soft text-teal-ink' : 'bg-surface-3 text-muted')}>
           <Sparkles className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <p>
             <span className="sr-only">Vista previa: </span>

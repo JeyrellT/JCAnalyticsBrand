@@ -14,10 +14,11 @@ import {
   pushErrorMessage, forgetLocalSubscription, detectPlatform,
 } from '../lib/pwa.js';
 import { InstallCard } from '../components/InstallPrompt.jsx';
-import { PageHeader, PageLoader, Badge, cx, useToast, useConfirm } from '../components/ui.jsx';
+import { PageHeader, PageLoader, Badge, IconTile, SectionHead, cx, useToast, useConfirm } from '../components/ui.jsx';
 import { timeAgo, formatDate, dayKey } from '../lib/format.js';
 
 const CATEGORY_ICONS = { tareas: ListChecks, agenda: CalendarClock, proyectos: FolderKanban, dinero: Wallet, resumen: Sunrise, automatizaciones: Bot };
+const CATEGORY_TONES = { tareas: 'blue', agenda: 'violet', proyectos: 'teal', dinero: 'amber', resumen: 'amber', automatizaciones: 'slate' };
 
 const DEFAULT_PREFS = { push_enabled: true, categories: {}, quiet_start: '21:00', quiet_end: '07:00', digest_enabled: true, digest_time: '07:30' };
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -112,43 +113,34 @@ function usePushState(version) {
 }
 
 // ── Piezas de interfaz ──────────────────────────────────────────────────────
-function Section({ icon: Icon, title, hint, chip, children }) {
+/** Tarjeta de sección: encabezado con mosaico de ícono y, opcionalmente, un chip de estado. */
+function Section({ icon, tone = 'blue', title, hint, chip, flush = false, children }) {
   const id = useId();
   return (
-    <section className="card card-pad" aria-labelledby={id}>
-      <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand"><Icon className="h-5 w-5" aria-hidden="true" /></span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <h2 id={id} className="section-title">{title}</h2>
-            {chip}
-          </div>
-          {hint && <p className="mt-0.5 text-sm text-muted">{hint}</p>}
-        </div>
-      </div>
-      <div className="mt-4">{children}</div>
+    <section className="card animate-rise overflow-hidden" aria-labelledby={id}>
+      <SectionHead flush id={id} icon={icon} tone={tone} title={title} hint={hint} action={chip} />
+      {flush ? children : <div className="p-4 sm:p-5">{children}</div>}
     </section>
   );
 }
 
+/** Pista del interruptor (solo visual: el control es la fila completa). */
 function Knob({ checked }) {
   return (
-    <span aria-hidden="true" className={cx('relative h-7 w-12 shrink-0 rounded-full transition', checked ? 'bg-teal-dark' : 'bg-slate-300')}>
-      <span className={cx('absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all', checked ? 'left-6' : 'left-1')} />
+    <span aria-hidden="true" className={cx('relative h-7 w-12 shrink-0 rounded-full transition-colors duration-200', checked ? 'bg-teal-ink' : 'bg-line-strong')}>
+      <span className={cx('absolute top-1 h-5 w-5 rounded-full bg-white shadow-md transition-all duration-200', checked ? 'left-6' : 'left-1')} />
     </span>
   );
 }
 
 /** Fila completa tocable (≥ 56 px) con interruptor. */
-function SwitchRow({ icon: Icon, label, hint, checked, onChange, disabled }) {
+function SwitchRow({ icon: Icon, tone = 'slate', label, hint, checked, onChange, disabled, flush = false }) {
   return (
     <button type="button" role="switch" aria-checked={checked} disabled={disabled} onClick={() => onChange(!checked)}
-      className="flex min-h-14 w-full items-center gap-3 rounded-xl px-1 py-2.5 text-left transition hover:bg-slate-50 disabled:opacity-50">
-      {Icon && (
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-paper text-ink-soft"><Icon className="h-[18px] w-[18px]" aria-hidden="true" /></span>
-      )}
+      className={cx('row min-h-14 w-full text-left disabled:opacity-50', flush ? 'px-4 py-3 sm:px-5' : 'rounded-xl px-2 py-2.5')}>
+      {Icon && <IconTile icon={Icon} tone={tone} size="sm" />}
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold">{label}</span>
+        <span className="block text-sm font-semibold text-ink">{label}</span>
         {hint && <span className="block text-xs text-muted">{hint}</span>}
       </span>
       <Knob checked={checked} />
@@ -168,7 +160,7 @@ function TimeField({ label, value, onChange }) {
 
 function DemoNote() {
   return (
-    <div className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+    <div className="animate-rise mb-4 flex items-start gap-3 rounded-2xl border border-amber/30 bg-amber-soft p-3 text-sm text-amber-ink">
       <FlaskConical className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
       <p>
         <span className="font-semibold">Estás en la demo.</span> Los ajustes se guardan solo aquí y los avisos aparecen simulados en la pantalla.
@@ -257,12 +249,15 @@ function DeviceSection({ config, push, prefs, onEnablePrefs, onChanged }) {
   }
 
   return (
-    <Section icon={BellRing} title="Avisos en este dispositivo" chip={<Badge tone={meta.tone} dot>{meta.label}</Badge>}>
+    <Section icon={status === 'on' ? BellRing : BellOff} tone={meta.tone} title="Avisos en este dispositivo"
+      chip={<Badge tone={meta.tone} dot className="hidden sm:inline-flex">{meta.label}</Badge>}>
+      {/* En el celular el chip de estado va en el cuerpo: el título no se trunca. */}
+      <p className="mb-2 sm:hidden"><Badge tone={meta.tone} dot>{meta.label}</Badge></p>
       <p className="text-sm text-muted">
         {support.demo && status === 'on' ? 'Avisos simulados: aparecen dentro de la pantalla de la demo.' : meta.text}
       </p>
       {status === 'blocked' && (
-        <p className="mt-2 flex items-start gap-2 rounded-2xl bg-coral-soft p-3 text-sm text-coral">
+        <p className="mt-2 flex items-start gap-2 rounded-2xl bg-coral-soft p-3 text-sm text-coral-ink">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           {UNBLOCK[detectPlatform()]}
         </p>
@@ -271,13 +266,13 @@ function DeviceSection({ config, push, prefs, onEnablePrefs, onChanged }) {
       {canToggle && (
         <button type="button" role="switch" aria-checked={shownOn} onClick={toggle} disabled={busy !== null || push.loading}
           className={cx('mt-4 flex min-h-16 w-full items-center gap-3 rounded-2xl border p-3 text-left transition disabled:cursor-wait',
-            shownOn ? 'border-teal/40 bg-teal-soft' : 'border-line bg-paper hover:border-slate-300')}>
-          <span className={cx('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', shownOn ? 'bg-teal-dark text-white' : 'bg-white text-brand shadow-sm')}>
+            shownOn ? 'border-teal/40 bg-teal-soft' : 'border-line bg-surface-2 hover:border-line-strong')}>
+          <span className={cx('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition', shownOn ? 'bg-teal-ink text-white' : 'bg-surface text-brand-ink shadow-card')}>
             {busy === 'toggle' ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
               : shownOn ? <BellRing className="h-5 w-5" aria-hidden="true" /> : <BellOff className="h-5 w-5" aria-hidden="true" />}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block font-semibold">{shownOn ? 'Avisos activos aquí' : 'Activar avisos aquí'}</span>
+            <span className="block font-semibold text-ink">{shownOn ? 'Avisos activos aquí' : 'Activar avisos aquí'}</span>
             <span className="block text-xs text-muted">{shownOn ? 'Tocá para apagarlos en este dispositivo.' : 'Te pedimos permiso una sola vez.'}</span>
           </span>
           <Knob checked={shownOn} />
@@ -305,31 +300,32 @@ function CategoriesSection({ prefs, commit, canInvest }) {
   const entries = Object.entries(NOTIFICATION_CATEGORIES).filter(([key, meta]) => key !== 'resumen' && (!meta.invest || canInvest));
   const setCategory = (key, value) => commit({ ...prefs, categories: { ...prefs.categories, [key]: value } });
   return (
-    <Section icon={Bell} title="Qué te avisamos" hint="Elegí qué suena en tus dispositivos. Igual todo queda en tu buzón.">
+    <Section flush icon={Bell} tone="blue" title="Qué te avisamos" hint="Elegí qué suena en tus dispositivos.">
       {!prefs.push_enabled && (
-        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-2xl bg-amber-50 p-3 text-sm text-amber-800">
+        <div className="m-4 mb-0 flex flex-wrap items-center gap-2 rounded-2xl border border-amber/30 bg-amber-soft p-3 text-sm text-amber-ink sm:mx-5">
           <span className="min-w-0 flex-1">Tenés los avisos pausados en todos tus dispositivos.</span>
           <button type="button" className="btn btn-dark tap" onClick={() => commit({ ...prefs, push_enabled: true })}>Reanudar</button>
         </div>
       )}
-      <div className="-mx-1 divide-y divide-line">
+      <div className={cx('divide-y divide-line', !prefs.push_enabled && 'mt-2 border-t border-line')}>
         {entries.map(([key, meta]) => (
-          <SwitchRow key={key} icon={CATEGORY_ICONS[key] ?? Bell} label={meta.label} hint={meta.hint}
+          <SwitchRow key={key} flush icon={CATEGORY_ICONS[key] ?? Bell} tone={CATEGORY_TONES[key] ?? 'slate'} label={meta.label} hint={meta.hint}
             checked={prefs.categories[key] !== false} onChange={(value) => setCategory(key, value)} />
         ))}
       </div>
+      <p className="border-t border-line bg-surface-2/60 px-4 py-2.5 text-xs text-muted sm:px-5">Igual todo queda en tu buzón.</p>
     </Section>
   );
 }
 
 function QuietSection({ prefs, commit }) {
   return (
-    <Section icon={Moon} title="Horario tranquilo" hint="No te escribimos de noche, salvo plata por confirmar. Igual todo queda en tu buzón.">
+    <Section icon={Moon} tone="violet" title="Horario tranquilo" hint="De noche no te escribimos.">
       <div className="grid grid-cols-2 gap-3">
         <TimeField label="Desde" value={prefs.quiet_start} onChange={(v) => commit({ ...prefs, quiet_start: v }, { debounce: 700 })} />
         <TimeField label="Hasta" value={prefs.quiet_end} onChange={(v) => commit({ ...prefs, quiet_end: v }, { debounce: 700 })} />
       </div>
-      <p className="mt-2 text-xs text-muted">Silencio de {formatHour(prefs.quiet_start)} a {formatHour(prefs.quiet_end)}, hora de Costa Rica.</p>
+      <p className="mt-3 text-xs leading-relaxed text-muted">Silencio de {formatHour(prefs.quiet_start)} a {formatHour(prefs.quiet_end)}, hora de Costa Rica. Salvo plata por confirmar; igual todo queda en tu buzón.</p>
     </Section>
   );
 }
@@ -338,15 +334,16 @@ function DigestSection({ prefs, commit }) {
   const on = prefs.digest_enabled && prefs.categories.resumen !== false;
   const toggle = (value) => commit({ ...prefs, digest_enabled: value, categories: { ...prefs.categories, resumen: value } });
   return (
-    <Section icon={Sunrise} title='Resumen "Mi día"' hint="Cada mañana te contamos cuántas citas, tareas y pendientes tenés hoy. Si no hay nada, no te escribimos.">
-      <div className="-mx-1">
-        <SwitchRow label="Recibir el resumen" hint={on ? `Todos los días a las ${formatHour(prefs.digest_time)}` : 'Apagado'} checked={on} onChange={toggle} />
+    <Section icon={Sunrise} tone="amber" title='Resumen "Mi día"' hint="Citas, tareas y pendientes de hoy.">
+      <div className="-mx-2 -mt-1">
+        <SwitchRow icon={Sunrise} tone="amber" label="Recibir el resumen" hint={on ? `Todos los días a las ${formatHour(prefs.digest_time)}` : 'Apagado'} checked={on} onChange={toggle} />
       </div>
       {on && (
-        <div className="mt-2 max-w-[13rem]">
+        <div className="mt-3 max-w-[13rem]">
           <TimeField label="Hora del resumen" value={prefs.digest_time} onChange={(v) => commit({ ...prefs, digest_time: v }, { debounce: 700 })} />
         </div>
       )}
+      <p className="mt-3 text-xs text-muted">Si no hay nada que contar, no te escribimos.</p>
     </Section>
   );
 }
@@ -399,21 +396,23 @@ function DevicesSection({ devices, thisDeviceId, setConfig, onChanged }) {
   }
 
   return (
-    <Section icon={MonitorSmartphone} title="Mis dispositivos" hint="Dónde tenés los avisos activos." chip={devices.length > 0 && <Badge tone="slate">{devices.length}</Badge>}>
+    <Section flush icon={MonitorSmartphone} tone="slate" title="Mis dispositivos" hint="Dónde tenés los avisos activos." chip={devices.length > 0 && <Badge tone="slate">{devices.length}</Badge>}>
       {devices.length === 0 ? (
-        <p className="rounded-2xl bg-paper p-4 text-sm text-muted">Todavía no activaste avisos en ningún celular ni compu.</p>
+        <div className="p-4 sm:p-5">
+          <p className="card-sunken flex items-center gap-3 p-4 text-sm text-muted">
+            <IconTile icon={Smartphone} tone="slate" size="sm" />Todavía no activaste avisos en ningún celular ni compu.
+          </p>
+        </div>
       ) : (
-        <ul className="-my-1 divide-y divide-line">
+        <ul className="divide-y divide-line">
           {devices.map((device) => {
             const info = describeDevice(device);
             const mine = device.id === thisDeviceId;
             return (
-              <li key={device.id} className="flex items-center gap-3 py-2.5">
-                <span className={cx('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', mine ? 'bg-brand text-white' : 'bg-paper text-ink-soft')}>
-                  <info.icon className="h-5 w-5" aria-hidden="true" />
-                </span>
+              <li key={device.id} className="row min-h-16 px-4 py-2.5 sm:px-5">
+                <IconTile icon={info.icon} tone={mine ? 'blue' : 'slate'} />
                 <div className="min-w-0 flex-1">
-                  <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm font-semibold">
+                  <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm font-semibold text-ink">
                     <span>{info.name}</span>
                     {info.detail && <span className="font-normal text-muted">· {info.detail}</span>}
                     {mine && <Badge tone="blue">Este dispositivo</Badge>}
@@ -424,7 +423,7 @@ function DevicesSection({ devices, thisDeviceId, setConfig, onChanged }) {
                   </p>
                 </div>
                 <button type="button" onClick={() => remove(device, info)} aria-label={`Quitar ${info.name}`}
-                  className="tap flex shrink-0 items-center justify-center rounded-xl text-muted transition hover:bg-coral-soft hover:text-coral">
+                  className="tap -mr-2 flex shrink-0 items-center justify-center rounded-xl text-muted transition hover:bg-coral-soft hover:text-coral-ink">
                   <Trash2 className="h-4 w-4" aria-hidden="true" />
                 </button>
               </li>
@@ -457,11 +456,12 @@ export default function NotificationSettings() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <PageHeader eyebrow="Control" title="Avisos y app" subtitle="Instalá el portal en tu celular y elegí qué te avisamos." />
+      <PageHeader eyebrow="Control" title="Avisos y app" subtitle="Instalá el portal en tu celular y elegí qué te avisamos." icon={BellRing} tone="amber" />
       {isDemo() && <DemoNote />}
       <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
         <div className="space-y-4">
-          <Section icon={Smartphone} title="App en tu celular" hint="Abrí el portal desde un ícono, como cualquier app."
+          <Section icon={Smartphone} tone="blue" title="App en tu celular"
+            hint={<><span className="sm:hidden">Como cualquier app.</span><span className="hidden sm:inline">Abrí el portal desde un ícono, como cualquier app.</span></>}
             chip={install.installed ? <Badge tone="teal" dot>Instalada</Badge> : <Badge tone="slate" dot>En navegador</Badge>}>
             <InstallCard />
           </Section>
@@ -476,7 +476,7 @@ export default function NotificationSettings() {
               <DigestSection prefs={prefs} commit={commit} />
             </>
           ) : (
-            <Section icon={Bell} title="Qué te avisamos">
+            <Section icon={Bell} tone="blue" title="Qué te avisamos">
               <PageLoader error={config.error} onRetry={reload} />
             </Section>
           )}

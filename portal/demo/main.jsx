@@ -99,13 +99,13 @@ function DemoBar({ store, scenarios }) {
     // Un 401 avisa a la sesión de la app (onUnauthenticated) y vuelve al selector.
     await api('/api/me').catch(() => {});
   }
-  const chip = 'flex shrink-0 items-center gap-1 rounded-lg bg-white px-2.5 py-1 font-semibold text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100';
+  const chip = 'flex shrink-0 items-center gap-1 rounded-lg bg-surface px-2.5 py-1 font-semibold text-amber-ink ring-1 ring-amber/40 transition hover:bg-amber/15';
   return (
     <>
-      <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-1.5 text-xs text-amber-900 lg:px-6">
+      <div className="flex items-center gap-2 border-b border-amber/30 bg-amber-soft px-4 py-1.5 text-xs text-amber-ink lg:px-6">
         <FlaskConical className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         <p className="min-w-0 flex-1 truncate">
-          <span className="font-bold">Demo</span> · {viewer.name.split(' ')[0]} <span className="text-amber-700">({ROLES[viewer.role]?.label ?? viewer.role})</span>
+          <span className="font-bold">Demo</span> · {viewer.name.split(' ')[0]} <span className="opacity-75">({ROLES[viewer.role]?.label ?? viewer.role})</span>
         </p>
         <button type="button" onClick={() => setSimulating(true)} className={chip} aria-haspopup="dialog">
           <BellRing className="h-3.5 w-3.5" aria-hidden="true" />Simular aviso

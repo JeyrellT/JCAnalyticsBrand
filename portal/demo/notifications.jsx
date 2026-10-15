@@ -12,7 +12,7 @@ import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 import { Sunrise, Wallet, ListChecks, CalendarClock, BellRing } from 'lucide-react';
 import logoMark from '../src/assets/logo-mark.webp';
 import { navigate } from '../src/lib/router.jsx';
-import { Modal } from '../src/components/ui.jsx';
+import { Modal, IconTile } from '../src/components/ui.jsx';
 
 const MAX_VISIBLE = 3;
 const LIFETIME_MS = 6000;
@@ -59,14 +59,14 @@ function dismiss(id, direction = 'up') {
   setTimeout(() => remove(id), LEAVE_MS);
 }
 
-// ── Estilos (tema claro fijo, colores explícitos) ───────────────────────────
+// ── Estilos: siguen el tema del portal (tokens de src/index.css) ────────────
 const CSS = `
 .jcp-n-stack { position: fixed; z-index: 9998; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + 8px);
   display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 8px; pointer-events: none; }
 .jcp-n { position: relative; width: 100%; max-width: 420px; pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none;
-  cursor: pointer; border-radius: 20px; background: rgba(248, 250, 252, 0.97); color: #0b1424;
+  cursor: pointer; border-radius: 20px; background: color-mix(in oklab, var(--surface) 88%, transparent); color: var(--ink);
   -webkit-backdrop-filter: saturate(180%) blur(18px); backdrop-filter: saturate(180%) blur(18px);
-  box-shadow: 0 10px 30px rgba(7, 26, 54, 0.24), 0 0 0 1px rgba(7, 26, 54, 0.07);
+  box-shadow: var(--shadow-pop), 0 0 0 1px var(--line);
   animation: jcp-n-in 420ms cubic-bezier(0.2, 0.9, 0.25, 1.12) backwards; transition: transform 200ms ease, opacity 200ms ease; }
 .jcp-n[data-dragging] { transition: none; }
 .jcp-n[data-leaving] { pointer-events: none; animation: jcp-n-out-up 240ms ease-in forwards; }
@@ -75,20 +75,20 @@ const CSS = `
 .jcp-n-open { display: flex; width: 100%; align-items: flex-start; gap: 11px; padding: 11px 14px 12px 11px; border: 0; background: transparent;
   color: inherit; text-align: left; cursor: pointer; border-radius: 20px;
   font: 400 14px/1.3 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Inter, ui-sans-serif, system-ui, sans-serif; }
-.jcp-n-open:focus-visible { outline: 2px solid #0065df; outline-offset: 2px; }
+.jcp-n-open:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .jcp-n-icon { flex: none; width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(160deg, #0b2a55 0%, #071a36 100%); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); margin-top: 1px; }
+  background: linear-gradient(160deg, var(--panel-2) 0%, var(--panel) 100%); box-shadow: inset 0 0 0 1px var(--panel-line); margin-top: 1px; }
 .jcp-n-icon img { width: 26px; height: 26px; object-fit: contain; }
 .jcp-n-text { min-width: 0; flex: 1; }
-.jcp-n-app { display: flex; gap: 4px; font-size: 12.5px; line-height: 1.2; color: #5b6475; margin-bottom: 2px; }
-.jcp-n-app b { font-weight: 600; color: #3a4456; }
-.jcp-n-title { display: block; font-size: 15px; line-height: 1.25; font-weight: 650; color: #0b1424;
+.jcp-n-app { display: flex; gap: 4px; font-size: 12.5px; line-height: 1.2; color: var(--muted); margin-bottom: 2px; }
+.jcp-n-app b { font-weight: 600; color: var(--ink-2); }
+.jcp-n-title { display: block; font-size: 15px; line-height: 1.25; font-weight: 650; color: var(--ink);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .jcp-n-body { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
-  margin-top: 1px; font-size: 14px; line-height: 1.3; color: #2e3a4d; overflow-wrap: anywhere; }
+  margin-top: 1px; font-size: 14px; line-height: 1.3; color: var(--ink-2); overflow-wrap: anywhere; }
 .jcp-n-x { position: absolute; top: -6px; left: -6px; width: 24px; height: 24px; border-radius: 999px; border: 0; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; background: #ffffff; color: #3a4456; font: 600 15px/1 system-ui, sans-serif;
-  box-shadow: 0 1px 4px rgba(7, 26, 54, 0.25); opacity: 0; transition: opacity 120ms ease; }
+  display: flex; align-items: center; justify-content: center; background: var(--surface); color: var(--ink-2); font: 600 15px/1 system-ui, sans-serif;
+  box-shadow: var(--shadow-raised), 0 0 0 1px var(--line); opacity: 0; transition: opacity 120ms ease; }
 .jcp-n:hover .jcp-n-x, .jcp-n:focus-within .jcp-n-x { opacity: 1; }
 @keyframes jcp-n-in { from { transform: translateY(-120%); opacity: 0; } to { transform: none; opacity: 1; } }
 /* Sin "from": la salida arranca desde donde quedó el dedo. */
@@ -244,12 +244,10 @@ export function SimulateSheet({ open, onClose, scenarios, onNotice }) {
           return (
             <li key={s.key}>
               <button type="button" onClick={() => pick(s.key)}
-                className="flex min-h-16 w-full items-center gap-3 rounded-2xl border border-line bg-white p-3 text-left transition hover:border-slate-300 hover:bg-slate-50">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand">
-                  <Icon className="h-5 w-5" aria-hidden="true" />
-                </span>
+                className="card card-hover flex min-h-16 w-full items-center gap-3 p-3 text-left">
+                <IconTile icon={Icon} tone="blue" />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold">{s.title}</span>
+                  <span className="block text-sm font-semibold text-ink">{s.title}</span>
                   <span className="block text-xs text-muted">{s.hint}</span>
                 </span>
               </button>

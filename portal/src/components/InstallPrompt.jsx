@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Share, PlusSquare, Smartphone, Download, EllipsisVertical, CheckCircle2, Info } from 'lucide-react';
 import { useInstallState, promptInstall, dismissInstall } from '../lib/pwa.js';
 import { Sheet, SheetHeader } from './QuickActions.jsx';
-import { cx, useToast } from './ui.jsx';
+import { IconTile, cx, useToast } from './ui.jsx';
 import logoMark from '../assets/logo-mark.webp';
 
 const STEPS = {
@@ -33,13 +33,13 @@ export function InstallSteps({ platform = 'ios', className }) {
     <div className={className}>
       <ol className="space-y-2">
         {STEPS[platform].map((step, i) => (
-          <li key={step.title} className="flex items-start gap-3 rounded-2xl bg-paper p-3">
-            <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-brand shadow-[0_1px_2px_rgba(7,26,54,0.08)]">
-              <step.icon className="h-5 w-5" aria-hidden="true" />
-              <span className="absolute -left-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] font-bold text-white">{i + 1}</span>
+          <li key={step.title} className="card-sunken flex items-start gap-3 p-3">
+            <span className="relative shrink-0">
+              <IconTile icon={step.icon} tone="blue" className="bg-surface shadow-card" />
+              <span className="absolute -left-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-contrast text-[11px] font-bold text-contrast-fg ring-2 ring-surface-2">{i + 1}</span>
             </span>
             <span className="min-w-0 pt-0.5">
-              <span className="block text-sm font-semibold">{step.title}</span>
+              <span className="block text-sm font-semibold text-ink">{step.title}</span>
               <span className="block text-xs leading-relaxed text-muted">{step.hint}</span>
             </span>
           </li>
@@ -74,7 +74,7 @@ export function InstallCard({ className }) {
 
   if (state.installed) {
     return (
-      <div className={cx('flex items-start gap-3 rounded-2xl bg-teal-soft p-3 text-teal-dark', className)}>
+      <div className={cx('flex items-start gap-3 rounded-2xl bg-teal-soft p-3 text-teal-ink', className)}>
         <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
         <p className="text-sm">
           <span className="font-semibold">{state.standalone ? 'Ya usás la app instalada.' : '¡Listo, quedó instalada!'}</span>{' '}
@@ -113,10 +113,10 @@ export function InstallCard({ className }) {
           ? 'En la demo no se puede instalar. En el portal publicado, cada persona ve el botón Instalar (Android) o estos pasos (iPhone):'
           : 'Abrí el portal en tu celular y seguí estos pasos:'}
       </p>
-      <div className="mb-3 grid grid-cols-2 gap-1 rounded-xl border border-line bg-white p-1" role="tablist" aria-label="Tipo de celular">
+      <div className="mb-3 grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface-2 p-1" role="tablist" aria-label="Tipo de celular">
         {GUIDES.map((g) => (
           <button key={g.value} type="button" role="tab" aria-selected={guide === g.value} onClick={() => setGuide(g.value)}
-            className={cx('tap rounded-lg px-3 text-sm font-semibold transition', guide === g.value ? 'bg-ink text-white' : 'text-muted hover:text-ink')}>
+            className={cx('tap rounded-lg px-3 text-sm font-semibold transition', guide === g.value ? 'bg-contrast text-contrast-fg shadow-card' : 'text-muted hover:text-ink')}>
             {g.label}
           </button>
         ))}
@@ -136,12 +136,12 @@ export function InstallBanner({ className }) {
   const steps = state.platform === 'ios' ? 'ios' : 'android';
 
   return (
-    <section aria-label="Instalar el portal" className={cx('flex items-start gap-3 rounded-2xl border border-brand/15 bg-linear-to-r from-brand-soft to-teal-soft p-3 sm:p-4', className)}>
-      <img src={logoMark} alt="" className="h-11 w-11 shrink-0 rounded-xl bg-white object-contain p-1.5 shadow-sm" />
+    <section aria-label="Instalar el portal" className={cx('card animate-rise flex items-start gap-3 border-brand/20 bg-linear-to-r from-brand-soft to-teal-soft p-3 sm:items-center sm:p-4', className)}>
+      <img src={logoMark} alt="" className="h-11 w-11 shrink-0 rounded-xl bg-white object-contain p-1.5 shadow-card sm:h-12 sm:w-12" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-ink">{mobile ? 'Instalá el portal en tu celular' : 'Instalá el portal en esta compu'}</p>
-        <p className="text-xs text-muted">Se abre como app y te avisa al instante de tareas, citas y confirmaciones.</p>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <p className="font-display text-[15px] font-bold leading-tight text-ink">{mobile ? 'Instalá el portal en tu celular' : 'Instalá el portal en esta compu'}</p>
+        <p className="mt-0.5 text-xs text-muted sm:text-sm">Se abre como app y te avisa al instante de tareas, citas y confirmaciones.</p>
+        <div className="mt-2.5 flex flex-wrap gap-2">
           {state.canInstall ? (
             <button type="button" onClick={install} disabled={busy} className="btn btn-primary tap">
               <Download className="h-4 w-4" aria-hidden="true" />Instalar
