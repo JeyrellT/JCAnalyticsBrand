@@ -1,4 +1,5 @@
 // Piezas de las personas del equipo: nivel de carga, contadores y tarjeta con enlace a su ficha.
+// v6: RoleBadge también nombra a los inversionistas (rol 'inversionista', fuera de la operación).
 import { Link } from '../lib/router.jsx';
 import { Avatar, Badge, cx } from './ui.jsx';
 import { ServiceChip } from './services.jsx';
@@ -11,7 +12,8 @@ export const LOAD_META = {
   alta: { tone: 'red', label: 'Saturado', plural: 'saturados' },
 };
 
-export const ROLE_TONE = { admin: 'ink', socio: 'blue', colaborador: 'slate' };
+// v6: el inversionista va en violeta (el tono de las confirmaciones de dinero), aparte del equipo.
+export const ROLE_TONE = { admin: 'ink', socio: 'blue', colaborador: 'slate', inversionista: 'violet' };
 
 export function LoadBadge({ load }) {
   const meta = LOAD_META[load];

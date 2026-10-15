@@ -389,8 +389,8 @@ try {
   await check('portal de clientes: ingreso con el selector, aislamiento y pedido de cambios', async () => {
     const c = await newPage({ width: 1440, height: 900 });
     await c.goto(`${base}/cliente`);
-    // Desde /cliente el login arranca en "Cliente".
-    assert.equal(await c.getByRole('radio', { name: 'Cliente' }).getAttribute('aria-checked'), 'true');
+    // Desde /cliente el login arranca en "Clientes".
+    assert.equal(await c.getByRole('radio', { name: 'Clientes' }).getAttribute('aria-checked'), 'true');
     await c.getByLabel('Correo').fill(CLIENT_EMAIL);
     await c.getByLabel('Contraseña').fill(DEMO_PASSWORD);
     await c.getByRole('button', { name: 'Entrar' }).click();
@@ -465,6 +465,107 @@ try {
     }
     await shot(m2, '38-movil-cliente-nueva-solicitud');
     await m2.context().close();
+  });
+
+  // ── v6: tres accesos, inversionistas desde el equipo y configuración inicial ─
+  await check('ingreso: /inversionista preselecciona Inversionistas y cada rol abre su portal', async () => {
+    const v = await newPage({ width: 390, height: 844 });
+    await v.goto(`${base}/inversionista`);
+    assert.equal(await v.getByRole('radio', { name: 'Inversionistas' }).getAttribute('aria-checked'), 'true');
+    // Las flechas recorren las tres opciones en ciclo.
+    await v.getByRole('radio', { name: 'Inversionistas' }).focus();
+    await v.keyboard.press('ArrowRight');
+    assert.equal(await v.getByRole('radio', { name: 'Clientes' }).getAttribute('aria-checked'), 'true');
+    await v.keyboard.press('ArrowRight');
+    assert.equal(await v.getByRole('radio', { name: 'Equipo' }).getAttribute('aria-checked'), 'true');
+    await v.keyboard.press('ArrowLeft');
+    await v.keyboard.press('ArrowRight');
+    await v.keyboard.press('ArrowRight');
+    assert.equal(await v.getByRole('radio', { name: 'Inversionistas' }).getAttribute('aria-checked'), 'true');
+    assert.ok((await v.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)) <= 1, 'ingreso sin desborde en 390 px');
+    await shot(v, '40-movil-ingreso-inversionistas');
+    // Un inversionista entra por el mismo ingreso y nunca ve el portal del equipo.
+    await v.getByLabel('Correo').fill('angel@demo.jcanalytic.local');
+    await v.getByLabel('Contraseña').fill(DEMO_PASSWORD);
+    const loginRes = v.waitForResponse((r) => r.url().endsWith('/api/auth/login'));
+    await v.getByRole('button', { name: 'Entrar' }).click();
+    assert.equal((await loginRes).status(), 200);
+    await v.getByRole('button', { name: 'Entrar' }).waitFor({ state: 'detached' });
+    assert.equal((await (await v.request.get(`${base}/api/me`)).json()).user.role, 'inversionista');
+    assert.equal(await v.getByRole('navigation', { name: 'Accesos rápidos' }).count(), 0);
+    await v.context().close();
+    // Alguien del equipo que entra por un enlace de inversionistas arranca en su inicio.
+    const u = await newPage({ width: 1440, height: 900 });
+    await u.goto(`${base}/inversionista`);
+    await u.getByRole('radio', { name: 'Equipo' }).click();
+    await u.getByLabel('Correo').fill('catalina@demo.jcanalytic.local');
+    await u.getByLabel('Contraseña').fill(DEMO_PASSWORD);
+    await u.getByRole('button', { name: 'Entrar' }).click();
+    await u.getByRole('heading', { name: /Catalina/ }).waitFor();
+    assert.equal(new URL(u.url()).pathname, '/');
+    await u.context().close();
+  });
+
+  await check('equipo: el admin agrega un inversionista y recibe su acceso a /inversionista', async () => {
+    const a = await newPage({ width: 1440, height: 900 });
+    await login(a, 'jeyrell');
+    await a.goto(`${base}/equipo`);
+    await a.getByRole('heading', { name: 'Inversionistas' }).waitFor();
+    await a.getByText('angel@demo.jcanalytic.local').waitFor();
+    await a.getByRole('button', { name: 'Agregar inversionista' }).click();
+    const dialog = a.getByRole('dialog', { name: 'Agregar persona' });
+    assert.equal(await dialog.getByRole('radio', { name: 'Inversionista' }).isChecked(), true);
+    await dialog.getByLabel('Nombre completo').fill('Marta Solís');
+    await dialog.getByLabel('Correo').fill('marta.solis@correo.cr');
+    await dialog.getByLabel('WhatsApp').fill('8811-2233');
+    await dialog.getByRole('button', { name: 'Guardar' }).click();
+    const temp = a.getByRole('dialog', { name: 'Contraseña temporal' });
+    await temp.getByText(`${base}/inversionista`).waitFor();
+    const wa = decodeURIComponent(await temp.getByRole('link', { name: /WhatsApp/ }).getAttribute('href'));
+    assert.ok(wa.includes('portal de inversionistas') && wa.includes(`${base}/inversionista`), 'el mensaje lleva el enlace del portal de inversionistas');
+    await shot(a, '41-equipo-acceso-inversionista');
+    await temp.getByRole('button', { name: 'Listo' }).click();
+    const users = (await (await a.request.get(`${base}/api/users`)).json()).users;
+    assert.ok(users.some((u) => u.email === 'marta.solis@correo.cr' && u.role === 'inversionista' && u.must_change_password));
+    // La cartera de inversiones la marca como inversionista.
+    await a.goto(`${base}/inversiones`);
+    await a.locator('li', { hasText: 'Ángel Mora' }).getByText('Inversionista', { exact: true }).first().waitFor();
+    await a.context().close();
+  });
+
+  await check('configuración inicial: con la base vacía el dueño crea su cuenta una sola vez', async () => {
+    const setupDb = openDatabase(join(dir, 'setup.sqlite'));
+    const setupServer = createPortalServer({ db: setupDb, env: {}, staticDir: dist, setupCode: 'PRUEBA-2026-ABCD', logger: { error: console.error, info() {} } });
+    await new Promise((r) => setupServer.listen(0, '127.0.0.1', r));
+    const fresh = `http://127.0.0.1:${setupServer.address().port}`;
+    try {
+      const s = await newPage({ width: 390, height: 844 });
+      await s.goto(fresh);
+      await s.getByRole('heading', { name: 'Configurá tu portal' }).waitFor();
+      assert.ok((await s.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)) <= 1, 'configuración sin desborde en 390 px');
+      await s.getByLabel('Código de configuración').fill('prueba-2026-abcd');
+      await s.getByLabel('Nombre completo').fill('Dueña Portal');
+      await s.getByLabel('Correo').fill('duena@jc.test');
+      await s.getByLabel('Contraseña', { exact: true }).fill('Montaña2026segura');
+      await s.getByLabel('Confirmar contraseña').fill('Montaña2026segura');
+      await shot(s, '42-movil-configuracion-inicial');
+      await s.getByRole('button', { name: /Crear mi cuenta/ }).click();
+      await s.getByRole('dialog', { name: 'Tu portal está listo' }).waitFor();
+      const me = await (await s.request.get(`${fresh}/api/me`)).json();
+      assert.equal(me.user.role, 'admin');
+      assert.equal((await (await s.request.get(`${fresh}/api/setup`)).json()).needed, false);
+      await s.getByRole('button', { name: 'Ir al centro de operaciones' }).click();
+      await s.locator('main h1').first().waitFor();
+      // Después ya no aparece: sin sesión solo hay ingreso.
+      await s.context().clearCookies();
+      await s.reload();
+      await s.getByRole('button', { name: 'Entrar' }).waitFor();
+      assert.equal(await s.getByRole('heading', { name: 'Configurá tu portal' }).count(), 0);
+      await s.context().close();
+    } finally {
+      await new Promise((r) => setupServer.close(r));
+      setupDb.close();
+    }
   });
 
   await check('sin errores de consola', async () => {

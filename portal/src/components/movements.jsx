@@ -1,12 +1,15 @@
 // Movimientos de dinero entre socios e inversiones: tarjeta con hilo de mensajes,
 // confirmación con "mensaje de vuelta", objeción y anulación.
+// v6: el socio de un movimiento puede ser un inversionista (insignia y texto de "a quién espera").
 import { useState } from 'react';
 import { ArrowDownLeft, ArrowUpRight, Check, X, Ban, MessageSquare, Send, Hash, CornerDownRight, ChevronDown } from 'lucide-react';
 import { api } from '../lib/api.js';
 import { Link } from '../lib/router.jsx';
 import { Avatar, Badge, IconTile, useAction, cx } from './ui.jsx';
 import { StatusBadge } from './common.jsx';
-import { MOVEMENT_STATUS_META } from '../../shared/catalog.js';
+import { RoleBadge } from './people.jsx';
+import { useSession } from '../lib/session.jsx';
+import { MOVEMENT_STATUS_META, isInvestorRole } from '../../shared/catalog.js';
 import { formatMoney, formatDate, timeAgo } from '../lib/format.js';
 
 // Cada tipo de mensaje del hilo tiene su burbuja: registro neutro, confirmación turquesa,
@@ -19,7 +22,21 @@ const KIND_STYLE = {
   mensaje: { label: 'Mensaje', className: 'bg-brand-soft/60' },
 };
 
+/**
+ * A quién espera un movimiento pendiente (doble control). El servidor manda `awaiting` ('otro socio' o el
+ * nombre de quien confirma); el buzón no lo trae y se deduce. v6: un inversionista confirma lo suyo desde su
+ * portal, y si él mismo avisó el aporte, lo confirma un socio o administrador.
+ */
+function awaitingText(m, partnerIsInvestor) {
+  const anyPartner = m.awaiting ? m.awaiting === 'otro socio' : m.created_by === m.partner_id;
+  if (anyPartner) return partnerIsInvestor ? 'Esperando confirmación de un socio o administrador.' : 'Esperando confirmación de otro socio o administrador.';
+  const who = m.awaiting ?? m.partner_name;
+  return partnerIsInvestor ? `Esperando que ${String(who).split(' ')[0]} lo confirme desde su portal de inversionista.` : `Esperando confirmación de ${who}.`;
+}
+
 export function MovementCard({ m, showInvestment = false, highlight = false, defaultOpen = false, onChanged }) {
+  const { team } = useSession();
+  const partnerIsInvestor = team.some((u) => u.id === m.partner_id && isInvestorRole(u));
   const [open, setOpen] = useState(defaultOpen || highlight || m.can_resolve);
   const [reply, setReply] = useState('');
   const [mode, setMode] = useState(null); // 'object' | 'annul'
@@ -40,6 +57,7 @@ export function MovementCard({ m, showInvestment = false, highlight = false, def
           <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <span className={cx('num text-lg font-bold leading-tight text-ink', annulled && 'line-through')}>{formatMoney(m.amount, m.currency)}</span>
             <span className="text-sm text-muted">{isIn ? 'aporte de' : 'retorno a'} <span className="font-semibold text-ink">{m.partner_name}</span></span>
+            {partnerIsInvestor && <RoleBadge role="inversionista" />}
           </span>
           <span className="mt-0.5 block text-xs text-muted sm:truncate">
             {showInvestment && <><span className="font-semibold text-ink-2">{m.investment_name}</span> · </>}
@@ -73,7 +91,7 @@ export function MovementCard({ m, showInvestment = false, highlight = false, def
           </ol>
 
           {m.status === 'pendiente' && !m.can_resolve && (
-            <p className="flex items-center gap-2 rounded-xl bg-amber-soft px-3 py-2 text-xs font-medium text-amber-ink"><CornerDownRight className="h-3.5 w-3.5 shrink-0" />Esperando confirmación de {m.awaiting ?? (m.created_by === m.partner_id ? 'otro socio' : m.partner_name)}.</p>
+            <p className="flex items-center gap-2 rounded-xl bg-amber-soft px-3 py-2 text-xs font-medium text-amber-ink"><CornerDownRight className="h-3.5 w-3.5 shrink-0" />{awaitingText(m, partnerIsInvestor)}</p>
           )}
 
           {m.can_resolve && mode !== 'object' && (
