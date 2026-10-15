@@ -17,13 +17,13 @@ export function Badge({ tone = 'slate', children, className, dot = false }) {
   );
 }
 
-/** Mosaico de ícono con tono: <IconTile icon={Wallet} tone="teal" size="sm|md|lg" /> */
-export function IconTile({ icon: Icon, tone = 'blue', size = 'md', className, iconClassName }) {
+/** Mosaico de ícono con tono: <IconTile icon={Wallet} tone="teal" size="sm|md|lg" />; también admite children (p. ej. una inicial). */
+export function IconTile({ icon: Icon, tone = 'blue', size = 'md', className, iconClassName, children }) {
   const sizeClass = { sm: 'icon-tile-sm', md: '', lg: 'icon-tile-lg' }[size] ?? '';
   const iconSize = { sm: 'h-4 w-4', md: 'h-[18px] w-[18px]', lg: 'h-6 w-6' }[size];
   return (
-    <span className={cx('icon-tile', sizeClass, `tile-${tone}`, className)} aria-hidden="true">
-      {Icon && <Icon className={cx(iconSize, iconClassName)} strokeWidth={2} />}
+    <span className={cx('icon-tile font-display font-bold', sizeClass, `tile-${tone}`, className)} aria-hidden="true">
+      {Icon ? <Icon className={cx(iconSize, iconClassName)} strokeWidth={2} /> : children}
     </span>
   );
 }

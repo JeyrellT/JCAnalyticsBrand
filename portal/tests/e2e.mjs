@@ -98,6 +98,24 @@ try {
     await shot(page, '02-centro-operaciones');
   });
 
+  await check('tema oscuro: se aplica, se guarda y vuelve a claro', async () => {
+    const theme = () => page.evaluate(() => ({ attr: document.documentElement.getAttribute('data-theme'), saved: localStorage.getItem('jcp:theme'), bg: getComputedStyle(document.body).backgroundColor, meta: document.querySelector('meta[name="theme-color"]')?.content }));
+    const light = await theme();
+    await page.getByRole('button', { name: 'Cambiar a tema oscuro' }).first().click();
+    const dark = await theme();
+    assert.equal(dark.attr, 'dark');
+    assert.equal(dark.saved, 'dark', 'la preferencia queda guardada en el navegador');
+    assert.notEqual(dark.bg, light.bg, 'el fondo cambia con el tema');
+    assert.equal(dark.meta, '#070e1b', 'la barra del sistema acompaña al tema');
+    await shot(page, '02b-centro-operaciones-oscuro');
+    // Sobrevive a la recarga (se aplica antes de pintar) y se puede volver a claro.
+    await page.reload();
+    await page.getByRole('heading', { name: /Catalina/ }).waitFor();
+    assert.equal((await theme()).attr, 'dark');
+    await page.getByRole('button', { name: 'Cambiar a tema claro' }).first().click();
+    assert.equal((await theme()).attr, 'light');
+  });
+
   await check('portal de proyectos con semáforo de 72 h', async () => {
     await page.getByRole('link', { name: 'Proyectos', exact: true }).first().click();
     await page.getByRole('heading', { name: 'Proyectos', level: 1 }).waitFor();
