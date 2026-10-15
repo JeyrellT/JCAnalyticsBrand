@@ -379,6 +379,94 @@ try {
     await m.context().close();
   });
 
+  // ── v5: portal de clientes y brief creativo ───────────────────────────────
+  const CLIENT_EMAIL = 'laburrada@clientes.demo.jcanalytic.local';
+  const noHorizontalScroll = async (p, where) => {
+    const { scroll, width } = await p.evaluate(() => ({ scroll: document.documentElement.scrollWidth, width: window.innerWidth }));
+    assert.ok(scroll <= width + 1, `${where}: desborde horizontal (${scroll} > ${width})`);
+  };
+
+  await check('portal de clientes: ingreso con el selector, aislamiento y pedido de cambios', async () => {
+    const c = await newPage({ width: 1440, height: 900 });
+    await c.goto(`${base}/cliente`);
+    // Desde /cliente el login arranca en "Cliente".
+    assert.equal(await c.getByRole('radio', { name: 'Cliente' }).getAttribute('aria-checked'), 'true');
+    await c.getByLabel('Correo').fill(CLIENT_EMAIL);
+    await c.getByLabel('Contraseña').fill(DEMO_PASSWORD);
+    await c.getByRole('button', { name: 'Entrar' }).click();
+    await c.getByRole('heading', { name: 'Requiere tu atención' }).waitFor();
+    await c.getByText('La Burrada Street Food').first().waitFor();
+    await shot(c, '30-cliente-inicio');
+
+    // Una sesión de cliente no abre nada del equipo: ni la API ni las pantallas.
+    assert.equal((await c.request.get(`${base}/api/me`)).status(), 401);
+    assert.equal((await c.request.get(`${base}/api/projects`)).status(), 401);
+    await c.goto(`${base}/inversiones`);
+    await c.waitForURL(/\/cliente$/);
+
+    // Entregable por revisar → pedir cambios con nota.
+    await c.goto(`${base}/cliente/entregables`);
+    await c.getByRole('link', { name: /Historias semana 1/ }).first().click();
+    await c.getByLabel('Comentario para el equipo').fill('Más grande el logo y el precio, por favor.');
+    await c.getByRole('button', { name: /Pedir cambios/ }).click();
+    await c.getByText(/Cambios (solicitados|pedidos)/).first().waitFor();
+    await shot(c, '31-cliente-entregable-cambios');
+
+    // Solicitud enviada (brief CREATIVIDAD) y su versión imprimible.
+    await c.goto(`${base}/cliente/solicitudes`);
+    await c.getByRole('link', { name: /Giveaway Tacos/ }).first().click();
+    await c.getByText('BRF-2026-0001').first().waitFor();
+    await shot(c, '32-cliente-solicitud');
+    await c.getByRole('link', { name: /Imprimir/ }).first().click();
+    await c.getByText(/CREATIVIDAD/i).first().waitFor();
+    await c.getByText('La Burrada · GIVEAWAY TACOS').first().waitFor();
+    await shot(c, '33-brief-imprimible');
+    await c.context().close();
+  });
+
+  await check('equipo: el brief del cliente llega a la bandeja y se aprueba con versión congelada', async () => {
+    const t = await newPage({ width: 1440, height: 900 });
+    await login(t, 'catalina');
+    await t.goto(`${base}/briefs?estado=enviado`);
+    await t.getByRole('heading', { name: 'Briefs', level: 1 }).waitFor();
+    await shot(t, '34-briefs-bandeja');
+    await t.getByRole('link', { name: /Giveaway Tacos/ }).first().click();
+    await t.getByText('BRF-2026-0001').first().waitFor();
+    await t.getByRole('button', { name: 'Aprobar brief' }).first().click();
+    const dialog = t.getByRole('dialog', { name: 'Aprobar brief' });
+    await dialog.getByRole('button', { name: 'Aprobar brief' }).click();
+    await dialog.waitFor({ state: 'detached' });
+    await t.getByText('Aprobado').first().waitFor();
+    // La versión 1 sigue verificable por su huella.
+    const api = await t.request.get(`${base}/api/briefs/1/versions/1`);
+    assert.equal((await api.json()).version.hash_ok, true);
+    await shot(t, '35-brief-aprobado');
+    // Ficha del cliente con su portal.
+    await t.goto(`${base}/clientes/1`);
+    await t.getByRole('heading', { name: 'Portal del cliente' }).waitFor();
+    await shot(t, '36-cliente-portal-equipo');
+    await t.context().close();
+  });
+
+  await check('móvil: portal de clientes sin desborde y con barra inferior', async () => {
+    const m2 = await newPage({ width: 390, height: 844 });
+    await m2.goto(`${base}/cliente`);
+    await m2.getByLabel('Correo').fill(CLIENT_EMAIL);
+    await m2.getByLabel('Contraseña').fill(DEMO_PASSWORD);
+    await m2.getByRole('button', { name: 'Entrar' }).click();
+    await m2.getByRole('heading', { name: 'Requiere tu atención' }).waitFor();
+    await noHorizontalScroll(m2, 'cliente inicio');
+    await shot(m2, '37-movil-cliente-inicio');
+    for (const path of ['/cliente/proyectos', '/cliente/solicitudes', '/cliente/entregables', '/cliente/documentos', '/cliente/solicitudes/nueva']) {
+      await m2.goto(base + path);
+      await m2.locator('main h1').first().waitFor();
+      await m2.waitForTimeout(300);
+      await noHorizontalScroll(m2, path);
+    }
+    await shot(m2, '38-movil-cliente-nueva-solicitud');
+    await m2.context().close();
+  });
+
   await check('sin errores de consola', async () => {
     assert.deepEqual(consoleErrors, []);
   });

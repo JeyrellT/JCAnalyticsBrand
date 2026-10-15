@@ -45,10 +45,13 @@ const DESKTOP = [
   ['inicio', '/'], ['tablero', '/tablero', false], ['agenda', '/agenda', false], ['proyectos', '/proyectos'], ['proyecto', '/proyectos/1'],
   ['clientes', '/clientes'], ['cliente', '/clientes/1'], ['servicios', '/servicios'], ['servicio', '/servicios/software_medida'], ['equipo', '/equipo'], ['persona', '/equipo/1'],
   ['inversiones', '/inversiones'], ['inversion', '/inversiones/1'], ['buzon', '/buzon'], ['automatizaciones', '/automatizaciones'], ['avisos', '/notificaciones'], ['bitacora', '/bitacora'],
+  // v5: brief creativo
+  ['briefs', '/briefs'], ['brief', '/briefs/1'], ['brief-nuevo', '/briefs/nuevo?cliente=1'],
 ];
 const MOBILE = [
   ['inicio', '/'], ['tablero', '/tablero', false], ['agenda', '/agenda', false], ['proyectos', '/proyectos'], ['proyecto', '/proyectos/1'], ['inversiones', '/inversiones'],
   ['inversion', '/inversiones/1'], ['clientes', '/clientes'], ['servicios', '/servicios'], ['equipo', '/equipo'], ['buzon', '/buzon'], ['automatizaciones', '/automatizaciones'], ['avisos', '/notificaciones'],
+  ['briefs', '/briefs'], ['brief', '/briefs/1'],
 ];
 
 async function run(viewport, pages, prefix) {
