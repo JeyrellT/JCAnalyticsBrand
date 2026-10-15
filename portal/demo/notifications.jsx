@@ -9,7 +9,7 @@
 // ============================================================================
 
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
-import { Sunrise, Wallet, ListChecks, CalendarClock, BellRing } from 'lucide-react';
+import { Sunrise, Wallet, ListChecks, CalendarClock, BellRing, MessageSquareWarning } from 'lucide-react';
 import logoMark from '../src/assets/logo-mark.webp';
 import { navigate } from '../src/lib/router.jsx';
 import { Modal, IconTile } from '../src/components/ui.jsx';
@@ -209,7 +209,7 @@ export function PhoneNotifications() {
 }
 
 // ── Hoja "Simular un aviso" ─────────────────────────────────────────────────
-const SCENARIO_ICONS = { resumen: Sunrise, dinero: Wallet, tarea: ListChecks, cita: CalendarClock };
+const SCENARIO_ICONS = { resumen: Sunrise, dinero: Wallet, tarea: ListChecks, cita: CalendarClock, cambios: MessageSquareWarning };
 
 /**
  * @param {object} p
