@@ -140,6 +140,10 @@ test('accesos: alta con clave temporal, permisos, correo único y cambio obligat
   assert.equal((await http.get('/api/client/overview')).status, 403);
   assert.equal((await http.get('/api/client/me')).data.account.must_change_password, true);
   assert.equal((await http.post('/api/client/me/password', { current_password: created.data.temporary_password, new_password: 'corta' })).data.field, 'new_password');
+  // Contraseñas de diccionario: rechazadas aunque cumplan el largo.
+  for (const weak of ['Password2026x', 'JCAnalytics2026', 'aaaaaa123456', 'Contraseña2026']) {
+    assert.equal((await http.post('/api/client/me/password', { current_password: created.data.temporary_password, new_password: weak })).data.field, 'new_password', weak);
+  }
   assert.equal((await http.post('/api/client/me/password', { current_password: created.data.temporary_password, new_password: NEW_PASSWORD })).status, 200);
   const me = (await http.get('/api/client/me')).data;
   assert.equal(me.account.must_change_password, false);
