@@ -21,8 +21,8 @@
 
   --bg: #f4f7fb;              /* fondo de página */
   --surface: #ffffff;         /* tarjetas, hojas, barras */
-  --surface-2: #f5f7fb;       /* zonas hundidas dentro de una tarjeta, filas en hover */
-  --surface-3: #eaeef5;       /* chips neutros, pulsado */
+  --surface-2: #eff3f8;       /* zonas hundidas dentro de una tarjeta, filas en hover */
+  --surface-3: #e4e9f1;       /* chips neutros, pulsado */
   --line: #e4e9f0;            /* hairline */
   --line-strong: #c9d2df;     /* bordes en hover y controles */
 
@@ -75,6 +75,10 @@
   --shadow-up: 0 -8px 24px -12px rgba(7, 26, 54, 0.18);
 
   --ring: rgba(0, 101, 223, 0.18);
+
+  /* Botones sólidos de acento: en claro, tono profundo con texto blanco; en oscuro, tono vivo con texto tinta. */
+  --accent-teal: #067079; --accent-teal-fg: #ffffff;
+  --accent-coral: #d65a45; --accent-coral-fg: #ffffff;
 }
 
 /* ── Tokens: tema oscuro ─────────────────────────────────────────────────── */
@@ -98,6 +102,8 @@
     --shadow-brand: 0 10px 22px -8px rgba(77, 148, 255, 0.5);
     --shadow-up: 0 -8px 24px -12px rgba(0, 0, 0, 0.6);
     --ring: rgba(77, 148, 255, 0.28);
+    --accent-teal: #2fc4cf; --accent-teal-fg: #071a36;
+    --accent-coral: #f07a66; --accent-coral-fg: #2a0d08;
   }
 }
 :root[data-theme="dark"] {
@@ -119,6 +125,8 @@
   --shadow-brand: 0 10px 22px -8px rgba(77, 148, 255, 0.5);
   --shadow-up: 0 -8px 24px -12px rgba(0, 0, 0, 0.6);
   --ring: rgba(77, 148, 255, 0.28);
+  --accent-teal: #2fc4cf; --accent-teal-fg: #071a36;
+  --accent-coral: #f07a66; --accent-coral-fg: #2a0d08;
 }
 
 /* ── Tailwind: utilidades que apuntan a los tokens ──────────────────────── */
@@ -240,8 +248,8 @@ body {
   .btn-dark { @apply bg-contrast text-contrast-fg hover:opacity-90; }
   .btn-ghost { @apply text-ink hover:bg-surface-3; }
   .btn-outline { @apply border border-line bg-surface text-ink shadow-card hover:border-line-strong hover:bg-surface-2; }
-  .btn-danger { @apply bg-coral text-white hover:brightness-95; }
-  .btn-teal { @apply bg-teal-ink text-white hover:brightness-110; }
+  .btn-danger { background-color: var(--accent-coral); color: var(--accent-coral-fg); @apply hover:brightness-95; }
+  .btn-teal { background-color: var(--accent-teal); color: var(--accent-teal-fg); @apply hover:brightness-110; }
   .btn-soft { @apply bg-brand-soft text-brand-ink hover:bg-brand/15; }
   .btn-sm { min-height: 32px; @apply px-2.5 py-1 text-xs rounded-lg; }
   .btn-lg { min-height: 48px; @apply px-5 text-[15px] rounded-2xl; }

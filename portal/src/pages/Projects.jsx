@@ -1,6 +1,6 @@
 // Portal de proyectos: clientes, productos propios e internos con avance, equipo y compromiso de 72 h.
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, FolderKanban, Search, Archive, CalendarCheck, LifeBuoy } from 'lucide-react';
+import { Plus, FolderKanban, Search, Archive, CalendarCheck, LifeBuoy, ListChecks, SlidersHorizontal } from 'lucide-react';
 import { useResource, useSession } from '../lib/session.jsx';
 import { api } from '../lib/api.js';
 import { Link, navigate, useLocation } from '../lib/router.jsx';
@@ -104,12 +104,15 @@ export function ProjectCard({ p }) {
   const due = ['entregado', 'soporte', 'cerrado'].includes(p.status) ? null : dueLabel(p.due_date);
   const members = projectMembers(p);
   const clientName = projectClientName(p);
+  const late = p.sla_state === 'late';
+  const pct = Math.round(p.progress * 100);
   return (
-    <Link to={`/proyectos/${p.id}`} className="card group flex min-w-0 flex-col gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+    <Link to={`/proyectos/${p.id}`} className={cx('card card-hover group relative flex min-w-0 flex-col gap-3 overflow-hidden p-4', late && 'border-coral/40')}>
+      {late && <span className="absolute inset-x-0 top-0 h-[3px] bg-coral" aria-hidden="true" />}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-xs font-semibold uppercase tracking-wide text-muted">{clientName || PROJECT_KINDS[p.kind]?.label}</p>
-          <h3 className="mt-0.5 font-display text-base font-bold leading-snug group-hover:text-brand">{p.name}</h3>
+          <p className={cx('eyebrow truncate', !clientName && 'text-muted')}>{clientName || PROJECT_KINDS[p.kind]?.label}</p>
+          <h3 className="mt-1 font-display text-[17px] font-bold leading-snug transition-colors group-hover:text-brand-ink">{p.name}</h3>
         </div>
         <StatusBadge map={PROJECT_STATUS} value={p.status} />
       </div>
@@ -119,20 +122,23 @@ export function ProjectCard({ p }) {
         {p.support_ends && ['entregado', 'soporte'].includes(p.status) && <Badge tone="amber"><LifeBuoy className="h-3 w-3" />Soporte hasta {formatDate(p.support_ends)}</Badge>}
         {due && <Badge tone={due.tone}><CalendarCheck className="h-3 w-3" />{due.text}</Badge>}
       </div>
-      <div className="mt-auto space-y-2">
-        <div className="flex items-center justify-between text-xs text-muted">
-          <span>{p.tasks_total ? `${p.tasks_done}/${p.tasks_total} tareas` : 'Sin tareas'}{p.tasks_overdue ? <span className="ml-1 font-semibold text-coral">· {p.tasks_overdue} vencidas</span> : null}</span>
-          <span className="tabular">{Math.round(p.progress * 100)} %</span>
+      <div className="mt-auto space-y-2.5">
+        <div className="flex items-center justify-between gap-2 text-xs text-muted">
+          <span className="flex min-w-0 items-center gap-1.5">
+            <ListChecks className="h-3.5 w-3.5 shrink-0 text-muted-2" aria-hidden="true" />
+            <span className="truncate">{p.tasks_total ? `${p.tasks_done}/${p.tasks_total} tareas` : 'Sin tareas'}{p.tasks_overdue ? <span className="ml-1 font-semibold text-coral-ink">· {p.tasks_overdue} vencidas</span> : null}</span>
+          </span>
+          <span className="num text-sm font-bold text-ink">{pct} %</span>
         </div>
-        <ProgressBar value={p.progress} tone={p.tasks_overdue ? 'amber' : 'brand'} label="Avance de tareas" />
-        <div className="flex items-center justify-between gap-2 pt-1">
+        <ProgressBar value={p.progress} tone={p.tasks_overdue ? 'amber' : p.progress >= 1 ? 'teal' : 'brand'} label="Avance de tareas" />
+        <div className="flex items-center justify-between gap-2 border-t border-line pt-3">
           {members.length > 1 ? (
             <span className="flex min-w-0 items-center gap-2" title={members.map((m) => m.name).join(', ')}>
               <AvatarStack people={members} size={24} max={4} />
               <span className="truncate text-xs text-muted">{(p.owner_name ?? members[0].name).split(' ')[0]} y {members.length - 1} más</span>
             </span>
           ) : <PersonChip name={p.owner_name} color={p.owner_color} />}
-          {p.value_amount ? <span className="shrink-0 text-xs font-semibold tabular text-ink">{formatMoney(p.value_amount, p.currency)}</span> : null}
+          {p.value_amount ? <span className="num shrink-0 text-sm font-bold text-ink">{formatMoney(p.value_amount, p.currency)}</span> : null}
         </div>
       </div>
     </Link>
@@ -148,6 +154,7 @@ export default function Projects() {
   const [service, setService] = useState(() => (SERVICES[query.get('servicio')] ? query.get('servicio') : ''));
   const [person, setPerson] = useState(() => Number(query.get('persona')) || null);
   const [q, setQ] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
   // ?nuevo=1 abre el formulario (también si ya estábamos en esta página).
   const nuevo = query.get('nuevo') === '1';
@@ -173,16 +180,19 @@ export default function Projects() {
 
   const counts = useMemo(() => Object.fromEntries(['cliente', 'producto', 'interno'].map((k) => [k, (data?.projects ?? []).filter((p) => p.kind === k).length])), [data]);
   const filtered = Boolean(status || service || person || q.trim());
+  const activeFilters = [status, service, person, archived].filter(Boolean).length;
   const clearFilters = () => { setStatus(''); setService(''); setPerson(null); setQ(''); };
+  const lateCount = (data?.projects ?? []).filter((p) => p.sla_state === 'late').length;
 
   return (
     <>
-      <PageHeader eyebrow="Portal de proyectos" title="Proyectos" subtitle="Clientes, productos propios e iniciativas internas, con su equipo. Los de cliente en curso muestran el semáforo del avance cada 72 h."
+      <PageHeader eyebrow="Empresa" title="Proyectos" icon={FolderKanban} tone="blue" subtitle="Clientes, productos propios e iniciativas internas, con su equipo. Los de cliente en curso muestran el semáforo del avance cada 72 h."
         actions={<button type="button" className="btn btn-primary" onClick={() => setCreating(true)}><Plus className="h-4 w-4" />Nuevo proyecto</button>} />
 
-      <div className="mb-5 space-y-3">
+      {/* Pestañas por tipo y búsqueda; los selects van en la fila de abajo (en celular, detrás del botón «Filtros»). */}
+      <div className="animate-rise mb-5 space-y-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <div className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
             <Tabs value={kind} onChange={setKind} tabs={[
               { value: 'todos', label: 'Todos', count: data?.projects.length },
               { value: 'cliente', label: 'Clientes', count: counts.cliente },
@@ -190,21 +200,26 @@ export default function Projects() {
               { value: 'interno', label: 'Internos', count: counts.interno },
             ]} />
           </div>
-          <label className="relative min-w-0 lg:w-72">
-            <span className="sr-only">Buscar</span>
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-            <input className="input pl-9" placeholder="Buscar proyecto o cliente" value={q} onChange={(e) => setQ(e.target.value)} />
-          </label>
+          <div className="flex gap-2">
+            <label className="relative min-w-0 flex-1 lg:w-72 lg:flex-none">
+              <span className="sr-only">Buscar</span>
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-2" />
+              <input className="input pl-9" type="search" placeholder="Buscar proyecto o cliente" value={q} onChange={(e) => setQ(e.target.value)} />
+            </label>
+            <button type="button" className={cx('btn tap shrink-0 lg:hidden', activeFilters ? 'btn-dark' : 'btn-outline')} aria-expanded={showFilters} aria-controls="project-filters" onClick={() => setShowFilters((v) => !v)}>
+              <SlidersHorizontal className="h-4 w-4" />Filtros{activeFilters > 0 && <span className="rounded-full bg-contrast-fg/15 px-1.5 text-xs tabular">{activeFilters}</span>}
+            </button>
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
-          <Select className="sm:w-auto" options={options(PROJECT_STATUS)} value={status} onChange={setStatus} placeholder="Todos los estados" aria-label="Estado" />
-          <Select className="sm:w-auto sm:max-w-[16rem]" options={options(SERVICES)} value={service} onChange={setService} placeholder="Todos los servicios" aria-label="Servicio" />
-          <label className="min-w-0 sm:w-auto">
+        <div id="project-filters" className={cx('flex-wrap items-center gap-2 lg:flex', showFilters ? 'flex animate-fade' : 'hidden')}>
+          <Select className="w-full sm:w-auto" options={options(PROJECT_STATUS)} value={status} onChange={setStatus} placeholder="Todos los estados" aria-label="Estado" />
+          <Select className="w-full sm:w-auto sm:max-w-[15rem]" options={options(SERVICES)} value={service} onChange={setService} placeholder="Todos los servicios" aria-label="Servicio" />
+          <label className="w-full min-w-0 sm:w-auto">
             <span className="sr-only">Persona</span>
             <PersonSelect value={person} onChange={setPerson} placeholder="Todas las personas" className="sm:w-auto" />
           </label>
-          <button type="button" className={cx('btn', archived ? 'btn-dark' : 'btn-outline')} onClick={() => setArchived((a) => !a)} aria-pressed={archived}><Archive className="h-4 w-4" />Archivados</button>
-          {filtered && <button type="button" className="btn btn-ghost col-span-2 text-brand sm:col-span-1" onClick={clearFilters}>Limpiar filtros</button>}
+          <button type="button" className={cx('btn w-full sm:w-auto', archived ? 'btn-dark' : 'btn-outline')} onClick={() => setArchived((a) => !a)} aria-pressed={archived}><Archive className="h-4 w-4" />Archivados</button>
+          {filtered && <button type="button" className="btn btn-ghost w-full text-brand-ink sm:w-auto" onClick={clearFilters}>Limpiar filtros</button>}
         </div>
       </div>
 
@@ -215,7 +230,13 @@ export default function Projects() {
           {filtered ? 'Probá con otro estado, servicio o persona.' : 'Registrá cada cliente o producto para seguir tareas, citas, avances e inversiones en un solo lugar.'}
         </EmptyState>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{projects.map((p) => <ProjectCard key={p.id} p={p} />)}</div>
+        <>
+          <p className="mb-3 text-xs text-muted">
+            {projects.length} {projects.length === 1 ? 'proyecto' : 'proyectos'}{archived ? ' archivados' : ''}
+            {!archived && lateCount > 0 && <span className="text-coral-ink"> · {lateCount} sin avance a tiempo, primero en la lista</span>}
+          </p>
+          <div className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{projects.map((p) => <ProjectCard key={p.id} p={p} />)}</div>
+        </>
       )}
 
       {creating && <ProjectForm open onClose={() => setCreating(false)} onSaved={(p) => { reload(); navigate(`/proyectos/${p.id}`); }} />}

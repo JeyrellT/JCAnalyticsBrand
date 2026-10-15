@@ -104,7 +104,7 @@ export default function Dashboard() {
       </section>
 
       {/* Escritorio: indicadores del equipo. */}
-      <section className="stagger hidden grid-cols-4 gap-3 lg:grid" aria-label="Indicadores">
+      <section className="hidden grid-cols-4 gap-3 lg:grid" aria-label="Indicadores">
         <Stat label="Proyectos activos" value={kpis.active_projects} icon={FolderKanban} tone="blue" hint={kpis.sla_late ? `${kpis.sla_late} sin avance a tiempo` : 'Avances al día'} />
         <Stat label="Tareas vencidas" value={kpis.overdue_tasks} icon={AlarmClock} tone={kpis.overdue_tasks ? 'red' : 'teal'} hint={`${kpis.my_open_tasks} abiertas a tu nombre`} />
         <Stat label="Citas hoy" value={kpis.today_appointments} icon={CalendarClock} tone="violet" hint={`${kpis.week_appointments} en los próximos 7 días`} />

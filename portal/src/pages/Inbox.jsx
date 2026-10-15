@@ -1,9 +1,9 @@
 // Buzón: movimientos que esperan mi confirmación (con respuesta en el lugar) y avisos del equipo.
-import { Inbox as InboxIcon, CheckCheck, Bell, Wallet, ListChecks, CalendarDays, FolderKanban, MessageSquare, TrendingUp } from 'lucide-react';
+import { Inbox as InboxIcon, CheckCheck, Bell, Wallet, ListChecks, CalendarDays, FolderKanban, MessageSquare, TrendingUp, HandCoins, Hourglass, Sparkles } from 'lucide-react';
 import { useResource, useSession } from '../lib/session.jsx';
 import { api } from '../lib/api.js';
 import { navigate } from '../lib/router.jsx';
-import { PageHeader, PageLoader, EmptyState, Badge, useAction, cx } from '../components/ui.jsx';
+import { PageHeader, PageLoader, EmptyState, Badge, IconTile, SectionHead, RowArrow, useAction, cx } from '../components/ui.jsx';
 import { MovementCard } from '../components/movements.jsx';
 import { timeAgo } from '../lib/format.js';
 
@@ -13,24 +13,23 @@ function PendingMovements({ onChanged }) {
   const { data, error, reload } = useResource('/api/movements/pending');
   if (!data) return <PageLoader error={error} onRetry={reload} />;
   const changed = () => { reload(); onChanged(); };
+  const n = data.to_confirm.length;
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <section aria-labelledby="confirm-title">
-        <div className="mb-3 flex items-center gap-2">
-          <h2 id="confirm-title" className="section-title">Por confirmar</h2>
-          {data.to_confirm.length > 0 && <Badge tone="violet">{data.to_confirm.length}</Badge>}
-        </div>
-        {data.to_confirm.length === 0 ? (
-          <p className="card card-pad text-sm text-teal-dark">No hay plata esperando tu confirmación.</p>
+        <SectionHead id="confirm-title" icon={HandCoins} tone={n ? 'violet' : 'teal'} title="Por confirmar" hint={n ? 'Esperan tu mensaje de vuelta.' : 'Nada pendiente a tu nombre.'}
+          action={n > 0 && <Badge tone="violet">{n}</Badge>} />
+        {n === 0 ? (
+          <EmptyState icon={Sparkles} tone="teal" title="No hay plata esperando tu confirmación.">Cuando un socio te envíe un aporte o un retorno, aparece aquí para confirmarlo.</EmptyState>
         ) : (
-          <div className="space-y-2.5">{data.to_confirm.map((m) => <MovementCard key={m.id} m={m} showInvestment onChanged={changed} />)}</div>
+          <div className="stagger space-y-3">{data.to_confirm.map((m) => <MovementCard key={m.id} m={m} showInvestment onChanged={changed} />)}</div>
         )}
       </section>
       {data.my_open.length > 0 && (
         <section aria-labelledby="mine-title">
-          <h2 id="mine-title" className="section-title mb-1">Lo que registraste y sigue abierto</h2>
-          <p className="mb-3 text-xs text-muted">Esperando la confirmación de otra persona, o devuelto con una objeción.</p>
-          <div className="space-y-2.5">{data.my_open.map((m) => <MovementCard key={m.id} m={m} showInvestment onChanged={changed} />)}</div>
+          <SectionHead id="mine-title" icon={Hourglass} tone="amber" title="Lo que registraste y sigue abierto" hint="Esperando la confirmación de otra persona, o devuelto con una objeción."
+            action={<Badge tone="amber">{data.my_open.length}</Badge>} />
+          <div className="stagger space-y-3">{data.my_open.map((m) => <MovementCard key={m.id} m={m} showInvestment onChanged={changed} />)}</div>
         </section>
       )}
     </div>
@@ -41,6 +40,7 @@ export default function InboxPage() {
   const { canInvest, refresh } = useSession();
   const { data, error, reload } = useResource('/api/notifications');
   const [run, busy] = useAction();
+  const unread = data?.unread ?? 0;
 
   const open = async (n) => {
     if (!n.read_at) { await api('/api/notifications/read', { method: 'POST', body: { ids: [n.id] } }).catch(() => {}); refresh(); }
@@ -51,30 +51,33 @@ export default function InboxPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Centro de operaciones" title="Buzón" subtitle="Confirmaciones de dinero y avisos del equipo en un solo lugar."
-        actions={data?.unread > 0 && <button type="button" className="btn btn-outline" onClick={readAll} disabled={busy}><CheckCheck className="h-4 w-4" />Marcar todo leído</button>} />
-      <div className={cx('grid gap-6', canInvest && 'xl:grid-cols-[1.2fr_1fr]')}>
+      <PageHeader eyebrow="Centro de operaciones" title="Buzón" icon={InboxIcon} tone="teal" subtitle="Confirmaciones de dinero y avisos del equipo en un solo lugar."
+        actions={unread > 0 && <button type="button" className="btn btn-outline" onClick={readAll} disabled={busy}><CheckCheck className="h-4 w-4" />Marcar todo leído</button>} />
+      <div className={cx('grid items-start gap-6', canInvest && 'xl:grid-cols-[1.2fr_1fr]')}>
         {canInvest && <PendingMovements onChanged={refresh} />}
-        <section aria-labelledby="notif-title">
-          <div className="mb-3 flex items-center gap-2">
-            <Bell className="h-4 w-4 text-muted" /><h2 id="notif-title" className="section-title">Avisos</h2>
-            {data?.unread > 0 && <Badge tone="red">{data.unread} sin leer</Badge>}
-          </div>
+        <section className="card animate-rise min-w-0 overflow-hidden" aria-labelledby="notif-title">
+          <SectionHead flush id="notif-title" icon={Bell} tone={unread ? 'red' : 'slate'} title="Avisos" hint={unread ? 'Tocá un aviso para abrirlo.' : 'Todo leído.'}
+            action={unread > 0 && <Badge tone="red">{unread} sin leer</Badge>} />
           {!data ? <PageLoader error={error} onRetry={reload} /> : data.notifications.length === 0 ? (
-            <EmptyState icon={InboxIcon} title="Sin avisos">Cuando te asignen una tarea, te agenden una cita o te envíen plata, aparece aquí.</EmptyState>
+            <div className="p-4 sm:p-5"><EmptyState icon={InboxIcon} tone="teal" title="Sin avisos">Cuando te asignen una tarea, te agenden una cita o te envíen plata, aparece aquí.</EmptyState></div>
           ) : (
-            <ul className="card divide-y divide-line overflow-hidden">
+            <ul className="divide-y divide-line">
               {data.notifications.map((n) => {
                 const Icon = ICONS[n.kind] ?? Bell;
+                const fresh = !n.read_at;
                 return (
                   <li key={n.id}>
-                    <button type="button" onClick={() => open(n)} className={cx('flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-slate-50', !n.read_at && 'bg-brand-soft/40')}>
-                      <span className={cx('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl', !n.read_at ? 'bg-brand text-white' : 'bg-slate-100 text-muted')}><Icon className="h-4 w-4" /></span>
+                    <button type="button" onClick={() => open(n)} className={cx('group row tap w-full items-start px-4 py-3 text-left sm:px-5', fresh && 'bg-brand-soft/40 hover:bg-brand-soft/60')}>
+                      <IconTile icon={Icon} tone={fresh ? 'blue' : 'slate'} size="sm" className="mt-0.5" />
                       <span className="min-w-0 flex-1">
-                        <span className={cx('block text-sm', !n.read_at ? 'font-semibold' : 'text-ink/80')}>{n.title}</span>
-                        {n.body && <span className="mt-0.5 block line-clamp-2 text-xs text-muted">{n.body}</span>}
+                        <span className={cx('block text-sm leading-snug', fresh ? 'font-semibold text-ink' : 'text-ink-2')}>{n.title}</span>
+                        {n.body && <span className="mt-0.5 line-clamp-2 block text-xs leading-relaxed text-muted">{n.body}</span>}
+                        <span className="mt-1 block text-[11px] tabular text-muted-2 sm:hidden">{timeAgo(n.created_at)}</span>
                       </span>
-                      <span className="shrink-0 text-[11px] text-muted">{timeAgo(n.created_at)}</span>
+                      <span className="flex shrink-0 flex-col items-end gap-1.5 pt-0.5">
+                        <span className="hidden whitespace-nowrap text-[11px] tabular text-muted-2 sm:block">{timeAgo(n.created_at)}</span>
+                        {fresh ? <span className="h-2 w-2 rounded-full bg-brand" aria-label="Sin leer" /> : <RowArrow className="hidden sm:block" />}
+                      </span>
                     </button>
                   </li>
                 );

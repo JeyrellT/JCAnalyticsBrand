@@ -1,5 +1,5 @@
-// Piezas de los servicios (líneas de negocio): precio, chip con enlace y selector agrupado.
-import { Crown } from 'lucide-react';
+// Piezas de los servicios (líneas de negocio): precio, chip con enlace, ícono por área y selector agrupado.
+import { Crown, Layers, MonitorSmartphone, BarChart3, Workflow, Calculator, Megaphone, GraduationCap, Package } from 'lucide-react';
 import { Link } from '../lib/router.jsx';
 import { cx } from './ui.jsx';
 import { formatMoney } from '../lib/format.js';
@@ -13,9 +13,21 @@ export const SERVICE_UNITS = [
 ];
 const UNIT_SUFFIX = { mes: ' / mes', pieza: ' por pieza' };
 
+/** Ícono de cada área de negocio (para mosaicos y encabezados). */
+const GROUP_ICON = {
+  sistemas: MonitorSmartphone,
+  datos: BarChart3,
+  automatizacion: Workflow,
+  finanzas: Calculator,
+  marketing: Megaphone,
+  academico: GraduationCap,
+  productos: Package,
+};
+
 export const serviceName = (key) => SERVICES[key] ?? key;
 export const serviceGroup = (key) => SERVICE_DEFAULTS[key]?.group ?? 'sistemas';
 export const groupTone = (group) => SERVICE_GROUPS[group]?.tone ?? 'slate';
+export const groupIcon = (group) => GROUP_ICON[group] ?? Layers;
 
 /**
  * Precio "desde" de un servicio en dos partes:
@@ -43,7 +55,7 @@ export function ServiceChip({ serviceKey, name, lead = false, className }) {
   const tone = groupTone(serviceGroup(serviceKey));
   return (
     <Link to={`/servicios/${serviceKey}`} title={lead ? 'Lidera este servicio' : undefined}
-      className={cx('relative z-10 inline-flex max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold transition hover:brightness-95', `tone-${tone}`, className)}>
+      className={cx('chip relative z-10 max-w-full px-2.5 py-1 text-xs transition hover:brightness-95 active:scale-[0.98]', `tone-${tone}`, className)}>
       {lead && <Crown className="h-3 w-3 shrink-0" aria-label="Líder" />}
       <span className="truncate">{name ?? serviceName(serviceKey)}</span>
     </Link>

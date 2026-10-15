@@ -143,7 +143,7 @@ export function ClientSelect({ value, onChange, id, placeholder = 'Elegí un cli
         ))}
         {allowCreate && <option value="__new">+ Nuevo cliente…</option>}
       </select>
-      {error && <p className="mt-1 text-xs text-coral">No se pudo cargar la lista de clientes. <button type="button" className="font-semibold underline" onClick={reload}>Reintentar</button></p>}
+      {error && <p className="mt-1 text-xs text-coral-ink">No se pudo cargar la lista de clientes. <button type="button" className="font-semibold underline" onClick={reload}>Reintentar</button></p>}
       {creating && createPortal(
         <ClientForm onClose={() => setCreating(false)} onSaved={(c) => { setCreated((list) => [...list, c]); reload(); onChange(c.id, c); }} />,
         document.body,
@@ -190,7 +190,7 @@ export function MembersEditor({ value = [], onChange, ownerId }) {
   return (
     <div className="space-y-2">
       <ul className="space-y-2">
-        <li className="flex min-h-[52px] items-center gap-3 rounded-xl border border-line bg-paper px-3 py-2">
+        <li className="flex min-h-[52px] items-center gap-3 rounded-xl border border-line bg-surface-2 px-3 py-2">
           {owner ? (
             <>
               <Avatar name={owner.name} color={owner.color} size={30} />

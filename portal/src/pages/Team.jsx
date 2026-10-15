@@ -1,16 +1,32 @@
 // Equipo: personas con su carga y servicios, mi perfil y contraseña, y ajustes operativos (tipo de cambio, SLA, WIP, respaldo).
 import { useMemo, useState } from 'react';
-import { UserPlus, KeyRound, Copy, ShieldCheck, Save, DatabaseBackup, Power, MessageCircle, Pencil, Users, UserX, AlertTriangle, ArrowRight } from 'lucide-react';
+import {
+  UserPlus, KeyRound, Copy, ShieldCheck, Save, DatabaseBackup, Power, MessageCircle, Pencil, Users, UserX, AlertTriangle, UserRound, SlidersHorizontal, Palette,
+} from 'lucide-react';
 import { useSession, useResource } from '../lib/session.jsx';
 import { api } from '../lib/api.js';
 import { Link, navigate, useLocation } from '../lib/router.jsx';
-import { PageHeader, PageLoader, EmptyState, Modal, Field, Select, Avatar, Tabs, useAction, useToast, useConfirm, cx } from '../components/ui.jsx';
+import {
+  PageHeader, PageLoader, EmptyState, Modal, Field, Select, Avatar, Tabs, IconTile, SectionHead, RowArrow, ThemePicker, useAction, useToast, useConfirm, cx,
+} from '../components/ui.jsx';
 import { PersonCard, RoleBadge, LOAD_META } from '../components/people.jsx';
 import { PasswordForm } from './Login.jsx';
 import { ROLES, MEMBER_COLORS } from '../../shared/catalog.js';
 import { timeAgo, whatsappLink } from '../lib/format.js';
 
 const roleOptions = Object.entries(ROLES).map(([value, v]) => ({ value, label: v.label }));
+
+/** Paleta de colores de avatar: botones redondos con anillo de marca en el elegido. */
+function ColorPicker({ value, onChange }) {
+  return (
+    <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Color">
+      {MEMBER_COLORS.map((c) => (
+        <button key={c} type="button" role="radio" aria-label={`Color ${c}`} aria-checked={value === c} onClick={() => onChange(c)}
+          className={cx('h-9 w-9 rounded-full ring-offset-2 ring-offset-surface transition hover:scale-105', value === c && 'ring-2 ring-brand')} style={{ background: c }} />
+      ))}
+    </div>
+  );
+}
 
 function TempPassword({ result, onClose }) {
   const toast = useToast();
@@ -19,11 +35,11 @@ function TempPassword({ result, onClose }) {
   return (
     <Modal open onClose={onClose} title="Contraseña temporal" size="sm" footer={<button type="button" className="btn btn-primary" onClick={onClose}>Listo</button>}>
       <p className="text-sm text-muted">Compartila por un canal privado. Solo se muestra esta vez; la persona deberá cambiarla al ingresar.</p>
-      <div className="mt-4 flex items-center gap-2 rounded-2xl bg-ink p-4 font-mono text-lg font-semibold tracking-wider text-white">
-        <span className="flex-1 select-all">{result.password}</span>
-        <button type="button" className="rounded-lg p-2 hover:bg-white/10" aria-label="Copiar" onClick={() => navigator.clipboard?.writeText(result.password).then(() => toast('Copiada'))}><Copy className="h-4 w-4" /></button>
+      <div className="card-panel mt-4 flex items-center gap-2 p-4 font-mono text-lg font-semibold tracking-wider">
+        <span className="relative flex-1 select-all break-all">{result.password}</span>
+        <button type="button" className="tap relative flex items-center justify-center rounded-lg text-panel-muted transition hover:bg-white/10 hover:text-white" aria-label="Copiar" onClick={() => navigator.clipboard?.writeText(result.password).then(() => toast('Copiada'))}><Copy className="h-4 w-4" /></button>
       </div>
-      {wa && <a className="btn btn-outline mt-3 w-full" href={wa} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4" />Enviar acceso por WhatsApp</a>}
+      {wa && <a className="btn btn-outline mt-3 w-full" href={wa} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4 text-teal-ink" />Enviar acceso por WhatsApp</a>}
     </Modal>
   );
 }
@@ -48,7 +64,10 @@ function MemberModal({ member, onClose, onSaved }) {
         <Field label="Rol" hint={ROLES[form.role]?.hint}>{(id) => <Select id={id} options={roleOptions} value={form.role} onChange={set('role')} />}</Field>
         <Field label="WhatsApp">{(id) => <input id={id} className="input" inputMode="tel" value={form.phone ?? ''} onChange={(e) => set('phone')(e.target.value)} placeholder="8888-0000" />}</Field>
         <Field label="Color" className="sm:col-span-2">
-          <div className="flex flex-wrap gap-2">{MEMBER_COLORS.map((c) => <button key={c} type="button" aria-label={`Color ${c}`} aria-pressed={form.color === c} onClick={() => set('color')(c)} className={cx('h-9 w-9 rounded-full ring-offset-2 transition', form.color === c && 'ring-2 ring-ink')} style={{ background: c }} />)}</div>
+          <div className="flex items-center gap-3">
+            <Avatar name={form.name || '?'} color={form.color} size={36} />
+            <ColorPicker value={form.color} onChange={set('color')} />
+          </div>
         </Field>
       </form>
     </Modal>
@@ -66,18 +85,26 @@ function SettingsCard() {
     if (await run(() => api('/api/settings', { method: 'PATCH', body }), { success: 'Ajustes guardados' })) refresh();
   }
   return (
-    <section className="card card-pad" aria-labelledby="settings-title">
-      <h2 id="settings-title" className="section-title">Ajustes operativos</h2>
-      <form onSubmit={save} className="mt-4 grid gap-4 sm:grid-cols-2">
+    <section className="card animate-rise overflow-hidden" aria-labelledby="settings-title">
+      <SectionHead flush id="settings-title" icon={SlidersHorizontal} tone="teal" title="Ajustes operativos" hint="Tipo de cambio, avance y límites WIP." />
+      <form onSubmit={save} className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5">
         <Field label="Tipo de cambio (₡ por US$)" hint="Referencia BCCR para movimientos nuevos en dólares.">{(id) => <input id={id} className="input tabular" inputMode="decimal" value={form.fx_usd_crc ?? ''} onChange={set('fx_usd_crc')} />}</Field>
         <Field label="Avance al cliente cada (horas)" hint="Compromiso público: 72 h.">{(id) => <input id={id} className="input tabular" inputMode="numeric" value={form.update_sla_hours ?? ''} onChange={set('update_sla_hours')} />}</Field>
         <Field label="Límite WIP · En progreso">{(id) => <input id={id} className="input tabular" inputMode="numeric" value={form.wip_en_progreso ?? ''} onChange={set('wip_en_progreso')} />}</Field>
         <Field label="Límite WIP · Revisión">{(id) => <input id={id} className="input tabular" inputMode="numeric" value={form.wip_revision ?? ''} onChange={set('wip_revision')} />}</Field>
         <div className="sm:col-span-2"><button type="submit" className="btn btn-primary" disabled={busy}><Save className="h-4 w-4" />Guardar ajustes</button></div>
       </form>
-      <div className="mt-6 flex flex-col gap-3 rounded-2xl bg-paper p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div><p className="flex items-center gap-2 text-sm font-semibold"><DatabaseBackup className="h-4 w-4" />Respaldo de la base</p><p className="text-xs text-muted">Descargá una copia completa (SQLite). Recomendado: semanal y antes de cada cambio grande.</p></div>
-        <a className="btn btn-dark" href="/api/admin/backup" download>Descargar respaldo</a>
+      <div className="border-t border-line bg-surface-2/60 p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <IconTile icon={DatabaseBackup} tone="slate" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Respaldo de la base</p>
+              <p className="text-xs text-muted">Descargá una copia completa (SQLite). Recomendado: semanal y antes de cada cambio grande.</p>
+            </div>
+          </div>
+          <a className="btn btn-dark shrink-0" href="/api/admin/backup" download>Descargar respaldo</a>
+        </div>
       </div>
     </section>
   );
@@ -92,17 +119,28 @@ function ProfileCard() {
     if (await run(() => api('/api/me', { method: 'PATCH', body: { name: form.name, phone: form.phone || null, color: form.color } }), { success: 'Perfil actualizado' })) refresh();
   }
   return (
-    <section className="card card-pad" aria-labelledby="profile-title">
-      <h2 id="profile-title" className="section-title">Mi perfil</h2>
-      <form onSubmit={save} className="mt-4 space-y-4">
-        <div className="flex items-center gap-3"><Avatar name={form.name} color={form.color} size={44} /><div><p className="font-semibold">{user.email}</p><p className="text-xs text-muted">{ROLES[user.role].label}</p></div></div>
-        <Field label="Nombre">{(id) => <input id={id} className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />}</Field>
-        <Field label="WhatsApp">{(id) => <input id={id} className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />}</Field>
-        <div className="flex flex-wrap gap-2">{MEMBER_COLORS.map((c) => <button key={c} type="button" aria-label={`Color ${c}`} aria-pressed={form.color === c} onClick={() => setForm({ ...form, color: c })} className={cx('h-9 w-9 rounded-full ring-offset-2', form.color === c && 'ring-2 ring-ink')} style={{ background: c }} />)}</div>
+    <section className="card animate-rise overflow-hidden" aria-labelledby="profile-title">
+      <SectionHead flush id="profile-title" icon={UserRound} tone="teal" title="Mi perfil" hint="Cómo te ve el resto del equipo." />
+      <form onSubmit={save} className="space-y-4 p-4 sm:p-5">
+        <div className="flex items-center gap-3 rounded-xl bg-surface-2 p-3">
+          <Avatar name={form.name} color={form.color} size={48} />
+          <div className="min-w-0">
+            <p className="break-all text-sm font-semibold leading-snug sm:text-base">{user.email}</p>
+            <div className="mt-1"><RoleBadge role={user.role} /></div>
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Nombre">{(id) => <input id={id} className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />}</Field>
+          <Field label="WhatsApp">{(id) => <input id={id} className="input" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="8888-0000" />}</Field>
+        </div>
+        <div>
+          <p className="label">Color</p>
+          <ColorPicker value={form.color} onChange={(c) => setForm({ ...form, color: c })} />
+        </div>
         <button type="submit" className="btn btn-outline" disabled={busy}><Save className="h-4 w-4" />Guardar perfil</button>
       </form>
-      <div className="mt-6 border-t border-line pt-5">
-        <h3 className="mb-3 flex items-center gap-2 font-semibold"><ShieldCheck className="h-4 w-4 text-teal-dark" />Cambiar contraseña</h3>
+      <div className="border-t border-line p-4 sm:p-5">
+        <h3 className="mb-4 flex items-center gap-3 font-display text-[15px] font-bold"><IconTile icon={ShieldCheck} tone="teal" size="sm" />Cambiar contraseña</h3>
         <PasswordForm />
       </div>
     </section>
@@ -115,10 +153,10 @@ const TABS = { personas: 'Personas', perfil: 'Mi perfil', ajustes: 'Ajustes' };
 function MemberActions({ member, me, busy, onEdit, onReset, onToggle }) {
   return (
     <div className="flex flex-wrap gap-1.5">
-      <button type="button" className="btn btn-outline btn-sm min-h-10 flex-1" onClick={() => onEdit(member)}><Pencil className="h-3.5 w-3.5" />Editar</button>
-      {member.active && <button type="button" className="btn btn-ghost btn-sm min-h-10 flex-1" onClick={() => onReset(member)} disabled={busy}><KeyRound className="h-3.5 w-3.5" />Contraseña</button>}
+      <button type="button" className="btn btn-outline btn-sm min-h-11 flex-1 sm:min-h-9" onClick={() => onEdit(member)}><Pencil className="h-3.5 w-3.5" />Editar</button>
+      {member.active && <button type="button" className="btn btn-ghost btn-sm min-h-11 flex-1 sm:min-h-9" onClick={() => onReset(member)} disabled={busy}><KeyRound className="h-3.5 w-3.5" />Contraseña</button>}
       {member.id !== me && (
-        <button type="button" className={cx('btn btn-sm min-h-10 flex-1', member.active ? 'btn-ghost' : 'btn-teal')} onClick={() => onToggle(member)} disabled={busy}>
+        <button type="button" className={cx('btn btn-sm min-h-11 flex-1 sm:min-h-9', member.active ? 'btn-ghost' : 'btn-teal')} onClick={() => onToggle(member)} disabled={busy}>
           <Power className="h-3.5 w-3.5" />{member.active ? 'Desactivar' : 'Reactivar'}
         </button>
       )}
@@ -130,6 +168,17 @@ function accessNote(m) {
   if (!m.active) return 'Acceso desactivado';
   const base = m.last_login_at ? `Último ingreso ${timeAgo(m.last_login_at)}` : 'Aún no ingresa';
   return m.must_change_password ? `${base} · contraseña temporal pendiente` : base;
+}
+
+/** Pastilla del resumen de carga: punto de tono, número y etiqueta. */
+function LoadChip({ tone, icon: Icon, value, label }) {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface py-1.5 pl-2.5 pr-3.5 text-sm shadow-card">
+      {Icon ? <Icon className="h-4 w-4 shrink-0 text-teal-ink" aria-hidden="true" /> : <span className={cx('h-2 w-2 shrink-0 rounded-full', `dot-${tone}`)} aria-hidden="true" />}
+      <span className="num font-bold">{value}</span>
+      <span className="text-muted">{label}</span>
+    </span>
+  );
 }
 
 function PeopleTab({ resource, actions }) {
@@ -146,30 +195,28 @@ function PeopleTab({ resource, actions }) {
   return (
     <div className="space-y-6">
       {error && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-2xl border border-amber/30 bg-amber-soft p-4 text-sm text-amber-ink sm:flex-row sm:items-center sm:justify-between">
           <p className="flex items-start gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />No pudimos cargar la carga de trabajo de cada persona.</p>
           <button type="button" className="btn btn-outline" onClick={reload}>Reintentar</button>
         </div>
       )}
 
       {data && people.length > 0 && (
-        <div className="flex flex-wrap gap-2 text-sm" aria-label="Resumen de carga">
-          <span className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1.5"><Users className="h-4 w-4 text-teal-dark" /><span className="font-bold tabular">{people.length}</span><span className="text-muted">{people.length === 1 ? 'persona' : 'personas'}</span></span>
+        <div className="animate-rise flex flex-wrap gap-2" aria-label="Resumen de carga">
+          <LoadChip icon={Users} value={people.length} label={people.length === 1 ? 'persona' : 'personas'} />
           {Object.entries(LOAD_META).filter(([k]) => counts[k]).map(([k, meta]) => (
-            <span key={k} className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1.5">
-              <span className={cx('h-2 w-2 rounded-full', `dot-${meta.tone}`)} /><span className="font-bold tabular">{counts[k]}</span><span className="text-muted">{counts[k] === 1 ? meta.label.toLowerCase() : meta.plural}</span>
-            </span>
+            <LoadChip key={k} tone={meta.tone} value={counts[k]} label={counts[k] === 1 ? meta.label.toLowerCase() : meta.plural} />
           ))}
         </div>
       )}
 
       {people.length === 0 ? (
-        <EmptyState icon={Users} title="Todavía no hay personas activas"
+        <EmptyState icon={Users} tone="teal" title="Todavía no hay personas activas"
           action={isAdmin && <button type="button" className="btn btn-primary" onClick={() => actions.onEdit('new')}><UserPlus className="h-4 w-4" />Agregar persona</button>}>
           Agregá a cada socio o colaborador para repartir proyectos, tareas y citas.
         </EmptyState>
       ) : (
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Personas">
+        <section className="stagger grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Personas">
           {people.map((p) => {
             const member = byId.get(p.id) ?? p;
             return (
@@ -182,11 +229,11 @@ function PeopleTab({ resource, actions }) {
       )}
 
       {isAdmin && inactive.length > 0 && (
-        <section aria-labelledby="sin-acceso" className="rounded-2xl border border-dashed border-line p-3 sm:p-4">
-          <h2 id="sin-acceso" className="mb-3 flex items-center gap-2 px-1 font-semibold text-muted"><UserX className="h-4 w-4" />Sin acceso <span className="font-normal">{inactive.length}</span></h2>
+        <section aria-labelledby="sin-acceso" className="rounded-2xl border border-dashed border-line-strong p-3 sm:p-4">
+          <h2 id="sin-acceso" className="mb-3 flex items-center gap-2 px-1 font-semibold text-muted"><UserX className="h-4 w-4" />Sin acceso <span className="num font-normal">{inactive.length}</span></h2>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {inactive.map((m) => (
-              <article key={m.id} className="card flex flex-col gap-3 bg-white/70 p-4">
+              <article key={m.id} className="card flex flex-col gap-3 bg-surface/70 p-4">
                 <div className="flex items-center gap-3 opacity-70">
                   <Avatar name={m.name} color={m.color} size={40} />
                   <div className="min-w-0 flex-1">
@@ -235,21 +282,25 @@ export default function Team() {
 
   return (
     <div className="space-y-5">
-      <PageHeader eyebrow="Quiénes somos" title="Equipo" subtitle="Quién hace qué, en qué servicios está y cuánta carga tiene. Tocá una persona para ver su ficha."
+      <PageHeader eyebrow="Quiénes somos" title="Equipo" icon={Users} tone="teal" subtitle="Quién hace qué, en qué servicios está y cuánta carga tiene. Tocá una persona para ver su ficha."
         actions={isAdmin && tab === 'personas' && <button type="button" className="btn btn-primary" onClick={() => setEditing('new')}><UserPlus className="h-4 w-4" />Agregar persona</button>} />
 
-      <Tabs tabs={tabs} value={tab} onChange={setTab} />
+      <div className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0"><Tabs tabs={tabs} value={tab} onChange={setTab} /></div>
 
       {tab === 'personas' && <PeopleTab resource={people} actions={actions} />}
 
       {tab === 'perfil' && (
-        <div className="max-w-2xl space-y-3">
-          <Link to={`/equipo/${user.id}`} className="card flex min-h-14 items-center gap-3 px-4 py-3 text-sm font-semibold hover:bg-slate-50">
-            <Avatar name={user.name} color={user.color} size={32} />
+        <div className="max-w-2xl space-y-4">
+          <Link to={`/equipo/${user.id}`} className="card card-hover group row min-h-14 px-4 py-3 text-sm font-semibold">
+            <Avatar name={user.name} color={user.color} size={36} />
             <span className="min-w-0 flex-1">Ver mi ficha<span className="block text-xs font-normal text-muted">Mis servicios, proyectos, tareas y citas</span></span>
-            <ArrowRight className="h-4 w-4 text-muted" />
+            <RowArrow />
           </Link>
           <ProfileCard />
+          <section className="card animate-rise overflow-hidden" aria-labelledby="appearance-title">
+            <SectionHead flush id="appearance-title" icon={Palette} tone="violet" title="Apariencia" hint="Claro, oscuro o como el celular." />
+            <div className="p-4 sm:p-5"><ThemePicker /></div>
+          </section>
         </div>
       )}
 

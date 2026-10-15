@@ -1,12 +1,12 @@
 // Servicio: precio, descripción, quién lo hace y sus proyectos. El admin edita líder, equipo, precio y estado.
 import { useMemo, useState } from 'react';
-import { ArrowLeft, Pencil, Users, FolderKanban, ChevronRight, UserPlus } from 'lucide-react';
+import { ArrowLeft, Pencil, Users, FolderKanban, UserPlus, FileText, Wallet, ListChecks, Layers, Crown } from 'lucide-react';
 import { useResource, useSession } from '../lib/session.jsx';
 import { api } from '../lib/api.js';
 import { Link } from '../lib/router.jsx';
-import { PageLoader, EmptyState, Badge, Avatar, Stat, Modal, Field, Select, useAction, cx } from '../components/ui.jsx';
+import { PageLoader, EmptyState, Badge, Avatar, AvatarStack, Stat, Modal, Field, Select, IconTile, SectionHead, RowArrow, useAction, cx } from '../components/ui.jsx';
 import { StatusBadge, SlaBadge, PersonSelect, PeoplePicker } from '../components/common.jsx';
-import { priceParts, SERVICE_UNITS } from '../components/services.jsx';
+import { priceParts, groupIcon, SERVICE_UNITS } from '../components/services.jsx';
 import { formatMoney } from '../lib/format.js';
 import { PROJECT_STATUS, SERVICE_GROUPS } from '../../shared/catalog.js';
 
@@ -16,16 +16,19 @@ const PEOPLE_ROLES = {
   proyecto: { label: 'En proyectos', tone: 'slate', order: 2 },
 };
 
+// Color del número en la franja compacta de celular (en escritorio lo resuelve <Stat>).
+const STAT_TEXT = { blue: 'text-brand-ink', teal: 'text-teal-ink', amber: 'text-amber-ink', slate: 'text-ink' };
+
 function Toggle({ id, checked, onChange, label, hint }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-2xl bg-paper p-3">
+    <div className="flex items-start justify-between gap-4 rounded-2xl bg-surface-2 p-3">
       <div className="min-w-0">
         <label htmlFor={id} className="text-sm font-semibold">{label}</label>
         {hint && <p className="text-xs text-muted">{hint}</p>}
       </div>
       <button id={id} type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
-        className={cx('relative h-7 w-12 shrink-0 rounded-full transition', checked ? 'bg-teal-dark' : 'bg-slate-300')}>
-        <span className={cx('absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all', checked ? 'left-6' : 'left-1')} />
+        className={cx('relative h-7 w-12 shrink-0 rounded-full transition', checked ? 'bg-teal' : 'bg-line-strong')}>
+        <span className={cx('absolute top-1 h-5 w-5 rounded-full bg-panel-fg shadow transition-all', checked ? 'left-6' : 'left-1')} />
       </button>
     </div>
   );
@@ -97,16 +100,16 @@ function ServiceForm({ service, fx, onClose, onSaved }) {
 function ProjectRow({ p }) {
   return (
     <li>
-      <Link to={`/proyectos/${p.id}`} className="flex min-h-14 items-center gap-3 px-4 py-3 hover:bg-slate-50 sm:px-5">
+      <Link to={`/proyectos/${p.id}`} className="group row min-h-14 px-4 py-3 sm:px-5">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{p.name}</p>
+          <p className="truncate text-sm font-semibold group-hover:text-brand-ink">{p.name}</p>
           <p className="truncate text-xs text-muted">{p.client || 'Sin cliente'}</p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             <StatusBadge map={PROJECT_STATUS} value={p.status} />
             <SlaBadge state={p.sla_state} hours={p.hours_since_update} />
           </div>
         </div>
-        <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
+        <RowArrow />
       </Link>
     </li>
   );
@@ -129,79 +132,126 @@ export default function ServiceDetail({ params }) {
     return [...byId.values()].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, 'es'));
   }, [data]);
 
-
-  const back = <Link to="/servicios" className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink"><ArrowLeft className="h-4 w-4" />Servicios</Link>;
+  const back = <Link to="/servicios" className="tap inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink"><ArrowLeft className="h-4 w-4" />Servicios</Link>;
   if (!data) return <>{back}<PageLoader error={error} onRetry={reload} /></>;
   const s = data.service;
   const projects = data.projects ?? [];
   const price = priceParts(s, fx);
   const groupTone = SERVICE_GROUPS[s.group]?.tone ?? 'slate';
+  const team = (s.members ?? []).filter((m) => m.id !== s.lead_id);
+  const stats = [
+    { label: 'Proyectos activos', value: s.projects_active ?? 0, icon: FolderKanban, tone: 'blue' },
+    { label: 'Valor activo', value: formatMoney(s.value_crc_active ?? 0, 'CRC', { compact: true }), icon: Wallet, tone: 'teal' },
+    { label: 'Tareas abiertas', value: s.open_tasks ?? 0, icon: ListChecks, tone: s.open_tasks ? 'amber' : 'slate' },
+    { label: 'Total proyectos', value: s.projects_total ?? projects.length, icon: Layers, tone: 'slate' },
+  ];
 
   return (
     <div className="space-y-6">
-      <header>
+      <header className="animate-rise">
         {back}
-        <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <p className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-teal-dark">
-              <span className={cx('h-2 w-2 rounded-full', `dot-${groupTone}`)} />{s.group_label ?? SERVICE_GROUPS[s.group]?.label}
-            </p>
-            <h1 className="font-display text-2xl font-bold sm:text-3xl">{s.name}</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="text-base font-semibold">{price.text}</span>
-              {price.approx && <span className="text-sm text-muted tabular">{price.approx}</span>}
-              {s.active ? <Badge tone="teal" dot>Activo</Badge> : <Badge tone="slate" dot>Pausado</Badge>}
+        <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+            <IconTile icon={groupIcon(s.group)} tone={groupTone} size="lg" className="h-14 w-14 shadow-card sm:h-16 sm:w-16" iconClassName="h-7 w-7" />
+            <div className="min-w-0">
+              <p className="eyebrow flex items-center gap-2">
+                <span className={cx('h-2 w-2 rounded-full', `dot-${groupTone}`)} aria-hidden="true" />{s.group_label ?? SERVICE_GROUPS[s.group]?.label}
+              </p>
+              <h1 className="mt-0.5 break-words font-display text-[26px] font-bold leading-tight sm:text-[32px]">{s.name}</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {s.active ? <Badge tone="teal" dot>Activo</Badge> : <Badge tone="slate" dot>Pausado</Badge>}
+                {s.unit && <Badge tone="slate">{SERVICE_UNITS.find((u) => u.value === s.unit)?.label}</Badge>}
+              </div>
             </div>
           </div>
-          {isAdmin && <button type="button" className="btn btn-outline w-full sm:w-auto" onClick={() => setEditing(true)}><Pencil className="h-4 w-4" />Editar servicio</button>}
+          {isAdmin && <button type="button" className="btn btn-outline w-full sm:w-auto lg:shrink-0" onClick={() => setEditing(true)}><Pencil className="h-4 w-4" />Editar servicio</button>}
         </div>
-        {s.description
-          ? <p className="mt-4 max-w-3xl whitespace-pre-line text-sm leading-relaxed text-ink/80">{s.description}</p>
-          : <p className="mt-4 text-sm text-muted">Todavía no tiene descripción.{isAdmin && ' Tocá "Editar servicio" para contar qué incluye.'}</p>}
+
+        <div className="card mt-5 overflow-hidden">
+          <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Precio base</p>
+              <p className="num mt-1 truncate text-2xl font-bold leading-none sm:text-[28px]">{price.text}</p>
+              {price.approx && <p className="mt-1.5 text-sm text-muted tabular">{price.approx}</p>}
+            </div>
+            <div className="flex items-center gap-5 border-t border-line pt-4 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
+              {s.lead_id ? (
+                <Link to={`/equipo/${s.lead_id}`} className="flex min-w-0 items-center gap-2.5 hover:text-brand-ink">
+                  <Avatar name={s.lead_name} color={s.lead_color} size={36} />
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted"><Crown className="h-3 w-3" aria-hidden="true" />Líder</span>
+                    <span className="block truncate text-sm font-semibold">{s.lead_name}</span>
+                  </span>
+                </Link>
+              ) : <span className="text-sm text-muted">Sin responsable</span>}
+              {team.length > 0 && (
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <AvatarStack people={team} size={28} />
+                  <span className="text-xs text-muted">{team.length} en el equipo</span>
+                </span>
+              )}
+            </div>
+          </div>
+          {/* Celular: los cuatro números en una franja compacta (en escritorio van como <Stat>). */}
+          <dl className="grid grid-cols-2 gap-px border-t border-line bg-line sm:hidden" aria-label="Indicadores">
+            {stats.map((st) => (
+              <div key={st.label} className="min-w-0 bg-surface px-4 py-3">
+                <dt className="truncate text-[10px] font-bold uppercase tracking-[0.1em] text-muted">{st.label}</dt>
+                <dd className={cx('num mt-0.5 truncate text-xl font-bold', STAT_TEXT[st.tone])}>{st.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       </header>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Proyectos activos" value={s.projects_active ?? 0} tone="blue" />
-        <Stat label="Valor activo" value={formatMoney(s.value_crc_active ?? 0, 'CRC', { compact: true })} tone="teal" />
-        <Stat label="Tareas abiertas" value={s.open_tasks ?? 0} tone={s.open_tasks ? 'amber' : undefined} />
-        <Stat label="Total proyectos" value={s.projects_total ?? projects.length} />
+      {/* Sin animación de entrada: al alternar display (celular ↔ escritorio) se reiniciaría. */}
+      <div className="hidden gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-4" aria-label="Indicadores">
+        {stats.map((st) => <Stat key={st.label} label={st.label} value={st.value} icon={st.icon} tone={st.tone} />)}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
-        <section className="card self-start" aria-labelledby="people-title">
-          <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-4 sm:px-5">
-            <h2 id="people-title" className="section-title">Quién lo hace</h2>
-            <span className="text-sm text-muted">{people.length}</span>
-          </div>
-          {people.length === 0 ? (
-            <div className="p-4 sm:p-5">
-              <EmptyState icon={Users} title="Nadie asignado todavía"
-                action={isAdmin && <button type="button" className="btn btn-primary" onClick={() => setEditing(true)}><UserPlus className="h-4 w-4" />Asignar equipo</button>}>
-                {isAdmin ? 'Elegí un líder y quiénes trabajan en este servicio.' : 'El administrador puede asignar un líder y un equipo.'}
-              </EmptyState>
-            </div>
-          ) : (
-            <ul className="divide-y divide-line">
-              {people.map((p) => (
-                <li key={p.id}>
-                  <Link to={`/equipo/${p.id}`} className="flex min-h-14 items-center gap-3 px-4 py-3 hover:bg-slate-50 sm:px-5">
-                    <Avatar name={p.name} color={p.color} size={36} />
-                    <span className="min-w-0 flex-1 truncate text-sm font-semibold">{p.name}</span>
-                    <span className="flex shrink-0 flex-wrap justify-end gap-1">
-                      {p.roles.map((r) => <Badge key={r} tone={PEOPLE_ROLES[r].tone}>{PEOPLE_ROLES[r].label}</Badge>)}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <div className="space-y-6">
+          <section className="card animate-rise overflow-hidden" aria-labelledby="people-title">
+            <SectionHead flush id="people-title" icon={Users} tone={groupTone} title="Quién lo hace" hint={people.length ? `${people.length} ${people.length === 1 ? 'persona' : 'personas'}` : 'Sin equipo asignado'}
+              action={isAdmin && people.length > 0 && <button type="button" className="btn btn-ghost btn-sm -my-1" onClick={() => setEditing(true)}><Pencil className="h-3.5 w-3.5" />Editar</button>} />
+            {people.length === 0 ? (
+              <div className="p-4 sm:p-5">
+                <EmptyState icon={Users} tone={groupTone} title="Nadie asignado todavía"
+                  action={isAdmin && <button type="button" className="btn btn-primary" onClick={() => setEditing(true)}><UserPlus className="h-4 w-4" />Asignar equipo</button>}>
+                  {isAdmin ? 'Elegí un líder y quiénes trabajan en este servicio.' : 'El administrador puede asignar un líder y un equipo.'}
+                </EmptyState>
+              </div>
+            ) : (
+              <ul className="divide-y divide-line">
+                {people.map((p) => (
+                  <li key={p.id}>
+                    <Link to={`/equipo/${p.id}`} className="group row min-h-14 px-4 py-3 sm:px-5">
+                      <Avatar name={p.name} color={p.color} size={36} />
+                      <span className="min-w-0 flex-1 truncate text-sm font-semibold group-hover:text-brand-ink">{p.name}</span>
+                      <span className="flex shrink-0 flex-wrap justify-end gap-1">
+                        {p.roles.map((r) => <Badge key={r} tone={PEOPLE_ROLES[r].tone}>{PEOPLE_ROLES[r].label}</Badge>)}
+                      </span>
+                      <RowArrow />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
 
-        <section className="card self-start" aria-labelledby="projects-title">
-          <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-4 sm:px-5">
-            <h2 id="projects-title" className="section-title">Proyectos</h2>
-            <span className="text-sm text-muted">{projects.length}</span>
-          </div>
+          <section className="card animate-rise overflow-hidden" aria-labelledby="desc-title">
+            <SectionHead flush id="desc-title" icon={FileText} tone="slate" title="Descripción" hint="Qué incluye" />
+            <div className="p-4 sm:p-5">
+              {s.description
+                ? <p className="whitespace-pre-line text-sm leading-relaxed text-ink-2">{s.description}</p>
+                : <p className="text-sm text-muted">Todavía no tiene descripción.{isAdmin && ' Tocá "Editar servicio" para contar qué incluye.'}</p>}
+            </div>
+          </section>
+        </div>
+
+        <section className="card animate-rise self-start overflow-hidden" aria-labelledby="projects-title">
+          <SectionHead flush id="projects-title" icon={FolderKanban} tone="blue" title="Proyectos" hint={projects.length ? `${projects.length} con este servicio` : 'Ninguno todavía'}
+            action={projects.length > 0 && <Link to="/proyectos" className="link tap -my-2 flex items-center text-sm">Ver todos</Link>} />
           {projects.length === 0 ? (
             <div className="p-4 sm:p-5">
               <EmptyState icon={FolderKanban} title="Sin proyectos de este servicio" action={<Link to="/proyectos" className="btn btn-outline">Ir a proyectos</Link>}>

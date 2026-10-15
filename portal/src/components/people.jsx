@@ -4,6 +4,7 @@ import { Avatar, Badge, cx } from './ui.jsx';
 import { ServiceChip } from './services.jsx';
 import { ROLES } from '../../shared/catalog.js';
 
+/** Nivel de carga → tono del sistema (chips `tone-*`, puntos `dot-*`). */
 export const LOAD_META = {
   baja: { tone: 'teal', label: 'Disponible', plural: 'disponibles' },
   media: { tone: 'amber', label: 'Con carga', plural: 'con carga' },
@@ -27,7 +28,7 @@ export function RoleBadge({ role }) {
   return <Badge tone={ROLE_TONE[role] ?? 'slate'}>{ROLES[role].label}</Badge>;
 }
 
-/** Los 4 contadores de trabajo de una persona. */
+/** Los 4 contadores de trabajo de una persona, en una grilla hundida; "Vencidas" se enciende en coral si hay. */
 export function PersonCounts({ person, size = 'sm' }) {
   const items = [
     { label: 'Proyectos activos', value: person.projects_active },
@@ -36,17 +37,21 @@ export function PersonCounts({ person, size = 'sm' }) {
     { label: 'Citas esta semana', value: person.week_appointments },
   ];
   if (items.every((i) => i.value == null)) return null;
+  const lg = size === 'lg';
   return (
-    <dl className={cx('grid grid-cols-4 gap-1.5 text-center', size === 'lg' && 'gap-2 sm:gap-3')}>
+    <dl className={cx('grid grid-cols-4 rounded-xl bg-surface-2 text-center', lg ? 'gap-1.5 p-1.5' : 'gap-1 p-1')}>
       {items.map((i) => (
-        <div key={i.label} className={cx('flex min-w-0 flex-col-reverse rounded-xl px-1 py-2', i.alert ? 'bg-coral-soft text-coral' : 'bg-paper', size === 'lg' && 'py-3')}>
+        <div key={i.label} className={cx('flex min-w-0 flex-col-reverse rounded-lg px-1', lg ? 'py-3' : 'py-2', i.alert && 'bg-coral-soft text-coral-ink')}>
           <dt className={cx('mt-0.5 text-[11px] leading-tight', i.alert ? 'font-semibold' : 'text-muted')}>{i.label}</dt>
-          <dd className={cx('font-display font-bold tabular', size === 'lg' ? 'text-2xl' : 'text-lg leading-6')}>{i.value ?? '—'}</dd>
+          <dd className={cx('num font-bold', lg ? 'text-2xl leading-7' : 'text-lg leading-6')}>{i.value ?? '—'}</dd>
         </div>
       ))}
     </dl>
   );
 }
+
+// Chips de servicio visibles en la tarjeta antes de resumir con "+N".
+const MAX_SERVICE_CHIPS = 4;
 
 /**
  * Tarjeta de persona: toda la tarjeta lleva a /equipo/:id; los chips de servicio
@@ -55,25 +60,30 @@ export function PersonCounts({ person, size = 'sm' }) {
 export function PersonCard({ person, isMe = false, note, children }) {
   const lead = person.services_lead ?? [];
   const member = (person.services_member ?? []).filter((k) => !lead.includes(k));
+  const all = [...lead.map((k) => ({ key: k, lead: true })), ...member.map((k) => ({ key: k, lead: false }))];
+  const shown = all.slice(0, MAX_SERVICE_CHIPS);
+  const extra = all.length - shown.length;
   return (
-    <article className="card relative flex flex-col gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+    <article className="card card-hover group relative flex flex-col gap-3.5 p-4">
       <div className="flex items-start gap-3">
-        <Avatar name={person.name} color={person.color} size={44} />
+        <Avatar name={person.name} color={person.color} size={48} />
         <div className="min-w-0 flex-1">
-          <Link to={`/equipo/${person.id}`} className="block truncate font-semibold after:absolute after:inset-0 after:rounded-2xl hover:text-brand">
-            {person.name}{isMe && <span className="ml-1.5 text-xs font-normal text-muted">(vos)</span>}
+          <Link to={`/equipo/${person.id}`} className="block truncate font-display text-base font-bold leading-snug after:absolute after:inset-0 after:rounded-2xl group-hover:text-brand-ink">
+            {person.name}{isMe && <span className="ml-1.5 font-sans text-xs font-normal text-muted">(vos)</span>}
           </Link>
-          <div className="mt-1 flex flex-wrap gap-1.5">
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
             <RoleBadge role={person.role} />
             <LoadBadge load={person.load} />
           </div>
         </div>
       </div>
 
-      {(lead.length > 0 || member.length > 0) && (
+      {all.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
-          {lead.map((k) => <ServiceChip key={k} serviceKey={k} lead />)}
-          {member.length > 0 && <span className="text-xs text-muted">{lead.length ? 'También en' : 'Equipo en'} {member.length} {member.length === 1 ? 'servicio' : 'servicios'}</span>}
+          {shown.map((s) => <ServiceChip key={s.key} serviceKey={s.key} lead={s.lead} />)}
+          {extra > 0 && (
+            <Link to={`/equipo/${person.id}`} className="chip tone-slate relative z-10 px-2.5 py-1 text-xs" title={`${extra} ${extra === 1 ? 'servicio más' : 'servicios más'}`}>+{extra}</Link>
+          )}
         </div>
       )}
 

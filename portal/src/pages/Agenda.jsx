@@ -2,7 +2,7 @@
 // exporta a calendario (.ics) y arma el recordatorio de WhatsApp para el cliente.
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ChevronLeft, ChevronRight, Plus, Video, MapPin, Download, MessageCircle, CheckCircle2, XCircle, CalendarDays, AlertTriangle, Pencil, Trash2, Phone, FolderKanban, Building2,
+  ChevronLeft, ChevronRight, Plus, Video, MapPin, Download, MessageCircle, CheckCircle2, XCircle, CalendarDays, AlertTriangle, Pencil, Trash2, Phone, FolderKanban, Building2, Users,
 } from 'lucide-react';
 import { useResource, useSession } from '../lib/session.jsx';
 import { api } from '../lib/api.js';
@@ -12,7 +12,7 @@ import { PeoplePicker, StatusBadge } from '../components/common.jsx';
 import { ClientSelect } from '../components/clients.jsx';
 import { APPOINTMENT_KINDS, APPOINTMENT_STATUS } from '../../shared/catalog.js';
 import {
-  todayKey, weekStart, addDays, startOfDayIso, dayKey, formatTime, formatDayShort, formatDayLong, formatDateTime, minutesOfDay, toLocalInput, fromLocalInput, whatsappLink, downloadIcs,
+  TZ, todayKey, weekStart, addDays, startOfDayIso, dayKey, formatTime, formatDayShort, formatDayLong, formatDateTime, minutesOfDay, toLocalInput, fromLocalInput, whatsappLink, downloadIcs,
 } from '../lib/format.js';
 
 const HOUR_START = 7;
@@ -20,6 +20,15 @@ const HOUR_END = 21;
 const HOUR_PX = 56;
 const kindOptions = Object.entries(APPOINTMENT_KINDS).map(([value, v]) => ({ value, label: v.label }));
 const statusOptions = Object.entries(APPOINTMENT_STATUS).map(([value, v]) => ({ value, label: v.label }));
+
+const monthFmt = new Intl.DateTimeFormat('es-CR', { timeZone: TZ, month: 'long', year: 'numeric' });
+const monthShortFmt = new Intl.DateTimeFormat('es-CR', { timeZone: TZ, month: 'short' });
+const noon = (key) => new Date(`${key}T12:00:00-06:00`);
+/** "mié 14" → ["mié", "14"] para el encabezado de día (abreviatura arriba, número grande abajo). */
+const splitDay = (key) => {
+  const [wd, ...rest] = formatDayShort(key).replace(',', '').split(' ');
+  return [wd, rest.join(' ')];
+};
 
 function defaultSlot(dateKey, hour) {
   const start = new Date(`${dateKey}T${String(hour).padStart(2, '0')}:00:00-06:00`);
@@ -97,9 +106,12 @@ function AppointmentForm({ appointment, defaults, projects, onClose, onSaved }) 
         <Field label="Fin" error={invalidRange ? 'Debe terminar después de empezar.' : null}>{(id) => <input id={id} type="datetime-local" className="input" value={form.end} onChange={(e) => set('end')(e.target.value)} />}</Field>
         <Field label="Participantes del equipo" className="sm:col-span-2"><PeoplePicker value={form.attendees} onChange={set('attendees')} /></Field>
         {visibleConflicts.length > 0 && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 sm:col-span-2" role="alert">
-            <p className="flex items-center gap-2 font-semibold"><AlertTriangle className="h-4 w-4" />Choque de horario</p>
-            <ul className="mt-1 space-y-0.5">{visibleConflicts.map((c, i) => <li key={`${c.id}-${i}`}>{c.attendee_name}: “{c.title}” · {formatTime(c.starts_at)}–{formatTime(c.ends_at)}</li>)}</ul>
+          <div className="animate-pop flex gap-3 rounded-2xl border border-amber/30 bg-amber-soft p-3 text-sm text-amber-ink sm:col-span-2" role="alert">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="font-semibold">Choque de horario</p>
+              <ul className="mt-1 space-y-0.5">{visibleConflicts.map((c, i) => <li key={`${c.id}-${i}`}>{c.attendee_name}: “{c.title}” · {formatTime(c.starts_at)}–{formatTime(c.ends_at)}</li>)}</ul>
+            </div>
           </div>
         )}
         <Field label="Enlace de videollamada">{(id) => <input id={id} className="input" value={form.meeting_url ?? ''} onChange={(e) => set('meeting_url')(e.target.value)} placeholder="https://meet.google.com/…" />}</Field>
@@ -127,35 +139,35 @@ function AppointmentView({ a, onClose, onEdit, onChanged }) {
   const tone = APPOINTMENT_KINDS[a.kind]?.tone ?? 'slate';
   return (
     <Modal open onClose={onClose} title="Detalle de la cita" footer={<>
-      <button type="button" className="btn btn-ghost mr-auto text-coral" onClick={remove} disabled={busy}><Trash2 className="h-4 w-4" />Eliminar</button>
+      <button type="button" className="btn btn-ghost mr-auto text-coral-ink" onClick={remove} disabled={busy}><Trash2 className="h-4 w-4" />Eliminar</button>
       <button type="button" className="btn btn-outline" onClick={() => downloadIcs(a)}><Download className="h-4 w-4" />.ics</button>
       <button type="button" className="btn btn-primary" onClick={onEdit}><Pencil className="h-4 w-4" />Editar</button>
     </>}>
       <div className="space-y-4">
         <div className="flex items-start gap-3">
-          <span className={cx('mt-1 h-12 w-1.5 shrink-0 rounded-full', `dot-${tone}`)} />
-          <div>
-            <h3 className="font-display text-xl font-bold">{a.title}</h3>
-            <p className="mt-0.5 text-sm text-muted">{formatDateTime(a.starts_at)} – {formatTime(a.ends_at)}</p>
-            <div className="mt-2 flex flex-wrap gap-1.5"><Badge tone={tone}>{APPOINTMENT_KINDS[a.kind]?.label}</Badge><StatusBadge map={APPOINTMENT_STATUS} value={a.status} /></div>
+          <span className={cx('mt-1 h-12 w-1.5 shrink-0 rounded-full', `dot-${tone}`)} aria-hidden="true" />
+          <div className="min-w-0">
+            <h3 className="font-display text-xl font-bold leading-tight">{a.title}</h3>
+            <p className="mt-1 text-sm text-muted first-letter:uppercase">{formatDateTime(a.starts_at)} – {formatTime(a.ends_at)}</p>
+            <div className="mt-2 flex flex-wrap gap-1.5"><Badge tone={tone} dot>{APPOINTMENT_KINDS[a.kind]?.label}</Badge><StatusBadge map={APPOINTMENT_STATUS} value={a.status} /></div>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
           {a.status === 'programada' && <button type="button" className="btn btn-teal btn-sm" onClick={() => setStatus('confirmada', 'Cita confirmada')} disabled={busy}><CheckCircle2 className="h-3.5 w-3.5" />Confirmada por el cliente</button>}
           {['programada', 'confirmada'].includes(a.status) && <button type="button" className="btn btn-outline btn-sm" onClick={() => setStatus('realizada', 'Cita marcada como realizada')} disabled={busy}>Marcar realizada</button>}
           {['programada', 'confirmada'].includes(a.status) && <button type="button" className="btn btn-outline btn-sm" onClick={() => setStatus('no_asistio', 'Registrado: no asistió')} disabled={busy}>No asistió</button>}
-          {a.status !== 'cancelada' && <button type="button" className="btn btn-ghost btn-sm text-coral" onClick={() => setStatus('cancelada', 'Cita cancelada')} disabled={busy}><XCircle className="h-3.5 w-3.5" />Cancelar</button>}
+          {a.status !== 'cancelada' && <button type="button" className="btn btn-ghost btn-sm text-coral-ink" onClick={() => setStatus('cancelada', 'Cita cancelada')} disabled={busy}><XCircle className="h-3.5 w-3.5" />Cancelar</button>}
         </div>
-        <dl className="space-y-2.5 rounded-2xl bg-paper p-4 text-sm">
-          {a.meeting_url && <div className="flex items-center gap-2"><Video className="h-4 w-4 text-muted" /><a href={a.meeting_url} target="_blank" rel="noreferrer" className="truncate font-semibold text-brand hover:underline">Unirse a la videollamada</a></div>}
-          {a.location && <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted" />{a.location}</div>}
-          {a.client_id && <div className="flex items-center gap-2"><Building2 className="h-4 w-4 shrink-0 text-muted" /><Link to={`/clientes/${a.client_id}`} className="min-w-0 truncate font-semibold text-brand hover:underline">{a.client_name || 'Ver cliente'}</Link></div>}
-          {a.project_name && <div className="flex items-center gap-2"><FolderKanban className="h-4 w-4 shrink-0 text-muted" /><Link to={`/proyectos/${a.project_id}`} className="min-w-0 truncate font-semibold text-brand hover:underline">{a.project_name}</Link></div>}
-          {(a.contact_name || a.contact_phone) && <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted" />{a.contact_name} {a.contact_phone && <span className="text-muted">· {a.contact_phone}</span>}</div>}
-          <div className="flex items-center gap-2"><span className="text-muted">Equipo:</span><AvatarStack people={a.attendees} size={26} max={6} /><span className="text-xs text-muted">{a.attendees.map((p) => p.name.split(' ')[0]).join(', ')}</span></div>
+        <dl className="space-y-3 rounded-2xl bg-surface-2 p-4 text-sm">
+          {a.meeting_url && <div className="flex items-center gap-2.5"><Video className="h-4 w-4 shrink-0 text-muted" /><a href={a.meeting_url} target="_blank" rel="noreferrer" className="link truncate">Unirse a la videollamada</a></div>}
+          {a.location && <div className="flex items-center gap-2.5"><MapPin className="h-4 w-4 shrink-0 text-muted" /><span className="min-w-0 truncate">{a.location}</span></div>}
+          {a.client_id && <div className="flex items-center gap-2.5"><Building2 className="h-4 w-4 shrink-0 text-muted" /><Link to={`/clientes/${a.client_id}`} className="link min-w-0 truncate">{a.client_name || 'Ver cliente'}</Link></div>}
+          {a.project_name && <div className="flex items-center gap-2.5"><FolderKanban className="h-4 w-4 shrink-0 text-muted" /><Link to={`/proyectos/${a.project_id}`} className="link min-w-0 truncate">{a.project_name}</Link></div>}
+          {(a.contact_name || a.contact_phone) && <div className="flex items-center gap-2.5"><Phone className="h-4 w-4 shrink-0 text-muted" /><span className="min-w-0 truncate">{a.contact_name} {a.contact_phone && <span className="tabular text-muted">· {a.contact_phone}</span>}</span></div>}
+          <div className="flex items-center gap-2.5"><Users className="h-4 w-4 shrink-0 text-muted" /><AvatarStack people={a.attendees} size={26} max={6} /><span className="min-w-0 truncate text-xs text-muted">{a.attendees.map((p) => p.name.split(' ')[0]).join(', ')}</span></div>
         </dl>
-        {a.notes && <p className="whitespace-pre-line text-sm">{a.notes}</p>}
-        {reminder && a.status !== 'cancelada' && <a href={reminder} target="_blank" rel="noreferrer" className="btn btn-outline w-full"><MessageCircle className="h-4 w-4 text-teal-dark" />Enviar recordatorio por WhatsApp</a>}
+        {a.notes && <p className="whitespace-pre-line text-sm text-ink-2">{a.notes}</p>}
+        {reminder && a.status !== 'cancelada' && <a href={reminder} target="_blank" rel="noreferrer" className="btn btn-outline w-full"><MessageCircle className="h-4 w-4 text-teal-ink" />Enviar recordatorio por WhatsApp</a>}
       </div>
     </Modal>
   );
@@ -171,6 +183,17 @@ function layoutDay(events) {
     return { e, lane };
   });
   return placed.map((p) => ({ ...p, lanes: lanes.length }));
+}
+
+/** Tarjeta de fecha de la lista móvil: abreviatura del día arriba y la hora grande abajo (como en Inicio). */
+function DateTile({ dayKey: key, time, today }) {
+  const [wd] = splitDay(key);
+  return (
+    <span className={cx('flex h-12 w-[78px] shrink-0 flex-col items-center justify-center rounded-xl', today ? 'bg-brand-soft text-brand-ink' : 'bg-surface-2 text-ink')}>
+      <span className={cx('text-[10px] font-bold uppercase tracking-wide', today ? 'text-brand-ink' : 'text-muted')}>{today ? 'Hoy' : wd}</span>
+      <span className="font-display text-[14px] font-bold leading-none tabular">{time}</span>
+    </span>
+  );
 }
 
 export default function Agenda() {
@@ -215,50 +238,68 @@ export default function Agenda() {
   const nowMinutes = minutesOfDay(new Date().toISOString());
   const closeView = () => navigate('/agenda', { replace: true });
   const weekLabel = `${formatDayShort(days[0])} – ${formatDayShort(days[6])}`;
+  const sameMonth = days[0].slice(0, 7) === days[6].slice(0, 7);
+  const monthLabel = sameMonth ? monthFmt.format(noon(days[0])) : `${monthShortFmt.format(noon(days[0])).replace('.', '')} – ${monthFmt.format(noon(days[6]))}`;
+  const isCurrentWeek = week === weekStart(today);
+  const weekCount = data?.appointments.length ?? 0;
 
   return (
     <>
-      <PageHeader eyebrow="Centro de operaciones" title="Agenda" subtitle="Citas con clientes y reuniones internas. Hora de Costa Rica."
+      <PageHeader eyebrow="Operación" title="Agenda" icon={CalendarDays} tone="violet" subtitle="Citas con clientes y reuniones internas. Hora de Costa Rica."
         actions={<button type="button" className="btn btn-primary" onClick={() => setCreating(defaultSlot(today, 9))}><Plus className="h-4 w-4" />Nueva cita</button>} />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="flex rounded-xl border border-line bg-white p-1">
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setWeek(addDays(week, -7))} aria-label="Semana anterior"><ChevronLeft className="h-4 w-4" /></button>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setWeek(weekStart(today))}>Hoy</button>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setWeek(addDays(week, 7))} aria-label="Semana siguiente"><ChevronRight className="h-4 w-4" /></button>
+      <div className="animate-rise mb-4 flex flex-wrap items-center gap-3">
+        <div className="inline-flex items-stretch overflow-hidden rounded-xl border border-line bg-surface shadow-card" role="group" aria-label="Cambiar de semana">
+          <button type="button" className="tap flex items-center justify-center px-3 text-ink transition hover:bg-surface-2 active:bg-surface-3 lg:min-h-10 lg:min-w-10" onClick={() => setWeek(addDays(week, -7))} aria-label="Semana anterior"><ChevronLeft className="h-4 w-4" /></button>
+          <button type="button" className={cx('tap flex items-center justify-center border-x border-line px-3.5 text-sm font-semibold transition hover:bg-surface-2 active:bg-surface-3 lg:min-h-10', isCurrentWeek ? 'text-muted' : 'text-brand-ink')} onClick={() => setWeek(weekStart(today))}>Hoy</button>
+          <button type="button" className="tap flex items-center justify-center px-3 text-ink transition hover:bg-surface-2 active:bg-surface-3 lg:min-h-10 lg:min-w-10" onClick={() => setWeek(addDays(week, 7))} aria-label="Semana siguiente"><ChevronRight className="h-4 w-4" /></button>
         </div>
-        <p className="font-display text-lg font-bold first-letter:uppercase">{weekLabel}</p>
-        <div className="ml-auto hidden flex-wrap gap-2 md:flex">
-          {Object.entries(APPOINTMENT_KINDS).map(([k, v]) => <span key={k} className="flex items-center gap-1.5 text-xs text-muted"><span className={cx('h-2 w-2 rounded-full', `dot-${v.tone}`)} />{v.label}</span>)}
+        <div className="min-w-0">
+          <p className="font-display text-lg font-bold leading-tight first-letter:uppercase">{weekLabel}</p>
+          <p className="truncate text-xs text-muted first-letter:uppercase">{monthLabel}{data ? ` · ${weekCount} ${weekCount === 1 ? 'cita' : 'citas'}` : ''}</p>
         </div>
+        <ul className="ml-auto hidden flex-wrap items-center gap-x-3.5 gap-y-1 md:flex" aria-label="Tipos de cita">
+          {Object.entries(APPOINTMENT_KINDS).map(([k, v]) => (
+            <li key={k} className="flex items-center gap-1.5 text-xs font-medium text-muted"><span className={cx('h-2 w-2 rounded-full', `dot-${v.tone}`)} aria-hidden="true" />{v.label}</li>
+          ))}
+        </ul>
       </div>
 
       {!data ? <PageLoader error={error} onRetry={reload} /> : (
         <>
           {/* Semana (escritorio) */}
-          <div className="card hidden overflow-hidden md:block">
+          <div className="card animate-rise hidden overflow-hidden md:block">
             <div className="grid grid-cols-[56px_repeat(7,minmax(0,1fr))] border-b border-line">
-              <div />
-              {days.map((d) => (
-                <div key={d} className={cx('border-l border-line px-2 py-2.5 text-center', d === today && 'bg-brand-soft')}>
-                  <p className={cx('text-xs font-semibold uppercase', d === today ? 'text-brand' : 'text-muted')}>{formatDayShort(d)}</p>
-                </div>
-              ))}
+              <div aria-hidden="true" />
+              {days.map((d) => {
+                const [wd, num] = splitDay(d);
+                const isToday = d === today;
+                const count = byDay[d].length;
+                return (
+                  <div key={d} className={cx('border-l border-line px-1 pb-2 pt-2.5 text-center', isToday && 'bg-brand-soft/35')}>
+                    <p className={cx('text-[10px] font-bold uppercase tracking-[0.14em]', isToday ? 'text-brand-ink' : 'text-muted')}>{wd}</p>
+                    <p className={cx('mx-auto mt-1 flex h-8 w-8 items-center justify-center rounded-full font-display text-[20px] font-bold leading-none tabular', isToday ? 'bg-brand text-white shadow-brand' : 'text-ink')}>{num}</p>
+                    <p className={cx('mt-1 text-[10px] font-medium', count ? 'text-muted' : 'text-muted-2')}>{count ? `${count} ${count === 1 ? 'cita' : 'citas'}` : 'libre'}</p>
+                  </div>
+                );
+              })}
             </div>
-            <div className="relative grid max-h-[68vh] grid-cols-[56px_repeat(7,minmax(0,1fr))] overflow-y-auto">
+            <div className="relative grid max-h-[68vh] grid-cols-[56px_repeat(7,minmax(0,1fr))] overflow-y-auto pt-2">
               <div>
                 {Array.from({ length: HOUR_END - HOUR_START }, (_, i) => (
-                  <div key={i} className="relative text-right text-[11px] text-muted" style={{ height: HOUR_PX }}><span className="absolute -top-2 right-2">{HOUR_START + i}:00</span></div>
+                  <div key={i} className="relative text-right text-[11px] tabular text-muted-2" style={{ height: HOUR_PX }}><span className="absolute -top-2 right-2">{HOUR_START + i}:00</span></div>
                 ))}
               </div>
               {days.map((d) => (
-                <div key={d} className={cx('relative border-l border-line', d === today && 'bg-brand-soft/30')} style={{ height: HOUR_PX * (HOUR_END - HOUR_START) }}>
+                <div key={d} className={cx('relative border-l border-line', d === today && 'bg-brand-soft/35')} style={{ height: HOUR_PX * (HOUR_END - HOUR_START) }}>
                   {Array.from({ length: HOUR_END - HOUR_START }, (_, i) => (
                     <button key={i} type="button" aria-label={`Agendar ${formatDayShort(d)} ${HOUR_START + i}:00`} onClick={() => setCreating(defaultSlot(d, HOUR_START + i))}
-                      className="absolute inset-x-0 border-t border-line/70 hover:bg-brand-soft/60" style={{ top: i * HOUR_PX, height: HOUR_PX }} />
+                      className="absolute inset-x-0 border-t border-line hover:bg-brand-soft/60" style={{ top: i * HOUR_PX, height: HOUR_PX }} />
                   ))}
                   {d === today && nowMinutes > HOUR_START * 60 && nowMinutes < HOUR_END * 60 && (
-                    <div className="pointer-events-none absolute inset-x-0 z-10 border-t-2 border-coral" style={{ top: ((nowMinutes - HOUR_START * 60) / 60) * HOUR_PX }}><span className="absolute -left-1 -top-[5px] h-2 w-2 rounded-full bg-coral" /></div>
+                    <div className="pointer-events-none absolute inset-x-0 z-10 border-t-2 border-coral" style={{ top: ((nowMinutes - HOUR_START * 60) / 60) * HOUR_PX }} aria-hidden="true">
+                      <span className="absolute -left-[5px] -top-[5px] h-2 w-2 rounded-full bg-coral ring-2 ring-surface" />
+                    </div>
                   )}
                   {layoutDay(byDay[d]).map(({ e, lane, lanes }) => {
                     const startMin = Math.max(minutesOfDay(e.starts_at), HOUR_START * 60);
@@ -266,12 +307,21 @@ export default function Agenda() {
                     const top = ((startMin - HOUR_START * 60) / 60) * HOUR_PX;
                     const height = Math.max(((endMin - startMin) / 60) * HOUR_PX - 2, 22);
                     const tone = APPOINTMENT_KINDS[e.kind]?.tone ?? 'slate';
+                    const detail = `${formatTime(e.starts_at)}${e.status === 'programada' && e.kind !== 'interna' ? ' · sin confirmar' : ''}`;
+                    // Citas de media hora o menos: una sola línea (título y hora) para que nada quede recortado.
+                    const compact = height < 36;
                     return (
-                      <button key={e.id} type="button" onClick={() => navigate(`/agenda?cita=${e.id}`)}
-                        className={cx('absolute z-20 overflow-hidden rounded-lg border-l-[3px] px-1.5 py-1 text-left text-[11px] leading-tight shadow-sm transition hover:z-30 hover:shadow-md', `tone-${tone}`, e.status === 'cancelada' && 'line-through opacity-50')}
+                      <button key={e.id} type="button" onClick={() => navigate(`/agenda?cita=${e.id}`)} title={`${e.title} · ${detail}`}
+                        className={cx('absolute z-20 overflow-hidden rounded-lg border-l-[3px] px-1.5 text-left text-[11px] leading-tight shadow-card transition hover:z-30 hover:shadow-raised hover:brightness-[0.98]', compact ? 'flex items-center' : 'py-1', `tone-${tone}`, e.status === 'cancelada' && 'line-through opacity-50')}
                         style={{ top, height, left: `calc(${(lane / lanes) * 100}% + 2px)`, width: `calc(${100 / lanes}% - 4px)`, borderLeftColor: 'currentColor' }}>
-                        <span className="block truncate font-bold">{e.title}</span>
-                        <span className="block truncate opacity-80">{formatTime(e.starts_at)}{e.status === 'programada' && e.kind !== 'interna' ? ' · sin confirmar' : ''}</span>
+                        {compact ? (
+                          <span className="block w-full truncate"><span className="font-bold">{e.title}</span> <span className="opacity-80">{detail}</span></span>
+                        ) : (
+                          <>
+                            <span className="block truncate font-bold">{e.title}</span>
+                            <span className="block truncate opacity-80">{detail}</span>
+                          </>
+                        )}
                       </button>
                     );
                   })}
@@ -281,33 +331,50 @@ export default function Agenda() {
           </div>
 
           {/* Lista (móvil) */}
-          <div className="space-y-4 md:hidden">
-            {days.map((d) => (
-              <section key={d}>
-                <h2 className={cx('mb-2 text-sm font-bold first-letter:uppercase', d === today ? 'text-brand' : 'text-ink')}>{d === today ? 'Hoy · ' : ''}{formatDayLong(d)}</h2>
-                {byDay[d].length === 0 ? (
-                  <button type="button" onClick={() => setCreating(defaultSlot(d, 9))} className="w-full rounded-2xl border border-dashed border-line px-4 py-3 text-left text-sm text-muted">Libre · tocá para agendar</button>
-                ) : (
-                  <ul className="space-y-2">
-                    {byDay[d].sort((a, b) => a.starts_at.localeCompare(b.starts_at)).map((a) => (
-                      <li key={a.id}>
-                        <button type="button" onClick={() => navigate(`/agenda?cita=${a.id}`)} className={cx('card flex w-full items-center gap-3 p-3 text-left', a.status === 'cancelada' && 'opacity-50')}>
-                          <span className={cx('h-10 w-1 shrink-0 rounded-full', `dot-${APPOINTMENT_KINDS[a.kind]?.tone}`)} />
-                          <span className="w-[76px] shrink-0 font-display text-sm font-bold tabular">{formatTime(a.starts_at)}</span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-semibold">{a.title}</span>
-                            <span className="block truncate text-xs text-muted">{APPOINTMENT_KINDS[a.kind]?.label}{a.client_name ? ` · ${a.client_name}` : a.project_name ? ` · ${a.project_name}` : ''}</span>
-                          </span>
-                          <AvatarStack people={a.attendees} size={22} max={2} />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            ))}
+          <div className="stagger space-y-5 md:hidden">
+            {days.map((d) => {
+              const isToday = d === today;
+              const items = [...byDay[d]].sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+              return (
+                <section key={d} aria-labelledby={`agenda-day-${d}`}>
+                  <h2 id={`agenda-day-${d}`} className="mb-2 flex items-center gap-2 text-sm font-bold">
+                    {isToday && <Badge tone="blue" dot>Hoy</Badge>}
+                    <span className={cx('inline-block min-w-0 truncate first-letter:uppercase', isToday ? 'text-brand-ink' : 'text-ink')}>{formatDayLong(d)}</span>
+                  </h2>
+                  {items.length === 0 ? (
+                    <button type="button" onClick={() => setCreating(defaultSlot(d, 9))} className="flex min-h-12 w-full items-center gap-2 rounded-2xl border border-dashed border-line-strong bg-surface/60 px-4 text-left text-sm text-muted transition active:bg-surface-2">
+                      <Plus className="h-4 w-4 text-muted-2" aria-hidden="true" />Libre · tocá para agendar
+                    </button>
+                  ) : (
+                    <ul className="space-y-2">
+                      {items.map((a) => {
+                        const tone = APPOINTMENT_KINDS[a.kind]?.tone ?? 'slate';
+                        const cancelled = a.status === 'cancelada';
+                        return (
+                          <li key={a.id}>
+                            <button type="button" onClick={() => navigate(`/agenda?cita=${a.id}`)} className={cx('card flex min-h-16 w-full items-center gap-3 p-2.5 pr-3 text-left transition active:scale-[0.99]', cancelled && 'opacity-60')}>
+                              <DateTile dayKey={d} time={formatTime(a.starts_at)} today={isToday} />
+                              <span className={cx('h-10 w-1 shrink-0 rounded-full', `dot-${tone}`)} aria-hidden="true" />
+                              <span className="min-w-0 flex-1">
+                                <span className={cx('block truncate text-sm font-semibold', cancelled && 'line-through')}>{a.title}</span>
+                                <span className="flex items-center gap-1.5 truncate text-xs text-muted">
+                                  {a.meeting_url ? <Video className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : a.location ? <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : null}
+                                  <span className="truncate">{APPOINTMENT_KINDS[a.kind]?.label}{a.client_name ? ` · ${a.client_name}` : a.project_name ? ` · ${a.project_name}` : ''}</span>
+                                </span>
+                                {a.status === 'programada' && a.kind !== 'interna' && <Badge tone="amber" className="mt-1">Sin confirmar</Badge>}
+                              </span>
+                              <AvatarStack people={a.attendees} size={22} max={2} />
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </section>
+              );
+            })}
           </div>
-          {data.appointments.length === 0 && <div className="mt-4 hidden md:block"><EmptyState icon={CalendarDays} title="Semana libre">Tocá cualquier hora de la grilla para agendar una cita.</EmptyState></div>}
+          {data.appointments.length === 0 && <div className="mt-4 hidden md:block"><EmptyState icon={CalendarDays} tone="violet" title="Semana libre">Tocá cualquier hora de la grilla para agendar una cita.</EmptyState></div>}
         </>
       )}
 

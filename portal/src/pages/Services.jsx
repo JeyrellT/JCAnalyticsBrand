@@ -3,29 +3,32 @@ import { useMemo, useState } from 'react';
 import { Search, Layers, Users, FolderKanban, ChevronDown, PauseCircle } from 'lucide-react';
 import { useResource, useSession } from '../lib/session.jsx';
 import { Link } from '../lib/router.jsx';
-import { PageHeader, PageLoader, EmptyState, Avatar, AvatarStack, cx } from '../components/ui.jsx';
-import { priceParts } from '../components/services.jsx';
+import { PageHeader, PageLoader, EmptyState, Avatar, AvatarStack, IconTile, Badge, cx } from '../components/ui.jsx';
+import { priceParts, groupIcon } from '../components/services.jsx';
 import { formatMoney } from '../lib/format.js';
 import { SERVICE_GROUPS } from '../../shared/catalog.js';
 
 function Metric({ label, value, alert }) {
   return (
     <div className="flex min-w-0 flex-col-reverse">
-      <dt className="truncate text-[11px] text-muted">{label}</dt>
-      <dd className={cx('truncate font-display text-base font-bold tabular', alert && 'text-coral')}>{value}</dd>
+      <dt className="truncate text-[11px] leading-tight text-muted">{label}</dt>
+      <dd className={cx('num truncate text-[17px] font-bold leading-6', alert && 'text-coral-ink')}>{value}</dd>
     </div>
   );
 }
 
-function ServiceCard({ s, fx }) {
+function ServiceCard({ s, fx, tone }) {
   const price = priceParts(s, fx);
   const team = (s.members ?? []).filter((m) => m.id !== s.lead_id);
   return (
-    <Link to={`/servicios/${s.key}`} className={cx('card group flex h-full flex-col gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-md', !s.active && 'opacity-70')}>
-      <div className="min-w-0">
-        <h3 className="font-display text-base font-bold leading-snug group-hover:text-brand">{s.name}</h3>
-        <p className="mt-0.5 text-sm font-semibold text-ink/80">{price.text}</p>
-        {price.approx && <p className="text-xs text-muted tabular">{price.approx}</p>}
+    <Link to={`/servicios/${s.key}`} className={cx('card card-hover group flex h-full flex-col gap-4 p-4 sm:p-5', !s.active && 'opacity-70 saturate-50 hover:opacity-100 hover:saturate-100')}>
+      <div className="flex items-start gap-3">
+        <IconTile icon={groupIcon(s.group)} tone={tone} />
+        <div className="min-w-0 flex-1">
+          <h3 className="font-display text-[17px] font-bold leading-snug group-hover:text-brand-ink">{s.name}</h3>
+          <p className="num mt-1 text-[15px] font-bold leading-tight">{price.text}</p>
+          {price.approx && <p className="mt-0.5 text-xs text-muted tabular">{price.approx}</p>}
+        </div>
       </div>
 
       <div className="flex items-center justify-between gap-2">
@@ -52,14 +55,15 @@ function ServiceCard({ s, fx }) {
 
 function SummaryChip({ icon: Icon, value, label }) {
   return (
-    <div className="flex min-w-0 flex-col gap-0.5 rounded-2xl border border-line bg-white px-3 py-2 text-sm sm:flex-row sm:items-center sm:gap-2 sm:rounded-full sm:py-1.5">
-      <span className="flex items-center gap-1.5"><Icon className="h-4 w-4 shrink-0 text-teal-dark" /><span className="font-bold tabular">{value}</span></span>
-      <span className="text-xs leading-tight text-muted sm:text-sm">{label}</span>
+    <div className="inline-flex min-w-0 items-center gap-2 rounded-full border border-line bg-surface py-1.5 pl-2.5 pr-3.5 text-sm shadow-card">
+      <Icon className="h-4 w-4 shrink-0 text-violet-ink" aria-hidden="true" />
+      <span className="num font-bold">{value}</span>
+      <span className="truncate text-muted">{label}</span>
     </div>
   );
 }
 
-const Grid = ({ children }) => <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{children}</div>;
+const Grid = ({ children }) => <div className="stagger grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{children}</div>;
 
 export default function Services() {
   const { settings } = useSession();
@@ -89,54 +93,55 @@ export default function Services() {
     ...Object.entries(SERVICE_GROUPS).map(([key, meta]) => ({ key, label: meta.label, tone: meta.tone, items: active.filter((s) => s.group === key) })),
     { key: 'otros', label: 'Otros', tone: 'slate', items: active.filter((s) => !SERVICE_GROUPS[s.group]) },
   ].filter((g) => g.items.length);
+  const toneOf = (s) => SERVICE_GROUPS[s.group]?.tone ?? 'slate';
 
   return (
     <>
-      <PageHeader eyebrow="Lo que ofrecemos" title="Servicios"
+      <PageHeader eyebrow="Lo que ofrecemos" title="Servicios" icon={Layers} tone="violet"
         subtitle="Cada servicio con su precio base, quién lo lidera y cuánto trabajo tiene ahora. Tocá uno para ver el detalle." />
 
       {!data ? <PageLoader error={error} onRetry={reload} /> : (
-        <div className="space-y-6">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap" aria-label="Resumen">
+        <div className="space-y-8">
+          <div className="animate-rise flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap gap-2" aria-label="Resumen">
               <SummaryChip icon={Layers} value={summary.active} label={summary.active === 1 ? 'servicio activo' : 'servicios activos'} />
               <SummaryChip icon={Users} value={summary.people} label={summary.people === 1 ? 'persona involucrada' : 'personas involucradas'} />
               <SummaryChip icon={FolderKanban} value={summary.projects} label={summary.projects === 1 ? 'proyecto activo' : 'proyectos activos'} />
             </div>
-            <label className="relative w-full lg:w-72">
+            <label className="relative w-full lg:w-80">
               <span className="sr-only">Buscar servicio</span>
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-2" aria-hidden="true" />
               <input className="input pl-9" type="search" placeholder="Buscar servicio o persona" value={q} onChange={(e) => setQ(e.target.value)} />
             </label>
           </div>
 
           {all.length === 0 ? (
-            <EmptyState icon={Layers} title="Todavía no hay servicios">Cuando el servidor cargue el catálogo, los servicios aparecen acá.</EmptyState>
+            <EmptyState icon={Layers} tone="violet" title="Todavía no hay servicios">Cuando el servidor cargue el catálogo, los servicios aparecen acá.</EmptyState>
           ) : filtered.length === 0 ? (
-            <EmptyState icon={Search} title="Ningún servicio coincide" action={<button type="button" className="btn btn-outline" onClick={() => setQ('')}>Limpiar búsqueda</button>}>
+            <EmptyState icon={Search} tone="violet" title="Ningún servicio coincide" action={<button type="button" className="btn btn-outline" onClick={() => setQ('')}>Limpiar búsqueda</button>}>
               Probá con otra palabra, por ejemplo el nombre de una persona.
             </EmptyState>
           ) : null}
 
           {groups.map((g) => (
             <section key={g.key} aria-labelledby={`grupo-${g.key}`}>
-              <h2 id={`grupo-${g.key}`} className="section-title mb-3 flex items-center gap-2">
-                <span className={cx('h-2.5 w-2.5 rounded-full', `dot-${g.tone}`)} />
-                {g.label}
-                <span className="text-sm font-normal text-muted">{g.items.length}</span>
-              </h2>
-              <Grid>{g.items.map((s) => <ServiceCard key={s.key} s={s} fx={fx} />)}</Grid>
+              <div className="mb-3 flex items-center gap-2.5">
+                <span className={cx('h-2.5 w-2.5 shrink-0 rounded-full', `dot-${g.tone}`)} aria-hidden="true" />
+                <h2 id={`grupo-${g.key}`} className="section-title truncate">{g.label}</h2>
+                <Badge tone={g.tone}>{g.items.length}</Badge>
+              </div>
+              <Grid>{g.items.map((s) => <ServiceCard key={s.key} s={s} fx={fx} tone={g.tone} />)}</Grid>
             </section>
           ))}
 
           {paused.length > 0 && (
-            <section aria-labelledby="grupo-pausados" className="rounded-2xl border border-dashed border-line p-3 sm:p-4">
+            <section aria-labelledby="grupo-pausados" className="rounded-2xl border border-dashed border-line-strong p-2 sm:p-3">
               <button type="button" id="grupo-pausados" aria-expanded={showPaused || !!text} onClick={() => setShowPaused((v) => !v)}
-                className="flex min-h-10 w-full items-center justify-between gap-2 rounded-xl px-1 text-left font-semibold text-muted hover:text-ink">
-                <span className="flex items-center gap-2"><PauseCircle className="h-4 w-4" />Pausados <span className="font-normal">{paused.length}</span></span>
+                className="tap flex w-full items-center justify-between gap-2 rounded-xl px-2 text-left font-semibold text-muted transition hover:bg-surface-2 hover:text-ink">
+                <span className="flex items-center gap-2"><PauseCircle className="h-4 w-4" />Pausados <Badge tone="slate">{paused.length}</Badge></span>
                 <ChevronDown className={cx('h-4 w-4 transition', (showPaused || text) && 'rotate-180')} />
               </button>
-              {(showPaused || !!text) && <div className="mt-3"><Grid>{paused.map((s) => <ServiceCard key={s.key} s={s} fx={fx} />)}</Grid></div>}
+              {(showPaused || !!text) && <div className="mt-3 px-1 pb-1"><Grid>{paused.map((s) => <ServiceCard key={s.key} s={s} fx={fx} tone={toneOf(s)} />)}</Grid></div>}
             </section>
           )}
         </div>

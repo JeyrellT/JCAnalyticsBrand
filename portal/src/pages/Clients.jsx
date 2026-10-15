@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Plus, Search, Building2, MessageCircle, CalendarDays, Clock3, FolderKanban } from 'lucide-react';
 import { useResource, useSession } from '../lib/session.jsx';
 import { Link, navigate, useLocation } from '../lib/router.jsx';
-import { PageHeader, PageLoader, EmptyState, Avatar, Tabs } from '../components/ui.jsx';
+import { PageHeader, PageLoader, EmptyState, Avatar, Tabs, cx } from '../components/ui.jsx';
 import { ClientForm, ClientStatusBadge, clientWhatsapp } from '../components/clients.jsx';
 import { formatMoney, formatDateTime, timeAgo } from '../lib/format.js';
 
@@ -14,40 +14,42 @@ const TABS = [
   { value: 'todos', label: 'Todos' },
 ];
 
+/** Fila de dato de la tarjeta: ícono, etiqueta y el valor en números a la derecha. */
+function Fact({ icon: Icon, label, value, muted = false, accent = false, title }) {
+  return (
+    <li className="flex min-h-7 items-center gap-2.5 text-sm">
+      <Icon className={cx('h-4 w-4 shrink-0', accent ? 'text-brand-ink' : 'text-muted-2')} aria-hidden="true" />
+      <span className="min-w-0 flex-1 truncate text-muted">{label}</span>
+      <span className={cx('num shrink-0 text-right text-[15px] font-semibold', muted ? 'text-muted-2' : accent ? 'text-brand-ink' : 'text-ink')} title={title}>{value}</span>
+    </li>
+  );
+}
+
 function ClientCard({ c, senderName }) {
   const wa = clientWhatsapp(c, senderName);
   const active = c.projects_active ?? 0;
+  const initial = (c.name ?? '').trim().charAt(0).toUpperCase();
   return (
-    <article className="card group relative flex min-w-0 flex-col gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className="font-display text-base font-bold leading-snug group-hover:text-brand">
+    <article className="card card-hover group relative flex min-w-0 flex-col gap-4 p-4 sm:p-5">
+      <div className="flex items-start gap-3">
+        <span className="icon-tile tile-amber font-display text-lg font-bold" aria-hidden="true">{initial || <Building2 className="h-[18px] w-[18px]" />}</span>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-display text-[17px] font-bold leading-snug group-hover:text-brand-ink">
             {/* El enlace cubre toda la tarjeta; el botón de WhatsApp queda por encima. */}
             <Link to={`/clientes/${c.id}`} className="after:absolute after:inset-0 after:rounded-2xl">{c.name}</Link>
           </h3>
-          <p className="truncate text-xs text-muted">{c.sector || 'Sin sector'}</p>
+          <p className="mt-0.5 truncate text-sm text-muted">{c.sector || 'Sin sector'}</p>
         </div>
         <ClientStatusBadge status={c.status} />
       </div>
 
-      <ul className="space-y-1.5 text-sm">
-        <li className="flex items-center gap-2">
-          <FolderKanban className="h-4 w-4 shrink-0 text-muted" />
-          <span className="min-w-0 flex-1 truncate">
-            {active ? `${active} ${active === 1 ? 'proyecto activo' : 'proyectos activos'}` : <span className="text-muted">Sin proyectos activos</span>}
-          </span>
-          {c.value_crc > 0 && <span className="shrink-0 font-semibold tabular" title="Valor de sus proyectos abiertos">{formatMoney(c.value_crc, 'CRC', { compact: true })}</span>}
-        </li>
-        <li className="flex items-center gap-2 text-muted">
-          <Clock3 className="h-4 w-4 shrink-0" />
-          <span className="min-w-0 truncate">{c.last_contact_at ? `Último contacto ${timeAgo(c.last_contact_at)}` : 'Sin contacto registrado'}</span>
-        </li>
-        {c.next_appointment_at && (
-          <li className="flex items-center gap-2 font-medium text-brand">
-            <CalendarDays className="h-4 w-4 shrink-0" />
-            <span className="min-w-0 truncate first-letter:uppercase">Cita: {formatDateTime(c.next_appointment_at)}</span>
-          </li>
-        )}
+      <ul className="space-y-1.5">
+        <Fact icon={FolderKanban} label={active === 1 ? 'Proyecto activo' : 'Proyectos activos'}
+          value={c.value_crc > 0 ? <>{active}<span className="ml-1.5 text-xs font-medium text-muted">· {formatMoney(c.value_crc, 'CRC', { compact: true })}</span></> : active}
+          muted={!active} title={c.value_crc > 0 ? 'Valor de sus proyectos abiertos' : undefined} />
+        <Fact icon={Clock3} label="Último contacto" value={c.last_contact_at ? timeAgo(c.last_contact_at) : 'Sin registro'} muted={!c.last_contact_at} />
+        <Fact icon={CalendarDays} label="Próxima cita" value={c.next_appointment_at ? <span className="first-letter:uppercase">{formatDateTime(c.next_appointment_at)}</span> : 'Sin agendar'}
+          muted={!c.next_appointment_at} accent={!!c.next_appointment_at} />
       </ul>
 
       <div className="mt-auto flex items-center justify-between gap-2 border-t border-line pt-3">
@@ -58,8 +60,8 @@ function ClientCard({ c, senderName }) {
           </span>
         ) : <span className="text-xs text-muted">Nadie lleva la relación</span>}
         {wa && (
-          <a href={wa} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm relative z-10 shrink-0" aria-label={`Escribir a ${c.name} por WhatsApp`}>
-            <MessageCircle className="h-4 w-4 text-teal-dark" />WhatsApp
+          <a href={wa} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm relative z-10 shrink-0 min-h-9" aria-label={`Escribir a ${c.name} por WhatsApp`}>
+            <MessageCircle className="h-4 w-4 text-teal-ink" />WhatsApp
           </a>
         )}
       </div>
@@ -101,31 +103,32 @@ export default function Clients() {
 
   return (
     <>
-      <PageHeader eyebrow="Relación con clientes" title="Clientes" subtitle="Con quién trabajamos, quién lleva cada relación y qué tenemos en curso." actions={newButton} />
+      <PageHeader eyebrow="Relación con clientes" title="Clientes" icon={Building2} tone="amber"
+        subtitle="Con quién trabajamos, quién lleva cada relación y qué tenemos en curso." actions={newButton} />
 
-      <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      <div className="animate-rise mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <Tabs value={tab} onChange={setTab} tabs={TABS.map((t) => ({ ...t, count: data ? counts[t.value] ?? 0 : undefined }))} />
         </div>
-        <label className="relative min-w-0 lg:w-72">
+        <label className="relative min-w-0 lg:w-80">
           <span className="sr-only">Buscar cliente</span>
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-2" aria-hidden="true" />
           <input className="input pl-9" type="search" placeholder="Buscar por nombre, sector o contacto" value={q} onChange={(e) => setQ(e.target.value)} />
         </label>
       </div>
 
       {!data ? <PageLoader error={error} onRetry={reload} /> : all.length === 0 ? (
-        <EmptyState icon={Building2} title="Todavía no hay clientes" action={newButton}>
+        <EmptyState icon={Building2} tone="amber" title="Todavía no hay clientes" action={newButton}>
           Registrá cada cliente con su contacto y quién del equipo lleva la relación. Después le colgás proyectos y citas.
         </EmptyState>
       ) : clients.length === 0 ? (
-        <EmptyState icon={Search} title={q.trim() ? `Nada coincide con “${q.trim()}”` : `No hay clientes ${TABS.find((t) => t.value === tab).label.toLowerCase()}`}
+        <EmptyState icon={Search} tone="amber" title={q.trim() ? `Nada coincide con “${q.trim()}”` : `No hay clientes ${TABS.find((t) => t.value === tab).label.toLowerCase()}`}
           action={q.trim() ? <button type="button" className="btn btn-outline" onClick={() => setQ('')}>Borrar búsqueda</button>
             : tab !== 'todos' && <button type="button" className="btn btn-outline" onClick={() => setTab('todos')}>Ver todos</button>}>
           {q.trim() ? 'Probá con otra palabra o revisá las otras pestañas.' : 'Revisá las otras pestañas o agregá uno nuevo.'}
         </EmptyState>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{clients.map((c) => <ClientCard key={c.id} c={c} senderName={user.name} />)}</div>
+        <div className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{clients.map((c) => <ClientCard key={c.id} c={c} senderName={user.name} />)}</div>
       )}
 
       {creating && <ClientForm onClose={() => setCreating(false)} onSaved={(c) => { reload(); navigate(`/clientes/${c.id}`); }} />}
