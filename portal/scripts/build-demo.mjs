@@ -48,7 +48,7 @@ if (/\b(?:fetch|XMLHttpRequest)\s*\(\s*["'`]\/api\//.test(script)) console.warn(
 const fragment = [
   TITLE,
   ...FONTS,
-  `<style>:root{color-scheme:light}\n${style}</style>`,
+  `<style>${style}</style>`,
   '<div id="root"></div>',
   `<script type="module">${script}</script>`,
   '',

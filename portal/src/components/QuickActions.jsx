@@ -56,12 +56,12 @@ export function Sheet({ label, onClose, placement = 'bottom', className, focusKe
   const right = placement === 'right';
   return (
     <div className={cx('fixed inset-0 z-50 flex', right ? 'justify-end' : 'items-end justify-center sm:items-center sm:p-4')} role="dialog" aria-modal="true" aria-label={label}>
-      <div className="animate-fade absolute inset-0 bg-ink/50 backdrop-blur-[2px]" aria-hidden="true" onClick={onClose} />
+      <div className="animate-fade absolute inset-0 bg-panel/55 backdrop-blur-[2px]" aria-hidden="true" onClick={onClose} />
       <div ref={panel}
-        className={cx('relative flex flex-col overflow-y-auto overscroll-contain shadow-2xl',
-          right ? 'animate-drawer h-full w-[86%] max-w-xs' : 'animate-sheet sheet-panel max-h-[88dvh] w-full rounded-t-3xl sm:max-w-md sm:rounded-3xl',
-          className ?? 'bg-white')}>
-        {!right && <span className="mx-auto mt-2.5 h-1.5 w-10 shrink-0 rounded-full bg-slate-200 sm:hidden" aria-hidden="true" />}
+        className={cx('relative flex flex-col overflow-y-auto overscroll-contain shadow-pop',
+          right ? 'animate-drawer h-full w-[86%] max-w-xs' : 'animate-sheet sheet-panel max-h-[88dvh] w-full rounded-t-3xl border border-line sm:max-w-md sm:rounded-3xl',
+          className ?? 'bg-surface')}>
+        {!right && <span className="mx-auto mt-2.5 h-1.5 w-10 shrink-0 rounded-full bg-line-strong sm:hidden" aria-hidden="true" />}
         {children}
       </div>
     </div>
@@ -73,7 +73,7 @@ export function SheetHeader({ title, hint, onClose, onBack }) {
   return (
     <div className="flex items-start gap-2 px-5 pb-2 pt-3 sm:pt-5">
       {onBack && (
-        <button type="button" onClick={onBack} className="tap -ml-2 flex items-center justify-center rounded-xl text-ink hover:bg-slate-100" aria-label="Volver">
+        <button type="button" onClick={onBack} className="tap -ml-2 flex items-center justify-center rounded-xl text-ink hover:bg-surface-3" aria-label="Volver">
           <ArrowLeft className="h-5 w-5" />
         </button>
       )}
@@ -81,7 +81,7 @@ export function SheetHeader({ title, hint, onClose, onBack }) {
         <h2 className="font-display text-lg font-bold leading-tight">{title}</h2>
         {hint && <p className="mt-0.5 text-sm text-muted">{hint}</p>}
       </div>
-      <button type="button" onClick={onClose} className="tap -mr-2 flex items-center justify-center rounded-xl text-muted hover:bg-slate-100 hover:text-ink" aria-label="Cerrar">
+      <button type="button" onClick={onClose} className="tap -mr-2 flex items-center justify-center rounded-xl text-muted hover:bg-surface-3 hover:text-ink" aria-label="Cerrar">
         <X className="h-5 w-5" />
       </button>
     </div>
@@ -90,10 +90,10 @@ export function SheetHeader({ title, hint, onClose, onBack }) {
 
 const TONES = {
   blue: 'bg-brand-soft text-brand',
-  violet: 'bg-violet-50 text-violet-700',
-  teal: 'bg-teal-soft text-teal-dark',
-  amber: 'bg-amber-50 text-amber-700',
-  ink: 'bg-ink text-white',
+  violet: 'bg-violet-soft text-violet-ink',
+  teal: 'bg-teal-soft text-teal-ink',
+  amber: 'bg-amber-soft text-amber-ink',
+  ink: 'bg-contrast text-contrast-fg',
 };
 
 function ActionRow({ icon: Icon, tone, title, hint, to, onClick, autoFocus }) {
@@ -105,11 +105,11 @@ function ActionRow({ icon: Icon, tone, title, hint, to, onClick, autoFocus }) {
         <span className="block text-[15px] font-semibold leading-snug text-ink">{title}</span>
         <span id={hintId} className="block text-[13px] leading-snug text-muted">{hint}</span>
       </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-2" />
     </>
   );
   const props = {
-    className: 'flex min-h-16 w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition hover:bg-slate-50 active:bg-slate-100',
+    className: 'flex min-h-16 w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition hover:bg-surface-2 active:bg-surface-3',
     'aria-label': title,
     'aria-describedby': hintId,
     'data-autofocus': autoFocus ? '' : undefined,
@@ -150,13 +150,13 @@ function ClientProjectPicker({ onPicked }) {
       {projects.map((p, i) => (
         <li key={p.id}>
           <Link to={`/proyectos/${p.id}?avance=1`} onClick={onPicked} data-autofocus={i === 0 ? '' : undefined}
-            className="flex min-h-16 items-center gap-3 rounded-2xl px-3 py-2.5 transition hover:bg-slate-50 active:bg-slate-100">
+            className="flex min-h-16 items-center gap-3 rounded-2xl px-3 py-2.5 transition hover:bg-surface-2 active:bg-surface-3">
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[15px] font-semibold text-ink">{p.client || p.name}</span>
               <span className="block truncate text-[13px] text-muted">{p.name}</span>
             </span>
             <SlaBadge state={p.sla_state} hours={p.hours_since_update} />
-            <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-2" />
           </Link>
         </li>
       ))}

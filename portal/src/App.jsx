@@ -56,7 +56,8 @@ function Router() {
     const params = matchPath(pattern, path);
     if (!params) continue;
     if (opts?.invest && !canInvest) break;
-    return <Suspense fallback={<PageLoader />}><Page key={pattern} params={params} /></Suspense>;
+    // La clave por patrón remonta la página al cambiar de sección (entrada suave) sin remontar al cambiar solo el id.
+    return <Suspense fallback={<PageLoader />}><div key={pattern} className="animate-fade"><Page params={params} /></div></Suspense>;
   }
   return <EmptyState icon={Compass} title="Esta sección no existe">Revisá el enlace o volvé al centro de operaciones.</EmptyState>;
 }
@@ -67,7 +68,7 @@ export function App() {
   if (session.status === 'offline') {
     return (
       <div className="flex min-h-dvh items-center justify-center p-6">
-        <EmptyState icon={WifiOff} title="No hay conexión con el portal" action={<button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>Reintentar</button>}>
+        <EmptyState icon={WifiOff} tone="slate" className="w-full max-w-md" title="No hay conexión con el portal" action={<button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>Reintentar</button>}>
           El servidor no respondió. Revisá tu conexión a internet.
         </EmptyState>
       </div>

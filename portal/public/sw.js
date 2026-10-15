@@ -11,7 +11,7 @@
    Al cambiar este archivo o los íconos de public/icons/, subí VERSION.
    ============================================================================ */
 
-const VERSION = 'v3.0.0';
+const VERSION = 'v4.0.0';
 const SHELL_CACHE = `jcp-shell-${VERSION}`;
 const ASSET_CACHE = 'jcp-assets';   // con hash: sobreviven entre versiones, con tope de entradas
 const META_CACHE = 'jcp-meta';      // clave pública VAPID y plataforma (la escribe src/lib/pwa.js)
@@ -20,7 +20,7 @@ const KEEP = new Set([SHELL_CACHE, ASSET_CACHE, META_CACHE]);
 const MAX_ASSETS = 150;
 const SHELL_URL = '/';
 const FALLBACK_URL = '/buzon';
-const PRECACHE = ['/', '/manifest.webmanifest', '/favicon-32.png', '/icons/icon-192.png', '/icons/badge-96.png', '/icons/apple-touch-icon-180.png'];
+const PRECACHE = ['/', '/theme-init.js', '/manifest.webmanifest', '/favicon-32.png', '/icons/icon-192.png', '/icons/badge-96.png', '/icons/apple-touch-icon-180.png'];
 
 // ── Ciclo de vida ───────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
@@ -115,13 +115,20 @@ async function trimAssets(cache) {
 }
 
 function offlinePage() {
+  // Página mínima sin conexión, con los mismos colores del portal en claro y oscuro.
   const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#071a36"><title>Sin conexión · JC Analytics</title></head>
-<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f8fb;color:#071a36;font:16px/1.5 system-ui,sans-serif;text-align:center;padding:24px">
-<div><p style="font-size:20px;font-weight:700;margin:0 0 6px">Sin conexión</p>
-<p style="margin:0 0 20px;color:#5b6b82">Revisá tu internet y volvé a intentar.</p>
-<a href="/" style="display:inline-block;padding:12px 20px;border-radius:12px;background:#0065df;color:#fff;font-weight:600;text-decoration:none">Reintentar</a></div>
-</body></html>`;
+<meta name="color-scheme" content="light dark"><meta name="theme-color" content="#071a36"><title>Sin conexión · JC Analytics</title>
+<style>
+:root{color-scheme:light;--bg:#f4f7fb;--ink:#071a36;--muted:#5b6b82;--brand:#0065df;--surface:#fff;--line:#e4e9f0}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#0a1120;--ink:#e9eef7;--muted:#8f9db6;--brand:#4d94ff;--surface:#111a2c;--line:#22304f}}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif;text-align:center;padding:24px}
+.c{max-width:360px;padding:28px 24px;border:1px solid var(--line);border-radius:20px;background:var(--surface)}
+.i{width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:color-mix(in oklab,var(--brand) 14%,transparent);display:flex;align-items:center;justify-content:center;color:var(--brand)}
+h1{font-size:20px;margin:0 0 6px}p{margin:0 0 20px;color:var(--muted)}
+a{display:inline-block;padding:12px 20px;border-radius:12px;background:var(--brand);color:#fff;font-weight:600;text-decoration:none}
+</style></head>
+<body><div class="c"><div class="i"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01M8.5 16.4a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 14 0M2 9a15 15 0 0 1 20 0"/></svg></div>
+<h1>Sin conexión</h1><p>Revisá tu internet y volvé a intentar.</p><a href="/">Reintentar</a></div></body></html>`;
   return new Response(html, { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
 }
 

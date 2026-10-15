@@ -75,6 +75,22 @@ El admin las pausa, ajusta su hora y las prueba con "Probar ahora". "Lo que hizo
 - elige qué le avisamos: tareas, citas, proyectos, dinero (solo socios), resumen y alertas;
 - define su horario tranquilo (21:00–7:00 por defecto). De noche solo suena la plata por confirmar; todo lo demás queda en el buzón.
 
+### Apariencia: claro, oscuro o automático
+
+El portal tiene **tema claro y oscuro**. Por defecto sigue al celular o la compu; cada persona puede fijarlo en
+"Equipo → Mi perfil → Apariencia", con el sol/luna de la barra lateral o en la hoja "Más" del celular. La
+preferencia se guarda en el navegador (`jcp:theme`) y se aplica antes de pintar, sin destello. Los colores de la
+barra del sistema (`theme-color`) y la página "Sin conexión" acompañan al tema.
+
+Todo el sistema visual (tokens, componentes y reglas) está documentado en `docs/v4-diseno.md`.
+Para revisar las pantallas en los dos temas y en los dos anchos:
+
+```sh
+npm run build
+node scripts/capturas.mjs capturas --tema=light     # escritorio 1440 px y celular 390 px
+node scripts/capturas.mjs capturas --tema=dark --solo=inicio,inversiones
+```
+
 ### Instalar en el celular
 
 - **Android (Chrome):** en "Avisos y app" tocá **Instalar**, o usá el menú ⋮ → *Instalar app*. Los avisos se activan desde ahí mismo.

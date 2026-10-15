@@ -42,7 +42,7 @@ export function PeoplePicker({ value = [], onChange }) {
         const on = value.includes(u.id);
         return (
           <button key={u.id} type="button" onClick={() => toggle(u.id)} aria-pressed={on}
-            className={cx('flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm transition', on ? 'border-brand bg-brand-soft font-semibold text-brand' : 'border-line bg-white text-muted hover:border-slate-300')}>
+            className={cx('flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm transition', on ? 'border-brand bg-brand-soft font-semibold text-brand' : 'border-line bg-surface text-muted hover:border-line-strong')}>
             <Avatar name={u.name} color={u.color} size={24} />
             {u.name.split(' ')[0]}
           </button>
@@ -76,7 +76,7 @@ export function MoneyInput({ id, value, onChange, currency = 'CRC', placeholder 
         <input id={id} className="input pl-7 tabular" inputMode="decimal" autoComplete="off" placeholder={placeholder ?? (currency === 'USD' ? '0,00' : '0')} value={raw}
           onChange={(e) => { setRaw(e.target.value); onChange(toMinor(e.target.value)); }} />
       </div>
-      {raw && <p className={cx('mt-1 text-xs', parsed == null || parsed <= 0 ? 'text-coral' : 'text-muted')}>{parsed == null ? 'Monto no válido' : `Se registrará: ${formatMoney(parsed, currency)}`}</p>}
+      {raw && <p className={cx('mt-1 text-xs', parsed == null || parsed <= 0 ? 'text-coral-ink' : 'text-muted')}>{parsed == null ? 'Monto no válido' : `Se registrará: ${formatMoney(parsed, currency)}`}</p>}
     </div>
   );
 }
