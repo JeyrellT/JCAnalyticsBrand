@@ -508,6 +508,31 @@ export const MIGRATIONS = [
   );
   CREATE INDEX client_documents_client ON client_documents(client_id);
   `,
+  // 6 · Rol "inversionista" (v6, ver docs/v6-contrato.md). SQLite no permite cambiar un CHECK:
+  //     se reconstruye users con el procedimiento oficial (claves foráneas apagadas solo durante
+  //     esta migración, copia, reemplazo y verificación de integridad al final). Los ids no cambian.
+  {
+    foreignKeysOff: true,
+    sql: `
+  CREATE TABLE users_v6 (
+    id INTEGER PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    name TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('admin','socio','colaborador','inversionista')),
+    color TEXT NOT NULL DEFAULT '#0065df',
+    phone TEXT,
+    password_hash TEXT NOT NULL,
+    must_change_password INTEGER NOT NULL DEFAULT 1,
+    active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    last_login_at TEXT
+  );
+  INSERT INTO users_v6 (id, email, name, role, color, phone, password_hash, must_change_password, active, created_at, last_login_at)
+    SELECT id, email, name, role, color, phone, password_hash, must_change_password, active, created_at, last_login_at FROM users;
+  DROP TABLE users;
+  ALTER TABLE users_v6 RENAME TO users;
+  `,
+  },
 ];
 
 export const DEFAULT_SETTINGS = {
@@ -518,18 +543,32 @@ export const DEFAULT_SETTINGS = {
   brief_lead_days: '3',       // Días mínimos de producción entre el envío de un brief y su fecha de salida.
 };
 
-/** Aplica migraciones pendientes y valores por defecto. */
+/**
+ * Aplica migraciones pendientes y valores por defecto. Una migración es SQL o
+ * { sql, foreignKeysOff: true } para reconstruir una tabla con hijos: las claves
+ * foráneas se apagan fuera de la transacción (no se pueden cambiar dentro), se
+ * verifica la integridad antes de confirmar y se restaura el valor anterior.
+ */
 export function migrate(db) {
   const { user_version: version } = db.prepare('PRAGMA user_version').get();
   for (let i = version; i < MIGRATIONS.length; i += 1) {
+    const step = typeof MIGRATIONS[i] === 'string' ? { sql: MIGRATIONS[i] } : MIGRATIONS[i];
+    const fkBefore = step.foreignKeysOff ? db.prepare('PRAGMA foreign_keys').get().foreign_keys : null;
+    if (step.foreignKeysOff) db.exec('PRAGMA foreign_keys = OFF');
     db.exec('BEGIN');
     try {
-      db.exec(MIGRATIONS[i]);
+      db.exec(step.sql);
+      if (step.foreignKeysOff) {
+        const broken = db.prepare('PRAGMA foreign_key_check').all();
+        if (broken.length) throw new Error(`Migración ${i + 1}: ${broken.length} referencias rotas (${JSON.stringify(broken[0])})`);
+      }
       db.exec(`PRAGMA user_version = ${i + 1}`);
       db.exec('COMMIT');
     } catch (error) {
       db.exec('ROLLBACK');
       throw error;
+    } finally {
+      if (step.foreignKeysOff && fkBefore) db.exec('PRAGMA foreign_keys = ON');
     }
   }
   const insert = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');

@@ -14,13 +14,14 @@
 //    PORTAL_VAPID_SUBJECT    contacto VAPID (por defecto mailto:gerencia@jcanalytic.com)
 //    PORTAL_FX_URL           API del tipo de cambio (por defecto https://api.hacienda.go.cr/indicadores/tc/dolar)
 //    PORTAL_SCHEDULER=0      apaga el programador de automatizaciones (corre cada 60 s)
+//    PORTAL_SETUP_CODE       código de la configuración inicial por pantalla (v6). Sin él, se genera uno y se muestra en el registro.
 // ============================================================================
 
 import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
 import { openDatabase } from './db.mjs';
 import { createPortalServer } from './app.mjs';
-import { hashPassword, passwordProblem } from './auth.mjs';
+import { hashPassword, passwordProblem, temporaryPassword } from './auth.mjs';
 import { createPushService } from './push.mjs';
 
 const dbPath = process.env.PORTAL_DB_PATH || fileURLToPath(new URL('../data/portal.sqlite', import.meta.url));
@@ -39,9 +40,19 @@ if (!users) {
     db.prepare(`INSERT INTO users (email, name, role, color, password_hash, must_change_password, created_at)
       VALUES (?, ?, 'admin', '#0065df', ?, 1, ?)`).run(email, process.env.PORTAL_ADMIN_NAME?.trim() || 'Administrador', await hashPassword(password), new Date().toISOString());
     console.info(`[portal] Administrador inicial creado: ${email}. Quitá PORTAL_ADMIN_PASSWORD de las variables.`);
-  } else {
-    console.warn('[portal] La base no tiene usuarios. Definí PORTAL_ADMIN_EMAIL y PORTAL_ADMIN_PASSWORD o ejecutá `npm run user:create`.');
   }
+}
+
+// Configuración inicial por pantalla (v6): con la base vacía, el dueño abre el portal y crea su cuenta
+// con este código de un solo uso. Se toma de PORTAL_SETUP_CODE o se genera una vez y se guarda.
+let setupCode = null;
+if (!db.prepare('SELECT COUNT(*) n FROM users').get().n) {
+  setupCode = process.env.PORTAL_SETUP_CODE?.trim() || db.prepare("SELECT value FROM app_secrets WHERE key = 'setup_code'").get()?.value || null;
+  if (!setupCode) {
+    setupCode = temporaryPassword();
+    db.prepare("INSERT OR REPLACE INTO app_secrets (key, value) VALUES ('setup_code', ?)").run(setupCode);
+  }
+  console.info(`[portal] Configuración inicial pendiente: abrí el portal y creá la cuenta del dueño con el código ${process.env.PORTAL_SETUP_CODE ? 'de PORTAL_SETUP_CODE' : setupCode}.`);
 }
 
 // Avisos push: si las claves VAPID del entorno están mal, el portal sigue sin push (y lo dice en el log).
@@ -65,7 +76,7 @@ async function fetchExchangeRate() {
 }
 
 const distDir = fileURLToPath(new URL('../dist', import.meta.url));
-const server = createPortalServer({ db, staticDir: existsSync(distDir) ? distDir : null, push, fetchExchangeRate });
+const server = createPortalServer({ db, staticDir: existsSync(distDir) ? distDir : null, push, fetchExchangeRate, setupCode });
 const port = Number(process.env.PORT) || 3002;
 server.listen(port, () => console.info(`[portal] escuchando en el puerto ${port} · base ${dbPath}${push ? ' · push activo' : ''}`));
 

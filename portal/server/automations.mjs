@@ -197,7 +197,8 @@ export function createAutomationEngine(ctx) {
   const HANDLERS = {
     resumen_diario({ clock, force }) {
       const t = tally();
-      for (const user of db.prepare('SELECT * FROM users WHERE active = 1 ORDER BY id').all()) {
+      // El resumen "Mi día" es de la operación: los inversionistas no lo reciben.
+      for (const user of db.prepare("SELECT * FROM users WHERE active = 1 AND role <> 'inversionista' ORDER BY id").all()) {
         const prefs = readPrefs(db, user.id);
         if (!prefs.digest_enabled) continue;
         const from = hhmmToMinutes(prefs.digest_time);
@@ -286,7 +287,7 @@ export function createAutomationEngine(ctx) {
       const t = tally();
       const cutoff = new Date(clock.ms - DAY).toISOString();
       const byMovement = new Map();
-      for (const user of db.prepare("SELECT * FROM users WHERE active = 1 AND role IN ('admin','socio') ORDER BY id").all()) {
+      for (const user of db.prepare("SELECT * FROM users WHERE active = 1 AND role IN ('admin','socio','inversionista') ORDER BY id").all()) {
         for (const m of pendingForUser(ctx, user)) {
           if (m.created_at > cutoff) continue;
           const entry = byMovement.get(m.id) ?? { m, users: [] };

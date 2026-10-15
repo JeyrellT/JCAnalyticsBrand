@@ -10,9 +10,17 @@ export const ROLES = {
   admin: { label: 'Administrador', hint: 'Gestiona usuarios, configuración y respaldos.' },
   socio: { label: 'Socio', hint: 'Proyectos, agenda e inversiones.' },
   colaborador: { label: 'Colaborador', hint: 'Proyectos, tablero y agenda. Sin acceso a inversiones.' },
+  inversionista: { label: 'Inversionista', hint: 'Solo su portal de inversiones: su capital, retornos y confirmaciones. Sin acceso a la operación.' },
 };
 
-export const canInvest = (user) => user && (user.role === 'admin' || user.role === 'socio');
+/** Socios y admin: ven y administran TODAS las inversiones del equipo. */
+export const canInvest = (user) => !!user && (user.role === 'admin' || user.role === 'socio');
+/** Inversionista (v6): entra solo a su portal (/inversionista) y ve solo lo suyo. */
+export const isInvestorRole = (user) => !!user && user.role === 'inversionista';
+/** Quién puede tener capital en una inversión (ser el "socio" de un movimiento). */
+export const MONEY_HOLDER_ROLES = ['admin', 'socio', 'inversionista'];
+/** Roles que trabajan en la operación (tareas, proyectos, agenda): todos menos el inversionista. */
+export const TEAM_ROLES = ['admin', 'socio', 'colaborador'];
 
 export const SERVICES = {
   software_medida: 'Software a la medida',

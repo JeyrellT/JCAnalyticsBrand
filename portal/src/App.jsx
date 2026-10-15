@@ -26,6 +26,8 @@ const Automations = lazy(() => import('./pages/Automations.jsx'));
 const NotificationSettings = lazy(() => import('./pages/NotificationSettings.jsx'));
 // v5: portal de clientes (identidad aparte; nunca monta el Layout ni las rutas del equipo).
 const ClientApp = lazy(() => import('./client/ClientApp.jsx'));
+// v6: portal de inversionistas (personas con rol 'inversionista'; nunca montan el Layout del equipo).
+const InvestorApp = lazy(() => import('./investor/InvestorApp.jsx'));
 // v5: brief creativo (bandeja, ficha y vista A4 imprimible sin el Layout).
 const Briefs = lazy(() => import('./pages/Briefs.jsx'));
 const BriefDetail = lazy(() => import('./pages/BriefDetail.jsx'));
@@ -88,6 +90,7 @@ export function App() {
   if (session.status === 'anonymous') return <Login />;
   if (session.isClient) return <Suspense fallback={<PageLoader />}><ClientApp /></Suspense>;
   if (session.user.must_change_password) return <ForcePasswordChange />;
+  if (session.isInvestor) return <Suspense fallback={<PageLoader />}><InvestorApp /></Suspense>;
   // v5: brief en A4 (para imprimir o guardar como PDF), sin la barra lateral ni la inferior.
   const printParams = matchPath('/briefs/:id/imprimir', path);
   if (printParams) return <Suspense fallback={<PageLoader />}><BriefPrint params={printParams} /></Suspense>;

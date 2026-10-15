@@ -207,7 +207,8 @@ export function createDemoBackend({ db, now, onError = (error, where) => console
     const createdAt = new Date(ctx.now() - 2 * 86_400_000).toISOString();
     const insert = db.prepare(`INSERT OR IGNORE INTO push_subscriptions (user_id, endpoint, p256dh, auth, platform, user_agent, created_at, failures)
       VALUES (?, ?, ?, ?, 'demo', ?, ?, 0)`);
-    for (const { id } of db.prepare('SELECT id FROM users WHERE active = 1 ORDER BY id').all()) {
+    // Los inversionistas no usan la configuración de avisos del equipo (su portal es aparte).
+    for (const { id } of db.prepare("SELECT id FROM users WHERE active = 1 AND role <> 'inversionista' ORDER BY id").all()) {
       await as(id, (api) => api('PATCH', '/api/me/notification-prefs', { quiet_start: '00:00', quiet_end: '00:00' }));
       insert.run(id, `https://fcm.googleapis.com/fcm/send/demo-${id}`, fakeKey(65, id, 0x04), fakeKey(16, id + 97), DEMO_DEVICE_UA, createdAt);
     }

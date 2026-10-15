@@ -5,18 +5,20 @@
 //
 //  Parámetros de ruta:  :id  → número entero   ·   :key → texto [a-z0-9_]
 //  Acceso del equipo:   public · any (incluye contraseña temporal) · user · invest (socio/admin) · admin
+//  Inversionistas (v6): investor. Un inversionista es una persona de users con rol
+//                       'inversionista': fuera de 'any' e 'investor', ninguna ruta lo acepta.
 //  Acceso de clientes:  client_any (incluye contraseña temporal) · client
 //  Las dos identidades no se mezclan: una ruta de equipo jamás acepta una
 //  cuenta de cliente y viceversa (ver docs/v5-contrato.md).
 // ============================================================================
 
-import { canInvest } from '../shared/catalog.js';
+import { canInvest, isInvestorRole } from '../shared/catalog.js';
 import { HttpError } from './http.mjs';
 
 /** Rutas del portal de clientes: se autentican con la cookie de cliente, nunca con la del equipo. */
 export const isClientRoute = (found) => found.access === 'client' || found.access === 'client_any';
 
-const ACCESS_LEVELS = new Set(['public', 'any', 'user', 'invest', 'admin', 'client_any', 'client']);
+const ACCESS_LEVELS = new Set(['public', 'any', 'user', 'invest', 'admin', 'investor', 'client_any', 'client']);
 
 export function createRouter() {
   const routes = [];
@@ -55,6 +57,11 @@ export function createRouter() {
     if (isClientRoute(found) !== (user.principal === 'client')) throw new HttpError(403, 'forbidden');
     // Con contraseña temporal solo se permite ver el perfil, cambiarla o salir.
     if (found.access !== 'any' && found.access !== 'client_any' && user.must_change_password) throw new HttpError(403, 'password_change_required');
+    // El inversionista solo entra a su portal ('investor') y a su perfil/clave ('any');
+    // y las rutas 'investor' son solo para inversionistas.
+    if (!isClientRoute(found) && found.access !== 'any' && isInvestorRole(user) !== (found.access === 'investor')) {
+      throw new HttpError(403, 'forbidden');
+    }
     if (found.access === 'invest' && !canInvest(user)) throw new HttpError(403, 'forbidden');
     if (found.access === 'admin' && user.role !== 'admin') throw new HttpError(403, 'forbidden');
   }

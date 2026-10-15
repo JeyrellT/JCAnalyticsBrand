@@ -3,7 +3,7 @@
 // /api/client/me (otra cookie). `kind` dice cuál está activa.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api, onUnauthenticated } from './api.js';
-import { canInvest } from '../../shared/catalog.js';
+import { canInvest, isInvestorRole, MONEY_HOLDER_ROLES } from '../../shared/catalog.js';
 import { useAppBadge, onPortalPush, unsubscribePush } from './pwa.js';
 import { navigate } from './router.jsx';
 
@@ -68,25 +68,30 @@ export function SessionProvider({ children }) {
 
   const mustChange = state.kind === 'client' ? state.account?.must_change_password : state.user?.must_change_password;
   const ready = state.status === 'ready' && !mustChange;
+  const investor = isInvestorRole(state.user);
   useEffect(() => {
     if (!ready) return undefined;
     let alive = true;
-    if (state.kind === 'team') api('/api/users').then((r) => alive && setTeam(r.users), () => {});
+    if (state.kind === 'team' && !investor) api('/api/users').then((r) => alive && setTeam(r.users), () => {});
     // Contadores del buzón: se refrescan cada minuto y al volver a la pestaña.
     const tick = () => { if (document.visibilityState === 'visible') refresh(); };
     const timer = setInterval(tick, 60_000);
     document.addEventListener('visibilitychange', tick);
     return () => { alive = false; clearInterval(timer); document.removeEventListener('visibilitychange', tick); };
-  }, [ready, refresh, state.kind]);
+  }, [ready, refresh, state.kind, investor]);
 
   const value = useMemo(() => ({
     ...state,
     isClient: state.kind === 'client',
     mustChangePassword: !!mustChange,
     team,
-    activeTeam: team.filter((u) => u.active),
-    investors: team.filter((u) => u.active && (u.role === 'admin' || u.role === 'socio')),
+    // Personas de la operación (asignables a tareas, proyectos y citas): sin inversionistas.
+    activeTeam: team.filter((u) => u.active && u.role !== 'inversionista'),
+    // Quienes pueden tener capital en una inversión (socio del movimiento): socios, admin e inversionistas.
+    investors: team.filter((u) => u.active && MONEY_HOLDER_ROLES.includes(u.role)),
     canInvest: canInvest(state.user),
+    /** v6: la persona es inversionista (solo su portal /inversionista). */
+    isInvestor: isInvestorRole(state.user),
     isAdmin: state.user?.role === 'admin',
     refresh,
     loadTeam,
