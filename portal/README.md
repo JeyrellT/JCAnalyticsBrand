@@ -2,6 +2,8 @@
 
 Aplicación privada (detrás de login) para el equipo de 5 personas: **portal de proyectos**, **centro de operaciones** (tablero kanban + agenda de citas) e **inversiones de socios** con confirmación de cada movimiento de dinero y su "mensaje de vuelta".
 
+Desde la v5 incluye además el **portal de clientes** (`/cliente`). Cada cliente sigue su servicio con JC Analytics desde ahí: etapas, avances, entregables por aprobar, solicitudes, documentos y reuniones. Las solicitudes usan el **brief creativo** (el formato "CREATIVIDAD" de JC), con versiones congeladas y verificables. El cliente no ve la operación interna: ni tareas, ni montos, ni notas del equipo. Ver `docs/v5-contrato.md`.
+
 Está separada del sitio público (`jcanalytics-app/`, GitHub Pages): el portal necesita servidor, base de datos y sesiones, así que se publica como un servicio propio (Railway), en un subdominio como `portal.jcanalytic.com`.
 
 ## Qué resuelve
@@ -50,6 +52,29 @@ Indicadores disponibles:
 Los movimientos en dólares **guardan su tipo de cambio**, así el consolidado en colones no cambia con el tiempo. La exportación a Excel usa separador `;` y BOM UTF-8.
 
 **Buzón (`/buzon`).** Reúne los movimientos por confirmar, con la respuesta en el mismo lugar, y los avisos (tareas asignadas, citas, comentarios, confirmaciones).
+
+**Briefs (`/briefs`).** Bandeja de los briefs creativos de todos los clientes, ordenada por lo que requiere acción: primero los enviados por revisar, después los que tienen ajustes y los que están en producción.
+- El formulario sigue el formato CREATIVIDAD: material requerido, objetivo, marca, oferta, mensaje clave, URLs de redireccionamiento, RRSS, base de datos, editable, creatividad, configuración de envío, correo de testeo, fecha de envío, disclaimer, línea gráfica y nota.
+- Valida lo que hace falta para enviar:
+  - un sorteo necesita reglamento o disclaimer;
+  - una conversión necesita al menos un enlace;
+  - el envío de email necesita correo de testeo;
+  - la fecha respeta el plazo mínimo de producción (3 días, ajustable). Un brief urgente se marca con motivo.
+- Al enviarse, el brief **se congela** como versión con huella SHA-256 y ya no se edita. Para cambiarlo, el equipo "pide ajustes" con motivo y el cliente reenvía (versión 2, 3…).
+- Flujo: borrador → enviado → aprobado → en producción → entregado → cerrado.
+- Cada paso, comentario y **nota interna** queda en la bitácora del brief. El cliente nunca ve las notas internas.
+- Se imprime o se guarda en PDF en A4 con el logo de JC.
+
+**Portal de clientes (`/cliente`).** Es un acceso aparte para cada persona del cliente. Lo crean un admin, un socio o quien lleva la cuenta, desde la ficha del cliente → "Portal del cliente". El cliente ve:
+- sus proyectos con **etapas** y avance;
+- los **avances** que le registró el equipo;
+- los **entregables** por aprobar: aprueba la versión que vio o pide cambios con nota;
+- sus **solicitudes** (briefs);
+- los **documentos** compartidos (contrato, facturas, manual de marca, reportes);
+- sus **reuniones**;
+- el contacto de su ejecutivo.
+
+Cada aprobación, cambio pedido o brief enviado avisa al equipo, en el buzón y por push (categoría "Portal de clientes"). El equipo, a su vez, avisa al cliente dentro de su portal.
 
 **Bitácora (`/bitacora`).** Registro de quién hizo qué y cuándo. Los colaboradores no ven las entradas de dinero.
 
@@ -101,7 +126,8 @@ node scripts/capturas.mjs capturas --tema=dark --solo=inicio,inversiones
 
 - **Administrador.** Puede hacer todo, además de gestionar personas, ajustes y respaldos, y anular movimientos ya confirmados.
 - **Socio.** Accede a proyectos, tablero, agenda e inversiones.
-- **Colaborador.** Accede a proyectos, tablero y agenda. **No ve inversiones** (ni en la API, el centro de operaciones, la bitácora o los avisos).
+- **Colaborador.** Accede a proyectos, tablero y agenda. **No ve inversiones** (ni en la API, el centro de operaciones, la bitácora o los avisos). Puede dar accesos al portal de clientes solo para los clientes que lleva.
+- **Cliente** (v5). Es una identidad aparte y solo entra a `/cliente`. Ve solo lo de su empresa. Puede aprobar entregables si su acceso lo permite.
 
 ## Arquitectura
 
@@ -138,6 +164,8 @@ npm run dev              # en otra terminal: interfaz en http://localhost:5173
 ```
 
 Las cuentas demo son `jeyrell@demo.jcanalytic.local` (admin), `catalina@…`, `alex@…`, `socio5@…` (socios) y `hillary@…` (colaboradora). La contraseña de todas es `DemoPortal2026`. Para recrear la base demo: `npm run seed:demo -- --reset`.
+
+Portal de clientes (v5): `laburrada@clientes.demo.jcanalytic.local` (aprueba entregables), `marketing.laburrada@clientes.demo.jcanalytic.local` (solo lectura de entregables) y `uniquex@clientes.demo.jcanalytic.local`, con la misma contraseña. Se ingresa en `/cliente` con la opción "Cliente" del login.
 
 En Windows (PowerShell): `$env:PORTAL_DB_PATH="data/demo.sqlite"; npm run dev:api`.
 
@@ -218,6 +246,43 @@ Protección contra ataques:
 
 Datos de dinero:
 - Si un socio pasa a colaborador, deja de recibir avisos de dinero y tampoco ve los anteriores.
+
+Portal de clientes (v5):
+
+**Identidad separada.**
+- Tiene su propia tabla (`client_accounts`), su propia cookie (`jcc_session`) y solo las rutas `/api/client/*`.
+- Una sesión de cliente no abre ninguna ruta del equipo, ni al revés. El router lo verifica dos veces: por la cookie y por el tipo de usuario.
+
+**Aislamiento.**
+- Cada consulta filtra por la empresa del cliente.
+- Un id de otro cliente responde 404, no 403, para no revelar que existe.
+- Los prospectos, las citas internas, las tareas, los montos y las notas internas nunca salen por la API de clientes.
+
+**Sesiones.**
+- Vencen tras 8 h sin uso y siempre a los 3 días.
+- Clave temporal obligatoria al crear o restablecer un acceso.
+- Quitar el acceso o cambiar el correo cierra las sesiones al instante.
+
+**Límites.**
+- El login comparte el limitador del equipo.
+- Freno de 120 escrituras cada 10 minutos por cuenta.
+- Máximo 15 borradores abiertos por cliente.
+
+**Integridad.**
+- Cada versión enviada de un brief guarda su huella SHA-256, y el portal la recalcula para detectar alteraciones.
+- Un entregable aprobado no cambia en silencio: un enlace nuevo es siempre una versión nueva.
+- Lo que el cliente ya decidió no se puede borrar.
+- Los guardados concurrentes no se pisan (bloqueo optimista).
+
+**Entradas.**
+- Solo se aceptan enlaces `http(s)`.
+- Las claves desconocidas del brief se descartan.
+- Un mismo correo no puede ser a la vez del equipo y de un cliente.
+
+**Encabezados.**
+- `Cross-Origin-Opener-Policy` y `Cross-Origin-Resource-Policy: same-origin`.
+- CSP con `object-src 'none'`.
+- Una cookie malformada se ignora en lugar de romper la petición.
 
 Auditoría:
 - La bitácora registra accesos fallidos, cambios de contraseña, altas y bajas de personas, respaldos, exportaciones y cada movimiento de dinero.

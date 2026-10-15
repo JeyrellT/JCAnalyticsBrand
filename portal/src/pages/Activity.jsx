@@ -9,12 +9,19 @@ const ENTITIES = [
   { value: 'project', label: 'Proyectos' }, { value: 'task', label: 'Tareas' }, { value: 'appointment', label: 'Citas' },
   { value: 'investment', label: 'Inversiones' }, { value: 'movement', label: 'Movimientos de dinero' }, { value: 'user', label: 'Personas' },
   { value: 'settings', label: 'Ajustes y respaldos' }, { value: 'auth', label: 'Accesos' },
+  // v5: clientes y su portal
+  { value: 'client', label: 'Clientes' }, { value: 'brief', label: 'Briefs' }, { value: 'deliverable', label: 'Entregables' },
+  { value: 'client_account', label: 'Accesos de clientes' }, { value: 'client_auth', label: 'Ingresos de clientes' },
 ];
+
+/** Entidades donde una acción sin persona del equipo la hizo un cliente desde su portal. */
+const CLIENT_ACTIONS = new Set(['brief', 'deliverable', 'client_account', 'client_auth']);
 
 // Color del punto en la línea de tiempo según qué se tocó.
 const DOT = {
   project: 'bg-brand', task: 'bg-brand', appointment: 'bg-violet', investment: 'bg-teal', movement: 'bg-teal',
   user: 'bg-amber', settings: 'bg-slate', auth: 'bg-slate',
+  client: 'bg-amber', brief: 'bg-violet', deliverable: 'bg-teal', client_account: 'bg-coral', client_auth: 'bg-coral',
 };
 
 export default function Activity() {
@@ -50,7 +57,7 @@ export default function Activity() {
                     <li key={a.id} className={cx('relative flex gap-3 pl-6', !last && 'pb-5')}>
                       {!last && <span className="absolute bottom-0 left-[6px] top-5 w-[2px] rounded-full bg-line-strong/70" aria-hidden="true" />}
                       <span className={cx('absolute left-[3px] top-[10px] h-2 w-2 rounded-full ring-[3px] ring-surface', DOT[a.entity] ?? 'bg-slate')} aria-hidden="true" />
-                      <Avatar name={a.user_name ?? 'Sistema'} color={a.user_color ?? 'var(--slate)'} size={28} className="mt-px" />
+                      <Avatar name={a.user_name ?? (CLIENT_ACTIONS.has(a.entity) ? 'Cliente' : 'Sistema')} color={a.user_color ?? (CLIENT_ACTIONS.has(a.entity) ? 'var(--coral)' : 'var(--slate)')} size={28} className="mt-px" />
                       <p className="min-w-0 flex-1 text-sm leading-snug text-ink">
                         {a.summary}
                         <span className="mt-0.5 block text-xs text-muted sm:hidden"><time dateTime={a.created_at}>{formatDateTime(a.created_at).split(',').pop().trim()}</time></span>
