@@ -10,6 +10,7 @@
 // ============================================================================
 
 import { canInvest, NOTIFICATION_CATEGORIES, notificationCategory } from '../shared/catalog.js';
+import { CLIENT_VISIBLE_PROJECT_STATUSES } from '../shared/client-portal.js';
 import { readPrefs, pushBlockReason } from '../server/notify-policy.mjs';
 
 const MINUTE = 60_000;
@@ -27,6 +28,14 @@ const APPOINTMENTS = [
   { title: 'Revisión rápida del tablero', kind: 'interna', location: 'Oficina' },
   { title: 'Demo de BarberXCR a una barbería de Heredia', kind: 'demo', location: 'Barbería El Clásico, Heredia' },
 ];
+// v5: entregables que un cliente revisa y devuelve con ajustes desde su portal.
+const DELIVERABLE_REVIEWS = [
+  { title: 'Arte del combo de temporada', description: '3 historias y 1 publicación cuadrada.', note: 'Nos encanta, pero el precio debe verse más grande y el logo arriba.' },
+  { title: 'Correo de lanzamiento', description: 'Asunto, preencabezado y cuerpo con botón a WhatsApp.', note: 'Cambiemos el asunto por algo más directo y agreguen la foto del local.' },
+  { title: 'Video corto del menú', description: 'Reel de 20 s con subtítulos.', note: 'La música está muy alta y falta el horario al final.' },
+];
+const VISIBLE_STATUS_SQL = `('${CLIENT_VISIBLE_PROJECT_STATUSES.filter((st) => st !== 'cerrado' && st !== 'pausado').join("','")}')`;
+
 const MONEY = [
   { amount: 75_000_00, message: 'Aporte para la pauta de la próxima semana.' },
   { amount: 120_000_00, message: 'Mi parte para el onboarding de barberías nuevas.' },
@@ -55,6 +64,18 @@ export function createScenarios(backend) {
       ORDER BY CASE role WHEN 'socio' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, id`).all(me.id)
       .filter((u) => !investor || canInvest(u));
     return rows.length ? rows[offset % rows.length] : null;
+  }
+
+  /**
+   * Cuenta de cliente que puede decidir (activa, aprueba, sin clave temporal) con un proyecto
+   * que ve en su portal; primero los clientes y proyectos de quien mira.
+   */
+  function approverFor(me) {
+    return db.prepare(`SELECT a.id account_id, c.id client_id, c.name client_name, p.id project_id
+      FROM client_accounts a JOIN clients c ON c.id = a.client_id
+      JOIN projects p ON p.client_id = c.id AND p.kind = 'cliente' AND p.archived = 0 AND p.status IN ${VISIBLE_STATUS_SQL}
+      WHERE a.active = 1 AND a.can_approve = 1 AND a.must_change_password = 0
+      ORDER BY (c.owner_id = ?) DESC, (p.owner_id = ?) DESC, a.id LIMIT 1`).get(me.id, me.id) ?? null;
   }
 
   /** Explica un aviso que no se mostró: preferencias, dispositivos o la regla del escenario. */
@@ -127,6 +148,27 @@ export function createScenarios(backend) {
           title: TASK_TITLES[turn % TASK_TITLES.length], assignee_id: me.id, priority: 'alta', due_date: ctx.today(1),
         }));
         return { kind: 'task' };
+      },
+    },
+
+    cambios: {
+      title: 'Un cliente pidió cambios',
+      available: (me) => approverFor(me) !== null,
+      hint: (me) => `Compartís un entregable con ${approverFor(me)?.client_name ?? 'un cliente'} y lo devuelve con ajustes desde su portal.`,
+      async run(me) {
+        const target = approverFor(me);
+        if (!target) return { reason: 'Ningún cliente con acceso al portal puede aprobar entregables.' };
+        const item = DELIVERABLE_REVIEWS[turn % DELIVERABLE_REVIEWS.length];
+        // Quien mira comparte (así el aviso de la decisión le llega a él) y el cliente decide desde su sesión.
+        const { deliverable } = await backend.as(me.id, (api) => api('POST', '/api/deliverables', {
+          client_id: target.client_id, project_id: target.project_id, title: item.title, description: item.description,
+          url: 'https://docs.example.com/demo/entregable',
+        }));
+        await wait(1200);
+        await backend.asClient(target.account_id, (api) => api('POST', `/api/client/deliverables/${deliverable.id}/decision`, {
+          decision: 'cambios', version: deliverable.version, note: item.note,
+        }));
+        return { kind: 'deliverable' };
       },
     },
 

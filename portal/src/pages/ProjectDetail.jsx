@@ -1,8 +1,9 @@
-// Detalle del proyecto: avance al cliente (72 h), cliente, equipo, tareas, citas, historial e inversiones vinculadas.
+// Detalle del proyecto: avance al cliente (72 h), etapas y entregables del portal del cliente (v5), cliente, briefs,
+// equipo, tareas, citas, historial e inversiones vinculadas.
 import { useEffect, useState } from 'react';
 import {
   ArrowLeft, Pencil, Send, MessageCircle, Plus, ExternalLink, Archive, ArchiveRestore, CalendarPlus, Phone, User, CalendarDays, TrendingUp, Building2, Users,
-  FolderKanban, ListChecks, History, FileText, CircleAlert, Clock3, CheckCircle2, Mail, Info,
+  FolderKanban, ListChecks, History, FileText, CircleAlert, Clock3, CheckCircle2, Mail, Info, Eye,
 } from 'lucide-react';
 import { useResource, useSession } from '../lib/session.jsx';
 import { api } from '../lib/api.js';
@@ -11,6 +12,7 @@ import { PageLoader, Badge, Avatar, AvatarStack, Modal, Field, Select, ProgressB
 import { StatusBadge, SlaBadge, PersonChip } from '../components/common.jsx';
 import { ClientStatusBadge, MembersEditor, clientWhatsapp, membersToForm, normalizeMembers } from '../components/clients.jsx';
 import { ProjectForm, projectClientName, projectMembers } from './Projects.jsx';
+import { MilestonesCard, DeliverablesCard, ProjectBriefsCard } from '../components/portal-project.jsx';
 import { PROJECT_KINDS, PROJECT_STATUS, PROJECT_ROLES, SERVICES, UPDATE_CHANNELS, TASK_STATUS, TASK_STATUS_ORDER, TASK_PRIORITY, APPOINTMENT_KINDS, INVESTMENT_STATUS } from '../../shared/catalog.js';
 import { formatMoney, formatDate, formatDateTime, timeAgo, whatsappLink, dueLabel } from '../lib/format.js';
 
@@ -24,7 +26,7 @@ const SLA_NONE = { card: '', tile: 'slate', icon: Send, bar: 'brand', lead: 'El 
 
 const CHANNEL_ICON = { whatsapp: MessageCircle, correo: Mail, reunion: Users, llamada: Phone, otro: Send };
 
-function UpdateModal({ project, onClose, onSaved }) {
+function UpdateModal({ project, clientPortal, onClose, onSaved }) {
   const { user } = useSession();
   const [run, busy] = useAction();
   const [channel, setChannel] = useState('whatsapp');
@@ -46,6 +48,12 @@ function UpdateModal({ project, onClose, onSaved }) {
       </>}>
       <form id="update-form" onSubmit={save} className="space-y-4">
         <p className="flex gap-2.5 rounded-xl bg-brand-soft px-3 py-2.5 text-sm text-brand-ink"><Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />Compromiso JC Analytics: el cliente recibe un avance cada 72 h. Registrarlo deja constancia y reinicia el semáforo.</p>
+        {clientPortal && (
+          <p className="flex gap-2.5 rounded-xl bg-teal-soft px-3 py-2.5 text-sm text-teal-ink">
+            <Eye className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <span><span className="font-semibold">Visible para el cliente en su portal.</span> Escribilo como se lo dirías a él: sin datos internos ni montos.</span>
+          </p>
+        )}
         <Field label="Canal">{(id) => <Select id={id} options={Object.entries(UPDATE_CHANNELS).map(([value, label]) => ({ value, label }))} value={channel} onChange={setChannel} />}</Field>
         <Field label="¿Qué avanzamos?" hint={channel === 'whatsapp' && !project.contact_phone ? 'Agregá el WhatsApp del cliente en el proyecto para enviarlo con un toque.' : 'Este texto también se usa en el mensaje de WhatsApp.'}>
           {(id) => <textarea id={id} className="input" rows={4} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ej.: Quedó listo el carrito; mañana probamos pagos con SINPE." />}
@@ -108,7 +116,7 @@ function Row({ label, icon: Icon, children, className }) {
 export default function ProjectDetail({ params }) {
   const { canInvest, user, settings } = useSession();
   const { query } = useLocation();
-  const { data, error, reload } = useResource(`/api/projects/${params.id}`);
+  const { data, error, reload, setData } = useResource(`/api/projects/${params.id}`);
   const [editing, setEditing] = useState(false);
   const [editingTeam, setEditingTeam] = useState(false);
   const [run] = useAction();
@@ -124,7 +132,7 @@ export default function ProjectDetail({ params }) {
   useEffect(() => { if (avance) navigate(`/proyectos/${params.id}`, { replace: true }); }, [avance, params.id]);
 
   if (!data) return <PageLoader error={error} onRetry={reload} />;
-  const { project: p, tasks, updates, appointments, investments } = data;
+  const { project: p, tasks, updates, appointments, investments, milestones = [], deliverables = [], briefs = [], client_portal: clientPortal = false } = data;
   // El detalle trae el cliente como objeto (data.client); se toleran variantes del API.
   const client = data.client && typeof data.client === 'object' ? data.client : p.client && typeof p.client === 'object' ? p.client : null;
   const clientName = projectClientName(p) || client?.name || '';
@@ -143,6 +151,10 @@ export default function ProjectDetail({ params }) {
   const slaHours = Number(settings.update_sla_hours) || 72;
   const elapsed = p.hours_since_update ?? 0;
   const headerTone = p.sla_state === 'late' ? 'red' : p.sla_state === 'warn' ? 'amber' : 'blue';
+  // v5: las etapas se trabajan en proyectos de cliente (y se muestran si ya existen en otros);
+  // entregables y briefs solo existen para proyectos con cliente.
+  const showMilestones = !!clientId || milestones.length > 0;
+  const setMilestones = (list) => setData((d) => (d ? { ...d, milestones: list } : d));
 
   return (
     <div className="space-y-6">
@@ -204,6 +216,12 @@ export default function ProjectDetail({ params }) {
                 <button type="button" className="btn btn-primary btn-lg w-full sm:w-auto sm:shrink-0" onClick={() => setUpdating(true)}><Send className="h-4 w-4" />Registrar avance</button>
               </div>
             </section>
+          )}
+
+          {showMilestones && <MilestonesCard project={p} milestones={milestones} clientPortal={clientPortal} clientId={clientId} onChange={setMilestones} />}
+
+          {clientId && (
+            <DeliverablesCard project={p} clientId={clientId} clientName={clientName} deliverables={deliverables} briefs={briefs} clientPortal={clientPortal} onChanged={reload} />
           )}
 
           <section className="card animate-rise overflow-hidden" aria-labelledby="tasks-title">
@@ -293,6 +311,8 @@ export default function ProjectDetail({ params }) {
               )}
             </section>
           )}
+
+          {clientId && <ProjectBriefsCard projectId={p.id} clientId={clientId} briefs={briefs} />}
 
           <section id="equipo-proyecto" className="card animate-rise scroll-mt-20 overflow-hidden" aria-labelledby="team-title">
             <SectionHead flush id="team-title" icon={Users} tone="teal" title="Equipo del proyecto" hint={members.length ? `${members.length} ${members.length === 1 ? 'persona' : 'personas'}` : undefined}
@@ -384,7 +404,7 @@ export default function ProjectDetail({ params }) {
 
       {editing && <ProjectForm open project={editable} onClose={() => setEditing(false)} onSaved={reload} />}
       {editingTeam && <TeamModal project={p} onClose={() => setEditingTeam(false)} onSaved={reload} />}
-      {updating && <UpdateModal project={updateTarget} onClose={() => setUpdating(false)} onSaved={reload} />}
+      {updating && <UpdateModal project={updateTarget} clientPortal={clientPortal} onClose={() => setUpdating(false)} onSaved={reload} />}
     </div>
   );
 }
