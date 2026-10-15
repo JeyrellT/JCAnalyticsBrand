@@ -11,7 +11,7 @@
 // ============================================================================
 
 import { createContext } from '../server/context.mjs';
-import { createRouter } from '../server/router.mjs';
+import { createRouter, isClientRoute } from '../server/router.mjs';
 import { registerRoutes } from '../server/routes/index.mjs';
 import { HttpError } from '../server/http.mjs';
 import { migrate } from '../server/schema.mjs';
@@ -98,12 +98,21 @@ export function createDemoBackend({ db, now, onError = (error, where) => console
   // Sesiones lógicas: identificador → id de usuario. La siembra inicia sesión
   // con cada persona a la vez; quien mira la demo usa VIEWER.
   const sessions = new Map();
+  // Portal de clientes (v5): sesiones aparte, igual que la cookie jcc_session del servidor.
+  const clientSessions = new Map();
   const session = {
     limiter: { blocked: () => false, fail() {}, reset() {}, release() {} },
     start(_res, req, userId) { sessions.set(req.sid, userId); },
     end(req) { sessions.delete(req.sid); },
     endOthers(req, userId) {
       for (const [sid, uid] of sessions) if (uid === userId && sid !== req.sid) sessions.delete(sid);
+    },
+    client: {
+      start(_res, req, accountId) { clientSessions.set(req.sid, accountId); },
+      end(req) { clientSessions.delete(req.sid); },
+      endOthers(req, accountId) {
+        for (const [sid, aid] of clientSessions) if (aid === accountId && sid !== req.sid) clientSessions.delete(sid);
+      },
     },
   };
 
@@ -120,13 +129,25 @@ export function createDemoBackend({ db, now, onError = (error, where) => console
     return row;
   }
 
+  function currentClient(sid) {
+    const accountId = clientSessions.get(sid);
+    if (accountId == null) return null;
+    const row = db.prepare('SELECT a.*, c.name client_name FROM client_accounts a JOIN clients c ON c.id = a.client_id WHERE a.id = ?').get(accountId);
+    if (!row?.active) {
+      clientSessions.delete(sid);
+      return null;
+    }
+    return { ...row, principal: 'client' };
+  }
+
   async function dispatch(path, { method = 'GET', body } = {}, sid = VIEWER) {
     const verb = String(method).toUpperCase();
     const url = new URL(path, 'http://portal.demo');
     try {
       const { route: found, params } = router.match(verb, url.pathname);
-      const user = found.access === 'public' ? null : currentUser(sid);
-      router.authorize(found, user);
+      const clientRoute = isClientRoute(found);
+      const principal = found.access === 'public' ? null : clientRoute ? currentClient(sid) : currentUser(sid);
+      router.authorize(found, principal);
       const input = readBody(verb, body);
       const req = {
         method: verb,
@@ -136,7 +157,11 @@ export function createDemoBackend({ db, now, onError = (error, where) => console
         sid,
       };
       const res = createResponse();
-      const result = await found.handler({ req, res, user, params, query: url.searchParams, body: input, ip: 'demo' });
+      const result = await found.handler({
+        req, res, params, query: url.searchParams, body: input, ip: 'demo',
+        user: clientRoute ? null : principal,
+        account: clientRoute ? principal : null,
+      });
       if (res.headersSent) {
         const type = String(res.getHeader('content-type') ?? '');
         const text = res.text();
@@ -196,14 +221,33 @@ export function createDemoBackend({ db, now, onError = (error, where) => console
       await client(sid)('POST', '/api/auth/login', { email: `${who}@${DEMO_DOMAIN}`, password: DEMO_PASSWORD });
       return client(sid);
     };
-    const out = await seedDemoData({ db, passwordHash, login, now: now?.() });
+    const loginClient = async (email) => {
+      const sid = `seed-client:${email}`;
+      await client(sid)('POST', '/api/client/auth/login', { email, password: DEMO_PASSWORD });
+      return client(sid);
+    };
+    const out = await seedDemoData({ db, passwordHash, login, loginClient, now: now?.() });
     await seedDemoDevices();
     sessions.clear();
+    clientSessions.clear();
     return out;
+  }
+
+  /** Corre fn(api) con una sesión de cliente lógica (escenarios y siembra del portal de clientes). */
+  async function asClient(accountId, fn) {
+    const sid = `client:${accountId}:${Math.random().toString(36).slice(2)}`;
+    clientSessions.set(sid, accountId);
+    try {
+      return await fn(client(sid));
+    } finally {
+      clientSessions.delete(sid);
+    }
   }
 
   /** Id de la persona que mira la demo (sesión VIEWER) o null en el selector. */
   const viewerId = () => sessions.get(VIEWER) ?? null;
+  /** Id de la cuenta de cliente que mira la demo (sesión VIEWER) o null. */
+  const viewerClientId = () => clientSessions.get(VIEWER) ?? null;
 
   /**
    * Servicio de push simulado (misma forma que server/push.mjs): la política de
@@ -234,9 +278,12 @@ export function createDemoBackend({ db, now, onError = (error, where) => console
 
   /** Personas para el selector de la demo, en el orden en que se crearon. */
   const personas = () => db.prepare('SELECT id, name, email, role, color FROM users WHERE active = 1 ORDER BY id').all();
+  /** Cuentas de cliente activas para el selector de la demo (v5). */
+  const clientPersonas = () => db.prepare(`SELECT a.id, a.name, a.email, a.title, c.name client_name FROM client_accounts a
+    JOIN clients c ON c.id = a.client_id WHERE a.active = 1 ORDER BY a.id`).all();
 
   return {
-    db, ctx, router, dispatch, client, seed, personas, sessions, as, viewerId, simulatePush,
+    db, ctx, router, dispatch, client, seed, personas, clientPersonas, sessions, clientSessions, as, asClient, viewerId, viewerClientId, simulatePush,
     /** Cuántos avisos se mostraron en pantalla hasta ahora (para saber si un escenario produjo alguno). */
     pushShown: () => shownCount,
   };

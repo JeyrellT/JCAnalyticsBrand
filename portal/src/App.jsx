@@ -24,6 +24,8 @@ const ClientDetail = lazy(() => import('./pages/ClientDetail.jsx'));
 const Person = lazy(() => import('./pages/Person.jsx'));
 const Automations = lazy(() => import('./pages/Automations.jsx'));
 const NotificationSettings = lazy(() => import('./pages/NotificationSettings.jsx'));
+// v5: portal de clientes (identidad aparte; nunca monta el Layout ni las rutas del equipo).
+const ClientApp = lazy(() => import('./client/ClientApp.jsx'));
 
 const ROUTES = [
   ['/', Dashboard],
@@ -75,6 +77,7 @@ export function App() {
     );
   }
   if (session.status === 'anonymous') return <Login />;
+  if (session.isClient) return <Suspense fallback={<PageLoader />}><ClientApp /></Suspense>;
   if (session.user.must_change_password) return <ForcePasswordChange />;
   return <Layout><Router /></Layout>;
 }

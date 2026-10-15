@@ -8,6 +8,9 @@ import { serviceRoutes } from './services.mjs';
 import { peopleRoutes } from './people.mjs';
 import { pushRoutes } from './push.mjs';
 import { automationRoutes } from './automations.mjs';
+import { briefRoutes } from './briefs.mjs';
+import { portalAdminRoutes } from './portal-admin.mjs';
+import { clientPortalRoutes } from './client-portal.mjs';
 import { installPushDispatch } from '../notify-policy.mjs';
 import { createAutomationEngine } from '../automations.mjs';
 
@@ -26,4 +29,8 @@ export function registerRoutes(route, ctx, session) {
   peopleRoutes(route, ctx);
   pushRoutes(route, ctx);
   automationRoutes(route, ctx);
+  // v5: brief creativo y portal de clientes (docs/v5-contrato.md).
+  briefRoutes(route, ctx);
+  portalAdminRoutes(route, ctx);
+  clientPortalRoutes(route, ctx, session);
 }

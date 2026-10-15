@@ -88,6 +88,8 @@ export function coreRoutes(route, ctx, session) {
     const c = color(body.color, 'color') ?? MEMBER_COLORS[count % MEMBER_COLORS.length];
     const phone = text(body.phone, 'phone', { max: 30 });
     if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(mail)) invalid('email', 'Ya existe una persona con ese correo.');
+    // Un correo identifica a una sola persona en todo el portal (equipo o cliente).
+    if (db.prepare('SELECT 1 FROM client_accounts WHERE email = ?').get(mail)) invalid('email', 'Ese correo ya tiene acceso como cliente.');
     const temp = temporaryPassword();
     const { lastInsertRowid } = db.prepare(
       'INSERT INTO users (email, name, role, color, phone, password_hash, must_change_password, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
@@ -137,6 +139,7 @@ export function coreRoutes(route, ctx, session) {
       update_sla_hours: { min: 12, max: 336 },
       wip_en_progreso: { min: 1, max: 50 },
       wip_revision: { min: 1, max: 50 },
+      brief_lead_days: { min: 1, max: 30 },
     };
     const upsert = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value');
     const changed = [];

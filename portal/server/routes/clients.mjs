@@ -8,10 +8,15 @@ import { CLIENT_STATUS } from '../../shared/catalog.js';
 import { fail, invalid, has, text, oneOf, id, email } from '../http.mjs';
 import { transaction } from '../schema.mjs';
 import { createHelpers, sameName } from './common.mjs';
+import { createPortalHelpers } from './portal-common.mjs';
+import { createBriefService } from './brief-service.mjs';
+import { canManagePortal } from './portal-admin.mjs';
 
 export function clientRoutes(route, ctx) {
   const { db } = ctx;
   const { keepOrCheck, PROJECT_SELECT, decorateProject, APPOINTMENT_SELECT, decorateAppointment, listClients, getClient } = createHelpers(ctx);
+  const portal = createPortalHelpers(ctx);
+  const briefs = createBriefService(ctx, portal);
 
   const optionalEmail = (v, field) => (v == null || (typeof v === 'string' && v.trim() === '') ? null : email(v, field));
 
@@ -52,7 +57,7 @@ export function clientRoutes(route, ctx) {
     return { client: getClient(clientId) };
   });
 
-  route('GET', '/api/clients/:id', 'user', ({ params }) => {
+  route('GET', '/api/clients/:id', 'user', ({ user, params }) => {
     const client = getClient(params.id);
     const projects = db.prepare(`${PROJECT_SELECT} WHERE p.client_id = ? ORDER BY p.archived, p.updated_at DESC`).all(client.id);
     const appointments = db.prepare(`${APPOINTMENT_SELECT}
@@ -60,7 +65,16 @@ export function clientRoutes(route, ctx) {
     const updates = db.prepare(`SELECT pu.*, u.name user_name, u.color user_color, p.name project_name FROM project_updates pu
       JOIN projects p ON p.id = pu.project_id JOIN users u ON u.id = pu.user_id
       WHERE p.client_id = ? ORDER BY pu.created_at DESC, pu.id DESC LIMIT 20`).all(client.id);
-    return { client, projects: projects.map(decorateProject), appointments: appointments.map(decorateAppointment), updates };
+    // v5: lo que este cliente ve en su portal (accesos, briefs, entregables y documentos).
+    const portalInfo = {
+      accounts: portal.accountsOf(client.id),
+      can_manage: canManagePortal(user, client),
+      briefs: db.prepare(`${briefs.BRIEF_SELECT} WHERE b.client_id = ? ORDER BY b.updated_at DESC LIMIT 50`).all(client.id)
+        .map((r) => briefs.decorate(r, 'team', { withData: false })),
+      deliverables: portal.listDeliverables({ clientId: client.id }),
+      documents: portal.listDocuments({ clientId: client.id }),
+    };
+    return { client, projects: projects.map(decorateProject), appointments: appointments.map(decorateAppointment), updates, portal: portalInfo };
   });
 
   route('PATCH', '/api/clients/:id', 'user', ({ user, body, params }) => {

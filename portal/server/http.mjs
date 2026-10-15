@@ -48,7 +48,9 @@ export function parseCookies(header = '') {
     const idx = part.indexOf('=');
     if (idx < 0) continue;
     const key = part.slice(0, idx).trim();
-    if (key) out[key] = decodeURIComponent(part.slice(idx + 1).trim());
+    if (!key) continue;
+    // Una cookie mal codificada (%E0…) se ignora en vez de tumbar la petición con un 500.
+    try { out[key] = decodeURIComponent(part.slice(idx + 1).trim()); } catch { /* cookie inválida */ }
   }
   return out;
 }
