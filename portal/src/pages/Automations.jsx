@@ -16,8 +16,8 @@ const SUBTITLE = 'El portal vigila plazos, citas y plata, y avisa a la persona c
 
 const without = (obj, key) => { const next = { ...obj }; delete next[key]; return next; };
 
-// En escritorio los indicadores se estiran a la altura de "Cómo funciona": el número queda anclado abajo, junto a su barra de tono.
-const STAT = 'lg:flex lg:flex-col lg:[&>p:first-of-type]:mt-auto';
+// En escritorio los indicadores no se estiran a la altura de "Cómo funciona": conservan su alto natural.
+const STAT = '';
 
 export default function Automations() {
   const { user, isAdmin, team, refresh } = useSession();
@@ -149,7 +149,7 @@ export default function Automations() {
     <>
       {header}
       <div className="space-y-6">
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
           <div className="stagger grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3" role="group" aria-label="Resumen">
             <Stat icon={Zap} tone="teal" value={enabledCount} label="Activas" hint={`de ${plural(automations.length, 'automatización', 'automatizaciones')}`} className={STAT} />
             <Stat icon={BellRing} tone="blue" value={today.recipients} label="Avisos hoy"
