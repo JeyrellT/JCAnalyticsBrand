@@ -1,6 +1,7 @@
 // Componentes de interfaz reutilizables del portal (sistema visual v4).
 // Todo color pasa por tokens semánticos (src/index.css): funcionan en claro y oscuro.
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Loader2, AlertTriangle, CheckCircle2, Info, Sun, Moon, MonitorSmartphone, ChevronRight } from 'lucide-react';
 import { initials } from '../lib/format.js';
 import { errorMessage } from '../lib/api.js';
@@ -234,7 +235,9 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }) {
   }, [open, onClose]);
   if (!open) return null;
   const width = { sm: 'sm:max-w-md', md: 'sm:max-w-xl', lg: 'sm:max-w-3xl' }[size];
-  return (
+  // Se monta en <body>: dentro de una tarjeta con animación (transform) el fondo fijo quedaría
+  // recortado a la tarjeta en vez de cubrir la pantalla.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label={title}>
       <button type="button" className="animate-fade absolute inset-0 bg-panel/55 backdrop-blur-[3px]" aria-label="Cerrar" onClick={onClose} />
       <div ref={panel} className={cx('animate-sheet relative flex max-h-[92dvh] w-full flex-col rounded-t-3xl border border-line bg-surface shadow-pop sm:rounded-3xl', width)}>
@@ -246,7 +249,8 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }) {
         <div className="overflow-y-auto px-5 py-4">{children}</div>
         {footer && <div className="safe-bottom flex flex-wrap justify-end gap-2 border-t border-line bg-surface-2/60 px-5 py-3 sm:rounded-b-3xl">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

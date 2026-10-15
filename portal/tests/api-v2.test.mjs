@@ -113,7 +113,8 @@ test('clientes: campos calculados, ficha y renombrar actualiza proyectos', async
   assert.equal(row.next_appointment_at, inDays(4), 'ignora la cita cancelada');
 
   const detail = (await ana.get(`/api/clients/${c.id}`)).data;
-  assert.deepEqual(Object.keys(detail).sort(), ['appointments', 'client', 'projects', 'updates']);
+  // v5 agrega `portal` (accesos, briefs, entregables y documentos del cliente).
+  assert.deepEqual(Object.keys(detail).sort(), ['appointments', 'client', 'portal', 'projects', 'updates']);
   assert.equal(detail.client.value_crc, row.value_crc);
   assert.equal(detail.projects.length, 3);
   assert.ok(detail.projects.every((p) => Array.isArray(p.members) && 'tasks_total' in p && 'sla_state' in p));

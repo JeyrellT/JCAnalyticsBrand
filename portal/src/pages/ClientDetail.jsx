@@ -1,7 +1,7 @@
-// Ficha del cliente: contacto, quién lleva la relación, proyectos, citas e historial de avances.
+// Ficha del cliente: contacto, quién lleva la relación, proyectos, portal del cliente (v5), citas e historial de avances.
 import { useMemo, useState } from 'react';
 import {
-  ArrowLeft, Pencil, Plus, MessageCircle, Mail, Phone, User, Building2, CalendarPlus, CalendarDays, FolderKanban, ChevronDown, StickyNote, History, UserRound,
+  ArrowLeft, Pencil, Plus, MessageCircle, Mail, Phone, User, Building2, CalendarPlus, CalendarDays, FolderKanban, ChevronDown, StickyNote, History, UserRound, Globe,
 } from 'lucide-react';
 import { useResource, useSession } from '../lib/session.jsx';
 import { api } from '../lib/api.js';
@@ -9,6 +9,7 @@ import { Link, navigate } from '../lib/router.jsx';
 import { PageLoader, EmptyState, Avatar, AvatarStack, Badge, Select, ProgressBar, SectionHead, RowArrow, useAction, cx } from '../components/ui.jsx';
 import { StatusBadge, SlaBadge } from '../components/common.jsx';
 import { ClientForm, ClientStatusBadge, clientWhatsapp } from '../components/clients.jsx';
+import { ClientPortalSection } from '../components/portal-admin.jsx';
 import { ProjectForm, projectMembers } from './Projects.jsx';
 import { CLIENT_STATUS, PROJECT_STATUS, SERVICES, UPDATE_CHANNELS, APPOINTMENT_KINDS, APPOINTMENT_STATUS } from '../../shared/catalog.js';
 import { formatMoney, formatDateTime, timeAgo } from '../lib/format.js';
@@ -109,7 +110,8 @@ export default function ClientDetail({ params }) {
 
   const back = <Link to="/clientes" className="tap inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink"><ArrowLeft className="h-4 w-4" />Clientes</Link>;
   if (!data) return <>{back}<PageLoader error={error} onRetry={reload} /></>;
-  const { client: c, projects = [], updates = [] } = data;
+  const { client: c, projects = [], updates = [], portal } = data;
+  const portalAccess = (portal?.accounts ?? []).filter((a) => a.active).length;
   const wa = clientWhatsapp(c, user.name);
   const tel = c.contact_phone ? `tel:${String(c.contact_phone).replace(/[^\d+]/g, '')}` : null;
   const openProjects = projects.filter((p) => !CLOSED.includes(p.status) && !p.archived);
@@ -139,6 +141,7 @@ export default function ClientDetail({ params }) {
               <h1 className="mt-0.5 break-words font-display text-[26px] font-bold leading-tight sm:text-[32px]">{c.name}</h1>
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
                 <ClientStatusBadge status={c.status} />
+                {portalAccess > 0 && <Badge tone="teal"><Globe className="h-3 w-3" aria-hidden="true" />Portal activo</Badge>}
                 {c.contact_name && <span className="text-sm text-muted">· {c.contact_name}</span>}
               </div>
             </div>
@@ -229,6 +232,8 @@ export default function ClientDetail({ params }) {
               </>
             )}
           </section>
+
+          {portal && <ClientPortalSection client={c} portal={portal} projects={projects} onReload={reload} />}
 
           <section className="card animate-rise overflow-hidden" aria-labelledby="appts-title">
             <SectionHead flush id="appts-title" icon={CalendarDays} tone="violet" title="Citas"

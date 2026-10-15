@@ -24,6 +24,12 @@ const ClientDetail = lazy(() => import('./pages/ClientDetail.jsx'));
 const Person = lazy(() => import('./pages/Person.jsx'));
 const Automations = lazy(() => import('./pages/Automations.jsx'));
 const NotificationSettings = lazy(() => import('./pages/NotificationSettings.jsx'));
+// v5: portal de clientes (identidad aparte; nunca monta el Layout ni las rutas del equipo).
+const ClientApp = lazy(() => import('./client/ClientApp.jsx'));
+// v5: brief creativo (bandeja, ficha y vista A4 imprimible sin el Layout).
+const Briefs = lazy(() => import('./pages/Briefs.jsx'));
+const BriefDetail = lazy(() => import('./pages/BriefDetail.jsx'));
+const BriefPrint = lazy(() => import('./pages/BriefPrint.jsx'));
 
 const ROUTES = [
   ['/', Dashboard],
@@ -40,12 +46,16 @@ const ROUTES = [
   ['/servicios/:key', ServiceDetail],
   ['/clientes', Clients],
   ['/clientes/:id', ClientDetail],
+  // v5: '/briefs/nuevo' va antes que '/briefs/:id'.
+  ['/briefs', Briefs],
+  ['/briefs/nuevo', BriefDetail],
+  ['/briefs/:id', BriefDetail],
   ['/automatizaciones', Automations],
   ['/notificaciones', NotificationSettings],
   ['/bitacora', Activity],
 ];
 
-const TITLES = { '/': 'Centro de operaciones', '/proyectos': 'Proyectos', '/clientes': 'Clientes', '/servicios': 'Servicios', '/tablero': 'Tablero', '/agenda': 'Agenda', '/inversiones': 'Inversiones', '/buzon': 'Buzón', '/equipo': 'Equipo', '/bitacora': 'Bitácora', '/automatizaciones': 'Automatizaciones', '/notificaciones': 'Avisos y app' };
+const TITLES = { '/': 'Centro de operaciones', '/proyectos': 'Proyectos', '/clientes': 'Clientes', '/servicios': 'Servicios', '/tablero': 'Tablero', '/agenda': 'Agenda', '/inversiones': 'Inversiones', '/buzon': 'Buzón', '/equipo': 'Equipo', '/bitacora': 'Bitácora', '/automatizaciones': 'Automatizaciones', '/notificaciones': 'Avisos y app', '/briefs': 'Briefs' /* v5 */ };
 
 function Router() {
   const { path } = useLocation();
@@ -64,6 +74,7 @@ function Router() {
 
 export function App() {
   const session = useSession();
+  const { path } = useLocation(); // v5: la vista imprimible del brief va sin Layout
   if (session.status === 'loading') return <PageLoader />;
   if (session.status === 'offline') {
     return (
@@ -75,7 +86,11 @@ export function App() {
     );
   }
   if (session.status === 'anonymous') return <Login />;
+  if (session.isClient) return <Suspense fallback={<PageLoader />}><ClientApp /></Suspense>;
   if (session.user.must_change_password) return <ForcePasswordChange />;
+  // v5: brief en A4 (para imprimir o guardar como PDF), sin la barra lateral ni la inferior.
+  const printParams = matchPath('/briefs/:id/imprimir', path);
+  if (printParams) return <Suspense fallback={<PageLoader />}><BriefPrint params={printParams} /></Suspense>;
   return <Layout><Router /></Layout>;
 }
 

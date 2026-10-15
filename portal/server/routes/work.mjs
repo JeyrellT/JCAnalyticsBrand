@@ -10,6 +10,8 @@ import {
 import { fail, invalid, has, text, oneOf, dateOnly, dateTime, id, minorAmount, url } from '../http.mjs';
 import { transaction } from '../schema.mjs';
 import { createHelpers, sameName } from './common.mjs';
+import { createPortalHelpers } from './portal-common.mjs';
+import { createBriefService } from './brief-service.mjs';
 
 const DAY = 86_400_000;
 const MAX_MEMBERS = 30;
@@ -20,6 +22,8 @@ export function workRoutes(route, ctx) {
     userExists, keepOrCheck, PROJECT_SELECT, getProjectFull, membersOf, decorateProject,
     APPOINTMENT_SELECT, attendeesOf, decorateAppointment, getClient, clientExists,
   } = createHelpers(ctx);
+  const portal = createPortalHelpers(ctx);
+  const briefs = createBriefService(ctx, portal);
   const getProject = (projectId) => db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId) ?? fail(404, 'not_found');
   const projectExists = (projectId, field = 'project_id') => {
     if (projectId == null) return null;
@@ -147,6 +151,13 @@ export function workRoutes(route, ctx) {
         WHERE pu.project_id = ? ORDER BY pu.created_at DESC LIMIT 50`).all(p.id),
       appointments: db.prepare(`${APPOINTMENT_SELECT} WHERE a.project_id = ? ORDER BY a.starts_at DESC LIMIT 20`).all(p.id),
       investments: canInvest(user) ? db.prepare('SELECT id, name, status, currency FROM investments WHERE project_id = ?').all(p.id) : [],
+      // v5: etapas, entregables y briefs que el cliente sigue en su portal.
+      milestones: portal.milestonesOf(p.id),
+      deliverables: p.client_id ? portal.listDeliverables({ clientId: p.client_id, projectId: p.id }) : [],
+      briefs: p.client_id ? db.prepare(`${briefs.BRIEF_SELECT} WHERE b.project_id = ? AND b.client_id = ? ORDER BY b.updated_at DESC`).all(p.id, p.client_id)
+        .map((r) => briefs.decorate(r, 'team', { withData: false })) : [],
+      client_portal: !!p.client_id && p.kind === 'cliente' && p.status !== 'prospecto'
+        && !!db.prepare('SELECT 1 FROM client_accounts WHERE client_id = ? AND active = 1').get(p.client_id),
     };
   });
 
@@ -192,6 +203,10 @@ export function workRoutes(route, ctx) {
       db.prepare('UPDATE projects SET last_update_at = ?, updated_at = ? WHERE id = ?').run(at, at, p.id);
     });
     ctx.log(user.id, 'project', p.id, 'client_update', `${user.name} registró un avance a ${p.client || p.name} por ${UPDATE_CHANNELS[channel]}`);
+    // v5: el avance también queda en el portal del cliente (es, por definición, una comunicación al cliente).
+    if (p.client_id && p.kind === 'cliente' && p.status !== 'prospecto') {
+      portal.notifyClient(p.client_id, { kind: 'avance', title: `Nuevo avance en ${p.name}`, body: note, link: `/cliente/proyectos/${p.id}` });
+    }
     return { project: decorateProject(getProjectFull(p.id)) };
   });
 

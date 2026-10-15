@@ -8,6 +8,9 @@
 //    · Toda escritura exige el encabezado X-Portal-Request y un Origin propio
 //      (defensa CSRF además de SameSite=Strict).
 //    · Permisos por rol en cada ruta: user · invest (socio/admin) · admin.
+//    · Clientes con identidad aparte (v5): cookie propia, tabla propia y solo
+//      rutas /api/client/* (acceso client/client_any). Una cookie de cliente no
+//      abre ninguna ruta del equipo, ni al revés.
 //    · Límite de intentos de login por IP y por correo.
 //    · Encabezados CSP, anti-iframe y HSTS en producción.
 // ============================================================================
@@ -19,11 +22,16 @@ import { createContext } from './context.mjs';
 import { HttpError, readJson, parseCookies, serializeCookie } from './http.mjs';
 import { createLoginLimiter, newSessionToken, hashToken } from './auth.mjs';
 import { registerRoutes } from './routes/index.mjs';
-import { createRouter } from './router.mjs';
+import { createRouter, isClientRoute } from './router.mjs';
 
 const COOKIE = 'jcp_session';
 const IDLE_MS = 12 * 3_600_000;         // la sesión expira tras 12 h sin uso
 const ABSOLUTE_MS = 7 * 24 * 3_600_000; // y siempre a los 7 días
+
+// Portal de clientes: sesión más corta (uso esporádico, fuera del equipo).
+const CLIENT_COOKIE = 'jcc_session';
+const CLIENT_IDLE_MS = 8 * 3_600_000;
+const CLIENT_ABSOLUTE_MS = 3 * 24 * 3_600_000;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -38,6 +46,9 @@ const CSP = [
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data:",
   "connect-src 'self'",
+  "manifest-src 'self'",
+  "worker-src 'self'",
+  "object-src 'none'",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -89,6 +100,27 @@ export function createPortalServer({
       const token = parseCookies(req.headers.cookie)[COOKIE];
       db.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?').run(userId, token ? hashToken(token) : '');
     },
+    /** Sesiones de cuentas de cliente: misma mecánica, otra tabla y otra cookie. */
+    client: {
+      start(res, req, accountId, ip) {
+        const token = newSessionToken();
+        const at = now();
+        db.prepare('DELETE FROM client_sessions WHERE expires_at < ?').run(new Date(at).toISOString());
+        db.prepare('INSERT INTO client_sessions (token_hash, account_id, created_at, expires_at, ip, user_agent) VALUES (?, ?, ?, ?, ?, ?)').run(
+          hashToken(token), accountId, new Date(at).toISOString(), new Date(at + CLIENT_IDLE_MS).toISOString(), ip, String(req.headers['user-agent'] ?? '').slice(0, 200),
+        );
+        res.setHeader('Set-Cookie', serializeCookie(CLIENT_COOKIE, token, { maxAge: CLIENT_ABSOLUTE_MS / 1000, secure: isSecure(req) }));
+      },
+      end(req, res) {
+        const token = parseCookies(req.headers.cookie)[CLIENT_COOKIE];
+        if (token) db.prepare('DELETE FROM client_sessions WHERE token_hash = ?').run(hashToken(token));
+        res.setHeader('Set-Cookie', serializeCookie(CLIENT_COOKIE, '', { maxAge: 0, secure: isSecure(req) }));
+      },
+      endOthers(req, accountId) {
+        const token = parseCookies(req.headers.cookie)[CLIENT_COOKIE];
+        db.prepare('DELETE FROM client_sessions WHERE account_id = ? AND token_hash <> ?').run(accountId, token ? hashToken(token) : '');
+      },
+    },
   };
 
   function currentUser(req) {
@@ -110,6 +142,25 @@ export function createPortalServer({
     return row;
   }
 
+  /** Cuenta de cliente de la cookie jcc_session (con el nombre de su empresa) o null. */
+  function currentClient(req) {
+    const token = parseCookies(req.headers.cookie)[CLIENT_COOKIE];
+    if (!token || token.length > 100) return null;
+    const tokenHash = hashToken(token);
+    const row = db.prepare(`SELECT s.created_at s_created, s.expires_at s_expires, a.*, c.name client_name FROM client_sessions s
+      JOIN client_accounts a ON a.id = s.account_id JOIN clients c ON c.id = a.client_id WHERE s.token_hash = ?`).get(tokenHash);
+    if (!row) return null;
+    const t = now();
+    if (!row.active || new Date(row.s_expires).getTime() < t || new Date(row.s_created).getTime() + CLIENT_ABSOLUTE_MS < t) {
+      db.prepare('DELETE FROM client_sessions WHERE token_hash = ?').run(tokenHash);
+      return null;
+    }
+    if (new Date(row.s_expires).getTime() - t < CLIENT_IDLE_MS - 5 * 60_000) {
+      db.prepare('UPDATE client_sessions SET expires_at = ? WHERE token_hash = ?').run(new Date(t + CLIENT_IDLE_MS).toISOString(), tokenHash);
+    }
+    return { ...row, principal: 'client' };
+  }
+
   registerRoutes(router.route, ctx, session);
 
   function securityHeaders(res, req) {
@@ -119,6 +170,8 @@ export function createPortalServer({
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
     res.setHeader('Content-Security-Policy', CSP);
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
     if (isSecure(req)) res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
 
@@ -140,10 +193,16 @@ export function createPortalServer({
     if (req.method !== 'GET') {
       if (req.headers['x-portal-request'] !== '1' || !originAllowed(req)) return json(res, 403, { error: 'csrf_blocked' });
     }
-    const user = found.access === 'public' ? null : currentUser(req);
-    router.authorize(found, user);
+    // Cada familia de rutas lee SOLO su cookie: la del equipo o la del cliente.
+    const clientRoute = isClientRoute(found);
+    const principal = found.access === 'public' ? null : clientRoute ? currentClient(req) : currentUser(req);
+    router.authorize(found, principal);
     const body = await readJson(req);
-    const result = await found.handler({ req, res, user, params, query, body, ip: clientIp(req) });
+    const result = await found.handler({
+      req, res, params, query, body, ip: clientIp(req),
+      user: clientRoute ? null : principal,
+      account: clientRoute ? principal : null,
+    });
     if (!res.headersSent) json(res, 200, result ?? { ok: true });
   }
 

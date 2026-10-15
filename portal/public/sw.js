@@ -11,7 +11,7 @@
    Al cambiar este archivo o los íconos de public/icons/, subí VERSION.
    ============================================================================ */
 
-const VERSION = 'v4.0.0';
+const VERSION = 'v5.0.0';
 const SHELL_CACHE = `jcp-shell-${VERSION}`;
 const ASSET_CACHE = 'jcp-assets';   // con hash: sobreviven entre versiones, con tope de entradas
 const META_CACHE = 'jcp-meta';      // clave pública VAPID y plataforma (la escribe src/lib/pwa.js)

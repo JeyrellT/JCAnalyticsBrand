@@ -347,6 +347,167 @@ export const MIGRATIONS = [
   -- Claves VAPID y otros secretos del servidor: ninguna ruta de la API los lee.
   CREATE TABLE app_secrets (key TEXT PRIMARY KEY, value TEXT NOT NULL);
   `,
+  // 5 · Portal de clientes y brief creativo (ver docs/v5-contrato.md).
+  //     Las cuentas de cliente son una identidad APARTE de users: otra tabla,
+  //     otra cookie y otras rutas (/api/client/*). Todo lo del cliente cuelga de client_id.
+  `
+  CREATE TABLE client_accounts (
+    id INTEGER PRIMARY KEY,
+    client_id INTEGER NOT NULL REFERENCES clients(id),
+    email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    name TEXT NOT NULL,
+    phone TEXT,
+    title TEXT,
+    can_approve INTEGER NOT NULL DEFAULT 1,
+    password_hash TEXT NOT NULL,
+    must_change_password INTEGER NOT NULL DEFAULT 1,
+    active INTEGER NOT NULL DEFAULT 1,
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    last_login_at TEXT
+  );
+  CREATE INDEX client_accounts_client ON client_accounts(client_id);
+
+  CREATE TABLE client_sessions (
+    token_hash TEXT PRIMARY KEY,
+    account_id INTEGER NOT NULL REFERENCES client_accounts(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    ip TEXT,
+    user_agent TEXT
+  );
+  CREATE INDEX client_sessions_account ON client_sessions(account_id);
+
+  CREATE TABLE client_notifications (
+    id INTEGER PRIMARY KEY,
+    account_id INTEGER NOT NULL REFERENCES client_accounts(id) ON DELETE CASCADE,
+    kind TEXT NOT NULL,
+    title TEXT NOT NULL,
+    body TEXT,
+    link TEXT,
+    read_at TEXT,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX client_notifications_account ON client_notifications(account_id, read_at, created_at);
+
+  CREATE TABLE project_milestones (
+    id INTEGER PRIMARY KEY,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    description TEXT,
+    due_date TEXT,
+    status TEXT NOT NULL DEFAULT 'pendiente' CHECK (status IN ('pendiente','en_curso','completado')),
+    position REAL NOT NULL DEFAULT 0,
+    completed_at TEXT,
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  CREATE INDEX project_milestones_project ON project_milestones(project_id, position);
+
+  CREATE TABLE briefs (
+    id INTEGER PRIMARY KEY,
+    code TEXT NOT NULL UNIQUE,
+    client_id INTEGER NOT NULL REFERENCES clients(id),
+    project_id INTEGER REFERENCES projects(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'borrador'
+      CHECK (status IN ('borrador','enviado','observado','aprobado','en_produccion','entregado','cerrado','cancelado')),
+    data TEXT NOT NULL DEFAULT '{}',
+    version INTEGER NOT NULL DEFAULT 0,
+    approved_version INTEGER,
+    owner_id INTEGER REFERENCES users(id),
+    urgent INTEGER NOT NULL DEFAULT 0,
+    urgent_reason TEXT,
+    send_start TEXT,
+    created_by_user INTEGER REFERENCES users(id),
+    created_by_account INTEGER REFERENCES client_accounts(id),
+    submitted_at TEXT,
+    approved_at TEXT,
+    closed_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  CREATE INDEX briefs_client ON briefs(client_id, status);
+  CREATE INDEX briefs_status ON briefs(status, updated_at);
+
+  -- Cada envío congela una versión con su huella SHA-256 (no se editan ni se borran).
+  CREATE TABLE brief_versions (
+    id INTEGER PRIMARY KEY,
+    brief_id INTEGER NOT NULL REFERENCES briefs(id) ON DELETE CASCADE,
+    version INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    data TEXT NOT NULL,
+    hash TEXT NOT NULL,
+    submitted_by_user INTEGER REFERENCES users(id),
+    submitted_by_account INTEGER REFERENCES client_accounts(id),
+    created_at TEXT NOT NULL,
+    UNIQUE (brief_id, version)
+  );
+
+  CREATE TABLE brief_events (
+    id INTEGER PRIMARY KEY,
+    brief_id INTEGER NOT NULL REFERENCES briefs(id) ON DELETE CASCADE,
+    actor_type TEXT NOT NULL CHECK (actor_type IN ('equipo','cliente','sistema')),
+    user_id INTEGER REFERENCES users(id),
+    account_id INTEGER REFERENCES client_accounts(id),
+    kind TEXT NOT NULL CHECK (kind IN ('creado','enviado','estado','comentario','nota_interna')),
+    from_status TEXT,
+    to_status TEXT,
+    version INTEGER,
+    body TEXT,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX brief_events_brief ON brief_events(brief_id, created_at);
+
+  CREATE TABLE deliverables (
+    id INTEGER PRIMARY KEY,
+    client_id INTEGER NOT NULL REFERENCES clients(id),
+    project_id INTEGER REFERENCES projects(id) ON DELETE SET NULL,
+    brief_id INTEGER REFERENCES briefs(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    url TEXT,
+    version INTEGER NOT NULL DEFAULT 1,
+    status TEXT NOT NULL DEFAULT 'en_revision' CHECK (status IN ('en_revision','aprobado','cambios')),
+    shared_by INTEGER REFERENCES users(id),
+    shared_at TEXT NOT NULL,
+    decided_by_account INTEGER REFERENCES client_accounts(id),
+    decided_at TEXT,
+    decision_note TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  CREATE INDEX deliverables_client ON deliverables(client_id, status);
+  CREATE INDEX deliverables_project ON deliverables(project_id);
+
+  CREATE TABLE deliverable_events (
+    id INTEGER PRIMARY KEY,
+    deliverable_id INTEGER NOT NULL REFERENCES deliverables(id) ON DELETE CASCADE,
+    version INTEGER NOT NULL,
+    actor_type TEXT NOT NULL CHECK (actor_type IN ('equipo','cliente')),
+    user_id INTEGER REFERENCES users(id),
+    account_id INTEGER REFERENCES client_accounts(id),
+    kind TEXT NOT NULL CHECK (kind IN ('compartido','nueva_version','aprobado','cambios')),
+    note TEXT,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX deliverable_events_deliverable ON deliverable_events(deliverable_id, created_at);
+
+  CREATE TABLE client_documents (
+    id INTEGER PRIMARY KEY,
+    client_id INTEGER NOT NULL REFERENCES clients(id),
+    project_id INTEGER REFERENCES projects(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    url TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'otro',
+    note TEXT,
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  CREATE INDEX client_documents_client ON client_documents(client_id);
+  `,
 ];
 
 export const DEFAULT_SETTINGS = {
@@ -354,6 +515,7 @@ export const DEFAULT_SETTINGS = {
   update_sla_hours: '72',     // Compromiso público: avances cada 72 h.
   wip_en_progreso: '6',       // Límite WIP (Lean) de la columna "En progreso".
   wip_revision: '4',
+  brief_lead_days: '3',       // Días mínimos de producción entre el envío de un brief y su fecha de salida.
 };
 
 /** Aplica migraciones pendientes y valores por defecto. */

@@ -11,7 +11,7 @@ solo archivo, con el backend real corriendo en la pestaña y datos ficticios.
 | Base | `sqljs-adapter.js` | sql.js **asm.js** (`sql.js/dist/sql-asm.js`: JS puro, sin `.wasm` ni `eval`) con la API de `node:sqlite` que usa `server/`: `exec`, `prepare().get/all/run`, `close`. Reutiliza una sentencia por texto SQL para no agotar la memoria de SQLite. |
 | Backend | `backend.js` | `migrate()` + `createContext()` + `createRouter()` + `registerRoutes()`, igual que `server/app.mjs`. `dispatch(path, { method, body })` hace lo de `handleApi`: rutas, permisos por rol, cuerpo JSON y `HttpError` → `{ status, data }`. Sesiones lógicas en memoria (la siembra entra como cada persona; quien mira usa `viewer`). |
 | Shims | `shims/` | Reemplazan `node:crypto`, `node:os`, `node:path`, `node:util`, `node:fs/promises` y `server/auth.mjs` (scrypt → SHA-256 con sal; el resto de `auth.mjs` es el real). |
-| Interfaz | `src/lib/api.js`, `src/lib/router.jsx`, `src/pages/Login.jsx` | `setTransport()` cambia fetch por `dispatch`; `setRouterMode('memory')` evita tocar `location`/`history` (los enlaces quedan como `#/ruta`); con `isDemo()` el login es un selector de personas. |
+| Interfaz | `src/lib/api.js`, `src/lib/router.jsx`, `src/pages/Login.jsx` | `setTransport()` cambia fetch por `dispatch`; `setRouterMode('memory')` evita tocar `location`/`history` (los enlaces quedan como `#/ruta`); con `isDemo()` el login es un selector de personas del equipo y, desde la v5, también de cliente. |
 
 ## Avisos push y automatizaciones (v3)
 
@@ -40,6 +40,54 @@ El build (`vite.demo.config.js` + `scripts/build-demo.mjs`) incrusta JS, CSS y e
 logo, y escribe un **fragmento** para artefactos de claude.ai: empieza con
 `<title>`, sigue con las fuentes de Google, `<style>`, `<div id="root">` y un
 `<script type="module">`; sin `<!doctype>`, `<html>`, `<head>` ni `<body>`.
+
+## Portal de clientes (v5)
+
+La demo trae las dos identidades del portal, cada una con su sesión lógica
+(`sessions` para el equipo, `clientSessions` para clientes, igual que las cookies
+`jcp_session` y `jcc_session` del servidor).
+
+| Pieza | Archivo | Qué hace |
+| --- | --- | --- |
+| Personas de cliente | `main.jsx` → `enableDemo({ personas, clientPersonas, password })` | `clientPersonas` = `backend.clientPersonas()`: cuentas activas `{ id, name, email, title, client_name }`. El selector entra con `POST /api/client/auth/login` y la clave de la demo (`demoInfo().password`). |
+| Quién mira | `main.jsx` → `readViewer()` | La barra de la demo dice "Viendo como cliente: Dueño La Burrada (La Burrada Street Food)" o la persona del equipo con su rol. "Simular aviso" es solo del equipo (los clientes no reciben push: ven sus avisos en el portal). |
+| Cambiar de persona | `main.jsx` → `DemoBar` | Cierra las dos sesiones posibles (`/api/auth/logout` y `/api/client/auth/logout`) y vuelve al selector con un 401. |
+| Claves del selector | `main.jsx` → `createDemoPasswords()` | Si en la demo se da un acceso, se restablece una clave o alguien cambia la suya, se recuerda la vigente: el selector la usa al entrar con esa persona (y pasa por "Cambiá tu clave temporal", como en producción). También refresca las personas del selector cuando se dan o quitan accesos. |
+| Escenario "Un cliente pidió cambios" | `scenarios.js` | Quien mira comparte un entregable con un cliente que tiene acceso (los suyos primero) y esa cuenta lo devuelve con ajustes por `POST /api/client/deliverables/:id/decision`: llega el aviso push de la categoría «Portal de clientes». |
+
+Datos sembrados (`seedClientPortal` en `server/demo-data.mjs`):
+
+| Cuenta | Cliente | Aprueba entregables |
+| --- | --- | --- |
+| Dueño La Burrada · `laburrada@clientes.demo.jcanalytic.local` | La Burrada Street Food | Sí |
+| Marketing La Burrada · `marketing.laburrada@clientes.demo.jcanalytic.local` | La Burrada Street Food | No (solo ve) |
+| Gerencia Uniquex · `uniquex@clientes.demo.jcanalytic.local` | Uniquex Costa Rica | Sí |
+
+Más: 4 etapas en "Pedidos en línea La Burrada" y en "Landing narrativa Uniquex", 3 documentos de La Burrada, el brief
+"Giveaway Tacos" **enviado** por el cliente (queda por revisar), un brief del equipo
+en producción y entregables por aprobar, aprobados y de Uniquex.
+
+### Recorrido sugerido
+
+1. **Equipo · Catalina (socia, lleva La Burrada).** En Inicio, «Requiere acción» trae
+   "Brief por revisar" y la tarjeta **Portal de clientes** cuenta briefs por revisar,
+   cambios pedidos y entregables esperando al cliente.
+2. **Clientes → La Burrada Street Food → Portal del cliente.**
+   - *Accesos*: «Dar acceso» crea una cuenta y muestra la **clave temporal una sola
+     vez**, con el mensaje listo para copiar o enviar por WhatsApp. En cada persona:
+     editar, «Aprueba entregables», «Nueva clave» y «Quitar acceso» / «Reactivar».
+   - *Solicitudes*, *Entregables* y *Documentos* (agregar, editar o quitar enlaces por
+     categoría y proyecto).
+3. **Proyectos → Pedidos en línea La Burrada.** *Etapas*: agregar, iniciar, completar
+   (el cliente recibe un aviso), reabrir, editar, eliminar y «Ordenar». *Entregables*:
+   compartir, «Subir versión nueva», «Historial» y «Retirar» (solo si el cliente aún no
+   decidió). *Briefs* del proyecto y «Nuevo brief». El formulario de «Registrar avance»
+   avisa que el texto es visible para el cliente.
+4. **Cambiar de persona → Dueño La Burrada (cliente).** Ve sus proyectos con etapas,
+   el entregable por aprobar, sus solicitudes y documentos. Aprobá o pedí cambios.
+5. **Volver como Catalina.** El aviso y la alerta de "pidió cambios" llevan al
+   proyecto para subir la versión nueva. Con **Hillary** (colaboradora) la sección de
+   accesos es de solo lectura: solo admin, socios o quien lleva la cuenta dan accesos.
 
 ## Reglas para quien toque `server/`
 

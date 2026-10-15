@@ -81,17 +81,20 @@ function SettingsCard() {
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   async function save(e) {
     e.preventDefault();
-    const body = Object.fromEntries(['fx_usd_crc', 'update_sla_hours', 'wip_en_progreso', 'wip_revision'].map((k) => [k, Number(String(form[k]).replace(',', '.'))]));
+    const body = Object.fromEntries(['fx_usd_crc', 'update_sla_hours', 'wip_en_progreso', 'wip_revision', 'brief_lead_days'].map((k) => [k, Number(String(form[k]).replace(',', '.'))]));
     if (await run(() => api('/api/settings', { method: 'PATCH', body }), { success: 'Ajustes guardados' })) refresh();
   }
   return (
     <section className="card animate-rise overflow-hidden" aria-labelledby="settings-title">
-      <SectionHead flush id="settings-title" icon={SlidersHorizontal} tone="teal" title="Ajustes operativos" hint="Tipo de cambio, avance y límites WIP." />
+      <SectionHead flush id="settings-title" icon={SlidersHorizontal} tone="teal" title="Ajustes operativos" hint="Tipo de cambio, avance, límites WIP y plazo de los briefs." />
       <form onSubmit={save} className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5">
         <Field label="Tipo de cambio (₡ por US$)" hint="Referencia BCCR para movimientos nuevos en dólares.">{(id) => <input id={id} className="input tabular" inputMode="decimal" value={form.fx_usd_crc ?? ''} onChange={set('fx_usd_crc')} />}</Field>
         <Field label="Avance al cliente cada (horas)" hint="Compromiso público: 72 h.">{(id) => <input id={id} className="input tabular" inputMode="numeric" value={form.update_sla_hours ?? ''} onChange={set('update_sla_hours')} />}</Field>
         <Field label="Límite WIP · En progreso">{(id) => <input id={id} className="input tabular" inputMode="numeric" value={form.wip_en_progreso ?? ''} onChange={set('wip_en_progreso')} />}</Field>
         <Field label="Límite WIP · Revisión">{(id) => <input id={id} className="input tabular" inputMode="numeric" value={form.wip_revision ?? ''} onChange={set('wip_revision')} />}</Field>
+        <Field label="Días mínimos de producción de un brief" className="sm:col-span-2" hint="Entre 1 y 30. La fecha de envío más cercana que puede pedir un cliente es hoy + estos días; el equipo puede marcar un brief urgente para saltarlo.">
+          {(id) => <input id={id} className="input tabular sm:max-w-[calc(50%-0.5rem)]" type="number" inputMode="numeric" min={1} max={30} step={1} value={form.brief_lead_days ?? ''} onChange={set('brief_lead_days')} />}
+        </Field>
         <div className="sm:col-span-2"><button type="submit" className="btn btn-primary" disabled={busy}><Save className="h-4 w-4" />Guardar ajustes</button></div>
       </form>
       <div className="border-t border-line bg-surface-2/60 p-4 sm:p-5">

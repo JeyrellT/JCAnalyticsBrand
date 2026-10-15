@@ -38,10 +38,14 @@ export async function burnPasswordCheck(password) {
   await verifyPassword(password, dummyHash);
 }
 
+/** Patrones que aparecen primero en cualquier diccionario de ataque. */
+const WEAK_PATTERNS = /password|contrase[nñ]a|qwerty|asdfgh|123456|abc123|jcanalytic|(.)\1{4,}/i;
+
 export function passwordProblem(password) {
   if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) return `La contraseña necesita al menos ${MIN_PASSWORD_LENGTH} caracteres.`;
   if (password.length > 200) return 'La contraseña es demasiado larga.';
   if (!/[A-Za-zÁÉÍÓÚÑáéíóúñ]/.test(password) || !/\d/.test(password)) return 'Usá letras y al menos un número.';
+  if (WEAK_PATTERNS.test(password)) return 'Esa contraseña es muy fácil de adivinar. Evitá "password", "123456", el nombre de la empresa o caracteres repetidos.';
   return null;
 }
 

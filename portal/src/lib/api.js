@@ -54,10 +54,17 @@ async function viaTransport(path, method, body) {
   }
 }
 
-export async function api(path, { method = 'GET', body } = {}) {
+const LOGIN_PATHS = ['/api/auth/login', '/api/client/auth/login'];
+
+/**
+ * @param {string} path
+ * @param {{ method?: string, body?: unknown, quiet?: boolean }} [o]  quiet: un 401 no cierra la sesión
+ *        en pantalla (lo usa la detección inicial, que prueba la sesión del equipo y la del cliente).
+ */
+export async function api(path, { method = 'GET', body, quiet = false } = {}) {
   const { status, data } = transport ? await viaTransport(path, method, body) : await viaFetch(path, method, body);
   if (status < 200 || status > 299) {
-    if (status === 401 && !path.startsWith('/api/auth/login')) listeners.forEach((fn) => fn());
+    if (status === 401 && !quiet && !LOGIN_PATHS.some((p) => path.startsWith(p))) listeners.forEach((fn) => fn());
     throw new ApiError(status, data);
   }
   return data;
@@ -77,6 +84,17 @@ const MESSAGES = {
   cannot_annul: 'No podés anular este movimiento.',
   investment_closed: 'La inversión está cerrada: no admite movimientos.',
   server_error: 'Algo falló en el servidor. Intentá de nuevo en un momento.',
+  // v5: brief creativo y portal de clientes
+  brief_locked: 'El brief ya fue enviado: su contenido quedó congelado. Para cambiarlo, el equipo debe pedir ajustes.',
+  brief_closed: 'Este brief está cerrado o cancelado: ya no admite cambios.',
+  invalid_transition: 'Ese cambio de estado no está permitido desde el estado actual.',
+  conflict: 'Alguien guardó cambios mientras editabas. Recargá para ver la última versión.',
+  already_decided: 'Este entregable ya tiene una decisión registrada.',
+  approval_not_allowed: 'Tu usuario no tiene permiso para aprobar entregables. Pedíselo a tu ejecutivo de cuenta.',
+  stale_version: 'Hay una versión más nueva de este entregable. Recargá antes de decidir.',
+  deliverable_locked: 'El cliente ya decidió sobre este entregable: queda como registro y no se puede borrar.',
+  too_many_drafts: 'Hay demasiados borradores abiertos. Enviá o cancelá alguno antes de crear otro.',
+  too_many_requests: 'Demasiadas acciones seguidas. Esperá unos minutos.',
 };
 
 export function errorMessage(error) {

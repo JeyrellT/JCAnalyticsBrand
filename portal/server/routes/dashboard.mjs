@@ -59,6 +59,25 @@ export function dashboardRoutes(route, ctx) {
       alerts.push({ tone: 'blue', kind: 'support', title: `Soporte de ${p.client || p.name} termina el ${p.ends}`, detail: `${PROJECT_STATUS[p.status].label}. Definí cierre o plan de mantenimiento.`, link: `/proyectos/${p.id}` });
     }
 
+    // v5: portal de clientes. Briefs por revisar y entregables con cambios pedidos son excepciones a atender.
+    const briefsToReview = db.prepare(`SELECT b.id, b.code, b.title, c.name client_name FROM briefs b JOIN clients c ON c.id = b.client_id
+      WHERE b.status = 'enviado' ORDER BY b.submitted_at`).all();
+    const changesRequested = db.prepare(`SELECT d.id, d.title, d.project_id, d.client_id, c.name client_name FROM deliverables d
+      JOIN clients c ON c.id = d.client_id WHERE d.status = 'cambios' ORDER BY d.decided_at`).all();
+    const waitingClient = db.prepare("SELECT COUNT(*) n FROM deliverables WHERE status = 'en_revision'").get().n;
+    if (briefsToReview.length) {
+      const first = briefsToReview[0];
+      alerts.unshift({
+        tone: 'blue', kind: 'brief',
+        title: briefsToReview.length === 1 ? `Brief por revisar: ${first.client_name}` : `${briefsToReview.length} briefs por revisar`,
+        detail: briefsToReview.slice(0, 3).map((b) => `${b.code} · ${b.title}`).join(' · '),
+        link: briefsToReview.length === 1 ? `/briefs/${first.id}` : '/briefs?estado=enviado',
+      });
+    }
+    for (const d of changesRequested.slice(0, 3)) {
+      alerts.push({ tone: 'amber', kind: 'deliverable', title: `${d.client_name} pidió cambios: ${d.title}`, detail: 'Subí una versión nueva del entregable.', link: d.project_id ? `/proyectos/${d.project_id}` : `/clientes/${d.client_id}` });
+    }
+
     let investments = null;
     if (canInvest(user)) {
       const movements = db.prepare('SELECT * FROM movements').all();
@@ -97,13 +116,14 @@ export function dashboardRoutes(route, ctx) {
         today_appointments: todayAppointments.length,
         week_appointments: upcoming.length,
       },
+      client_portal: { briefs_to_review: briefsToReview.length, changes_requested: changesRequested.length, waiting_client: waitingClient },
       alerts,
       agenda: upcoming.slice(0, 8),
       my_tasks: myTasks,
       projects_attention: [...slaLate, ...slaWarn].slice(0, 6),
       investments,
       activity: db.prepare(`SELECT a.*, u.name user_name, u.color user_color FROM activity a LEFT JOIN users u ON u.id = a.user_id
-        WHERE a.action NOT IN ('login', 'login_failed') ${sensitive} ORDER BY a.created_at DESC, a.id DESC LIMIT 12`).all(),
+        WHERE a.action NOT IN ('login', 'login_failed', 'client_login') ${sensitive} ORDER BY a.created_at DESC, a.id DESC LIMIT 12`).all(),
     };
   });
 }

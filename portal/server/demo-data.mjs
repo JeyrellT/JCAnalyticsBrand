@@ -7,6 +7,8 @@
 
 export const DEMO_PASSWORD = 'DemoPortal2026';
 export const DEMO_DOMAIN = 'demo.jcanalytic.local';
+/** Cuentas del portal de clientes de la demo (v5). */
+export const DEMO_CLIENT_DOMAIN = 'clientes.demo.jcanalytic.local';
 
 /**
  * @param {object} o
@@ -14,9 +16,11 @@ export const DEMO_DOMAIN = 'demo.jcanalytic.local';
  * @param {string} o.passwordHash  hash de DEMO_PASSWORD para todas las cuentas
  * @param {(who: string) => Promise<(method: string, path: string, body?: object) => Promise<any>>} o.login
  *        inicia sesión como `who` (parte local del correo) y devuelve un cliente de la API
+ * @param {(email: string) => Promise<(method: string, path: string, body?: object) => Promise<any>>} [o.loginClient]
+ *        inicia sesión en el portal de clientes (v5); sin él no se siembra el portal de clientes
  * @param {number} [o.now]
  */
-export async function seedDemoData({ db, passwordHash, login, now: nowArg }) {
+export async function seedDemoData({ db, passwordHash, login, loginClient = null, now: nowArg }) {
   const now = nowArg ?? Date.now();
   const iso = (offsetHours) => new Date(now + offsetHours * 3_600_000).toISOString();
   const day = (offsetDays) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Costa_Rica' }).format(new Date(now + offsetDays * 86_400_000));
@@ -168,5 +172,104 @@ export async function seedDemoData({ db, passwordHash, login, now: nowArg }) {
 
   await cata('POST', `/api/investments/${barberInv}/notes`, { body: 'Llegamos a 14 barberías. Propongo reinvertir 20 % del próximo retorno en pauta local en Heredia.' });
 
-  return { users: people.map(([email, name, role]) => ({ email, name, role })) };
+  const clients = loginClient ? await seedClientPortal({ db, hash, iso, day, U, C, P, cata, alex, loginClient }) : [];
+  return { users: people.map(([email, name, role]) => ({ email, name, role })), clients };
+}
+
+/**
+ * Portal de clientes (v5): accesos, etapas, avances, entregables, documentos y
+ * briefs. El brief "Giveaway Tacos" replica el formato CREATIVIDAD que usa JC.
+ */
+async function seedClientPortal({ db, hash, iso, day, U, C, P, cata, alex, loginClient }) {
+  const accounts = [
+    [C.burrada, `laburrada@${DEMO_CLIENT_DOMAIN}`, 'Dueño La Burrada', 'Gerente general', '+506 8888-0000', 1],
+    [C.burrada, `marketing.laburrada@${DEMO_CLIENT_DOMAIN}`, 'Marketing La Burrada', 'Redes y promociones', null, 0],
+    [C.uniquex, `uniquex@${DEMO_CLIENT_DOMAIN}`, 'Gerencia Uniquex', 'Gerente comercial', null, 1],
+  ];
+  for (const [clientId, email, name, title, phone, canApprove] of accounts) {
+    db.prepare(`INSERT INTO client_accounts (client_id, email, name, title, phone, can_approve, password_hash, must_change_password, active, created_by, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?)`).run(clientId, email, name, title, phone, canApprove, hash, U.catalina, iso(-24 * 20));
+  }
+
+  // ── Etapas de cada proyecto (lo que el cliente ve como avance) ────────────
+  const stage = (api, projectId, title, status, dueDate, description = null) => api('POST', `/api/projects/${projectId}/milestones`, { title, status, due_date: dueDate, description });
+  await stage(cata, P.burrada, 'Alcance y menú digital', 'completado', day(-14), 'Categorías, fotos y precios del menú validados.');
+  await stage(cata, P.burrada, 'Diseño del carrito sin cuenta', 'completado', day(-6));
+  await stage(alex, P.burrada, 'Desarrollo y pruebas en celulares', 'en_curso', day(4), 'Confirmación de pedido por WhatsApp y pruebas en Android/iPhone.');
+  await stage(cata, P.burrada, 'Publicación y capacitación', 'pendiente', day(9));
+  await stage(alex, P.uniquex, 'Guion del recorrido', 'completado', day(-24));
+  await stage(alex, P.uniquex, 'Escenas interactivas', 'completado', day(-5));
+  await stage(alex, P.uniquex, 'Revisión del cliente', 'en_curso', day(2));
+  await stage(alex, P.uniquex, 'Publicación y medición', 'pendiente', day(5));
+  // Avance ya comunicado (misma hora que el último avance sembrado: no altera el semáforo de 72 h).
+  db.prepare('INSERT INTO project_updates (project_id, user_id, channel, note, created_at) VALUES (?, ?, ?, ?, ?)').run(
+    P.burrada, U.catalina, 'whatsapp', 'El carrito sin cuenta ya funciona en pruebas. Esta semana conectamos la confirmación por WhatsApp.', iso(-81),
+  );
+
+  // ── Documentos compartidos ────────────────────────────────────────────────
+  const doc = (body) => cata('POST', `/api/clients/${C.burrada}/documents`, body);
+  await doc({ title: 'Propuesta y alcance firmados', url: 'https://docs.example.com/laburrada/propuesta-firmada.pdf', category: 'contrato', project_id: P.burrada });
+  await doc({ title: 'Factura electrónica · anticipo 50 %', url: 'https://docs.example.com/laburrada/fe-anticipo.pdf', category: 'facturacion', note: 'Pagada. Saldo contra entrega.' });
+  await doc({ title: 'Manual de marca La Burrada', url: 'https://docs.example.com/laburrada/manual-de-marca', category: 'marca' });
+
+  // ── Briefs ────────────────────────────────────────────────────────────────
+  const owner = await loginClient(`laburrada@${DEMO_CLIENT_DOMAIN}`);
+  // 1) El brief del formato CREATIVIDAD, enviado por el cliente: queda "por revisar" para el equipo.
+  const giveaway = (await owner('POST', '/api/client/briefs', {
+    title: 'Giveaway Tacos · promoción de octubre',
+    data: {
+      brand: 'La Burrada',
+      materials: ['email', 'redes_post', 'redes_historias'],
+      objective: 'conversion',
+      kpi_target: '150 pedidos por WhatsApp durante la promoción',
+      offer: 'Giveaway de tacos y descuentos de temporada.',
+      key_message: 'Desarrollar estrategia que comunique la promoción "Giveaway Tacos". Mensaje enfocado en generar demanda, destacar la promoción con una introducción agresiva. Priorizar urgencia, visibilidad de la oferta y CTA fuerte a compra inmediata.',
+      cta: 'Pedí ya por WhatsApp',
+      tone: 'urgente',
+      social_accounts: 'La Burrada · GIVEAWAY TACOS',
+      database_segment: 'Segmentación con mayor alcance. Subject lines con un hook de alto impacto enfocado en la promoción y la innovación.',
+      links: [
+        { label: 'WhatsApp', url: 'https://wa.me/50688880000' },
+        { label: 'Facebook', url: 'https://www.facebook.com/laburradacr' },
+        { label: 'Sitio web', url: 'https://www.laburradacr.com/' },
+      ],
+      includes_creative: true,
+      editable_format: 'template',
+      send_setup: true,
+      test_email: `pruebas.laburrada@${DEMO_CLIENT_DOMAIN}`,
+      send_start: day(6),
+      send_end: day(15),
+      is_contest: true,
+      disclaimer: 'Promoción válida durante las fechas indicadas o hasta agotar existencias. Participan mayores de 18 años. Aplican restricciones.',
+      rights_confirmed: true,
+    },
+  })).brief;
+  await owner('POST', `/api/client/briefs/${giveaway.id}/submit`, {});
+  await owner('POST', `/api/client/briefs/${giveaway.id}/comments`, { body: 'Si se puede, que el primer correo salga el lunes temprano.' });
+
+  // 2) Un brief del equipo ya aprobado y en producción, con entregable por aprobar.
+  const seasonal = (await cata('POST', '/api/briefs', {
+    client_id: C.burrada, project_id: P.burrada, title: 'Menú de temporada · historias semanales',
+    data: {
+      materials: ['redes_historias', 'reels_video'], objective: 'engagement', offer: 'Platillos de temporada con 10 % los miércoles.',
+      key_message: 'Mostrar los platillos nuevos con video corto, cercano y apetitoso; invitar a probarlos esta semana.',
+      tone: 'cercano', social_accounts: 'Instagram y Facebook de La Burrada', includes_creative: true, editable_format: 'ambos',
+      send_start: day(4), send_end: day(30), rights_confirmed: true,
+    },
+  })).brief;
+  await cata('POST', `/api/briefs/${seasonal.id}/submit`, {});
+  await cata('POST', `/api/briefs/${seasonal.id}/transition`, { to: 'aprobado' });
+  await cata('POST', `/api/briefs/${seasonal.id}/transition`, { to: 'en_produccion' });
+  await cata('POST', `/api/briefs/${seasonal.id}/comments`, { body: 'Hillary graba el jueves en el local; confirmar horario con el dueño.', internal: true });
+
+  // ── Entregables ───────────────────────────────────────────────────────────
+  const share = (api, body) => api('POST', '/api/deliverables', body);
+  const proto = (await share(alex, { client_id: C.burrada, project_id: P.burrada, title: 'Prototipo del carrito', description: 'Flujo completo: menú → carrito → confirmación.', url: 'https://www.laburradacr.com/?demo=carrito' })).deliverable;
+  await owner('POST', `/api/client/deliverables/${proto.id}/decision`, { decision: 'aprobado', version: 1, note: '¡Muy claro y rápido!' });
+  await share(cata, { client_id: C.burrada, project_id: P.burrada, brief_id: seasonal.id, title: 'Historias semana 1 · menú de temporada', description: '4 historias + 1 reel de 20 s.', url: 'https://docs.example.com/laburrada/historias-semana-1' });
+  await share(alex, { client_id: C.uniquex, project_id: P.uniquex, title: 'Landing narrativa · versión 2', description: 'Incluye los ajustes de la escena de portones.', url: 'https://uniquexcr.com/landing?v=2' });
+
+  // Los avisos de la siembra al equipo quedan leídos, salvo el brief por revisar.
+  db.prepare("UPDATE notifications SET read_at = ? WHERE kind = 'deliverable' AND read_at IS NULL").run(iso(0));
+  return accounts.map(([, email, name]) => ({ email, name }));
 }

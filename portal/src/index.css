@@ -397,3 +397,20 @@ body {
   content: ""; position: absolute; left: 0; top: 22%; bottom: 22%; width: 3px; border-radius: 999px;
   background-image: linear-gradient(180deg, var(--teal), var(--brand));
 }
+
+/* v5 · brief imprimible ─────────────────────────────────────────────────────
+   Vista A4 del brief (src/pages/BriefPrint.jsx): la hoja siempre en claro, sin
+   barra de herramientas, sin cortar filas entre páginas y con número de página. */
+@page { size: A4; margin: 14mm; }
+@page brief {
+  margin: 14mm 14mm 16mm;
+  @bottom-left { content: "Documento confidencial · JC Analytics"; font: 600 7.5pt/1 Inter, system-ui, sans-serif; color: #5b6b82; }
+  @bottom-right { content: "Página " counter(page) " de " counter(pages); font: 600 7.5pt/1 Inter, system-ui, sans-serif; color: #5b6b82; }
+}
+@media print {
+  :root, :root[data-theme] { color-scheme: light !important; }
+  html, body { background: #fff !important; background-image: none !important; }
+  .brief-print { page: brief; color: #071a36; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .brief-print-row { break-inside: avoid; page-break-inside: avoid; }
+  .brief-print a { color: inherit; text-decoration: none; }
+}

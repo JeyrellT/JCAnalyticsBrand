@@ -4,6 +4,7 @@ import { useState } from 'react';
 import {
   FolderKanban, AlarmClock, CalendarClock, ListChecks, TrendingUp, ArrowRight, BellRing, Wallet,
   Video, MapPin, Activity as ActivityIcon, Sparkles, ChevronDown, CircleAlert, Clock3, Info, HandCoins, LifeBuoy, PhoneCall,
+  ClipboardList, PackageCheck, MessageSquareWarning, Hourglass, Globe,
 } from 'lucide-react';
 import { useSession, useResource } from '../lib/session.jsx';
 import { Link } from '../lib/router.jsx';
@@ -19,7 +20,7 @@ const greeting = () => {
 };
 
 // Ícono por tipo de alerta; el tono lo decide el servidor (urgencia).
-const ALERT_ICON = { sla: Clock3, tasks: AlarmClock, appointment: PhoneCall, support: LifeBuoy, movement: HandCoins };
+const ALERT_ICON = { sla: Clock3, tasks: AlarmClock, appointment: PhoneCall, support: LifeBuoy, movement: HandCoins, brief: ClipboardList, deliverable: PackageCheck };
 const ALERT_STRIPE = { red: 'bg-coral', amber: 'bg-amber', blue: 'bg-brand', violet: 'bg-violet' };
 
 // Alertas visibles en el celular antes de "Ver todas".
@@ -33,6 +34,45 @@ const TILE_TONE = {
   red: 'text-coral-ink',
   teal: 'text-teal-ink',
 };
+
+/** Fila del pulso del portal de clientes: ícono, qué es y el número a la derecha. */
+function PortalRow({ to, icon, tone, label, hint, value }) {
+  const on = value > 0;
+  return (
+    <li>
+      <Link to={to} className="group row min-h-16 px-4 py-3 sm:px-5">
+        <IconTile icon={icon} tone={on ? tone : 'slate'} size="sm" />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold text-ink">{label}</span>
+          <span className="block truncate text-xs text-muted">{hint}</span>
+        </span>
+        <span className={cx('num shrink-0 text-2xl font-bold leading-none', on ? TILE_TONE[tone] ?? 'text-ink' : 'text-muted-2')}>{value}</span>
+        <RowArrow />
+      </Link>
+    </li>
+  );
+}
+
+/** v5: lo que mueven los clientes desde su portal (briefs y aprobaciones de entregables). */
+function ClientPortalCard({ counts }) {
+  const { briefs_to_review: toReview = 0, changes_requested: changes = 0, waiting_client: waiting = 0 } = counts ?? {};
+  const pending = toReview + changes;
+  return (
+    <section className="card animate-rise overflow-hidden" aria-labelledby="client-portal-title">
+      <SectionHead flush id="client-portal-title" icon={Globe} tone="teal" title="Portal de clientes"
+        hint={pending ? `${pending} ${pending === 1 ? 'pendiente del equipo' : 'pendientes del equipo'}` : 'Briefs y aprobaciones de entregables'}
+        action={<Link to="/briefs" className="link tap -my-2 hidden items-center text-sm sm:flex">Ver briefs</Link>} />
+      <ul className="divide-y divide-line">
+        <PortalRow to="/briefs?estado=enviado" icon={ClipboardList} tone="blue" label="Briefs por revisar" value={toReview}
+          hint={toReview ? 'Enviados por clientes: aprobalos o pedí ajustes' : 'Nada esperando revisión'} />
+        <PortalRow to="/briefs?tab=entregables" icon={MessageSquareWarning} tone="red" label="Cambios pedidos" value={changes}
+          hint={changes ? 'Subí una versión nueva del entregable' : 'Ningún entregable con ajustes'} />
+        <PortalRow to="/briefs?tab=entregables" icon={Hourglass} tone="violet" label="Esperando al cliente" value={waiting}
+          hint={waiting ? 'Entregables compartidos, sin decisión aún' : 'Nada pendiente de aprobación'} />
+      </ul>
+    </section>
+  );
+}
 
 /** Mosaico grande y tocable del resumen "Hoy" (celular). */
 function TodayTile({ to, icon: Icon, label, value, hint, tone = 'blue', alert = false }) {
@@ -217,7 +257,10 @@ export default function Dashboard() {
         </section>
       </div>
 
-      <PortalTodayCard />
+      <div className="grid gap-6 xl:grid-cols-2">
+        <ClientPortalCard counts={data.client_portal} />
+        <PortalTodayCard />
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_1.25fr]">
         {investments && (
