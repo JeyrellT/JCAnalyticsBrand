@@ -21,6 +21,9 @@ import { useBriefEditor } from '../../components/brief/useBriefEditor.js';
 import { briefPrintPath, cancelledFrom, lastObservation, shortHash } from '../../components/brief/brief-ui.js';
 import { formatDate, timeAgo, todayKey, whatsappLink } from '../../lib/format.js';
 
+// La barra superior del portal de clientes es fija: 68 px en el celular y 119 px con las pestañas (≥1024 px).
+const CLIENT_STICKY = { stickyTop: 'calc(env(safe-area-inset-top) + 4.75rem)', stickyTopLg: '8rem', asideStickyTop: '8.5rem' };
+
 const API = '/api/client/briefs';
 const backLink = (
   <Link to="/cliente/solicitudes" className="mb-2 inline-flex min-h-9 items-center gap-1.5 rounded-lg text-sm font-semibold text-muted transition hover:text-ink">
@@ -152,7 +155,7 @@ function ClientBriefNew() {
         </div>
       </section>
 
-      <BriefForm value={editor.draft.data} onChange={editor.setData} title={editor.draft.title} onTitleChange={editor.setTitle}
+      <BriefForm {...CLIENT_STICKY} value={editor.draft.data} onChange={editor.setData} title={editor.draft.title} onTitleChange={editor.setTitle}
         errors={editor.errors} showErrors={!!editor.attempt} audience="client" today={today} leadDays={leadDays}
         meta={<ProjectPicker value={projectId} onChange={setProjectId} disabled={busy} />}
         asideTop={contact ? <ContactCard contact={contact} /> : null}
@@ -350,7 +353,7 @@ function ClientBriefView({ data, reload, setData }) {
 
       {b.editable ? (
         <>
-          <BriefForm value={editor.draft.data} onChange={editor.setData} title={editor.draft.title} onTitleChange={editor.setTitle}
+          <BriefForm {...CLIENT_STICKY} value={editor.draft.data} onChange={editor.setData} title={editor.draft.title} onTitleChange={editor.setTitle}
             errors={editor.errors} showErrors={!!editor.attempt} audience="client" today={today} leadDays={leadDays} urgent={b.urgent}
             meta={<ProjectPicker value={b.project_id} onChange={changeProject} disabled={metaBusy || busy} />}
             asideTop={contact ? <ContactCard contact={contact} code={b.code} /> : null}

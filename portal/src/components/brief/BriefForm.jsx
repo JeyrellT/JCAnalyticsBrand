@@ -335,13 +335,13 @@ export function BriefPanel({ checks, completeness, leadProblem, sendStart, today
 }
 
 /** Barra compacta y fija del celular: avance + lo que falta, desplegable. */
-function MobileProgress({ checks, completeness, leadProblem, onPick, quickActions, stickyTop }) {
+function MobileProgress({ checks, completeness, leadProblem, onPick, quickActions, stickyTop, stickyTopLg }) {
   const [open, setOpen] = useState(false);
   const pending = checks.filter((c) => !c.ok);
   const ready = pending.length === 0 && !leadProblem;
   const count = pending.length + (leadProblem ? 1 : 0);
   return (
-    <div className="sticky top-[var(--brief-sticky)] z-20 mb-5 lg:top-4 xl:hidden" style={{ '--brief-sticky': stickyTop }}>
+    <div className="sticky top-[var(--brief-sticky)] z-20 mb-5 lg:top-[var(--brief-sticky-lg)] xl:hidden" style={{ '--brief-sticky': stickyTop, '--brief-sticky-lg': stickyTopLg }}>
       <div className="glass flex items-center gap-3 rounded-2xl border border-line px-3 py-2 shadow-raised">
         <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left">
           <span className={cx('num flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[13px] font-bold', ready ? 'bg-teal-soft text-teal-ink' : 'bg-brand-soft text-brand-ink')}>{completeness.pct}%</span>
@@ -396,10 +396,12 @@ function MobileProgress({ checks, completeness, leadProblem, onPick, quickAction
  * @param {React.ReactNode} [p.quickActions] botón compacto en la barra del celular
  * @param {React.ReactNode} [p.asideTop]    tarjetas sobre el panel (columna lateral en escritorio; antes del formulario en celular)
  * @param {string} [p.stickyTop]  distancia de la barra fija del celular al borde superior (alto de la barra del portal)
+ * @param {string} [p.stickyTopLg]  lo mismo desde 1024 px (el equipo no tiene barra superior ahí; el portal de clientes sí)
+ * @param {string} [p.asideStickyTop]  distancia de la columna fija de verificación (≥1280 px)
  */
 export function BriefForm({
   value, onChange, title, onTitleChange, errors = {}, showErrors = false, audience = 'team', today, leadDays = 3, urgent = false,
-  meta, actions, quickActions, asideTop, stickyTop = 'calc(max(0.625rem, env(safe-area-inset-top)) + 3.5rem)', disabled = false, idPrefix = 'brief',
+  meta, actions, quickActions, asideTop, stickyTop = 'calc(max(0.625rem, env(safe-area-inset-top)) + 3.5rem)', stickyTopLg = '1rem', asideStickyTop = '1.5rem', disabled = false, idPrefix = 'brief',
 }) {
   const [touched, setTouched] = useState({});
   const data = value ?? NO_DATA;
@@ -437,7 +439,7 @@ export function BriefForm({
       {asideTop && <div className="order-last space-y-5 xl:order-none xl:col-start-2 xl:row-start-1 xl:space-y-6">{asideTop}</div>}
 
       <div className={cx('min-w-0 xl:col-start-1 xl:row-start-1', asideTop && 'xl:row-span-2')}>
-        <MobileProgress checks={checks} completeness={completeness} leadProblem={leadProblem} onPick={pick} quickActions={quickActions} stickyTop={stickyTop} />
+        <MobileProgress checks={checks} completeness={completeness} leadProblem={leadProblem} onPick={pick} quickActions={quickActions} stickyTop={stickyTop} stickyTopLg={stickyTopLg} />
         <div className="space-y-5 xl:space-y-6">
           {BRIEF_SECTIONS.map((s, index) => {
             const fields = s.fields.filter((f) => !f.when || f.when(data));
@@ -484,7 +486,7 @@ export function BriefForm({
       </div>
 
       <div className={cx('min-w-0 xl:col-start-2', asideTop ? 'xl:row-start-2' : 'xl:row-start-1')}>
-        <div className="xl:sticky xl:top-6">{panel}</div>
+        <div className="xl:sticky xl:top-[var(--brief-aside-top)]" style={{ '--brief-aside-top': asideStickyTop }}>{panel}</div>
       </div>
     </div>
   );
