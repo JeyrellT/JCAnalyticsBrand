@@ -9,6 +9,10 @@ import { t } from '../../i18n/locale';
 export const PHONE = '50670330596';
 export const EMAIL = 'gerencia@jcanalytic.com';
 
+// Entrada al portal privado del equipo (proyectos, agenda, inversiones de socios).
+// Se puede cambiar al compilar con VITE_PORTAL_URL sin tocar el código.
+export const PORTAL_URL = import.meta.env.VITE_PORTAL_URL || 'https://portal.jcanalytic.com';
+
 export const prepareContact = ({ need, source = '' }) => {
   window.dispatchEvent(new CustomEvent('jca:contact-intent', { detail: { need, source } }));
 };
