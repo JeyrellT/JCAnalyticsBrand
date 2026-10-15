@@ -18,6 +18,15 @@
 .jca-nav-contact svg { transition: transform .35s; }
 .jca-nav-contact:hover { background: #0755b4; box-shadow: 0 5px 24px -12px #0065df; }
 .jca-nav-contact:hover svg { transform: translate(2px,-2px); }
+.jca-nav-portal { position: relative; display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 14px; border: 1px solid var(--nav-line); border-radius: 13px; color: var(--nav-text); font-size: 13px; font-weight: 600; white-space: nowrap; transition: border-color .25s,background .25s,color .25s; }
+.jca-nav-portal svg { color: #00a6b2; }
+.jca-nav-portal:hover { border-color: #00a6b2; background: #00a6b214; }
+.jca-nav-portal:focus-visible,.jca-menu__portal:focus-visible { outline: 2px solid #00a6b2; outline-offset: 3px; }
+.jca-menu__access { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 16px; }
+.jca-menu__access > .language-switcher { margin-top: 0 !important; }
+.jca-menu__portal { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 1px solid rgba(184,238,240,.28); border-radius: 999px; color: #f5f8fb; font-size: 13px; font-weight: 600; background: rgba(156,223,229,.08); }
+.jca-menu__portal svg:first-child { color: #9cdfe5; }
+.jca-menu__portal:hover { background: rgba(156,223,229,.16); }
 .jca-menu-button { display: none; place-items: center; width: 44px; height: 44px; border: 1px solid var(--nav-line,rgba(184,238,240,.2)); border-radius: 13px; color: inherit; background: transparent; cursor: pointer; }
 .jca-navigation__progress { position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg,#0065df,#00a6b2); transform-origin: left center; opacity: .75; }
 .jca-menu { --nav-text: #f5f8fb; --nav-muted: #a7bacb; position: fixed; inset: 0; z-index: 75; display: flex; flex-direction: column; min-height: 100dvh; max-height: 100dvh; overflow-y: auto; overscroll-behavior: contain; padding: 24px 24px max(24px,env(safe-area-inset-bottom)); color: #f5f8fb; background: radial-gradient(ellipse at 95% 5%,rgba(0,101,223,.17),transparent 56%),#071a36; }
@@ -65,5 +74,8 @@
 @media (max-width:1100px) { .jca-navigation__link { padding-inline: 9px; } .jca-brand__caption { font-size: 7px; letter-spacing: .09em; } }
 @media (max-width:900px) { .jca-brand__caption { display: none; } .jca-navigation__bar { gap: 8px; } .jca-nav-contact { gap: 9px; padding-left: 14px; } .jca-navigation__link { font-size: 12px; padding-inline: 8px; } }
 @media (max-width:1023px) { .jca-navigation { padding-top: 12px; } .jca-navigation__bar { min-height: 64px; padding: 8px 9px 8px 12px; border-radius: 18px; } .jca-navigation__links { display: none; } .jca-menu-button { display: grid; } .jca-brand__name { font-size: 18px; } .jca-brand__mark { width: 31px; } .jca-brand__mark img { height: 32px; } .jca-menu .jca-brand__caption { display: block; font-size: 7px; } }
-@media (max-width:450px) { .jca-navigation .jca-nav-contact { display: none; } .jca-menu { padding-inline: 22px; } }
+/* Celulares angostos: la entrada al portal sigue en la barra; "Ideas" pasa al menú (atajos) y, bajo 360 px, solo queda el logo. */
+@media (max-width:420px) { .jca-navigation .nav-insights { display: none; } }
+@media (max-width:359px) { .jca-navigation .jca-brand__name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } }
+@media (max-width:450px) { .jca-navigation .jca-nav-contact { display: none; } .jca-menu { padding-inline: 22px; } .jca-nav-portal { width: 44px; padding: 0; justify-content: center; } .jca-nav-portal > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } }
 @media (prefers-reduced-motion:reduce) { .jca-navigation *,.jca-menu *,.jca-cta,.jca-cta * { transition: none !important; } .cta.jca-cta:hover .cta-dot,.jca-cta:hover svg,.jca-nav-contact:hover svg { transform: none; } }
