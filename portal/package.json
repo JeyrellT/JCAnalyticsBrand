@@ -1,0 +1,45 @@
+{
+  "name": "jcanalytics-portal",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Portal privado de proyectos, operaciones e inversiones del equipo JC Analytics.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "vite",
+    "dev:api": "node --disable-warning=ExperimentalWarning --watch server/index.mjs",
+    "dev:demo": "vite --config vite.demo.config.js --open /demo/",
+    "build": "vite build",
+    "build:demo": "node scripts/build-demo.mjs",
+    "start": "node --disable-warning=ExperimentalWarning server/index.mjs",
+    "lint": "eslint .",
+    "test": "node --disable-warning=ExperimentalWarning --test tests/*.test.mjs",
+    "e2e": "node --disable-warning=ExperimentalWarning tests/e2e.mjs",
+    "seed:demo": "node --disable-warning=ExperimentalWarning server/seed-demo.mjs",
+    "user:create": "node --disable-warning=ExperimentalWarning server/cli.mjs create",
+    "user:reset": "node --disable-warning=ExperimentalWarning server/cli.mjs reset",
+    "user:list": "node --disable-warning=ExperimentalWarning server/cli.mjs list"
+  },
+  "dependencies": {
+    "lucide-react": "^0.577.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "recharts": "^3.10.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "globals": "^16.5.0",
+    "http_ece": "^1.2.1",
+    "playwright-core": "^1.56.1",
+    "sql.js": "^1.14.1",
+    "tailwindcss": "^4.3.3",
+    "vite": "^7.3.7"
+  }
+}
