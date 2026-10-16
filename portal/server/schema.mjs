@@ -533,6 +533,41 @@ export const MIGRATIONS = [
   ALTER TABLE users_v6 RENAME TO users;
   `,
   },
+  // 7 · Enlaces de registro (v7, ver docs/v7-contrato.md). El token se guarda para que el admin
+  //     pueda volver a copiar el enlace; quien tiene la base ya tiene todo lo demás.
+  `
+  CREATE TABLE invites (
+    id INTEGER PRIMARY KEY,
+    token TEXT NOT NULL UNIQUE,
+    kind TEXT NOT NULL CHECK (kind IN ('team','client')),
+    role TEXT CHECK (role IN ('admin','socio','colaborador','inversionista')),
+    client_id INTEGER REFERENCES clients(id),
+    can_approve INTEGER NOT NULL DEFAULT 1,
+    name TEXT,
+    label TEXT,
+    message TEXT,
+    max_uses INTEGER NOT NULL DEFAULT 1 CHECK (max_uses BETWEEN 1 AND 200),
+    uses INTEGER NOT NULL DEFAULT 0,
+    expires_at TEXT NOT NULL,
+    revoked_at TEXT,
+    created_by INTEGER NOT NULL REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    CHECK ((kind = 'team' AND role IS NOT NULL AND client_id IS NULL) OR (kind = 'client' AND role IS NULL AND client_id IS NOT NULL))
+  );
+  CREATE INDEX invites_created ON invites(created_at);
+
+  CREATE TABLE invite_uses (
+    id INTEGER PRIMARY KEY,
+    invite_id INTEGER NOT NULL REFERENCES invites(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id),
+    account_id INTEGER REFERENCES client_accounts(id),
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    ip TEXT,
+    used_at TEXT NOT NULL
+  );
+  CREATE INDEX invite_uses_invite ON invite_uses(invite_id);
+  `,
 ];
 
 export const DEFAULT_SETTINGS = {

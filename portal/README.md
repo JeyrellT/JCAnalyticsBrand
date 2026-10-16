@@ -309,3 +309,14 @@ Auditoría:
 2. **Comprobantes adjuntos** (foto del SINPE) en cada movimiento, usando almacenamiento en Railway o Drive.
 3. **Respaldo automático diario** a Drive o a un bucket.
 4. **Tablero Power BI** conectado a la exportación CSV o a una vista de solo lectura.
+
+## Enlaces de registro (v7)
+
+En lugar de crear cuentas a mano, compartí un enlace y cada persona se registra sola con su propia contraseña:
+
+- **Una persona:** *Equipo → Agregar persona → Solo el nombre*. Te da un enlace personal (un uso).
+- **Un grupo:** *Equipo → Enlaces de registro → Nuevo enlace → Para un grupo*: rol, cupo máximo (1–200), vigencia y mensaje de bienvenida.
+- **Clientes:** ficha del cliente → *Portal del cliente → Enlaces de registro*.
+- Compartí por WhatsApp, copiando el enlace o mostrando el **código QR**. Podés renovar, ampliar cupo o desactivar cuando quieras.
+
+Detalle técnico en `docs/v7-contrato.md`.

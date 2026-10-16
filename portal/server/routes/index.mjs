@@ -12,6 +12,7 @@ import { briefRoutes } from './briefs.mjs';
 import { portalAdminRoutes } from './portal-admin.mjs';
 import { clientPortalRoutes } from './client-portal.mjs';
 import { investorRoutes } from './investor.mjs';
+import { inviteRoutes } from './invites.mjs';
 import { installPushDispatch } from '../notify-policy.mjs';
 import { createAutomationEngine } from '../automations.mjs';
 
@@ -36,4 +37,6 @@ export function registerRoutes(route, ctx, session) {
   clientPortalRoutes(route, ctx, session);
   // v6: portal de inversionistas (docs/v6-contrato.md).
   investorRoutes(route, ctx);
+  // v7: enlaces de registro (docs/v7-contrato.md).
+  inviteRoutes(route, ctx, session);
 }

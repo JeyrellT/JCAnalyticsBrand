@@ -515,6 +515,7 @@ try {
     await a.getByRole('button', { name: 'Agregar inversionista' }).click();
     const dialog = a.getByRole('dialog', { name: 'Agregar persona' });
     assert.equal(await dialog.getByRole('radio', { name: 'Inversionista' }).isChecked(), true);
+    await dialog.getByRole('radio', { name: /Con su correo/ }).click();
     await dialog.getByLabel('Nombre completo').fill('Marta Solís');
     await dialog.getByLabel('Correo').fill('marta.solis@correo.cr');
     await dialog.getByLabel('WhatsApp').fill('8811-2233');
@@ -531,6 +532,41 @@ try {
     await a.goto(`${base}/inversiones`);
     await a.locator('li', { hasText: 'Ángel Mora' }).getByText('Inversionista', { exact: true }).first().waitFor();
     await a.context().close();
+  });
+
+  await check('enlaces: "solo el nombre" genera un enlace personal y la persona se registra sola', async () => {
+    const a = await newPage({ width: 1440, height: 900 });
+    await login(a, 'jeyrell');
+    await a.goto(`${base}/equipo`);
+    await a.getByRole('button', { name: 'Agregar persona' }).first().click();
+    const dialog = a.getByRole('dialog', { name: 'Agregar persona' });
+    await dialog.getByLabel('Nombre completo').fill('Lucía Brenes');
+    await dialog.getByRole('button', { name: 'Crear enlace' }).click();
+    const share = a.getByRole('dialog', { name: 'Enlace listo para compartir' });
+    await share.getByRole('button', { name: 'Código QR' }).click();
+    await share.getByRole('img', { name: 'Código QR del enlace' }).waitFor();
+    const link = (await share.locator('.font-mono.select-all').innerText()).trim();
+    assert.ok(link.startsWith(`${base}/registro/`), link);
+    await shot(a, '42-enlace-personal-qr');
+    await a.context().close();
+
+    const p = await newPage({ width: 390, height: 844 });
+    await p.goto(link);
+    await p.getByRole('heading', { name: '¡Hola, Lucía!' }).waitFor();
+    assert.equal(await p.getByLabel('Nombre completo').inputValue(), 'Lucía Brenes');
+    await p.getByLabel('Correo').fill('lucia.brenes@correo.cr');
+    await p.getByLabel('Contraseña', { exact: true }).fill('LuciaSegura2026');
+    await p.getByLabel('Confirmar contraseña').fill('LuciaSegura2026');
+    await p.getByRole('button', { name: /Crear mi acceso/ }).click();
+    await p.getByText('Lucía', { exact: false }).first().waitFor();
+    await p.waitForURL(`${base}/`);
+    await shot(p, '43-registro-con-enlace');
+    // El enlace personal ya no sirve.
+    const again = await newPage({ width: 390, height: 844 });
+    await again.goto(link);
+    await again.getByRole('heading', { name: 'Este enlace ya se completó' }).waitFor();
+    await p.context().close();
+    await again.context().close();
   });
 
   await check('configuración inicial: con la base vacía el dueño crea su cuenta una sola vez', async () => {
