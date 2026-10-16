@@ -14,9 +14,8 @@ import { useSession } from '../lib/session.jsx';
 import { Link, navigate } from '../lib/router.jsx';
 import { Field, Modal, IconTile, Avatar, RowArrow, cx } from '../components/ui.jsx';
 import { Shell } from './Login.jsx';
+import { WEAK } from '../lib/password.js';
 
-/** Mismo criterio que el servidor (server/auth.mjs): contraseñas de diccionario o repetidas. */
-const WEAK = /password|contrase[nñ]a|qwerty|asdfgh|123456|abc123|jcanalytic|(.)\1{4,}/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /** Campos que el servidor puede señalar con error de validación. */
 const FIELDS = ['code', 'name', 'email', 'phone', 'password'];
@@ -83,13 +82,13 @@ function SetupArt() {
 }
 
 /** Mensaje de error de un campo, enlazado con aria-describedby. */
-function FieldError({ id, text }) {
+export function FieldError({ id, text }) {
   if (!text) return null;
   return <p id={id} className="mt-1 text-xs font-medium text-coral-ink">{text}</p>;
 }
 
 /** Ícono a la izquierda de un input. */
-const InputIcon = ({ icon: Icon }) => <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-2" aria-hidden="true" />;
+export const InputIcon = ({ icon: Icon }) => <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-2" aria-hidden="true" />;
 
 function SetupForm({ onDone, onPhase }) {
   const { signedIn } = useSession();
@@ -348,7 +347,7 @@ export function Setup({ available = true, onDone, onConfigured }) {
 export function SetupWelcome({ user, onClose }) {
   const first = user?.name?.split(' ')[0] ?? '';
   const steps = [
-    { to: '/equipo?agregar=socio', icon: UserPlus, tone: 'teal', title: 'Agregá socios e inversionistas', text: 'En Equipo y ajustes → Agregar persona. Cada uno recibe su contraseña temporal para enviarle por WhatsApp.' },
+    { to: '/equipo?agregar=socio', icon: UserPlus, tone: 'teal', title: 'Agregá socios e inversionistas', text: 'En Equipo → Agregar persona: solo escribís el nombre y te damos un enlace para que se registre. Para grupos, Enlaces de registro con cupo máximo.' },
     { to: '/clientes', icon: Building2, tone: 'blue', title: 'Agregá tus clientes', text: 'Creá cada cliente y, desde su ficha → Portal del cliente, dale acceso.' },
     { to: '/equipo?tab=ajustes', icon: SlidersHorizontal, tone: 'violet', title: 'Revisá los ajustes', text: 'Tipo de cambio, compromiso de avance a clientes y límites del tablero.' },
   ];

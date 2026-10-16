@@ -6,7 +6,7 @@
 import { useId, useMemo, useState } from 'react';
 import {
   UserPlus, KeyRound, Copy, ShieldCheck, Save, DatabaseBackup, Power, MessageCircle, Pencil, Users, UserX, AlertTriangle, UserRound, SlidersHorizontal, Palette,
-  Crown, Handshake, Wrench, Landmark, Check, Building2, Link2, Mail, ArrowRight,
+  Crown, Handshake, Wrench, Landmark, Check, Building2, Link2, Mail, ArrowRight, Share2, Hourglass,
 } from 'lucide-react';
 import { useSession, useResource } from '../lib/session.jsx';
 import { api } from '../lib/api.js';
@@ -18,6 +18,8 @@ import { PersonCard, RoleBadge, LOAD_META } from '../components/people.jsx';
 import { PasswordForm } from './Login.jsx';
 import { ROLES, MEMBER_COLORS } from '../../shared/catalog.js';
 import { timeAgo, whatsappLink } from '../lib/format.js';
+import { InvitesPanel, InviteShare, inviteAudience, cap } from '../components/invites.jsx';
+import { INVITE_LIMITS } from '../../shared/invites.js';
 
 /** Ícono y tono de cada rol en el selector (mismos tonos que RoleBadge). */
 const ROLE_LOOK = {
@@ -142,12 +144,16 @@ function TempPassword({ result, onClose }) {
   );
 }
 
-function MemberModal({ member, presetRole, onClose, onSaved }) {
+function MemberModal({ member, presetRole, onClose, onSaved, onInvite }) {
   const [run, busy] = useAction();
   const confirm = useConfirm();
   const [form, setForm] = useState(() => member ?? { role: ROLES[presetRole] ? presetRole : 'socio', color: MEMBER_COLORS[0] });
+  // v7: una persona nueva se agrega por defecto "solo con el nombre": se genera su enlace personal
+  // y ella completa correo, WhatsApp y contraseña. "Con correo" mantiene la clave temporal.
+  const [mode, setMode] = useState('link');
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
   const investor = isInvestorRoleKey(form.role);
+  const viaLink = !member && mode === 'link';
 
   /** Pasar a inversionista (o dejar de serlo) cambia qué portal abre la persona: se confirma antes. */
   async function confirmAccessChange() {
@@ -162,6 +168,12 @@ function MemberModal({ member, presetRole, onClose, onSaved }) {
 
   async function save(e) {
     e.preventDefault();
+    if (viaLink) {
+      const days = form.role === 'admin' ? INVITE_LIMITS.adminMaxDays : INVITE_LIMITS.defaultDays;
+      const res = await run(() => api('/api/invites', { method: 'POST', body: { kind: 'team', role: form.role, name: form.name, days } }), { success: 'Enlace personal creado' });
+      if (res) { onInvite(res.invite); onClose(); }
+      return;
+    }
     if (!(await confirmAccessChange())) return;
     const body = { name: form.name, role: form.role, color: form.color, phone: form.phone || null };
     if (!member) body.email = form.email;
@@ -170,18 +182,38 @@ function MemberModal({ member, presetRole, onClose, onSaved }) {
   }
   return (
     <Modal open onClose={onClose} title={member ? `Editar a ${firstName(member.name)}` : 'Agregar persona'} size="lg"
-      footer={<><button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button><button type="submit" form="member-form" className="btn btn-primary" disabled={busy || !form.name || (!member && !form.email)}>{busy ? 'Guardando…' : 'Guardar'}</button></>}>
+      footer={<><button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button><button type="submit" form="member-form" className="btn btn-primary" disabled={busy || !form.name || form.name.trim().length < 2 || (!member && !viaLink && !form.email)}>{busy ? 'Guardando…' : viaLink ? <><Link2 className="h-4 w-4" />Crear enlace</> : 'Guardar'}</button></>}>
       <form id="member-form" onSubmit={save} className="grid gap-4 sm:grid-cols-2">
+        {!member && (
+          <div className="grid gap-2 sm:col-span-2 sm:grid-cols-2" role="radiogroup" aria-label="Cómo agregarla">
+            {[
+              { value: 'link', icon: Link2, title: 'Solo el nombre', text: 'Te damos un enlace personal. Ella pone su correo, WhatsApp y contraseña.' },
+              { value: 'email', icon: Mail, title: 'Con su correo', text: 'La creás vos y le enviás una contraseña temporal.' },
+            ].map((o) => (
+              <button key={o.value} type="button" role="radio" aria-checked={mode === o.value} onClick={() => setMode(o.value)}
+                className={cx('flex items-start gap-3 rounded-2xl border p-3 text-left transition', mode === o.value ? 'border-brand bg-brand-soft/60 shadow-card' : 'border-line bg-surface hover:border-line-strong')}>
+                <IconTile icon={o.icon} tone={mode === o.value ? 'blue' : 'slate'} size="sm" />
+                <span className="min-w-0"><span className="block text-sm font-semibold text-ink">{o.title}{o.value === 'link' && <span className="chip tone-teal ml-1.5 align-middle">Recomendado</span>}</span><span className="mt-0.5 block text-xs leading-snug text-muted">{o.text}</span></span>
+              </button>
+            ))}
+          </div>
+        )}
         <Field label="Nombre completo" className="sm:col-span-2">{(id) => <input id={id} className="input" autoComplete="off" value={form.name ?? ''} onChange={(e) => set('name')(e.target.value)} />}</Field>
-        {!member && <Field label="Correo" hint="Con este correo ingresa. Recibe una contraseña temporal.">{(id) => <input id={id} type="email" inputMode="email" autoComplete="off" className="input" value={form.email ?? ''} onChange={(e) => set('email')(e.target.value)} />}</Field>}
-        <Field label="WhatsApp" className={member ? 'sm:col-span-2' : undefined} hint="Para enviarle el acceso y los avisos.">{(id) => <input id={id} className="input" type="tel" inputMode="tel" value={form.phone ?? ''} onChange={(e) => set('phone')(e.target.value)} placeholder="8888-0000" />}</Field>
+        {!member && !viaLink && <Field label="Correo" hint="Con este correo ingresa. Recibe una contraseña temporal.">{(id) => <input id={id} type="email" inputMode="email" autoComplete="off" className="input" value={form.email ?? ''} onChange={(e) => set('email')(e.target.value)} />}</Field>}
+        {!viaLink && <Field label="WhatsApp" className={member ? 'sm:col-span-2' : undefined} hint="Para enviarle el acceso y los avisos.">{(id) => <input id={id} className="input" type="tel" inputMode="tel" value={form.phone ?? ''} onChange={(e) => set('phone')(e.target.value)} placeholder="8888-0000" />}</Field>}
         <div className="sm:col-span-2"><RolePicker value={form.role} onChange={set('role')} /></div>
-        <Field label="Color" className="sm:col-span-2">
+        {viaLink && (
+          <p className="flex items-start gap-2 rounded-xl bg-teal-soft px-3 py-2.5 text-xs text-teal-ink sm:col-span-2">
+            <Hourglass className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span>El enlace sirve una sola vez y vence en {form.role === 'admin' ? INVITE_LIMITS.adminMaxDays : INVITE_LIMITS.defaultDays} días. Para un grupo (varios socios a la vez, con cupo máximo) usá <b>Enlaces de registro</b>.</span>
+          </p>
+        )}
+        {!viaLink && <Field label="Color" className="sm:col-span-2">
           <div className="flex items-center gap-3">
             <Avatar name={form.name || '?'} color={form.color} size={36} />
             <ColorPicker value={form.color} onChange={set('color')} />
           </div>
-        </Field>
+        </Field>}
         {!member && (
           <p className="flex items-start gap-2 rounded-xl bg-surface-2 px-3 py-2.5 text-xs text-muted sm:col-span-2">
             <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -269,7 +301,8 @@ function ProfileCard() {
   );
 }
 
-const TABS = { personas: 'Personas', perfil: 'Mi perfil', ajustes: 'Ajustes' };
+const TABS = { personas: 'Personas', enlaces: 'Enlaces de registro', perfil: 'Mi perfil', ajustes: 'Ajustes' };
+const ADMIN_TABS = new Set(['enlaces', 'ajustes']);
 
 /** Acciones del admin sobre una persona (editar, contraseña temporal, desactivar o reactivar). */
 function MemberActions({ member, me, busy, onEdit, onReset, onToggle }) {
@@ -363,6 +396,30 @@ function ClientAccessPointer() {
   );
 }
 
+/** v7: personas invitadas "solo con el nombre" que todavía no completaron su registro. */
+function PendingInvites({ onShare }) {
+  const { data } = useResource('/api/invites');
+  const pending = (data?.invites ?? []).filter((i) => i.kind === 'team' && i.personal && i.status === 'activo');
+  if (!pending.length) return null;
+  return (
+    <section aria-labelledby="esperando" className="rounded-2xl border border-dashed border-teal/40 bg-teal-soft/30 p-3 sm:p-4">
+      <h2 id="esperando" className="mb-3 flex items-center gap-2 px-1 font-semibold text-ink"><Hourglass className="h-4 w-4 text-teal-ink" />Esperando registro <span className="num font-normal text-muted">{pending.length}</span></h2>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {pending.map((i) => (
+          <article key={i.id} className="card flex items-center gap-3 p-3.5">
+            <Avatar name={i.name} color="#94a3b8" size={40} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold">{i.name}</p>
+              <p className="truncate text-xs text-muted">{cap(inviteAudience(i))} · invitada {timeAgo(i.created_at)}</p>
+            </div>
+            <button type="button" className="btn btn-sm btn-soft max-sm:min-h-10" onClick={() => onShare(i)}><Share2 className="h-3.5 w-3.5" />Enlace</button>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function PeopleTab({ resource, actions }) {
   const { user, team, activeTeam, isAdmin, canInvest } = useSession();
   const { data, error, reload } = resource;
@@ -411,6 +468,8 @@ function PeopleTab({ resource, actions }) {
         </section>
       )}
 
+      {isAdmin && <PendingInvites key={actions.version} onShare={actions.onShare} />}
+
       {canInvest && (isAdmin || investors.length > 0) && <InvestorsSection investors={investors} actions={actions} />}
 
       {isAdmin && inactive.length > 0 && (
@@ -446,12 +505,13 @@ export default function Team() {
   // { member } edita a alguien; { role } agrega a una persona nueva con ese rol preseleccionado.
   const [editing, setEditing] = useState(() => (isAdmin && query.has('agregar') ? { role: query.get('agregar') } : null));
   const [temp, setTemp] = useState(null);
+  const [sharing, setSharing] = useState(null); // v7: enlace personal recién creado
   const people = useResource('/api/people');
   const [run, busy] = useAction();
   const confirm = useConfirm();
 
   const requested = query.get('tab');
-  const tab = requested === 'perfil' || (requested === 'ajustes' && isAdmin) ? requested : 'personas';
+  const tab = requested === 'perfil' || (ADMIN_TABS.has(requested) && isAdmin) ? requested : 'personas';
   const setTab = (value) => navigate(value === 'personas' ? '/equipo' : `/equipo?tab=${value}`, { replace: true });
   const changed = () => { loadTeam(); people.reload(); };
   const closeEditor = () => {
@@ -468,9 +528,10 @@ export default function Team() {
     if (m.active && !(await confirm({ title: `Desactivar a ${m.name}`, message: 'Pierde el acceso de inmediato. Su historial se conserva.', confirmLabel: 'Desactivar', tone: 'danger' }))) return;
     if (await run(() => api(`/api/users/${m.id}`, { method: 'PATCH', body: { active: !m.active } }), { success: m.active ? 'Acceso desactivado' : 'Acceso reactivado' })) changed();
   };
-  const actions = { busy, onEdit: (member) => setEditing({ member }), onAdd: (role) => setEditing({ role }), onReset: reset, onToggle: toggle };
+  const [version, setVersion] = useState(0);
+  const actions = { busy, version, onShare: setSharing, onEdit: (member) => setEditing({ member }), onAdd: (role) => setEditing({ role }), onReset: reset, onToggle: toggle };
 
-  const tabs = Object.entries(TABS).filter(([value]) => value !== 'ajustes' || isAdmin).map(([value, label]) => ({ value, label }));
+  const tabs = Object.entries(TABS).filter(([value]) => !ADMIN_TABS.has(value) || isAdmin).map(([value, label]) => ({ value, label }));
 
   return (
     <div className="space-y-5">
@@ -496,11 +557,20 @@ export default function Team() {
         </div>
       )}
 
+      {tab === 'enlaces' && isAdmin && (
+        <section className="card animate-rise max-w-4xl overflow-hidden" aria-labelledby="enlaces-title">
+          <SectionHead flush id="enlaces-title" icon={Link2} tone="teal" title="Enlaces de registro"
+            hint="Compartí un enlace y cada persona se registra sola. Personales (un uso) o para grupos con cupo máximo, para el equipo o para clientes." />
+          <InvitesPanel senderName={user.name} />
+        </section>
+      )}
+
       {tab === 'ajustes' && isAdmin && <div className="max-w-3xl"><SettingsCard key={JSON.stringify(settings)} /></div>}
 
-      {editing && <MemberModal member={editing.member ?? null} presetRole={editing.role} onClose={closeEditor}
+      {editing && <MemberModal member={editing.member ?? null} presetRole={editing.role} onClose={closeEditor} onInvite={(invite) => { setSharing(invite); setVersion((v) => v + 1); }}
         onSaved={(res, form) => { changed(); if (res.temporary_password) setTemp({ name: res.user.name, email: res.user.email, phone: form.phone, role: res.user.role, password: res.temporary_password }); }} />}
       {temp && <TempPassword result={temp} onClose={() => setTemp(null)} />}
+      {sharing && <InviteShare invite={sharing} fresh senderName={user.name} onClose={() => setSharing(null)} />}
     </div>
   );
 }

@@ -4,7 +4,7 @@
 import { useRef, useState } from 'react';
 import {
   KeyRound, ClipboardList, PackageCheck, FolderOpen, UserPlus, Pencil, Power, Lock, Copy, MessageCircle, AlertTriangle, Globe, Plus,
-  FileText, Receipt, ChartColumn, BookOpen, Palette, File, ExternalLink, Trash2, FilePlus2, FolderKanban, ShieldCheck, Mail, Phone,
+  FileText, Receipt, ChartColumn, BookOpen, Palette, File, ExternalLink, Trash2, FilePlus2, FolderKanban, ShieldCheck, Mail, Phone, Link2, ChevronDown,
 } from 'lucide-react';
 import { api, isDemo } from '../lib/api.js';
 import { Link, useLocation } from '../lib/router.jsx';
@@ -14,6 +14,7 @@ import { Switch } from './automations.jsx';
 import { BriefRow, DeliverableItem, Callout, SwitchRow, Layer, isWebLink } from './portal-project.jsx';
 import { DOCUMENT_CATEGORIES } from '../../shared/client-portal.js';
 import { initials, formatDate, dayKey, timeAgo, whatsappLink } from '../lib/format.js';
+import { InvitesPanel } from './invites.jsx';
 
 const clean = (v) => (typeof v === 'string' ? v.trim() || null : v ?? null);
 const firstName = (name) => String(name ?? '').trim().split(/\s+/)[0] ?? '';
@@ -229,6 +230,7 @@ function AccountRow({ account: a, canManage, busy, onEdit, onToggleApprove, onTo
 }
 
 function AccessesPanel({ client, accounts, canManage, onReload }) {
+  const { user } = useSession();
   const [run, busy] = useAction();
   const confirm = useConfirm();
   const [editing, setEditing] = useState(null);
@@ -299,6 +301,15 @@ function AccessesPanel({ client, accounts, canManage, onReload }) {
         </Layer>
       )}
       {reveal && <Layer><AccessReveal result={reveal} onClose={() => setReveal(null)} /></Layer>}
+      {canManage && (
+        <details className="group border-t border-line">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold sm:px-5">
+            <span className="flex items-center gap-2"><Link2 className="h-4 w-4 text-teal-ink" aria-hidden="true" />Enlaces de registro<span className="font-normal text-muted">· que cada persona del cliente se registre sola</span></span>
+            <ChevronDown className="h-4 w-4 text-muted transition group-open:rotate-180" aria-hidden="true" />
+          </summary>
+          <InvitesPanel clientId={client.id} preset={{ kind: 'client', client_id: client.id, mode: 'open' }} isAdmin={false} senderName={user?.name} compact />
+        </details>
+      )}
     </>
   );
 }

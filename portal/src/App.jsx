@@ -36,6 +36,8 @@ const BriefPrint = lazy(() => import('./pages/BriefPrint.jsx'));
 // v6: configuración inicial del dueño (solo con la base vacía) y su bienvenida de una sola vez.
 const Setup = lazy(() => import('./pages/Setup.jsx').then((m) => ({ default: m.Setup })));
 const SetupWelcome = lazy(() => import('./pages/Setup.jsx').then((m) => ({ default: m.SetupWelcome })));
+// v7: registro con enlace (pública; quien la abre completa sus datos y elige su contraseña).
+const Register = lazy(() => import('./pages/Register.jsx'));
 
 const ROUTES = [
   ['/', Dashboard],
@@ -105,9 +107,12 @@ function useSetupStatus(anonymous) {
 export function App() {
   const session = useSession();
   const { path } = useLocation(); // v5: la vista imprimible del brief va sin Layout
-  const [setup, setSetup] = useSetupStatus(session.status === 'anonymous');
+  const [setup, setSetup] = useSetupStatus(session.status === 'anonymous' && !path.startsWith('/registro/'));
   const [welcome, setWelcome] = useState(null); // v6: bienvenida de una sola vez tras la configuración inicial
+  // v7: /registro/:token se muestra con o sin sesión (si hay una abierta, Register lo explica).
+  const registerParams = matchPath('/registro/:token', path);
   if (session.status === 'loading') return <PageLoader />;
+  if (registerParams && session.status !== 'offline') return <Suspense fallback={<PageLoader />}><Register params={registerParams} /></Suspense>;
   if (session.status === 'offline') {
     return (
       <div className="flex min-h-dvh items-center justify-center p-6">

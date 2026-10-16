@@ -181,6 +181,17 @@ export async function seedDemoData({ db, passwordHash, login, loginClient = null
   await angel('POST', `/api/investor/movements/${angelFirst}/confirm`, { message: 'Enviado desde mi cuenta BN ✓' });
   await mov(jey, barberInv, { type: 'aporte', partner_id: U.angel, amount: 250_000_00, date: day(-1), reference: 'SINPE 70211', message: 'Segundo tramo acordado en la reunión del lunes.' });
 
+  // v7: enlaces de registro: uno abierto para socios (2 de 5 cupos usados) y uno personal pendiente.
+  await jey('POST', '/api/invites', { kind: 'team', role: 'socio', max_uses: 5, days: 30, label: 'Socios fundadores 2026', message: '¡Bienvenidos! Cualquier duda me escriben al WhatsApp.' });
+  await jey('POST', '/api/invites', { kind: 'team', role: 'inversionista', name: 'Mariana Solís', days: 14 });
+  const openInvite = db.prepare("SELECT * FROM invites WHERE label = 'Socios fundadores 2026'").get();
+  for (const [n, [name, mail]] of [['Daniela Vargas', 'daniela@demo.jcanalytic.local'], ['Ricardo Mena', 'ricardo@demo.jcanalytic.local']].entries()) {
+    const userId = Number(db.prepare(`INSERT INTO users (email, name, role, color, password_hash, must_change_password, created_at)
+      VALUES (?, ?, 'socio', ?, ?, 0, ?)`).run(mail, name, n ? '#39b51c' : '#e694ae', hash, iso(-24 * (3 - n))).lastInsertRowid);
+    db.prepare('INSERT INTO invite_uses (invite_id, user_id, name, email, used_at) VALUES (?, ?, ?, ?, ?)').run(openInvite.id, userId, name, mail, iso(-24 * (3 - n)));
+  }
+  db.prepare('UPDATE invites SET uses = 2 WHERE id = ?').run(openInvite.id);
+
   const clients = loginClient ? await seedClientPortal({ db, hash, iso, day, U, C, P, cata, alex, loginClient }) : [];
   return { users: people.map(([email, name, role]) => ({ email, name, role })), clients };
 }
