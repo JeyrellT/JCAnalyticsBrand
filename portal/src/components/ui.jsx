@@ -247,7 +247,7 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }) {
           <button type="button" className="btn btn-ghost btn-sm -mr-1" onClick={onClose} aria-label="Cerrar"><X className="h-4 w-4" /></button>
         </div>
         <div className="overflow-y-auto px-5 py-4">{children}</div>
-        {footer && <div className="safe-bottom flex flex-wrap justify-end gap-2 border-t border-line bg-surface-2/60 px-5 py-3 sm:rounded-b-3xl">{footer}</div>}
+        {footer && <div className="safe-bottom-pad flex flex-wrap justify-end gap-2 border-t border-line bg-surface-2/60 px-5 pt-3 sm:rounded-b-3xl">{footer}</div>}
       </div>
     </div>,
     document.body,

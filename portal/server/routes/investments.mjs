@@ -16,7 +16,7 @@
 // ============================================================================
 
 import { randomUUID } from 'node:crypto';
-import { INVESTMENT_CATEGORIES, INVESTMENT_STATUS, MOVEMENT_TYPE_LABEL } from '../../shared/catalog.js';
+import { INVESTMENT_CATEGORIES, INVESTMENT_STATUS, MOVEMENT_TYPE_LABEL, MOVEMENT_STATUS_META } from '../../shared/catalog.js';
 import { investmentMetrics, allocateProRata, cumulativeSeries, toCRC, formatMoney, formatPercent } from '../../shared/finance.js';
 import { fail, invalid, has, text, oneOf, dateOnly, id, minorAmount, number } from '../http.mjs';
 import { transaction } from '../schema.mjs';
@@ -105,9 +105,13 @@ export function createMoney(ctx) {
   function announce(m, investment, user) {
     const amount = formatMoney(m.amount, m.currency);
     const partnerName = ctx.userName(m.partner_id);
-    const title = m.type === 'aporte'
-      ? `Confirmá un aporte de ${partnerName}: ${amount}`
-      : `Confirmá un retorno${m.partner_id === user.id ? ` a ${partnerName}` : ''}: ${amount}`;
+    // Si confirma el propio dueño del movimiento (socio o inversionista), se le habla de vos.
+    const toPartner = !anyInvestorConfirms(m);
+    const title = toPartner
+      ? `Confirmá tu ${m.type === 'aporte' ? 'aporte' : 'retorno'}: ${amount}`
+      : m.type === 'aporte'
+        ? `Confirmá un aporte de ${partnerName}: ${amount}`
+        : `Confirmá un retorno${m.partner_id === user.id ? ` a ${partnerName}` : ''}: ${amount}`;
     ctx.notify(confirmersFor(m), user.id, { kind: 'movement', title, body: `${investment.name} · ${user.name}: ${m.message.slice(0, 140)}`, link: `/inversiones/${investment.id}?mov=${m.id}` });
   }
 
@@ -381,7 +385,7 @@ export function investmentRoutes(route, ctx) {
     const header = ['Fecha', 'Inversión', 'Tipo', 'Socio', 'Monto', 'Moneda', 'Tipo de cambio', 'Equivalente CRC', 'Estado', 'Referencia', 'Mensaje', 'Registrado por', 'Resuelto por', 'Fecha resolución'];
     const lines = rows.map((m) => [
       m.date, m.investment_name, MOVEMENT_TYPE_LABEL[m.type], m.partner_name, dec(m.amount), m.currency, m.fx_rate ? String(m.fx_rate).replace('.', ',') : '',
-      dec(crcOf(m)), m.status, m.reference, m.message, m.created_by_name, m.resolved_by_name, m.resolved_at?.slice(0, 10),
+      dec(crcOf(m)), MOVEMENT_STATUS_META[m.status]?.label ?? m.status, m.reference, m.message, m.created_by_name, m.resolved_by_name, m.resolved_at?.slice(0, 10),
     ].map(cell).join(';'));
     ctx.log(user.id, 'investment', investmentId, 'exported', `${user.name} exportó ${rows.length} movimientos a Excel`, { sensitive: true });
     res.writeHead(200, {

@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { SessionProvider, useSession } from './lib/session.jsx';
-import { useLocation, matchPath } from './lib/router.jsx';
+import { useLocation, matchPath, navigate } from './lib/router.jsx';
 import { ToastProvider, ConfirmProvider, PageLoader, EmptyState } from './components/ui.jsx';
 import Layout from './components/Layout.jsx';
 import { Login, ForcePasswordChange } from './pages/Login.jsx';
@@ -67,7 +67,11 @@ function Router() {
   const { path } = useLocation();
   const { canInvest } = useSession();
   const section = `/${path.split('/')[1]}`;
+  // Un enlace al portal de inversionistas o de clientes abierto con sesión del equipo lleva al inicio del equipo.
+  const otherPortal = section === '/inversionista' || section === '/cliente';
+  useEffect(() => { if (otherPortal) navigate('/', { replace: true }); }, [otherPortal]);
   useEffect(() => { document.title = `${TITLES[section] ?? 'Portal'} · JC Analytics`; }, [section]);
+  if (otherPortal) return <PageLoader />;
   for (const [pattern, Page, opts] of ROUTES) {
     const params = matchPath(pattern, path);
     if (!params) continue;

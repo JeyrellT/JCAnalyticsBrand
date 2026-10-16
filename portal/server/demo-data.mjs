@@ -36,7 +36,7 @@ export async function seedDemoData({ db, passwordHash, login, loginClient = null
     ['hillary@demo.jcanalytic.local', 'Hillary Porras', 'colaborador', '#ff5a00', null],
     ['socio5@demo.jcanalytic.local', 'Socio Inversionista', 'socio', '#00a6b2', null],
     // v6: inversionista externo (solo ve su portal de inversiones).
-    ['angel@demo.jcanalytic.local', 'Ángel Mora (inversionista)', 'inversionista', '#e8b32c', '+506 8700-1234'],
+    ['angel@demo.jcanalytic.local', 'Ángel Mora', 'inversionista', '#e8b32c', '+506 8700-1234'],
   ];
   const U = {};
   for (const [email, name, role, color, phone] of people) {

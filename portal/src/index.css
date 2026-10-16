@@ -367,6 +367,8 @@ body {
 .grid > * { min-width: 0; }
 
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+/* Pie de modales y hojas: el relleno normal o la zona segura del iPhone, lo que sea mayor. */
+.safe-bottom-pad { padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px)); }
 
 /* ── Móvil primero: hojas inferiores, barra de pestañas y botón Crear ──── */
 /* Espacio para que la barra inferior (y la zona segura del iPhone) no tape el contenido. */

@@ -10,7 +10,7 @@
 //  puede avisar un aporte suyo (lo confirma un socio o admin: doble control).
 // ============================================================================
 
-import { INVESTMENT_CATEGORIES, INVESTMENT_STATUS, MOVEMENT_TYPE_LABEL } from '../../shared/catalog.js';
+import { INVESTMENT_CATEGORIES, INVESTMENT_STATUS, MOVEMENT_TYPE_LABEL, MOVEMENT_STATUS_META } from '../../shared/catalog.js';
 import { investmentMetrics, cumulativeSeries, xirr, formatMoney } from '../../shared/finance.js';
 import { fail, invalid, has, text, minorAmount } from '../http.mjs';
 import { transaction } from '../schema.mjs';
@@ -220,7 +220,7 @@ export function investorRoutes(route, ctx) {
     };
     const header = ['Fecha', 'Inversión', 'Tipo', 'Monto', 'Moneda', 'Tipo de cambio', 'Equivalente CRC', 'Estado', 'Referencia', 'Mensaje'];
     const lines = rows.map((m) => [m.date, m.investment_name, MOVEMENT_TYPE_LABEL[m.type], dec(m.amount), m.currency,
-      m.fx_rate ? String(m.fx_rate).replace('.', ',') : '', dec(crcOf(m)), m.status, m.reference, m.message].map(cell).join(';'));
+      m.fx_rate ? String(m.fx_rate).replace('.', ',') : '', dec(crcOf(m)), MOVEMENT_STATUS_META[m.status]?.label ?? m.status, m.reference, m.message].map(cell).join(';'));
     ctx.log(user.id, 'investment', null, 'exported', `${user.name} descargó su estado de cuenta (${rows.length} movimientos)`, { sensitive: true });
     res.writeHead(200, {
       'Content-Type': 'text/csv; charset=utf-8',

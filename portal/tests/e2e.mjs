@@ -568,6 +568,53 @@ try {
     }
   });
 
+  await check('inversionista: su portal, confirma su aporte y no ve la operación', async () => {
+    const i = await newPage({ width: 1440, height: 900 });
+    await i.goto(`${base}/inversionista`);
+    await i.getByLabel('Correo').fill('angel@demo.jcanalytic.local');
+    await i.getByLabel('Contraseña').fill(DEMO_PASSWORD);
+    await i.getByRole('button', { name: 'Entrar' }).click();
+    await i.getByRole('heading', { name: 'Por confirmar' }).waitFor();
+    await i.getByText('BarberXCR · capital de crecimiento').first().waitFor();
+    await shot(i, '45-inversionista-inicio');
+    // Rutas del equipo: la API responde 403 y la pantalla vuelve a su portal.
+    assert.equal((await i.request.get(`${base}/api/projects`)).status(), 403);
+    assert.equal((await i.request.get(`${base}/api/investments`)).status(), 403);
+    await i.goto(`${base}/proyectos`);
+    await i.waitForURL(/\/inversionista$/);
+    // Confirma el aporte que JC registró a su nombre.
+    await i.getByRole('heading', { name: 'Por confirmar' }).waitFor();
+    await i.getByRole('button', { name: 'Confirmar', exact: true }).first().click();
+    // Doble verificación: el diálogo muestra el monto antes de confirmar.
+    await i.getByRole('dialog', { name: /Confirmás/ }).getByRole('button', { name: 'Sí, confirmar' }).click();
+    await i.waitForFunction(async () => {
+      const r = await fetch('/api/investor/overview');
+      return (await r.json()).to_confirm.length === 0;
+    });
+    const overview = await (await i.request.get(`${base}/api/investor/overview`)).json();
+    assert.equal(overview.portfolio.contributed_crc, 750_000_00);
+    await shot(i, '46-inversionista-confirmado');
+    await i.goto(`${base}/inversionista/movimientos`);
+    await i.locator('main h1').first().waitFor();
+    await shot(i, '47-inversionista-movimientos');
+    await i.context().close();
+
+    const im = await newPage({ width: 390, height: 844 });
+    await im.goto(`${base}/inversionista`);
+    await im.getByLabel('Correo').fill('angel@demo.jcanalytic.local');
+    await im.getByLabel('Contraseña').fill(DEMO_PASSWORD);
+    await im.getByRole('button', { name: 'Entrar' }).click();
+    await im.locator('main h1').first().waitFor();
+    for (const path of ['/inversionista', '/inversionista/movimientos', '/inversionista/avisos', '/inversionista/cuenta']) {
+      await im.goto(base + path);
+      await im.locator('main h1').first().waitFor();
+      await im.waitForTimeout(300);
+      assert.ok((await im.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)) <= 1, `${path}: desborde horizontal`);
+    }
+    await shot(im, '48-movil-inversionista-cuenta');
+    await im.context().close();
+  });
+
   await check('sin errores de consola', async () => {
     assert.deepEqual(consoleErrors, []);
   });
