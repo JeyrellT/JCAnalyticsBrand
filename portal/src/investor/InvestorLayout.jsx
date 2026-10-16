@@ -10,6 +10,7 @@ import { useSession } from '../lib/session.jsx';
 import { Avatar, ThemeToggle, cx } from '../components/ui.jsx';
 import { displayName, firstName } from './components.jsx';
 import logoMark from '../assets/logo-mark.webp';
+import { useTypingFlag, SectionJump, PullToRefresh } from '../components/mobile.jsx';
 
 const HOME = '/inversionista';
 
@@ -173,7 +174,7 @@ function MobileTabs() {
   const { path } = useLocation();
   const counts = useCounts();
   return (
-    <nav className="safe-bottom glass fixed inset-x-0 bottom-0 z-30 border-t border-line shadow-up lg:hidden" aria-label="Secciones del portal">
+    <nav className="mobile-tabbar safe-bottom glass fixed inset-x-0 bottom-0 z-30 border-t border-line shadow-up lg:hidden" aria-label="Secciones del portal">
       <ul className="mx-auto grid max-w-lg grid-cols-4 px-1">
         {MOBILE_NAV.map((n) => {
           const active = isActive(n, path);
@@ -212,6 +213,8 @@ function Footer() {
 
 export default function InvestorLayout({ children }) {
   const { user } = useSession();
+  const { full } = useLocation();
+  useTypingFlag(); // v8: con el teclado abierto se esconde la barra inferior
   return (
     <div className="flex min-h-dvh flex-col">
       <a href="#contenido" className="sr-only z-50 rounded-xl bg-surface px-4 py-2 text-sm font-semibold text-ink shadow-pop focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Saltar al contenido</a>
@@ -238,6 +241,8 @@ export default function InvestorLayout({ children }) {
           <Footer />
         </div>
       </main>
+      <SectionJump routeKey={full} />
+      <PullToRefresh />
 
       <MobileTabs />
     </div>

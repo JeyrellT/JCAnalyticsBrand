@@ -14,6 +14,7 @@ import { ROLES } from '../../shared/catalog.js';
 import { Avatar, ThemeToggle, ThemePicker, cx } from './ui.jsx';
 import QuickActions, { Sheet, SheetHeader } from './QuickActions.jsx';
 import logoMark from '../assets/logo-mark.webp';
+import { useTypingFlag, SectionJump, PullToRefresh } from './mobile.jsx';
 
 // `label` se usa en la barra lateral y el menú; `short`, en las pestañas y mosaicos del celular.
 const GROUPS = [
@@ -49,10 +50,12 @@ const GROUPS = [
 
 const ALL = GROUPS.flatMap((g) => g.items.map((n) => ({ ...n, invest: g.invest })));
 const byPath = Object.fromEntries(ALL.map((n) => [n.to, n]));
-const TABS = ['/', '/tablero'].map((to) => byPath[to]);
+// v8: en el celular manda lo que se atiende en la calle: Inicio, Buzón (con su contador), Crear y Agenda.
+// El Tablero pasa a "Más" (en pantalla chica se usa menos que el buzón de pendientes).
+const TABS = ['/', '/buzon'].map((to) => byPath[to]);
 const TABS_END = [byPath['/agenda']];
 // Mosaicos de "Más", en el orden en que se piensa la empresa.
-const MORE = ['/proyectos', '/clientes', '/briefs' /* v5 */, '/servicios', '/equipo', '/inversiones', '/buzon', '/automatizaciones', '/notificaciones', '/bitacora'].map((to) => byPath[to]);
+const MORE = ['/tablero', '/proyectos', '/clientes', '/briefs' /* v5 */, '/servicios', '/equipo', '/inversiones', '/automatizaciones', '/notificaciones', '/bitacora'].map((to) => byPath[to]);
 
 function useNav() {
   const { canInvest, unread, pending } = useSession();
@@ -140,14 +143,15 @@ function NavList({ onNavigate }) {
   );
 }
 
-function TabLink({ n, active }) {
+function TabLink({ n, active, count = 0 }) {
   return (
-    <Link to={n.to} aria-current={active ? 'page' : undefined}
-      className={cx('group flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold transition', active ? 'text-brand-ink' : 'text-muted hover:text-ink')}>
+    <Link to={n.to} aria-current={active ? 'page' : undefined} aria-label={count ? `${n.short}, ${count} pendientes` : undefined}
+      className={cx('group relative flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold transition active:scale-95', active ? 'text-brand-ink' : 'text-muted hover:text-ink')}>
       <span className={cx('flex h-7 w-12 items-center justify-center rounded-full transition', active ? 'bg-brand-soft' : 'group-active:bg-surface-3')}>
         <n.icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
       </span>
       {n.short}
+      {count > 0 && <span className="absolute left-1/2 top-0.5 ml-1.5 min-w-5 rounded-full bg-coral px-1.5 text-center text-[11px] font-bold leading-5 text-white ring-2 ring-surface" aria-hidden="true">{count > 99 ? '99+' : count}</span>}
     </Link>
   );
 }
@@ -196,6 +200,7 @@ export default function Layout({ children }) {
     setSheet(null);
   }
   const close = () => setSheet(null);
+  useTypingFlag();
   const moreActive = MORE.filter(allowed).some(isActive);
 
   return (
@@ -228,9 +233,9 @@ export default function Layout({ children }) {
       </main>
 
       {/* Móvil: barra inferior */}
-      <nav className="safe-bottom glass fixed inset-x-0 bottom-0 z-30 border-t border-line shadow-up lg:hidden" aria-label="Accesos rápidos">
+      <nav className="mobile-tabbar safe-bottom glass fixed inset-x-0 bottom-0 z-30 border-t border-line shadow-up lg:hidden" aria-label="Accesos rápidos">
         <div className="mx-auto grid max-w-lg grid-cols-5 items-end px-1">
-          {TABS.map((n) => <TabLink key={n.to} n={n} active={isActive(n)} />)}
+          {TABS.map((n) => <TabLink key={n.to} n={n} active={isActive(n)} count={n.badge ? badge : 0} />)}
           <div className="flex justify-center">
             <button type="button" onClick={() => setSheet('crear')} aria-label="Crear" aria-haspopup="dialog"
               className="-mt-5 mb-1 flex flex-col items-center gap-0.5 rounded-2xl text-[11px] font-semibold text-brand-ink">
@@ -240,17 +245,18 @@ export default function Layout({ children }) {
           </div>
           {TABS_END.map((n) => <TabLink key={n.to} n={n} active={isActive(n)} />)}
           <button type="button" onClick={() => setSheet('mas')} aria-haspopup="dialog" aria-expanded={sheet === 'mas'}
-            aria-label={badge > 0 ? `Más, ${badge} pendientes en el buzón` : 'Más'}
+            aria-label="Más"
             className={cx('group relative flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold transition', moreActive ? 'text-brand-ink' : 'text-muted hover:text-ink')}>
             <span className={cx('flex h-7 w-12 items-center justify-center rounded-full transition', moreActive ? 'bg-brand-soft' : 'group-active:bg-surface-3')}>
               <LayoutGrid className="h-5 w-5" strokeWidth={moreActive ? 2.4 : 2} />
             </span>
             Más
-            {badge > 0 && <span className="absolute right-[18%] top-1 min-w-5 rounded-full bg-coral px-1.5 text-center text-[11px] font-bold leading-5 text-white ring-2 ring-surface" aria-hidden="true">{badge > 99 ? '99+' : badge}</span>}
           </button>
         </div>
       </nav>
 
+      <SectionJump routeKey={full} />
+      <PullToRefresh />
       {sheet === 'crear' && <QuickActions onClose={close} />}
       {sheet === 'mas' && <MoreSheet onClose={close} />}
       {sheet === 'menu' && (

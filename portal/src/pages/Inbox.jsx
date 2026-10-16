@@ -1,6 +1,7 @@
 // Buzón: movimientos que esperan mi confirmación (con respuesta en el lugar) y avisos del equipo.
 import { Inbox as InboxIcon, CheckCheck, Bell, Wallet, ListChecks, CalendarDays, FolderKanban, MessageSquare, TrendingUp, HandCoins, Hourglass, Sparkles } from 'lucide-react';
 import { useResource, useSession } from '../lib/session.jsx';
+import { useLimited } from '../components/mobile.jsx';
 import { api } from '../lib/api.js';
 import { navigate } from '../lib/router.jsx';
 import { PageHeader, PageLoader, EmptyState, Badge, IconTile, SectionHead, RowArrow, useAction, cx } from '../components/ui.jsx';
@@ -39,6 +40,7 @@ function PendingMovements({ onChanged }) {
 export default function InboxPage() {
   const { canInvest, refresh } = useSession();
   const { data, error, reload } = useResource('/api/notifications');
+  const [notes, moreNotes] = useLimited(data?.notifications, 15); // v8: en el celular, los 15 más recientes primero
   const [run, busy] = useAction();
   const unread = data?.unread ?? 0;
 
@@ -61,8 +63,9 @@ export default function InboxPage() {
           {!data ? <PageLoader error={error} onRetry={reload} /> : data.notifications.length === 0 ? (
             <div className="p-4 sm:p-5"><EmptyState icon={InboxIcon} tone="teal" title="Sin avisos">Cuando te asignen una tarea, te agenden una cita o te envíen plata, aparece aquí.</EmptyState></div>
           ) : (
+            <>
             <ul className="divide-y divide-line">
-              {data.notifications.map((n) => {
+              {notes.map((n) => {
                 const Icon = ICONS[n.kind] ?? Bell;
                 const fresh = !n.read_at;
                 return (
@@ -83,6 +86,8 @@ export default function InboxPage() {
                 );
               })}
             </ul>
+            {moreNotes && <div className="px-4 pb-4 sm:px-5">{moreNotes}</div>}
+            </>
           )}
         </section>
       </div>
