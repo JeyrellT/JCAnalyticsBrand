@@ -175,11 +175,40 @@ export async function seedDemoData({ db, passwordHash, login, loginClient = null
   await cata('POST', `/api/investments/${barberInv}/notes`, { body: 'Llegamos a 14 barberías. Propongo reinvertir 20 % del próximo retorno en pauta local en Heredia.' });
 
   // ── Inversionista externo (v6) ────────────────────────────────────────────
+  // El admin habilita cada inversión: una con historial y otra disponible para explorar.
+  await jey('PUT', `/api/investments/${barberInv}/access`, { allowed_investor_ids: [U.angel] });
+  await jey('PUT', `/api/investments/${infraInv}/access`, { allowed_investor_ids: [U.angel] });
   // Ángel entró a BarberXCR después de los repartos: un aporte confirmado y otro esperando SU confirmación.
   const angel = await as('angel');
   const angelFirst = await mov(jey, barberInv, { type: 'aporte', partner_id: U.angel, amount: 500_000_00, date: day(-12), reference: 'SINPE 66120', message: 'Aporte de Ángel para la expansión a Heredia.' });
   await angel('POST', `/api/investor/movements/${angelFirst}/confirm`, { message: 'Enviado desde mi cuenta BN ✓' });
   await mov(jey, barberInv, { type: 'aporte', partner_id: U.angel, amount: 250_000_00, date: day(-1), reference: 'SINPE 70211', message: 'Segundo tramo acordado en la reunión del lunes.' });
+
+  // ── Finanzas de ejemplo: campañas ficticias, nunca datos del negocio real ──
+  const [demoYear, demoMonth] = day(0).slice(0, 7).split('-').map(Number);
+  const priorMonth = new Date(Date.UTC(demoYear, demoMonth - 2, 1)).toISOString().slice(0, 7);
+  for (const [category, label, revenue, ads, delivery] of [
+    ['meta_ads', 'Meta Ads', 120_000_00, 18_000_00, 54_000_00],
+    ['google_ads', 'Google Ads', 86_000_00, 12_000_00, 39_000_00],
+  ]) {
+    const campaign = (await jey('POST', '/api/investments', { name: `${label} · ejemplo demo`, category, currency: 'CRC',
+      description: 'Datos ficticios para explorar el libro de ventas, costos y anticipos. No representan resultados reales ni una rentabilidad ofrecida.' })).investment;
+    await jey('PUT', `/api/investments/${campaign.id}/access`, { allowed_investor_ids: [U.angel] });
+    await confirm(jey, await mov(cata, campaign.id, { type: 'aporte', partner_id: U.catalina, amount: 30_000_00,
+      date: `${priorMonth}-01`, message: 'DEMO: aporte ficticio para aprender el flujo de confirmación.' }), 'DEMO: confirmación de ejemplo, sin transferencia real.');
+    for (const [kind, categoryKey, amount, paid, labelText, date] of [
+      ['revenue', 'sale', revenue, true, 'Venta cobrada', '19'],
+      ['expense', 'ads', ads, true, 'Publicidad pagada', '12'],
+      ['expense', 'delivery', delivery, false, 'Entrega pendiente de pago', '20'],
+    ]) await jey('POST', '/api/finance/entries', { kind, category: categoryKey, amount, paid, currency: 'CRC',
+      date: `${priorMonth}-${date}`, description: `DEMO · ${labelText} · ${label}`, investment_id: campaign.id, service_key: 'pagina_web' });
+    // Requiere configuración y revisión explícitas del admin antes de cualquier anticipo.
+    await jey('PUT', `/api/finance/policies/${campaign.id}`, { year: Number(priorMonth.slice(0, 4)), configured: false,
+      rate_bps: 2000, beneficiary_ids: [U.catalina, U.angel], reserve_amount: 0, costs_reviewed_through: null });
+  }
+  await jey('POST', '/api/finance/costing', { name: 'DEMO · costeo de un sitio web', service_key: 'pagina_web', currency: 'USD',
+    units: 1, price_per_unit: 570_00, margin_bps: 3000,
+    costs: [{ label: 'Diseño y desarrollo de ejemplo', category: 'labor', amount: 290_00 }, { label: 'Herramientas de ejemplo', category: 'software', amount: 35_00 }] });
 
   // v7: enlaces de registro: uno abierto para socios (2 de 5 cupos usados) y uno personal pendiente.
   await jey('POST', '/api/invites', { kind: 'team', role: 'socio', max_uses: 5, days: 30, label: 'Socios fundadores 2026', message: '¡Bienvenidos! Cualquier duda me escriben al WhatsApp.' });

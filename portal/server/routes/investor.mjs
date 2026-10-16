@@ -2,7 +2,7 @@
 //  server/routes/investor.mjs
 //  PORTAL DE INVERSIONISTAS (v6, /api/investor/*, acceso 'investor').
 //  El inversionista es una persona de users con rol 'inversionista'. Solo ve:
-//    · las inversiones donde tiene al menos un movimiento a su nombre;
+//    · las inversiones habilitadas por un admin y aquellas donde tiene historial propio;
 //    · SUS movimientos (aportes y retornos) con su conversación;
 //    · los totales de cada inversión (capital, retornos, cuántos participan),
 //      nunca los nombres ni los montos de los otros socios, ni las notas internas.
@@ -11,17 +11,21 @@
 // ============================================================================
 
 import { INVESTMENT_CATEGORIES, INVESTMENT_STATUS, MOVEMENT_TYPE_LABEL, MOVEMENT_STATUS_META } from '../../shared/catalog.js';
-import { investmentMetrics, cumulativeSeries, xirr, formatMoney } from '../../shared/finance.js';
+import { investmentMetrics, cumulativeSeries, xirr, formatMoney, returnBreakdown, returnParts, movementInCRC } from '../../shared/finance.js';
 import { fail, invalid, has, text, minorAmount } from '../http.mjs';
 import { transaction } from '../schema.mjs';
 import { publicUser } from '../context.mjs';
 import { pendingForUser } from './common.mjs';
 import { createMoney } from './investments.mjs';
+import { createInvestmentAccess } from '../investment-access.mjs';
+import { createBusinessFinance } from '../finance.mjs';
 
 export function investorRoutes(route, ctx) {
   const { db } = ctx;
   const money = createMoney(ctx);
   const { crcOf } = money;
+  const { hasGrant, requireContributionAccess } = createInvestmentAccess(db);
+  const businessFinance = createBusinessFinance(ctx);
 
   const MOVEMENT_SELECT = `SELECT m.*, i.name investment_name, c.name created_by_name, r.name resolved_by_name FROM movements m
     JOIN investments i ON i.id = m.investment_id JOIN users c ON c.id = m.created_by LEFT JOIN users r ON r.id = m.resolved_by`;
@@ -46,7 +50,7 @@ export function investorRoutes(route, ctx) {
 
   /** Inversión del inversionista o 404 (una ajena no revela que existe). */
   function myInvestment(user, investmentId) {
-    if (!db.prepare('SELECT 1 FROM movements WHERE partner_id = ? AND investment_id = ?').get(user.id, investmentId)) fail(404, 'not_found');
+    if (!hasGrant(investmentId, user.id) && !db.prepare('SELECT 1 FROM movements WHERE partner_id = ? AND investment_id = ?').get(user.id, investmentId)) fail(404, 'not_found');
     return money.getInvestment(investmentId);
   }
 
@@ -63,6 +67,7 @@ export function investorRoutes(route, ctx) {
     const total = investmentMetrics(all);
     const mine = investmentMetrics(all.filter((m) => m.partner_id === user.id));
     const share = total.partners.find((p) => p.partner_id === user.id)?.share ?? 0;
+    const accessGranted = hasGrant(investment.id, user.id);
     return {
       id: investment.id,
       name: investment.name,
@@ -77,6 +82,9 @@ export function investorRoutes(route, ctx) {
       expected_return_pct: investment.expected_return_pct,
       expected_date: investment.expected_date,
       updated_at: investment.updated_at,
+      access_granted: accessGranted,
+      can_contribute: accessGranted && investment.status !== 'cerrada' && investment.status !== 'perdida',
+      annual_profit_share: businessFinance.ownAnnual(investment.id, user.id),
       totals: {
         contributed: total.contributed,
         returned: total.returned,
@@ -86,6 +94,10 @@ export function investorRoutes(route, ctx) {
       mine: {
         contributed: mine.contributed,
         returned: mine.returned,
+        capital_returned: mine.capital_returned,
+        profit_returned: mine.profit_returned,
+        unclassified_returned: mine.unclassified_returned,
+        outstanding_capital: mine.outstanding_capital,
         net: mine.net,
         moic: mine.moic,
         irr: mine.irr,
@@ -104,10 +116,15 @@ export function investorRoutes(route, ctx) {
     const contributed = sum(confirmed, 'aporte');
     const returned = sum(confirmed, 'retorno');
     const pending = movements.filter((m) => m.status === 'pendiente');
+    const parts = returnBreakdown(movements.map(movementInCRC));
     return {
       contributed_crc: contributed,
       returned_crc: returned,
       net_crc: returned - contributed,
+      capital_returned_crc: parts.capital_returned,
+      profit_returned_crc: parts.profit_returned,
+      unclassified_returned_crc: parts.unclassified_returned,
+      outstanding_capital_crc: parts.outstanding_capital,
       moic: contributed ? returned / contributed : null,
       irr: xirr(confirmed.map((m) => ({ date: m.date, amount: (m.type === 'aporte' ? -1 : 1) * (crcOf(m) ?? 0) }))),
       in_transit_crc: pending.reduce((a, m) => a + (m.type === 'aporte' ? -1 : 1) * (crcOf(m) ?? 0), 0),
@@ -124,10 +141,16 @@ export function investorRoutes(route, ctx) {
     const movements = myMovements(user);
     const investments = myInvestmentIds(user).map((investmentId) => position(money.getInvestment(investmentId), user))
       .sort((a, b) => (a.status === 'activa' ? 0 : 1) - (b.status === 'activa' ? 0 : 1) || b.mine.contributed - a.mine.contributed);
+    const availableInvestments = db.prepare(`SELECT a.investment_id FROM investment_access a
+      WHERE a.investor_id = ? AND NOT EXISTS (
+        SELECT 1 FROM movements m WHERE m.investment_id = a.investment_id AND m.partner_id = ?
+      ) ORDER BY a.investment_id`).all(user.id, user.id)
+      .map(({ investment_id: investmentId }) => position(money.getInvestment(investmentId), user));
     return {
       me: publicUser(user),
       portfolio: portfolio(user, movements),
       investments,
+      available_investments: availableInvestments,
       to_confirm: pendingForUser(ctx, user).map((m) => decorate(db.prepare(`${MOVEMENT_SELECT} WHERE m.id = ?`).get(m.id), user)),
       recent: movements.slice(0, 8).map((m) => decorate(m, user)),
       series: cumulativeSeries(movements, crcOf),
@@ -178,7 +201,7 @@ export function investorRoutes(route, ctx) {
   /** Aviso de un aporte propio ("envié ₡…"): queda por confirmar por un socio o admin. */
   route('POST', '/api/investor/investments/:id/movements', 'investor', ({ user, body, params }) => {
     const investment = myInvestment(user, params.id);
-    if (investment.status === 'cerrada' || investment.status === 'perdida') fail(409, 'investment_closed');
+    requireContributionAccess(investment, user);
     if (has(body, 'type') && body.type !== 'aporte') invalid('type', 'Desde el portal solo se avisan aportes. Los retornos los registra JC Analytics.');
     const amount = minorAmount(body.amount, 'amount', { required: true });
     const date = money.movementDate(body.date);
@@ -218,9 +241,10 @@ export function investorRoutes(route, ctx) {
       if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
       return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
-    const header = ['Fecha', 'Inversión', 'Tipo', 'Monto', 'Moneda', 'Tipo de cambio', 'Equivalente CRC', 'Estado', 'Referencia', 'Mensaje'];
+    const header = ['Fecha', 'Inversión', 'Tipo', 'Monto', 'Moneda', 'Tipo de cambio', 'Equivalente CRC', 'Estado', 'Referencia', 'Mensaje', 'Clasificación retorno', 'Capital devuelto', 'Ganancia devuelta'];
     const lines = rows.map((m) => [m.date, m.investment_name, MOVEMENT_TYPE_LABEL[m.type], dec(m.amount), m.currency,
-      m.fx_rate ? String(m.fx_rate).replace('.', ',') : '', dec(crcOf(m)), MOVEMENT_STATUS_META[m.status]?.label ?? m.status, m.reference, m.message].map(cell).join(';'));
+      m.fx_rate ? String(m.fx_rate).replace('.', ',') : '', dec(crcOf(m)), MOVEMENT_STATUS_META[m.status]?.label ?? m.status, m.reference, m.message,
+      m.type === 'retorno' ? m.return_kind : '', m.type === 'retorno' ? dec(returnParts(m).capital) : '', m.type === 'retorno' ? dec(returnParts(m).profit) : ''].map(cell).join(';'));
     ctx.log(user.id, 'investment', null, 'exported', `${user.name} descargó su estado de cuenta (${rows.length} movimientos)`, { sensitive: true });
     res.writeHead(200, {
       'Content-Type': 'text/csv; charset=utf-8',

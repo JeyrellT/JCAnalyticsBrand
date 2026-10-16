@@ -4,7 +4,7 @@
 //     editar CURRENCIES[x].rateFromUSD y la constante FX_UPDATED.
 // ============================================================================
 
-import { t } from '../i18n/locale';
+import { t } from '../i18n/locale.js';
 
 export const FX_UPDATED = t('jun 2026', 'Jun 2026');
 
@@ -77,6 +77,11 @@ export function formatSingle(amountUSD, currencyCode = 'USD', direction = 'neare
 // Punto de entrada principal que usa el panel de resultado.
 export function formatRange(minUSD, maxUSD, currencyCode = 'USD') {
   const currency = CURRENCIES[currencyCode];
+  // A fixed package must retain its exact USD amount (e.g. $570, never $600).
+  if (minUSD === maxUSD) {
+    const value = formatMoney(convertAmount(minUSD, currencyCode), currencyCode);
+    return { label: value, min: value, max: value, currency };
+  }
   const minStr = formatSingle(minUSD, currencyCode, 'floor');
   const maxStr = formatSingle(maxUSD, currencyCode, 'ceil');
   return { label: `${minStr} – ${maxStr}`, min: minStr, max: maxStr, currency };

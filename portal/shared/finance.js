@@ -174,6 +174,7 @@ export function investmentMetrics(movements) {
   const partnerRows = [...partners.values()]
     .map((p) => ({
       ...p,
+      ...returnBreakdown(confirmed.filter((m) => m.partner_id === p.partner_id)),
       net: p.returned - p.contributed,
       share: contributed > 0 ? p.contributed / contributed : 0,
     }))
@@ -182,6 +183,7 @@ export function investmentMetrics(movements) {
   return {
     contributed,
     returned,
+    ...returnBreakdown(confirmed),
     net: returned - contributed,
     moic: contributed > 0 ? returned / contributed : null,
     roi: contributed > 0 ? (returned - contributed) / contributed : null,
@@ -193,6 +195,32 @@ export function investmentMetrics(movements) {
     objectedCount: movements.filter((m) => m.status === 'objetado').length,
     partners: partnerRows,
   };
+}
+
+/** Conserva retornos antiguos sin adivinar qué parte era capital o utilidad. */
+export function returnBreakdown(movements) {
+  const confirmed = movements.filter((m) => m.status === 'confirmado');
+  const contributed = confirmed.filter((m) => m.type === 'aporte').reduce((sum, m) => sum + m.amount, 0);
+  const returns = confirmed.filter((m) => m.type === 'retorno');
+  const capital = returns.reduce((sum, m) => sum + returnParts(m).capital, 0);
+  const profit = returns.reduce((sum, m) => sum + returnParts(m).profit, 0);
+  const unknown = returns.reduce((sum, m) => sum + returnParts(m).unclassified, 0);
+  return { capital_returned: capital, profit_returned: profit, unclassified_returned: unknown, outstanding_capital: unknown ? null : contributed - capital };
+}
+
+export function returnParts(movement) {
+  if (movement.type !== 'retorno') return { capital: 0, profit: 0, unclassified: 0 };
+  const capital = movement.return_kind === 'capital' ? movement.amount : movement.return_kind === 'mixed' ? movement.return_capital_amount ?? 0 : 0;
+  const profit = movement.return_kind === 'profit' ? movement.amount : movement.return_kind === 'mixed' ? movement.return_profit_amount ?? 0 : 0;
+  return { capital, profit, unclassified: movement.amount - capital - profit };
+}
+
+export function movementInCRC(movement) {
+  const amount = toCRC(movement.amount, movement.currency, movement.fx_rate);
+  const parts = returnParts(movement);
+  const capital = parts.capital ? toCRC(parts.capital, movement.currency, movement.fx_rate) : 0;
+  return { ...movement, amount: amount ?? 0, return_capital_amount: capital,
+    return_profit_amount: movement.return_kind === 'mixed' ? (amount ?? 0) - capital : parts.profit ? amount : 0 };
 }
 
 /** Serie acumulada (aportado vs retornado) por fecha para gráficos. */

@@ -26,7 +26,11 @@ test('verified context and API credential are sent only to DeepSeek', async () =
     assert.equal(options.headers.Authorization, 'Bearer test-only-key');
     const body = JSON.parse(options.body);
     assert.equal(body.messages[0].role, 'system');
-    assert.match(body.messages[0].content, /US\$900/);
+    assert.match(body.messages[0].content, /US\$570/);
+    assert.match(body.messages[0].content, /US\$770/);
+    assert.doesNotMatch(body.messages[0].content, /US\$900/);
+    assert.match(body.messages[0].content, /"key":"software_medida"[^}]+"base_usd":540[^}]+"total_with_ai_usd":1620/);
+    assert.match(body.messages[0].content, /"key":"asistente_ia_documental"[^}]+"ai_included":true/);
     assert.match(body.messages[0].content, /7033-0596/);
     assert.equal(body.response_format.type, 'json_object');
     assert.equal(body.thinking.type, 'disabled');

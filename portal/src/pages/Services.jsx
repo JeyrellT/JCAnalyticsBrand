@@ -7,6 +7,7 @@ import { PageHeader, PageLoader, EmptyState, Avatar, AvatarStack, IconTile, Badg
 import { priceParts, groupIcon } from '../components/services.jsx';
 import { formatMoney } from '../lib/format.js';
 import { SERVICE_GROUPS } from '../../shared/catalog.js';
+import ServiceTariff from '../components/ServiceTariff.jsx';
 
 function Metric({ label, value, alert }) {
   return (
@@ -31,6 +32,7 @@ function ServiceCard({ s, fx, tone }) {
         </div>
       </div>
 
+      <ServiceTariff service={s} compact />
       <div className="flex items-center justify-between gap-2">
         {s.lead_id ? (
           <span className="flex min-w-0 items-center gap-2 text-sm">

@@ -110,6 +110,7 @@ test('inversionista: acceso solo a su portal, con doble control sobre SU dinero'
   // Socios abren la inversión: la inversionista NO recibe el aviso general.
   const investment = (await ana.post('/api/investments', { name: 'BarberXCR · crecimiento', category: 'producto_propio', currency: 'CRC' })).data.investment;
   const other = (await ana.post('/api/investments', { name: 'Pauta interna', category: 'marketing', currency: 'CRC' })).data.investment;
+  assert.equal((await admin.call('PUT', `/api/investments/${investment.id}/access`, { allowed_investor_ids: [invId] })).status, 200);
   assert.ok(!(await inv.get('/api/investor/notifications')).data.notifications.some((n) => n.kind === 'investment'));
 
   // Ana registra el aporte de la inversionista: lo confirma ELLA, no otro socio.

@@ -1,16 +1,17 @@
-// Cáscara del portal de inversionistas (v6). Sobria y tranquila, como un estado de cuenta
-// de banca privada: nada de herramientas internas ni barra lateral del equipo.
+// Club privado de inversionistas: una identidad cálida para explorar las ideas compartidas.
+// La navegación y los contadores conservan los permisos y el alcance de cada persona.
 // Escritorio: barra superior de vidrio (marca, nombre del inversionista, tema, avisos y
 // cuenta) y debajo las secciones como pestañas. Celular: barra superior compacta y barra
 // inferior de pestañas con la zona segura del iPhone.
 import { useEffect, useRef, useState } from 'react';
-import { House, ReceiptText, Bell, UserRound, ChevronDown, LogOut, ShieldCheck, Lock } from 'lucide-react';
+import { House, ReceiptText, Bell, UserRound, ChevronDown, LogOut, ShieldCheck, Lock, Pause, Play, Sparkles } from 'lucide-react';
 import { Link, useLocation } from '../lib/router.jsx';
 import { useSession } from '../lib/session.jsx';
 import { Avatar, ThemeToggle, cx } from '../components/ui.jsx';
 import { displayName, firstName } from './components.jsx';
 import logoMark from '../assets/logo-mark.webp';
 import { useTypingFlag, SectionJump, PullToRefresh } from '../components/mobile.jsx';
+import '../styles/investor-club.css';
 
 const HOME = '/inversionista';
 
@@ -46,13 +47,13 @@ const COUNT_TONE = { pending: 'amber', unread: 'coral' };
 /** Marca: logo de JC Analytics y "Portal de inversionistas". */
 function Brand() {
   return (
-    <Link to={HOME} className="flex shrink-0 items-center gap-2.5 rounded-xl" aria-label="JC Analytics · Portal de inversionistas, inicio">
+    <Link to={HOME} className="club-brand flex shrink-0 items-center gap-2.5 rounded-xl" aria-label="JC Analytics · Portal de inversionistas, inicio">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-card ring-1 ring-line">
         <img src={logoMark} alt="" className="h-7 w-7 object-contain" />
       </span>
       <span className="hidden leading-tight lg:block">
         <span className="block font-display text-[15px] font-bold text-ink">JC Analytics</span>
-        <span className="block text-[10.5px] font-semibold uppercase tracking-[0.18em] text-teal-ink">Inversionistas</span>
+        <span className="club-brand-caption block text-[10.5px] font-semibold uppercase tracking-[0.18em] text-teal-ink">Ideas en común</span>
       </span>
     </Link>
   );
@@ -63,8 +64,8 @@ function Identity({ name }) {
   return (
     <div className="min-w-0 leading-tight">
       <p className="truncate font-display text-[16px] font-bold text-ink lg:text-[17px]">
-        <span className="lg:hidden">Portal de inversionistas</span>
-        <span className="hidden lg:inline" title={name}>{displayName(name)}</span>
+        <span className="lg:hidden">Tu club de ideas</span>
+        <span className="hidden lg:inline" title={name}>Tu espacio, {firstName(name)}</span>
       </p>
       <p className="flex min-w-0 items-center gap-1 truncate text-[11px] font-medium text-muted">
         <Lock className="h-3 w-3 shrink-0" aria-hidden="true" />
@@ -148,7 +149,7 @@ function DesktopTabs() {
   const { path } = useLocation();
   const counts = useCounts();
   return (
-    <nav className="-mb-px hidden lg:block" aria-label="Secciones del portal">
+    <nav className="club-desktop-nav -mb-px hidden lg:block" aria-label="Secciones del portal">
       <ul className="flex gap-1">
         {NAV.map((n) => {
           const active = isActive(n, path);
@@ -174,7 +175,7 @@ function MobileTabs() {
   const { path } = useLocation();
   const counts = useCounts();
   return (
-    <nav className="mobile-tabbar safe-bottom glass fixed inset-x-0 bottom-0 z-30 border-t border-line shadow-up lg:hidden" aria-label="Secciones del portal">
+    <nav className="club-mobile-nav mobile-tabbar safe-bottom glass fixed inset-x-0 bottom-0 z-30 border-t border-line shadow-up lg:hidden" aria-label="Secciones del portal">
       <ul className="mx-auto grid max-w-lg grid-cols-4 px-1">
         {MOBILE_NAV.map((n) => {
           const active = isActive(n, path);
@@ -204,7 +205,7 @@ function MobileTabs() {
 
 function Footer() {
   return (
-    <footer className="mt-12 flex flex-col gap-2 border-t border-line pt-5 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
+    <footer className="club-footer mt-12 flex flex-col gap-2 border-t border-line pt-5 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
       <p className="flex items-start gap-2"><ShieldCheck className="mt-px h-3.5 w-3.5 shrink-0 text-teal-ink" aria-hidden="true" />Espacio privado de inversionistas de JC Analytics. Tus montos y movimientos solo los ven vos y la administración.</p>
       <p className="shrink-0">Fechas en hora de Costa Rica.</p>
     </footer>
@@ -214,28 +215,37 @@ function Footer() {
 export default function InvestorLayout({ children }) {
   const { user } = useSession();
   const { full } = useLocation();
+  const [paused, setPaused] = useState(() => {
+    try { return localStorage.getItem('jcp:investor:motion') === 'paused'; } catch { return false; }
+  });
+  const toggleMotion = () => {
+    const next = !paused;
+    setPaused(next);
+    try { localStorage.setItem('jcp:investor:motion', next ? 'paused' : 'active'); } catch { /* Works without browser storage. */ }
+  };
   useTypingFlag(); // v8: con el teclado abierto se esconde la barra inferior
   return (
-    <div className="flex min-h-dvh flex-col">
-      <a href="#contenido" className="sr-only z-50 rounded-xl bg-surface px-4 py-2 text-sm font-semibold text-ink shadow-pop focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Saltar al contenido</a>
-      <header className="glass sticky top-0 z-30 border-b border-line" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="h-[3px] bg-linear-to-r from-brand to-teal" aria-hidden="true" />
+    <div className="investor-club flex min-h-dvh flex-col" data-motion={paused ? 'paused' : 'active'}>
+      <a href="#contenido" onClick={(event) => { event.preventDefault(); document.getElementById('contenido')?.focus(); }} className="sr-only z-50 rounded-xl bg-surface px-4 py-2 text-sm font-semibold text-ink shadow-pop focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Saltar al contenido</a>
+      <header className="club-header glass sticky top-0 z-30 border-b border-line" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="club-spectrum" aria-hidden="true" />
         <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center gap-3 lg:h-[68px] lg:gap-4">
             <Brand />
             <span className="hidden h-8 w-px bg-line lg:block" aria-hidden="true" />
             <div className="min-w-0 flex-1"><Identity name={user.name} /></div>
             <div className="flex shrink-0 items-center gap-0.5 lg:gap-1.5">
+              <button type="button" className="club-motion-toggle tap" onClick={toggleMotion} aria-pressed={paused} aria-label={paused ? 'Activar animaciones del club' : 'Pausar animaciones del club'} title={paused ? 'Activar animaciones' : 'Pausar animaciones'}>{paused ? <Play size={16} /> : <Pause size={16} />}</button>
               <ThemeToggle className="lg:min-h-10 lg:min-w-10" />
               <BellLink />
               <AccountMenu />
             </div>
           </div>
-          <DesktopTabs />
+          <div className="club-nav-row"><DesktopTabs /><span className="club-nav-caption"><Sparkles size={13} />Tu lugar en lo que viene.</span></div>
         </div>
       </header>
 
-      <main id="contenido" className="main-safe flex-1 px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">
+      <main id="contenido" tabIndex={-1} className="club-main main-safe flex-1 px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">
         <div className="mx-auto max-w-[1200px]">
           {children}
           <Footer />

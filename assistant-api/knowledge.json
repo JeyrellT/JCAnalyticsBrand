@@ -34,7 +34,7 @@
       },
       {
         "question": "¿Cuánto cuesta una página web a medida?",
-        "answer": "Los proyectos web arrancan en US$900. El cotizador ofrece un rango orientativo; las funcionalidades, integraciones y complejidad afectan el costo final. Acordamos alcance, presupuesto y tiempos antes de iniciar el desarrollo."
+        "answer": "La web con reservas cuesta US$570, o US$770 con el asesor de IA descrito. Incluye hasta 5 secciones, 10 servicios y 1 agenda, con contenidos entregados por el comprador. Impuestos, dominio, hosting, consumos y soporte mensual se cobran aparte. Los proyectos más amplios y adicionales se cotizan según alcance."
       },
       {
         "question": "¿Pueden mejorar una web o un sistema que ya utilizo?",
@@ -53,6 +53,133 @@
         "answer": "La primera conversación dura 30 minutos y es sin costo. Conversamos sobre tu objetivo, proceso actual y prioridades, y definimos el siguiente paso y una propuesta con alcance claro. Podés contactar al equipo por WhatsApp o correo."
       }
     ],
+    "pricing": {
+      "currency": "USD",
+      "tax_included": false,
+      "terms": "Precios fijos por el alcance indicado. El total con IA reemplaza la base; no se suma a ella. Soporte mensual opcional, impuestos, licencias, consumos, preparación de información y adicionales aparte. Datos, contenidos y accesos listos. 30 días de corrección de defectos del alcance entregado.",
+      "packages": [
+        {
+          "key": "excel_vba",
+          "name": "Excel y reportes automatizados",
+          "base_usd": 60,
+          "total_with_ai_usd": 165,
+          "ai_included": false,
+          "support_monthly_usd": 0,
+          "support_hours_per_week": 0,
+          "scope": "1 archivo, hasta 3 tablas de entrada y 1 salida. Fórmulas, validaciones y actualización con formato estable.",
+          "ai_scope": "Clasificar comentarios en hasta 5 categorías con revisión humana.",
+          "exclusions": "Sin edición multiusuario, OCR ni reconstrucción histórica."
+        },
+        {
+          "key": "dashboard_inicial",
+          "name": "Dashboard inicial",
+          "base_usd": 135,
+          "total_with_ai_usd": 270,
+          "ai_included": false,
+          "support_monthly_usd": 0,
+          "support_hours_per_week": 0,
+          "scope": "1 fuente estructurada, 1 página, hasta 5 indicadores y filtros. Actualización manual documentada.",
+          "ai_scope": "Generar un resumen narrativo de los 5 indicadores, sujeto a revisión.",
+          "exclusions": "Sin integración compleja ni permisos por sucursal."
+        },
+        {
+          "key": "power_bi",
+          "name": "Power BI de gestión",
+          "base_usd": 240,
+          "total_with_ai_usd": 420,
+          "ai_included": false,
+          "support_monthly_usd": 0,
+          "support_hours_per_week": 0,
+          "scope": "Hasta 2 fuentes, 3 páginas y 10 indicadores. Publicación, actualización viable y hasta 2 perfiles de acceso.",
+          "ai_scope": "Resumen ejecutivo periódico con explicación de variaciones y referencias.",
+          "exclusions": "Licencias aparte. Es una evolución del dashboard inicial."
+        },
+        {
+          "key": "power_automate",
+          "name": "Automatización de procesos",
+          "base_usd": 165,
+          "total_with_ai_usd": 560,
+          "ai_included": false,
+          "support_monthly_usd": 30,
+          "support_hours_per_week": 2,
+          "scope": "1 flujo, hasta 2 sistemas conectables, 1 disparador, hasta 5 reglas y 1 salida. Registro y aviso de error.",
+          "ai_scope": "Extraer campos de un tipo de documento digital y validar resultados.",
+          "exclusions": "Sin OCR de escaneos ni automatización de pantallas en la base."
+        },
+        {
+          "key": "crm_inicial",
+          "name": "CRM comercial inicial",
+          "base_usd": 270,
+          "total_with_ai_usd": 770,
+          "ai_included": false,
+          "support_monthly_usd": 30,
+          "support_hours_per_week": 2,
+          "scope": "Base reutilizable, hasta 5 usuarios y 6 etapas. Contactos, tareas y reporte. Importación limpia de 1.000 contactos.",
+          "ai_scope": "Resumir interacciones y sugerir borradores de seguimiento para aprobación.",
+          "exclusions": "Sin portal de clientes ni integraciones en la base."
+        },
+        {
+          "key": "inventario_inicial",
+          "name": "Inventario inicial",
+          "base_usd": 390,
+          "total_with_ai_usd": 600,
+          "ai_included": false,
+          "support_monthly_usd": 30,
+          "support_hours_per_week": 2,
+          "scope": "1 bodega, hasta 1.000 productos y 5 usuarios. Entradas, salidas, ajustes con motivo e historial.",
+          "ai_scope": "Normalizar descripciones y sugerir categorías de productos, con revisión.",
+          "exclusions": "Sin facturación, contabilidad, hardware ni conteo físico."
+        },
+        {
+          "key": "chatbot_atencion",
+          "name": "Chatbot de atención",
+          "base_usd": 180,
+          "total_with_ai_usd": 680,
+          "ai_included": false,
+          "support_monthly_usd": 40,
+          "support_hours_per_week": 3,
+          "scope": "1 canal, 20 preguntas aprobadas, 3 recorridos, captura de contacto y derivación humana. Base por reglas.",
+          "ai_scope": "Responder con lenguaje natural sobre información aprobada y reconocer límites.",
+          "exclusions": "Capturar una solicitud no equivale a confirmar una reserva."
+        },
+        {
+          "key": "pagina_web",
+          "name": "Web con reservas",
+          "base_usd": 570,
+          "total_with_ai_usd": 770,
+          "ai_included": false,
+          "support_monthly_usd": 30,
+          "support_hours_per_week": 2,
+          "scope": "Hasta 5 secciones, 10 servicios y 1 agenda. Diseño móvil, confirmación por correo y administración básica.",
+          "ai_scope": "Asesor conversacional que orienta entre los servicios y entrega el enlace de reserva.",
+          "exclusions": "Textos e imágenes entregados por el comprador. Dominio y alojamiento aparte."
+        },
+        {
+          "key": "software_medida",
+          "name": "Software a medida",
+          "base_usd": 540,
+          "total_with_ai_usd": 1620,
+          "ai_included": false,
+          "support_monthly_usd": 40,
+          "support_hours_per_week": 3,
+          "scope": "1 proceso, hasta 4 pantallas principales, 2 roles, 5 usuarios, base de datos y 1 reporte o exportación.",
+          "ai_scope": "Una función de clasificación o extracción dentro del flujo, con validación humana.",
+          "exclusions": "Sin móvil nativo, modo offline ni plataforma multiempresa."
+        },
+        {
+          "key": "asistente_ia_documental",
+          "name": "Asistente de IA documental",
+          "base_usd": 420,
+          "total_with_ai_usd": 420,
+          "ai_included": true,
+          "support_monthly_usd": 40,
+          "support_hours_per_week": 3,
+          "scope": "IA incluida. 1 caso de uso y 1 interfaz interna. Hasta 30 documentos o 300 páginas, lo que ocurra primero.",
+          "ai_scope": "Búsqueda documental, respuestas con referencias y evaluación con preguntas acordadas.",
+          "exclusions": "Documentos legibles y aprobados. API y almacenamiento aparte."
+        }
+      ]
+    },
     "details": [
       {
         "title": "Desarrollo web en Costa Rica, pensado para tu negocio.",
@@ -84,7 +211,7 @@
             "heading": "Qué traer a la primera conversación",
             "paragraphs": [
               "Traé tu objetivo principal, la acción que debería completar una visita y las herramientas que usa tu equipo. Un esquema o la descripción de un problema repetitivo alcanza para empezar.",
-              "Los proyectos web arrancan en US$900. Las funciones, integraciones y el contenido determinan la cotización final. Usá el cotizador como referencia y después acordamos alcance, tiempos y responsabilidades."
+              "La web con reservas cuesta US$570 para hasta 5 secciones, 10 servicios y 1 agenda. La opción con el asesor IA descrito cuesta US$770 en total. El comprador entrega el contenido. Impuestos, dominio, hosting, consumos, soporte y ampliaciones se cotizan aparte."
             ]
           }
         ]
@@ -231,7 +358,7 @@
       },
       {
         "question": "How much does a custom website cost?",
-        "answer": "Web projects start at US$900. The estimator provides an indicative range; features, integrations and complexity affect the final cost. We agree on the scope, budget and timeline before development begins."
+        "answer": "The website with bookings package costs US$570, or US$770 with the specified AI advisor. It includes up to 5 sections, 10 services and 1 calendar, with client-supplied content. Taxes, domain, hosting, usage and monthly support are separate. Larger projects and extras are quoted for the agreed scope."
       },
       {
         "question": "Can you improve a website or system I already use?",
@@ -250,6 +377,133 @@
         "answer": "The first conversation is 30 minutes and free of charge. We discuss your goal, current process and priorities, then define the next step and a proposal with a clear scope. You can contact the team through WhatsApp or email."
       }
     ],
+    "pricing": {
+      "currency": "USD",
+      "tax_included": false,
+      "terms": "Fixed prices for the stated scope. The total with AI replaces the base; do not add it to the base. Optional monthly support, taxes, licenses, usage, information preparation and extras are separate. Data, content and access must be ready. 30 days of defect corrections within the delivered scope.",
+      "packages": [
+        {
+          "key": "excel_vba",
+          "name": "Excel and automated reports",
+          "base_usd": 60,
+          "total_with_ai_usd": 165,
+          "ai_included": false,
+          "support_monthly_usd": 0,
+          "support_hours_per_week": 0,
+          "scope": "1 file, up to 3 input tables and 1 output. Formulas, validation and updates using a stable format.",
+          "ai_scope": "Classify comments into up to 5 categories, with human review.",
+          "exclusions": "No multi-user editing, OCR or historical data reconstruction."
+        },
+        {
+          "key": "dashboard_inicial",
+          "name": "Starter dashboard",
+          "base_usd": 135,
+          "total_with_ai_usd": 270,
+          "ai_included": false,
+          "support_monthly_usd": 0,
+          "support_hours_per_week": 0,
+          "scope": "1 structured source, 1 page, up to 5 indicators and filters. Documented manual refresh.",
+          "ai_scope": "Generate a narrative summary of the 5 indicators, subject to review.",
+          "exclusions": "No complex integration or branch-level permissions."
+        },
+        {
+          "key": "power_bi",
+          "name": "Management Power BI",
+          "base_usd": 240,
+          "total_with_ai_usd": 420,
+          "ai_included": false,
+          "support_monthly_usd": 0,
+          "support_hours_per_week": 0,
+          "scope": "Up to 2 sources, 3 pages and 10 indicators. Publishing, feasible refresh and up to 2 access profiles.",
+          "ai_scope": "Periodic executive summary explaining changes and citing references.",
+          "exclusions": "Licenses charged separately. An extension of the starter dashboard."
+        },
+        {
+          "key": "power_automate",
+          "name": "Process automation",
+          "base_usd": 165,
+          "total_with_ai_usd": 560,
+          "ai_included": false,
+          "support_monthly_usd": 30,
+          "support_hours_per_week": 2,
+          "scope": "1 workflow, up to 2 connectable systems, 1 trigger, up to 5 rules and 1 output. Logging and error alerts.",
+          "ai_scope": "Extract fields from one type of digital document and validate the results.",
+          "exclusions": "The base excludes scanned-document OCR and screen automation."
+        },
+        {
+          "key": "crm_inicial",
+          "name": "Starter sales CRM",
+          "base_usd": 270,
+          "total_with_ai_usd": 770,
+          "ai_included": false,
+          "support_monthly_usd": 30,
+          "support_hours_per_week": 2,
+          "scope": "Reusable base, up to 5 users and 6 stages. Contacts, tasks and a report. Import of 1,000 clean contact records.",
+          "ai_scope": "Summarize interactions and suggest follow-up drafts for approval.",
+          "exclusions": "The base excludes a client portal and integrations."
+        },
+        {
+          "key": "inventario_inicial",
+          "name": "Starter inventory",
+          "base_usd": 390,
+          "total_with_ai_usd": 600,
+          "ai_included": false,
+          "support_monthly_usd": 30,
+          "support_hours_per_week": 2,
+          "scope": "1 warehouse, up to 1,000 products and 5 users. Receipts, dispatches, reasoned adjustments and history.",
+          "ai_scope": "Standardize descriptions and suggest product categories, with review.",
+          "exclusions": "No billing, accounting, hardware or physical stock count."
+        },
+        {
+          "key": "chatbot_atencion",
+          "name": "Customer service chatbot",
+          "base_usd": 180,
+          "total_with_ai_usd": 680,
+          "ai_included": false,
+          "support_monthly_usd": 40,
+          "support_hours_per_week": 3,
+          "scope": "1 channel, 20 approved questions, 3 journeys, contact capture and human handoff. Rule-based starter version.",
+          "ai_scope": "Answer in natural language using approved information and recognize limits.",
+          "exclusions": "Capturing a request does not confirm a booking."
+        },
+        {
+          "key": "pagina_web",
+          "name": "Website with bookings",
+          "base_usd": 570,
+          "total_with_ai_usd": 770,
+          "ai_included": false,
+          "support_monthly_usd": 30,
+          "support_hours_per_week": 2,
+          "scope": "Up to 5 sections, 10 services and 1 calendar. Mobile design, email confirmation and basic administration.",
+          "ai_scope": "Conversational advisor that helps visitors choose a service and provides the booking link.",
+          "exclusions": "Client supplies text and images. Domain and hosting charged separately."
+        },
+        {
+          "key": "software_medida",
+          "name": "Custom software",
+          "base_usd": 540,
+          "total_with_ai_usd": 1620,
+          "ai_included": false,
+          "support_monthly_usd": 40,
+          "support_hours_per_week": 3,
+          "scope": "1 process, up to 4 main screens, 2 roles, 5 users, a database and 1 report or export.",
+          "ai_scope": "One classification or extraction function within the workflow, with human validation.",
+          "exclusions": "No native mobile app, offline mode or multi-company platform."
+        },
+        {
+          "key": "asistente_ia_documental",
+          "name": "Document AI assistant",
+          "base_usd": 420,
+          "total_with_ai_usd": 420,
+          "ai_included": true,
+          "support_monthly_usd": 40,
+          "support_hours_per_week": 3,
+          "scope": "AI included. 1 use case and 1 internal interface. Up to 30 documents or 300 pages, whichever comes first.",
+          "ai_scope": "Document search, referenced answers and evaluation using agreed questions.",
+          "exclusions": "Readable, approved documents required. API usage and storage charged separately."
+        }
+      ]
+    },
     "details": [
       {
         "title": "Web development in Costa Rica, built around your business.",
@@ -281,7 +535,7 @@
             "heading": "What to bring to the first conversation",
             "paragraphs": [
               "Bring your main business goal, the action a visitor should take and the tools your team already uses. A rough sketch or a description of a repetitive problem is enough to start.",
-              "Web projects start at US$900. Features, integrations and content determine the final estimate. Use the estimator for an indicative range, then agree on scope, timing and responsibilities with the team."
+              "The website with bookings package costs US$570 for up to 5 sections, 10 services and 1 calendar. The defined AI advisor option totals US$770. Client supplies content. Taxes, domain, hosting, usage, support and scope extensions are separate."
             ]
           }
         ]

@@ -1,320 +1,612 @@
-// Inicio. En el celular es "Mi día": un resumen de hoy en tres toques, lo que requiere acción, la agenda y mis tareas.
-// En escritorio suma los indicadores del equipo, el pulso de inversiones y la actividad reciente.
-import { useState } from 'react';
-import {
-  FolderKanban, AlarmClock, CalendarClock, ListChecks, TrendingUp, ArrowRight, BellRing, Wallet,
-  Video, MapPin, Activity as ActivityIcon, Sparkles, ChevronDown, CircleAlert, Clock3, Info, HandCoins, LifeBuoy, PhoneCall,
-  ClipboardList, PackageCheck, MessageSquareWarning, Hourglass, Globe,
-} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowUpRight, ArrowRight, ArrowDownLeft, Plus, Sparkles, Target, Check, Play, Pause, FolderKanban, CalendarDays, Clock3, BellRing, Bot, Zap, Activity, Wallet, RefreshCw, ChevronRight, CircleCheck, ListChecks, ShieldCheck, Loader2, Users, Pin } from 'lucide-react';
 import { useSession, useResource } from '../lib/session.jsx';
+import { api } from '../lib/api.js';
 import { Link } from '../lib/router.jsx';
-import { PageLoader, Stat, Badge, AvatarStack, Avatar, EmptyState, IconTile, SectionHead, RowArrow, cx } from '../components/ui.jsx';
-import { formatMoney, formatTime, formatDayLong, dayKey, todayKey, dueLabel, timeAgo } from '../lib/format.js';
-import { APPOINTMENT_KINDS, TASK_PRIORITY } from '../../shared/catalog.js';
+import { Avatar, AvatarStack, Badge, PageLoader, EmptyState, useAction, cx } from '../components/ui.jsx';
+import { formatMoney, formatTime, formatDayLong, dayKey, todayKey, dueLabel, timeAgo, addDays, startOfDayIso } from '../lib/format.js';
+import { PROJECT_STATUS, TASK_STATUS } from '../../shared/catalog.js';
 import { InstallBanner } from '../components/InstallPrompt.jsx';
 import { PortalTodayCard } from '../components/automations.jsx';
-
+import '../styles/dashboard.css';
 const greeting = () => {
-  const h = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Costa_Rica', hour: 'numeric', hourCycle: 'h23' }).format(new Date()));
-  return h < 12 ? 'Buenos días' : h < 18 ? 'Buenas tardes' : 'Buenas noches';
+  const hour = Number(new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Costa_Rica',
+    hour: 'numeric',
+    hourCycle: 'h23'
+  }).format(new Date()));
+  return hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
 };
-
-// Ícono por tipo de alerta; el tono lo decide el servidor (urgencia).
-const ALERT_ICON = { sla: Clock3, tasks: AlarmClock, appointment: PhoneCall, support: LifeBuoy, movement: HandCoins, brief: ClipboardList, deliverable: PackageCheck };
-const ALERT_STRIPE = { red: 'bg-coral', amber: 'bg-amber', blue: 'bg-brand', violet: 'bg-violet' };
-
-// Alertas visibles en el celular antes de "Ver todas".
-const MOBILE_ALERTS = 3;
-// Actividad visible en escritorio antes de "Ver bitácora".
-const DESKTOP_ACTIVITY = 8;
-
-const TILE_TONE = {
-  blue: 'text-brand-ink',
-  violet: 'text-violet-ink',
-  red: 'text-coral-ink',
-  teal: 'text-teal-ink',
+const money = amount => formatMoney(amount, 'CRC', {
+  decimals: 0
+});
+const urgency = {
+  red: 0,
+  amber: 1,
+  violet: 2,
+  blue: 3
 };
-
-/** Fila del pulso del portal de clientes: ícono, qué es y el número a la derecha. */
-function PortalRow({ to, icon, tone, label, hint, value }) {
-  const on = value > 0;
-  return (
-    <li>
-      <Link to={to} className="group row min-h-16 px-4 py-3 sm:px-5">
-        <IconTile icon={icon} tone={on ? tone : 'slate'} size="sm" />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold text-ink">{label}</span>
-          <span className="block truncate text-xs text-muted">{hint}</span>
-        </span>
-        <span className={cx('num shrink-0 text-2xl font-bold leading-none', on ? TILE_TONE[tone] ?? 'text-ink' : 'text-muted-2')}>{value}</span>
-        <RowArrow />
-      </Link>
-    </li>
-  );
-}
-
-/** v5: lo que mueven los clientes desde su portal (briefs y aprobaciones de entregables). */
-function ClientPortalCard({ counts }) {
-  const { briefs_to_review: toReview = 0, changes_requested: changes = 0, waiting_client: waiting = 0 } = counts ?? {};
-  const pending = toReview + changes;
-  return (
-    <section className="card animate-rise overflow-hidden" aria-labelledby="client-portal-title">
-      <SectionHead flush id="client-portal-title" icon={Globe} tone="teal" title="Portal de clientes"
-        hint={pending ? `${pending} ${pending === 1 ? 'pendiente del equipo' : 'pendientes del equipo'}` : 'Briefs y aprobaciones de entregables'}
-        action={<Link to="/briefs" className="link tap -my-2 hidden items-center text-sm sm:flex">Ver briefs</Link>} />
-      <ul className="divide-y divide-line">
-        <PortalRow to="/briefs?estado=enviado" icon={ClipboardList} tone="blue" label="Briefs por revisar" value={toReview}
-          hint={toReview ? 'Enviados por clientes: aprobalos o pedí ajustes' : 'Nada esperando revisión'} />
-        <PortalRow to="/briefs?tab=entregables" icon={MessageSquareWarning} tone="red" label="Cambios pedidos" value={changes}
-          hint={changes ? 'Subí una versión nueva del entregable' : 'Ningún entregable con ajustes'} />
-        <PortalRow to="/briefs?tab=entregables" icon={Hourglass} tone="violet" label="Esperando al cliente" value={waiting}
-          hint={waiting ? 'Entregables compartidos, sin decisión aún' : 'Nada pendiente de aprobación'} />
-      </ul>
-    </section>
-  );
-}
-
-/** Mosaico grande y tocable del resumen "Hoy" (celular). */
-function TodayTile({ to, icon: Icon, label, value, hint, tone = 'blue', alert = false }) {
-  return (
-    <Link to={to} className={cx('card relative flex min-h-[116px] flex-col justify-between gap-2 overflow-hidden p-3 transition active:scale-[0.98] sm:p-4',
-      alert && 'border-coral/40')}>
-      <span className="flex items-center justify-between gap-1">
-        <span className="text-[12px] font-semibold leading-tight text-muted">{label}</span>
-        <IconTile icon={Icon} tone={tone} size="sm" />
+function SectionTitle({
+  number,
+  title,
+  to,
+  label = 'Ver todo'
+}) {
+  return <div className="pulse-section-head">
+    <div>
+      <span className="pulse-index">
+        {number}
       </span>
-      <span className={cx('font-display text-[30px] font-bold leading-none tabular', TILE_TONE[tone])}>{value}</span>
-      <span className={cx('truncate text-[11px] font-medium leading-tight', alert ? 'text-coral-ink' : 'text-muted')}>{hint}</span>
-      {alert && <span className="absolute inset-x-0 bottom-0 h-[3px] bg-coral" aria-hidden="true" />}
-    </Link>
-  );
-}
-
-export default function Dashboard() {
-  const { user, canInvest } = useSession();
-  const { data, error, reload } = useResource('/api/dashboard');
-  const [allAlerts, setAllAlerts] = useState(false);
-  const [showActivity, setShowActivity] = useState(false);
-  if (!data) return <PageLoader error={error} onRetry={reload} />;
-  const { kpis, alerts, agenda, my_tasks: myTasks, investments, activity } = data;
-  const today = todayKey();
-  const firstName = user.name.split(' ')[0];
-
-  // "Hoy" en tres números: mis citas de hoy, mis tareas (y cuántas vencidas) y lo que espera mi confirmación.
-  const myToday = agenda.filter((a) => dayKey(a.starts_at) === today && a.attendees?.some((p) => p.id === user.id));
-  const myOverdue = myTasks.filter((t) => t.due_date && t.due_date < today).length;
-  const overdueText = myOverdue >= myTasks.length && kpis.my_open_tasks > myTasks.length ? `${myOverdue}+` : String(myOverdue);
-  const toConfirm = investments?.my_pending_count ?? 0;
-  const showConfirm = canInvest && investments;
-  const hiddenAlerts = Math.max(0, alerts.length - MOBILE_ALERTS);
-  const urgent = alerts.filter((a) => a.tone === 'red').length;
-
-  return (
-    <div className="space-y-6">
-      <header className="animate-rise flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <p className="eyebrow">{formatDayLong(today)}</p>
-          <h1 className="mt-1 font-display text-[28px] font-bold leading-tight sm:text-[34px]">{greeting()}, {firstName}</h1>
-          <p className="mt-1.5 text-sm text-muted">
-            <span className="lg:hidden">{alerts.length ? `Tenés ${alerts.length} ${alerts.length === 1 ? 'pendiente que atender' : 'pendientes que atender'}. Empecemos por ahí.` : 'Todo en orden. Este es tu día.'}</span>
-            <span className="hidden lg:inline">{alerts.length ? `${alerts.length} ${alerts.length === 1 ? 'asunto requiere' : 'asuntos requieren'} tu atención${urgent ? `, ${urgent} ${urgent === 1 ? 'urgente' : 'urgentes'}` : ''}.` : 'Nada urgente por ahora.'} Centro de operaciones del equipo JC Analytics.</span>
-          </p>
-        </div>
-        <div className="mt-3 hidden gap-2 sm:mt-0 lg:flex">
-          <Link to="/tablero?nueva=1" className="btn btn-outline"><ListChecks className="h-4 w-4" />Tarea</Link>
-          <Link to="/agenda?nueva=1" className="btn btn-primary"><CalendarClock className="h-4 w-4" />Agendar cita</Link>
-        </div>
-      </header>
-
-      <InstallBanner />
-
-      {/* Celular y tableta: "Hoy" en mosaicos grandes. */}
-      <section aria-labelledby="today-title" className="lg:hidden">
-        <h2 id="today-title" className="sr-only">Hoy</h2>
-        <div className={cx('stagger grid gap-2.5', showConfirm ? 'grid-cols-3' : 'grid-cols-2')}>
-          <TodayTile to="/agenda" icon={CalendarClock} tone="violet" label="Mis citas hoy" value={myToday.length}
-            hint={myToday.length ? `Próxima ${formatTime(myToday[0].starts_at)}` : 'Nada más hoy'} />
-          <TodayTile to="/tablero?mias=1" icon={ListChecks} tone={myOverdue ? 'red' : 'blue'} label="Mis tareas" value={kpis.my_open_tasks}
-            hint={myOverdue ? `${overdueText} ${myOverdue === 1 ? 'vencida' : 'vencidas'}` : 'Al día'} alert={myOverdue > 0} />
-          {showConfirm && (
-            <TodayTile to="/buzon" icon={Wallet} tone={toConfirm ? 'violet' : 'teal'} label="Por confirmar" value={toConfirm}
-              hint={toConfirm ? 'En tu buzón' : 'Nada pendiente'} />
-          )}
-        </div>
-      </section>
-
-      {/* Escritorio: indicadores del equipo. */}
-      <section className="hidden grid-cols-4 gap-3 lg:grid" aria-label="Indicadores">
-        <Stat label="Proyectos activos" value={kpis.active_projects} icon={FolderKanban} tone="blue" hint={kpis.sla_late ? `${kpis.sla_late} sin avance a tiempo` : 'Avances al día'} />
-        <Stat label="Tareas vencidas" value={kpis.overdue_tasks} icon={AlarmClock} tone={kpis.overdue_tasks ? 'red' : 'teal'} hint={`${kpis.my_open_tasks} abiertas a tu nombre`} />
-        <Stat label="Citas hoy" value={kpis.today_appointments} icon={CalendarClock} tone="violet" hint={`${kpis.week_appointments} en los próximos 7 días`} />
-        {investments
-          ? <Stat label="Neto socios" value={formatMoney(investments.net_crc, 'CRC', { compact: true })} icon={Wallet} tone={investments.net_crc >= 0 ? 'teal' : 'amber'} hint={`${formatMoney(investments.returned_crc, 'CRC', { compact: true })} retornado de ${formatMoney(investments.contributed_crc, 'CRC', { compact: true })}`} />
-          : <Stat label="Mis tareas" value={kpis.my_open_tasks} icon={ListChecks} tone="blue" hint="Abiertas a tu nombre" />}
-      </section>
-
-      {/* Requiere acción: una sola tarjeta, filas ordenadas por urgencia (el servidor ya las ordena). */}
-      <section aria-labelledby="alerts-title" className="card animate-rise overflow-hidden">
-        <SectionHead flush id="alerts-title" icon={BellRing} tone={alerts.length ? 'red' : 'teal'} title="Requiere acción"
-          hint={alerts.length ? 'Ordenado por urgencia. Tocá para resolver.' : 'Sin avances vencidos, tareas atrasadas ni movimientos por confirmar.'}
-          action={alerts.length > 0 && <Badge tone={urgent ? 'red' : 'amber'}>{alerts.length}</Badge>} />
-        {alerts.length === 0 ? (
-          <div className="flex items-center gap-3 px-4 py-5 text-sm text-teal-ink sm:px-5"><Sparkles className="h-5 w-5 shrink-0" /> Todo en orden. Buen momento para adelantar algo del tablero.</div>
-        ) : (
-          <>
-            <ul id="alert-list" className="divide-y divide-line">
-              {alerts.map((a, i) => {
-                const Icon = ALERT_ICON[a.kind] ?? CircleAlert;
-                return (
-                  <li key={`${a.kind}-${i}`} className={cx(i >= MOBILE_ALERTS && !allAlerts && 'hidden lg:block')}>
-                    <Link to={a.link} className="group row relative min-h-[60px] px-4 py-3 pl-5 sm:px-5 sm:pl-6">
-                      <span className={cx('absolute inset-y-2 left-0 w-1 rounded-r-full', ALERT_STRIPE[a.tone] ?? 'bg-slate')} aria-hidden="true" />
-                      <IconTile icon={Icon} tone={a.tone === 'red' ? 'red' : a.tone === 'amber' ? 'amber' : a.tone === 'violet' ? 'violet' : 'blue'} />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-ink">{a.title}</span>
-                        <span className="block truncate text-xs text-muted">{a.detail}</span>
-                      </span>
-                      <RowArrow />
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-            {hiddenAlerts > 0 && (
-              <button type="button" className="tap flex w-full items-center justify-center gap-1.5 border-t border-line bg-surface-2/60 text-sm font-semibold text-brand-ink lg:hidden" aria-expanded={allAlerts} aria-controls="alert-list" onClick={() => setAllAlerts((v) => !v)}>
-                {allAlerts ? 'Ver menos' : `Ver todas (${alerts.length})`}
-                <ChevronDown className={cx('h-4 w-4 transition', allAlerts && 'rotate-180')} />
-              </button>
-            )}
-          </>
-        )}
-      </section>
-
-      <div className="grid gap-6 xl:grid-cols-[1.25fr_1fr]">
-        <section className="card animate-rise overflow-hidden" aria-labelledby="agenda-title">
-          <SectionHead flush id="agenda-title" icon={CalendarClock} tone="violet" title="Próximas citas" hint="Los próximos 7 días"
-            action={<Link to="/agenda" className="link tap -my-2 flex items-center text-sm">Ver agenda</Link>} />
-          {agenda.length === 0 ? (
-            <div className="p-4 sm:p-5"><EmptyState icon={CalendarClock} tone="violet" title="Sin citas en los próximos 7 días" action={<Link to="/agenda?nueva=1" className="btn btn-primary">Agendar</Link>} /></div>
-          ) : (
-            <ul className="divide-y divide-line">
-              {agenda.map((a) => {
-                const key = dayKey(a.starts_at);
-                const tone = APPOINTMENT_KINDS[a.kind]?.tone ?? 'slate';
-                const isToday = key === today;
-                return (
-                  <li key={a.id}>
-                    <Link to={`/agenda?cita=${a.id}`} className="group row min-h-16 px-4 py-2.5 sm:gap-4 sm:px-5">
-                      <span className={cx('flex h-12 w-[68px] shrink-0 flex-col items-center justify-center rounded-xl sm:w-[76px]', isToday ? 'bg-coral-soft text-coral-ink' : 'bg-surface-2 text-ink')}>
-                        <span className={cx('text-[10px] font-bold uppercase tracking-wide', isToday ? 'text-coral-ink' : 'text-muted')}>{isToday ? 'Hoy' : formatDayLong(key).split(',')[0].slice(0, 3)}</span>
-                        <span className="font-display text-[15px] font-bold leading-none tabular">{formatTime(a.starts_at)}</span>
-                      </span>
-                      <span className={cx('h-10 w-1 shrink-0 rounded-full', `dot-${tone}`)} aria-hidden="true" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold">{a.title}</p>
-                        <p className="flex items-center gap-1.5 truncate text-xs text-muted">
-                          {a.meeting_url ? <Video className="h-3.5 w-3.5 shrink-0" /> : a.location ? <MapPin className="h-3.5 w-3.5 shrink-0" /> : null}
-                          <span className="truncate">{APPOINTMENT_KINDS[a.kind]?.label}{a.client_name || a.project_name ? ` · ${a.client_name || a.project_name}` : ''}</span>
-                        </p>
-                        {a.status === 'programada' && a.kind !== 'interna' && <Badge tone="amber" className="mt-1 sm:hidden">Sin confirmar</Badge>}
-                      </div>
-                      <div className="hidden sm:block"><AvatarStack people={a.attendees} /></div>
-                      {a.status === 'programada' && a.kind !== 'interna' && <Badge tone="amber" className="hidden sm:inline-flex">Sin confirmar</Badge>}
-                      <RowArrow className="hidden sm:block" />
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-
-        <section className="card animate-rise overflow-hidden" aria-labelledby="mytasks-title">
-          <SectionHead flush id="mytasks-title" icon={ListChecks} tone={myOverdue ? 'red' : 'blue'} title="Mis tareas" hint={myOverdue ? `${myOverdue} ${myOverdue === 1 ? 'vencida' : 'vencidas'}` : 'Abiertas a tu nombre'}
-            action={<Link to="/tablero?mias=1" className="link tap -my-2 flex items-center text-sm">Ir al tablero</Link>} />
-          {myTasks.length === 0 ? (
-            <div className="p-4 sm:p-5"><EmptyState icon={ListChecks} title="Nada pendiente a tu nombre" /></div>
-          ) : (
-            <ul className="divide-y divide-line">
-              {myTasks.map((t) => {
-                const due = dueLabel(t.due_date);
-                const pr = TASK_PRIORITY[t.priority];
-                return (
-                  <li key={t.id}>
-                    <Link to={`/tablero?tarea=${t.id}`} className="group row min-h-14 px-4 py-3 sm:px-5">
-                      <span className={cx('h-8 w-1 shrink-0 rounded-full', `dot-${pr.tone}`)} title={`Prioridad ${pr.label}`} />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold">{t.title}</p>
-                        <p className="truncate text-xs text-muted">{t.project_name ?? 'Sin proyecto'}</p>
-                      </div>
-                      {due && <Badge tone={due.tone}>{due.text}</Badge>}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <ClientPortalCard counts={data.client_portal} />
-        <PortalTodayCard />
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[1fr_1.25fr]">
-        {investments && (
-          <section className="card-panel animate-rise self-start p-5 sm:p-6" aria-labelledby="inv-title">
-            <div className="relative flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-teal"><TrendingUp className="h-[18px] w-[18px]" /></span>
-                <h2 id="inv-title" className="font-display text-lg font-bold">Pulso de inversiones</h2>
-              </div>
-              <Link to="/inversiones" className="tap -my-2 flex items-center text-sm font-semibold text-teal hover:underline">Ver portafolio</Link>
-            </div>
-            <dl className="relative mt-5 grid grid-cols-2 gap-x-4 gap-y-5">
-              <div><dt className="text-xs text-panel-muted">Mi capital aportado</dt><dd className="num mt-1 text-[22px] font-bold sm:text-2xl">{formatMoney(investments.my_contributed_crc, 'CRC', { decimals: 0 })}</dd></div>
-              <div><dt className="text-xs text-panel-muted">Me ha retornado</dt><dd className="num mt-1 text-[22px] font-bold text-teal sm:text-2xl">{formatMoney(investments.my_returned_crc, 'CRC', { decimals: 0 })}</dd></div>
-              <div><dt className="text-xs text-panel-muted">Retornos este mes (equipo)</dt><dd className="num mt-1 text-lg font-bold">{formatMoney(investments.month_returned_crc, 'CRC', { decimals: 0 })}</dd></div>
-              <div><dt className="text-xs text-panel-muted">Inversiones activas</dt><dd className="num mt-1 text-lg font-bold">{investments.active_count}</dd></div>
-            </dl>
-            {investments.my_pending_count > 0 ? (
-              <Link to="/buzon" className="btn btn-lg relative mt-6 w-full bg-white text-panel shadow-raised hover:bg-white/90"><HandCoins className="h-5 w-5 text-brand" />Confirmar {investments.my_pending_count} {investments.my_pending_count === 1 ? 'movimiento' : 'movimientos'}</Link>
-            ) : (
-              <p className="relative mt-6 flex items-center gap-2 rounded-xl bg-white/[0.08] px-3 py-2.5 text-sm text-white/85"><Sparkles className="h-4 w-4 text-teal" />No tenés movimientos por confirmar.</p>
-            )}
-          </section>
-        )}
-
-        <section className={cx('card animate-rise overflow-hidden', !investments && 'xl:col-span-2')} aria-labelledby="act-title">
-          <div className={cx('flex items-center justify-between gap-3 border-line px-4 py-3.5 sm:px-5 sm:py-4', showActivity ? 'border-b' : 'lg:border-b')}>
-            <div className="flex items-center gap-3">
-              <IconTile icon={ActivityIcon} tone="slate" size="sm" />
-              <h2 id="act-title" className="section-title">Actividad del equipo</h2>
-            </div>
-            <Link to="/bitacora" className="link tap -my-2 hidden items-center text-sm lg:flex">Bitácora</Link>
-            <button type="button" className="btn btn-ghost tap -my-2 -mr-2 text-brand-ink lg:hidden" aria-expanded={showActivity} aria-controls="activity-list" onClick={() => setShowActivity((v) => !v)}>
-              {showActivity ? 'Ocultar' : 'Ver actividad'}
-              <ChevronDown className={cx('h-4 w-4 transition', showActivity && 'rotate-180')} />
-            </button>
-          </div>
-          <div id="activity-list" className={cx(!showActivity && 'hidden lg:block')}>
-            {activity.length === 0 ? <div className="p-4 sm:p-5"><EmptyState icon={ActivityIcon} tone="slate" title="Todavía no hay actividad" /></div> : (
-              <ul className="divide-y divide-line">
-                {activity.slice(0, DESKTOP_ACTIVITY).map((a) => (
-                  <li key={a.id} className="flex items-start gap-3 px-4 py-3 sm:px-5">
-                    <Avatar name={a.user_name ?? 'Sistema'} color={a.user_color ?? '#5b6b82'} size={28} />
-                    <p className="min-w-0 flex-1 text-sm leading-snug">{a.summary}<span className="mt-0.5 block text-xs text-muted">{timeAgo(a.created_at)}</span></p>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <Link to="/bitacora" className="tap flex items-center justify-center gap-1.5 border-t border-line bg-surface-2/60 px-4 py-3 text-sm font-semibold text-brand-ink">Ver bitácora completa<ArrowRight className="h-4 w-4" /></Link>
-          </div>
-        </section>
-      </div>
-
-      <p className="text-xs leading-relaxed text-muted"><Info className="mr-1.5 inline h-3.5 w-3.5 align-[-2px]" aria-hidden="true" />Los avisos y recordatorios automáticos se configuran en <Link to="/automatizaciones" className="link">Automatizaciones</Link>; lo que te llega al celular, en <Link to="/notificaciones" className="link">Avisos y app</Link>.</p>
+      <h2 className="section-title">
+        {title}
+      </h2>
     </div>
-  );
+    {to && <Link to={to}>
+      {label}
+      <ArrowUpRight size={15} />
+    </Link>}
+  </div>;
+}
+function Orbit({
+  projectCount,
+  teamCount,
+  paused
+}) {
+  return <div className={cx('pulse-orbit', paused && 'is-still')} aria-hidden="true">
+    <div className="orbit-axis orbit-axis-x" />
+    <div className="orbit-axis orbit-axis-y" />
+    <svg className="orbit-sculpture" viewBox="0 0 420 340" fill="none">
+      <defs>
+        <linearGradient id="orbit-stroke" x1="70" y1="0" x2="340" y2="340" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#dbf5a2" />
+          <stop offset=".48" stopColor="#91b968" />
+          <stop offset="1" stopColor="#426d5b" />
+        </linearGradient>
+      </defs>
+      <g transform="translate(210 170) rotate(-28)">
+        {Array.from({
+          length: 23
+        }, (_, index) => <ellipse key={index} rx={60 + index * 4.5} ry={140 - index * 3.8} transform={`rotate(${index * 4.3})`} stroke="url(#orbit-stroke)" strokeWidth=".85" opacity={.3 + index * .025} />)}
+      </g>
+      <circle cx="210" cy="170" r="164" stroke="#b7d2a4" strokeOpacity=".17" strokeDasharray="2 7" />
+      <circle className="orbit-traveler" cx="210" cy="6" r="4" fill="#d4ef9b" />
+    </svg>
+    <div className="orbit-core">
+      <Sparkles size={29} strokeWidth={1.2} />
+      <span>JC</span>
+    </div>
+    <div className="orbit-node orbit-node-project">
+      <FolderKanban size={15} />
+      <span><strong>
+          {projectCount}
+        </strong> proyectos activos</span>
+    </div>
+    <div className="orbit-node orbit-node-team">
+      <Users size={15} />
+      <span><strong>
+          {teamCount}
+        </strong> personas · un equipo</span>
+    </div>
+    <span className="orbit-coordinate">10° N — 84° W</span>
+    <span className="orbit-caption">EL SIGUIENTE PASO ES NUESTRO.</span>
+  </div>;
+}
+function ProjectCard({
+  project,
+  index
+}) {
+  const total = project.tasks_total ?? 0;
+  const completed = project.tasks_done ?? 0;
+  const progress = total ? Math.round(completed / total * 100) : 0;
+  const people = project.members?.length ? project.members : project.owner_name ? [{
+    id: project.owner_id,
+    name: project.owner_name,
+    color: project.owner_color
+  }] : [];
+  return <Link to={`/proyectos/${project.id}`} className={`pulse-project project-tone-${index % 3}`}>
+    <div className="project-art" aria-hidden="true">
+      <span className="project-monogram">
+        {project.name.slice(0, 2).toUpperCase()}
+      </span>
+      <div className="project-art-shape">
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+      </div>
+      <ArrowUpRight size={20} />
+    </div>
+    <div className="project-content">
+      <div className="project-meta">
+        <span>
+          {project.kind === 'producto' ? 'Producto propio' : project.kind === 'interno' ? 'Equipo JC' : project.client || 'Proyecto de cliente'}
+        </span>
+        <span className={cx('project-status-dot', project.sla_state === 'late' && 'is-late')} title={PROJECT_STATUS[project.status]?.label} />
+      </div>
+      <h3>
+        {project.name}
+      </h3>
+      <p className="project-stage">
+        {PROJECT_STATUS[project.status]?.label ?? project.status}
+      </p>
+      <div className="project-progress-label">
+        <span>
+          {total ? `${completed} de ${total} tareas` : 'Sin tareas registradas'}
+        </span>
+        <strong>
+          {total ? `${progress}%` : '—'}
+        </strong>
+      </div>
+      <div className="project-progress" role="progressbar" aria-label={`Tareas completadas de ${project.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
+        <span style={{
+          width: `${progress}%`
+        }} />
+      </div>
+      <div className="project-footer">
+        <AvatarStack people={people} />
+        <span>
+          {project.sla_state === 'late' ? 'Avance pendiente' : project.due_date ? dueLabel(project.due_date)?.text : 'Ver proyecto'}
+          <ChevronRight size={13} />
+        </span>
+      </div>
+    </div>
+  </Link>;
+}
+function FocusCard({
+  tasks,
+  total,
+  userId,
+  onChanged
+}) {
+  const [pinned, setPinned] = useState(() => {
+    try {
+      return Number(localStorage.getItem(`jcp:focus:${userId}`)) || null;
+    } catch {
+      return null;
+    }
+  });
+  const [run, busy] = useAction();
+  const task = tasks.find(item => item.id === pinned) ?? tasks[0];
+  const select = id => {
+    setPinned(id);
+    try {
+      localStorage.setItem(`jcp:focus:${userId}`, String(id));
+    } catch {/* Focus works without storage. */}
+  };
+  async function move(status) {
+    const result = await run(() => api(`/api/tasks/${task.id}`, {
+      method: 'PATCH',
+      body: {
+        status
+      }
+    }), {
+      success: status === 'hecho' ? 'Un paso más. Tarea completada.' : 'Tu tarea ya está en progreso.'
+    });
+    if (result) onChanged();
+  }
+  return <section className="pulse-focus" aria-labelledby="focus-title">
+    <div className="focus-top">
+      <span><Target size={17} />UN PASO A LA VEZ</span>
+      <span>{total} abiertas</span>
+    </div>
+    <h2 id="focus-title" className="section-title">Tu siguiente avance.</h2>
+    {task ? <>
+      <div className="focus-task">
+        <span className="focus-project">
+          {task.project_name || 'Tu espacio de trabajo'}
+        </span>
+        <Link to={`/tablero?tarea=${task.id}`}>
+          <h3>
+            {task.title}
+          </h3>
+          <ArrowUpRight size={19} />
+        </Link>
+        <div className="focus-badges">
+          <span>
+            {TASK_STATUS[task.status]?.label ?? task.status}
+          </span>
+          {task.due_date && <Badge tone={dueLabel(task.due_date)?.tone}>
+            {dueLabel(task.due_date)?.text}
+          </Badge>}
+        </div>
+      </div>
+      <div className="focus-actions">
+        {['backlog', 'por_hacer'].includes(task.status) && <button className="pulse-button pulse-button-light" type="button" disabled={busy} onClick={() => move('en_progreso')}><Play size={14} />Empezar</button>}
+        <button className="pulse-button pulse-button-dark" type="button" disabled={busy} onClick={() => move('hecho')}>{busy ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}Completar tarea</button>
+      </div>
+      {tasks.length > 1 && <label className="focus-select-label"><Pin size={13} />Elegí tu foco<select aria-label="Elegir tarea de foco" value={task.id} onChange={event => select(Number(event.target.value))}>
+          {tasks.map(item => <option key={item.id} value={item.id}>
+            {item.title}
+          </option>)}
+        </select></label>}
+      <Link className="focus-all" to="/tablero?mias=1">Ver mis tareas<ArrowRight size={14} /></Link>
+    </> : <div className="focus-clear">
+      <CircleCheck size={36} strokeWidth={1.4} />
+      <h3>Espacio para lo que sigue.</h3>
+      <p>No tenés tareas pendientes a tu nombre.</p>
+      <Link className="pulse-button pulse-button-dark" to="/tablero?nueva=1"><Plus size={15} />Crear una tarea</Link>
+    </div>}
+  </section>;
+}
+export default function Dashboard() {
+  const {
+    user,
+    activeTeam,
+    refresh,
+    canInvest
+  } = useSession();
+  const {
+    data,
+    error,
+    reload
+  } = useResource('/api/dashboard');
+  const projectsResource = useResource('/api/projects');
+  const {
+    reload: reloadProjects
+  } = projectsResource;
+  const [scope, setScope] = useState('team');
+  const [agendaNow, setAgendaNow] = useState(() => Date.now());
+  const agendaDay = todayKey();
+  const personalAgenda = useResource(scope === 'mine' ? `/api/appointments?from=${encodeURIComponent(startOfDayIso(agendaDay))}&to=${encodeURIComponent(startOfDayIso(addDays(agendaDay, 8)))}` : null);
+  const {
+    reload: reloadPersonalAgenda
+  } = personalAgenda;
+  const [paused, setPaused] = useState(false);
+  const [alertFilter, setAlertFilter] = useState('all');
+  const [showAllAlerts, setShowAllAlerts] = useState(false);
+  const refreshAll = () => {
+    setAgendaNow(Date.now());
+    reload();
+    reloadProjects();
+    reloadPersonalAgenda();
+    refresh();
+  };
+  useEffect(() => {
+    const update = () => {
+      if (document.visibilityState === 'visible') {
+        setAgendaNow(Date.now());
+        reload();
+        reloadProjects();
+        reloadPersonalAgenda();
+      }
+    };
+    const timer = window.setInterval(update, 60_000);
+    document.addEventListener('visibilitychange', update);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', update);
+    };
+  }, [reload, reloadProjects, reloadPersonalAgenda]);
+  if (!data) return <PageLoader error={error} onRetry={reload} />;
+  const {
+    kpis,
+    alerts: allAlerts,
+    agenda,
+    my_tasks: myTasks,
+    investments: investmentData,
+    activity,
+    client_portal: clientPortal
+  } = data;
+  const investments = canInvest ? investmentData : null;
+  const alerts = canInvest ? allAlerts : allAlerts.filter(alert => alert.kind !== 'movement');
+  const today = data.today || todayKey();
+  const sortedAlerts = [...alerts].sort((a, b) => (urgency[a.tone] ?? 4) - (urgency[b.tone] ?? 4));
+  const priority = sortedAlerts[0];
+  const filteredAlerts = sortedAlerts.filter(alert => alertFilter === 'all' || (alertFilter === 'urgent' ? alert.tone === 'red' || alert.tone === 'amber' : alert.kind === 'movement'));
+  const visibleAlerts = showAllAlerts ? filteredAlerts : filteredAlerts.slice(0, 3);
+  // The dashboard includes only the first eight team appointments. Query the
+  // full week before filtering to avoid hiding a person's later meetings.
+  const agendaItems = scope === 'mine' ? (personalAgenda.data?.appointments ?? []).filter(item => item.status !== 'cancelada' && new Date(item.ends_at).getTime() >= agendaNow && new Date(item.starts_at).getTime() <= agendaNow + 7 * 86_400_000 && item.attendees?.some(person => person.id === user.id)) : agenda;
+  const agendaLoading = scope === 'mine' && !personalAgenda.data && !personalAgenda.error;
+  const agendaError = scope === 'mine' && personalAgenda.error;
+  const projects = (projectsResource.data?.projects ?? []).filter(project => ['en_curso', 'en_revision', 'soporte'].includes(project.status)).filter(project => scope === 'team' || project.owner_id === user.id || project.members?.some(person => person.id === user.id));
+  const focusedProjects = [...projects].sort((a, b) => (a.sla_state === 'late' ? -1 : 0) - (b.sla_state === 'late' ? -1 : 0)).slice(0, 3);
+  return <div className="pulse-dashboard">
+    <header className="pulse-heading">
+      <div>
+        <p className="pulse-eyebrow">TU ESPACIO, TU EQUIPO, LO QUE SIGUE.</p>
+        <h1>{greeting()}, {user.name.split(' ')[0]}<span className="greeting-dot">.</span></h1>
+        <p className="pulse-date">{formatDayLong(today)} <span>·</span> Hagamos que hoy cuente.</p>
+      </div>
+      <div className="pulse-heading-actions">
+        <button type="button" className="pulse-refresh" aria-label="Actualizar inicio" onClick={refreshAll}>
+          <RefreshCw size={16} />
+        </button>
+        <Link to="/tablero?nueva=1" className="pulse-button pulse-button-dark"><Plus size={17} />Nueva tarea</Link>
+      </div>
+    </header>
+    {error && <p className="pulse-error" role="alert">No pudimos actualizar el inicio. Se muestra la última información disponible. <button type="button" onClick={reload}>Reintentar</button></p>}
+    <div className="pulse-hero-grid">
+      <section className="pulse-hero" aria-label="Tu equipo en movimiento">
+        <div className="hero-copy">
+          <span className="hero-label"><span />EL PUNTO DE ENCUENTRO</span>
+          <h2>Buenas ideas.<br />Grandes <em>pasos.</em></h2>
+          <p>El talento se conecta. Los proyectos avanzan.<br className="hero-break" /> Y lo que viene, lo construimos juntos.</p>
+          <Link to="/proyectos" className="pulse-button pulse-button-lime">Exploremos los proyectos<ArrowUpRight size={17} /></Link>
+          <div className="hero-people">
+            <AvatarStack people={activeTeam.slice(0, 5)} />
+            <span>Un equipo. Muchas posibilidades.</span>
+          </div>
+        </div>
+        <Orbit projectCount={kpis.active_projects} teamCount={activeTeam.length} paused={paused} />
+        <button type="button" className="hero-motion" onClick={() => setPaused(!paused)} aria-pressed={paused} aria-label={paused ? 'Activar movimiento visual' : 'Pausar movimiento visual'}>
+          {paused ? <Play size={12} /> : <Pause size={12} />}
+        </button>
+      </section>
+      <section className="pulse-radar" aria-labelledby="radar-title">
+        <div className="radar-kicker">
+          <span className="radar-icon">
+            <BellRing size={17} />
+          </span>
+          <span>LO QUE IMPORTA AHORA</span>
+          <ArrowDownLeft size={19} />
+        </div>
+        <div className="radar-count">
+          <strong>
+            {alerts.length.toString().padStart(2, '0')}
+          </strong>
+          <span>{alerts.length === 1 ? 'asunto para' : 'asuntos para'}<br />dar el siguiente paso</span>
+        </div>
+        <h2 id="radar-title">
+          {priority ? 'Tu atención mueve todo.' : 'Todo bajo control.'}
+        </h2>
+        <p>
+          {priority ? priority.title : 'No hay alertas pendientes. Buen momento para crear algo nuevo.'}
+        </p>
+        <Link to={priority?.link || '/tablero'} className="radar-action">
+          {priority ? 'Resolver la prioridad' : 'Explorar el tablero'}
+          <ArrowUpRight size={18} />
+        </Link>
+      </section>
+    </div>
+    <section className="pulse-metrics" aria-label="Indicadores del equipo">
+      {[{
+        to: '/proyectos',
+        icon: FolderKanban,
+        value: kpis.active_projects,
+        label: 'Proyectos activos',
+        hint: kpis.sla_late ? `${kpis.sla_late} necesitan un avance` : 'Avances al día',
+        warn: !!kpis.sla_late
+      }, {
+        to: '/tablero?mias=1',
+        icon: ListChecks,
+        value: kpis.my_open_tasks,
+        label: 'Mis tareas abiertas',
+        hint: 'Un paso a la vez'
+      }, {
+        to: '/agenda',
+        icon: CalendarDays,
+        value: kpis.today_appointments,
+        label: 'Citas de hoy',
+        hint: 'Agenda del equipo'
+      }, investments ? {
+        to: '/inversiones',
+        icon: Wallet,
+        value: formatMoney(investments.my_contributed_crc, 'CRC', {
+          compact: true
+        }),
+        label: 'Mi capital aportado',
+        hint: 'Movimientos confirmados'
+      } : {
+        to: '/tablero?filtro=vencidas',
+        icon: Clock3,
+        value: kpis.overdue_tasks,
+        label: 'Tareas vencidas',
+        hint: 'Pendientes del equipo',
+        warn: !!kpis.overdue_tasks
+      }].map(({
+        to,
+        icon: Icon,
+        value,
+        label,
+        hint,
+        warn
+      }) => <Link to={to} key={label} className="pulse-metric">
+        <span className="metric-label">
+          <Icon size={15} />
+          {label}
+          <ArrowUpRight size={13} />
+        </span>
+        <strong>
+          {value}
+        </strong>
+        <span className={cx('metric-hint', warn && 'has-warning')}>
+          <i />
+          {hint}
+        </span>
+      </Link>)}
+    </section>
+    <div className="pulse-view-bar">
+      <div>
+        <span className="pulse-eyebrow">MENOS FRICCIÓN. MÁS MOVIMIENTO.</span>
+        <p>Acá es donde las cosas pasan.</p>
+      </div>
+      <div className="pulse-scope" role="group" aria-label="Vista de proyectos y agenda">
+        <button type="button" aria-pressed={scope === 'team'} onClick={() => setScope('team')}><Users size={14} />Todo el equipo</button>
+        <button type="button" aria-pressed={scope === 'mine'} onClick={() => setScope('mine')}><Target size={14} />Mi espacio</button>
+      </div>
+    </div>
+    <div className="pulse-work-grid">
+      <section className="pulse-projects" aria-label="Proyectos en movimiento">
+        <SectionTitle number="01" title="En movimiento" to="/proyectos" label="Proyectos" />
+        {projectsResource.error ? <div className="pulse-inline-empty">No pudimos cargar los proyectos.<button type="button" className="btn btn-outline" onClick={projectsResource.reload}>Reintentar</button></div> : !projectsResource.data ? <div className="project-skeleton" role="status">Cargando proyectos…</div> : focusedProjects.length ? <div className="pulse-project-grid">
+          {focusedProjects.map((project, index) => <ProjectCard key={project.id} project={project} index={index} />)}
+        </div> : <EmptyState icon={FolderKanban} title={scope === 'mine' ? 'No tenés proyectos activos asignados' : 'El próximo proyecto empieza acá'} action={<Link to="/proyectos" className="btn btn-outline">Ver proyectos</Link>} />}
+      </section>
+      <FocusCard key={user.id} tasks={myTasks} total={kpis.my_open_tasks} userId={user.id} onChanged={refreshAll} />
+    </div>
+    <section className="pulse-client-strip" aria-label="Seguimiento del portal de clientes">
+      <Link to="/briefs?estado=enviado">
+        <strong>
+          {clientPortal?.briefs_to_review ?? 0}
+        </strong>
+        <span>Briefs por revisar</span>
+        <ArrowUpRight size={16} />
+      </Link>
+      <Link to="/briefs?tab=entregables&estado=cambios">
+        <strong>
+          {clientPortal?.changes_requested ?? 0}
+        </strong>
+        <span>Entregables con cambios pedidos</span>
+        <ArrowUpRight size={16} />
+      </Link>
+      <Link to="/briefs?tab=entregables&estado=en_revision">
+        <strong>
+          {clientPortal?.waiting_client ?? 0}
+        </strong>
+        <span>Entregables en revisión del cliente</span>
+        <ArrowUpRight size={16} />
+      </Link>
+    </section>
+    <div className="pulse-detail-grid">
+      <section className="pulse-panel pulse-attention" aria-label="Requiere acción">
+        <SectionTitle number="02" title="Requiere acción" />
+        <div className="pulse-filter" role="group" aria-label="Filtrar pendientes">
+          <button type="button" aria-pressed={alertFilter === 'all'} onClick={() => setAlertFilter('all')}>Todo <span>
+              {alerts.length}
+            </span></button>
+          <button type="button" aria-pressed={alertFilter === 'urgent'} onClick={() => setAlertFilter('urgent')}>Prioridad</button>
+          {investments && <button type="button" aria-pressed={alertFilter === 'money'} onClick={() => setAlertFilter('money')}>Dinero</button>}
+        </div>
+        {visibleAlerts.length ? <ul className="pulse-alert-list">
+          {visibleAlerts.map((alert, index) => <li key={`${alert.kind}-${alert.link}-${index}`}>
+            <Link to={alert.link}>
+              <span className={`alert-marker alert-marker-${alert.tone}`} />
+              <div>
+                <strong>
+                  {alert.title}
+                </strong>
+                <p>
+                  {alert.detail}
+                </p>
+              </div>
+              <ArrowUpRight size={17} />
+            </Link>
+          </li>)}
+        </ul> : <div className="pulse-inline-empty">
+          <CircleCheck size={23} />
+          <span>
+            {alerts.length ? 'No hay pendientes en este filtro.' : 'Todo en orden. A seguir creando.'}
+          </span>
+        </div>}
+        {filteredAlerts.length > 3 && <button type="button" className="pulse-more" aria-expanded={showAllAlerts} onClick={() => setShowAllAlerts(!showAllAlerts)}>
+          {showAllAlerts ? 'Mostrar menos' : `Ver los ${filteredAlerts.length} pendientes`}
+          <ArrowRight size={14} />
+        </button>}
+      </section>
+      <section className="pulse-panel pulse-agenda" aria-label="Próximas citas">
+        <SectionTitle number="03" title="Nos encontramos" to="/agenda" label="Agenda" />
+        <p className="pulse-section-note">{scope === 'mine' ? 'Tus próximas citas disponibles' : 'Próximas citas del equipo'} · hora de Costa Rica</p>
+        {agendaLoading ? <div className="pulse-inline-empty" role="status">Cargando tus próximas citas…</div> : agendaError ? <div className="pulse-inline-empty">
+          <span>No pudimos cargar tus citas.</span>
+          <button type="button" className="btn btn-outline" onClick={reloadPersonalAgenda}>Reintentar</button>
+        </div> : agendaItems.length ? <ul>
+          {agendaItems.slice(0, 4).map(item => <li key={item.id}>
+            <Link to={`/agenda?cita=${item.id}`}>
+              <span className="agenda-time">
+                <strong>
+                  {formatTime(item.starts_at)}
+                </strong>
+                <span>
+                  {dayKey(item.starts_at) === today ? 'HOY' : formatDayLong(dayKey(item.starts_at)).split(',')[0]}
+                </span>
+              </span>
+              <span className="agenda-line" />
+              <div>
+                <h3>
+                  {item.title}
+                </h3>
+                <p>
+                  {item.client_name || item.project_name || 'Encuentro del equipo'}
+                </p>
+              </div>
+              <AvatarStack people={item.attendees?.slice(0, 2)} />
+            </Link>
+          </li>)}
+        </ul> : <div className="pulse-inline-empty">
+          <CalendarDays size={24} />
+          <span>Sin citas en esta vista.<Link to="/agenda?nueva=1">Agendemos el próximo encuentro<ArrowRight size={14} /></Link></span>
+        </div>}
+      </section>
+    </div>
+    <Link to="/automatizaciones" className="pulse-automation-banner">
+      <div className="automation-banner-mark">
+        <Bot size={29} strokeWidth={1.4} />
+        <span />
+      </div>
+      <div className="automation-banner-copy">
+        <span className="pulse-eyebrow">MENOS REPETIR. MÁS CREAR.</span>
+        <h2>Lo rutinario tiene su propio equipo.</h2>
+        <p>Recordatorios, avances y tareas recurrentes. Descubrí cómo se conectan.</p>
+      </div>
+      <div className="automation-banner-flow" aria-hidden="true">
+        <span><Clock3 size={17} />Detectar</span>
+        <i />
+        <span><Zap size={17} />Actuar</span>
+        <i />
+        <span><Check size={17} />Registrar</span>
+      </div>
+      <span className="automation-banner-arrow">
+        <ArrowUpRight size={23} />
+      </span>
+    </Link>
+    <div className="pulse-bottom-grid" style={!investments ? {
+      gridTemplateColumns: '1fr'
+    } : undefined}>
+      <PortalTodayCard />
+      {investments && <section className="pulse-capital" aria-labelledby="capital-title">
+        <div className="capital-head">
+          <span><Wallet size={16} />ENTRE SOCIOS</span>
+          <ShieldCheck size={19} />
+        </div>
+        <h2 id="capital-title" className="section-title">Pulso de inversiones</h2>
+        <p className="capital-note">Tus movimientos, con claridad.</p>
+        <dl>
+          <div>
+            <dt>Mi capital aportado</dt>
+            <dd>
+              {money(investments.my_contributed_crc)}
+            </dd>
+          </div>
+          <div>
+            <dt>Me ha retornado</dt>
+            <dd>
+              {money(investments.my_returned_crc)}
+            </dd>
+          </div>
+        </dl>
+        <div className="capital-foot">
+          <span>
+            {investments.my_pending_count ? `${investments.my_pending_count} por confirmar` : 'Sin confirmaciones pendientes'}
+          </span>
+          <Link to={investments.my_pending_count ? '/buzon' : '/inversiones'}>
+            {investments.my_pending_count ? 'Revisar' : 'Ver portafolio'}
+            <ArrowUpRight size={16} />
+          </Link>
+        </div>
+      </section>}
+    </div>
+    <section className="pulse-panel pulse-activity" aria-label="Actividad del equipo">
+      <SectionTitle number="05" title="Cada paso se comparte" to="/bitacora" label="Bitácora" />
+      {activity.length ? <div className="pulse-activity-grid">
+        {activity.slice(0, 4).map(item => <div key={item.id} className="activity-event">
+          <Avatar name={item.user_name || 'Sistema'} color={item.user_color || '#516a57'} size={30} />
+          <div>
+            <p>
+              {item.summary}
+            </p>
+            <time dateTime={item.created_at}>
+              {timeAgo(item.created_at)}
+            </time>
+          </div>
+        </div>)}
+      </div> : <p className="pulse-section-note">Los próximos avances del equipo aparecerán aquí.</p>}
+    </section>
+    <InstallBanner />
+    <footer className="pulse-footer">
+      <span><Activity size={13} />Datos reales · se actualizan cada minuto al tener esta página abierta</span>
+      <Link to="/notificaciones">Tu portal, a tu ritmo<ArrowUpRight size={13} /></Link>
+    </footer>
+  </div>;
 }

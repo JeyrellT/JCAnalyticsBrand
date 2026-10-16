@@ -17,10 +17,12 @@
 
 import { randomUUID } from 'node:crypto';
 import { INVESTMENT_CATEGORIES, INVESTMENT_STATUS, MOVEMENT_TYPE_LABEL, MOVEMENT_STATUS_META } from '../../shared/catalog.js';
-import { investmentMetrics, allocateProRata, cumulativeSeries, toCRC, formatMoney, formatPercent } from '../../shared/finance.js';
+import { investmentMetrics, allocateProRata, cumulativeSeries, toCRC, formatMoney, formatPercent, returnParts, returnBreakdown, movementInCRC } from '../../shared/finance.js';
+import { isCampaign } from '../../shared/business-finance.js';
 import { fail, invalid, has, text, oneOf, dateOnly, id, minorAmount, number } from '../http.mjs';
 import { transaction } from '../schema.mjs';
 import { pendingForUser } from './core.mjs';
+import { createInvestmentAccess } from '../investment-access.mjs';
 
 /**
  * Reglas y lecturas de dinero compartidas por las rutas de socios (abajo) y el
@@ -29,6 +31,7 @@ import { pendingForUser } from './core.mjs';
  */
 export function createMoney(ctx) {
   const { db } = ctx;
+  const { requireContributionAccess } = createInvestmentAccess(db);
   const getInvestment = (investmentId) => db.prepare(`SELECT i.*, p.name project_name FROM investments i LEFT JOIN projects p ON p.id = i.project_id WHERE i.id = ?`).get(investmentId)
     ?? fail(404, 'not_found');
   const movementsOf = (investmentId) => db.prepare(`SELECT m.*, p.name partner_name, p.color partner_color, c.name created_by_name, r.name resolved_by_name
@@ -91,11 +94,22 @@ export function createMoney(ctx) {
     };
   }
 
-  function insertMovement({ investment, partner, type, amount, fxRate, date, message, reference, batchId, user }) {
+  function insertMovement({ investment, partner, type, amount, fxRate, date, message, reference, batchId, user, returnKind = 'unclassified', financeDistribution = false }) {
+    // También cubre el registro del equipo a nombre de un inversionista: no hay alta implícita.
+    if (type === 'aporte') requireContributionAccess(investment, partner);
+    if (type === 'retorno' && isCampaign(investment) && !financeDistribution) fail(409, 'finance_distribution_required');
+    if (type === 'retorno' && returnKind === 'capital') {
+      const own = movementsOf(investment.id).filter((m) => m.partner_id === partner.id);
+      const contributed = own.filter((m) => m.type === 'aporte' && m.status === 'confirmado').reduce((sum, m) => sum + m.amount, 0);
+      const reserved = own.filter((m) => m.type === 'retorno' && m.status !== 'anulado').reduce((sum, m) => sum + returnParts(m).capital, 0);
+      if (own.some((m) => m.type === 'retorno' && m.status !== 'anulado' && returnParts(m).unclassified > 0)) fail(409, 'unclassified_returns');
+      if (amount > contributed - reserved) fail(409, 'payout_exceeds_available');
+    }
     const at = ctx.nowIso();
     const { lastInsertRowid } = db.prepare(`INSERT INTO movements (investment_id, partner_id, type, amount, currency, fx_rate, date, message, reference,
-      status, batch_id, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?)`).run(
+      status, batch_id, created_by, created_at, return_kind, return_capital_amount, return_profit_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?, ?, ?, ?)`).run(
       investment.id, partner.id, type, amount, investment.currency, fxRate, date, message, reference, batchId, user.id, at,
+      type === 'retorno' ? returnKind : 'unclassified', type === 'retorno' && returnKind === 'capital' ? amount : null, type === 'retorno' && returnKind === 'profit' ? amount : null,
     );
     const movementId = Number(lastInsertRowid);
     db.prepare("INSERT INTO movement_messages (movement_id, user_id, kind, body, created_at) VALUES (?, ?, 'registro', ?, ?)").run(movementId, user.id, message, at);
@@ -155,6 +169,7 @@ export function createMoney(ctx) {
 
 export function investmentRoutes(route, ctx) {
   const { db } = ctx;
+  const { allowedInvestorIds, requireContributionAccess } = createInvestmentAccess(db);
   const {
     getInvestment, movementsOf, allMovements, crcOf, anyInvestorConfirms, canResolve, canAnnul,
     partnerOrFail, fxFor, movementDate, summarize, insertMovement, announce, getMovement, addMessage, settleRequests, resolve,
@@ -193,6 +208,7 @@ export function investmentRoutes(route, ctx) {
     const confirmed = movements.filter((m) => m.status === 'confirmado');
     const contributed = confirmed.filter((m) => m.type === 'aporte').reduce((a, m) => a + (crcOf(m) ?? 0), 0);
     const returned = confirmed.filter((m) => m.type === 'retorno').reduce((a, m) => a + (crcOf(m) ?? 0), 0);
+    const breakdown = returnBreakdown(movements.map(movementInCRC));
     const partners = db.prepare("SELECT id, name, color, role, active FROM users WHERE role IN ('admin','socio','inversionista') ORDER BY name").all().map((p) => {
       const mine = confirmed.filter((m) => m.partner_id === p.id);
       const c = mine.filter((m) => m.type === 'aporte').reduce((a, m) => a + (crcOf(m) ?? 0), 0);
@@ -206,6 +222,10 @@ export function investmentRoutes(route, ctx) {
       portfolio: {
         contributed_crc: contributed,
         returned_crc: returned,
+        capital_returned_crc: breakdown.capital_returned,
+        profit_returned_crc: breakdown.profit_returned,
+        unclassified_returned_crc: breakdown.unclassified_returned,
+        outstanding_capital_crc: breakdown.outstanding_capital,
         net_crc: returned - contributed,
         moic: contributed ? returned / contributed : null,
         active_count: investments.filter((i) => i.status === 'activa').length,
@@ -242,6 +262,7 @@ export function investmentRoutes(route, ctx) {
     );
     return {
       investment,
+      allowed_investor_ids: allowedInvestorIds(investment.id),
       metrics: summarize(investment, movements),
       series: cumulativeSeries(movements),
       movements: movements.map((m) => ({
@@ -255,6 +276,44 @@ export function investmentRoutes(route, ctx) {
       notes: db.prepare(`SELECT n.*, u.name user_name, u.color user_color FROM investment_notes n JOIN users u ON u.id = n.user_id
         WHERE n.investment_id = ? ORDER BY n.created_at DESC, n.id DESC`).all(investment.id),
     };
+  });
+
+  const accessOf = (investmentId) => ({
+    investors: db.prepare("SELECT id, name, color, active FROM users WHERE role = 'inversionista' ORDER BY name COLLATE NOCASE, id")
+      .all().map((investor) => ({ ...investor, active: !!investor.active })),
+    allowed_investor_ids: allowedInvestorIds(investmentId),
+  });
+
+  route('GET', '/api/investments/:id/access', 'admin', ({ params }) => accessOf(getInvestment(params.id).id));
+
+  route('PUT', '/api/investments/:id/access', 'admin', ({ user, body, params }) => {
+    const investment = getInvestment(params.id);
+    const field = 'allowed_investor_ids';
+    if (!Array.isArray(body[field]) || body[field].length > 1000) invalid(field, 'Elegí una lista válida de inversionistas (máximo 1000).');
+    const requested = body[field];
+    if (requested.some((value) => !Number.isSafeInteger(value) || value <= 0)) invalid(field, 'Cada identificador debe ser un entero positivo.');
+    const allowed = [...new Set(requested)].sort((a, b) => a - b);
+    transaction(db, () => {
+      const investor = db.prepare("SELECT 1 FROM users WHERE id = ? AND role = 'inversionista'");
+      for (const investorId of allowed) {
+        if (!investor.get(investorId)) invalid(field, 'Solo se pueden habilitar personas con rol inversionista.');
+      }
+      const current = db.prepare('SELECT investor_id FROM investment_access WHERE investment_id = ?').all(investment.id).map((row) => row.investor_id);
+      const nextIds = new Set(allowed);
+      const currentIds = new Set(current);
+      const removed = current.filter((investorId) => !nextIds.has(investorId));
+      const added = allowed.filter((investorId) => !currentIds.has(investorId));
+      const remove = db.prepare('DELETE FROM investment_access WHERE investment_id = ? AND investor_id = ?');
+      const add = db.prepare('INSERT INTO investment_access (investment_id, investor_id, granted_by, granted_at) VALUES (?, ?, ?, ?)');
+      for (const investorId of removed) remove.run(investment.id, investorId);
+      for (const investorId of added) add.run(investment.id, investorId, user.id, ctx.nowIso());
+      // Bloques cortos conservan todos los IDs sin superar el límite de 300 caracteres de la bitácora.
+      for (const [label, ids] of [['habilitados', added], ['retirados', removed]]) {
+        for (let index = 0; index < ids.length; index += 8) ctx.log(user.id, 'investment', investment.id, 'access_updated',
+          `Permisos ${label} para inversionistas [${ids.slice(index, index + 8).join(', ')}] en la inversión #${investment.id}.`, { sensitive: true });
+      }
+    });
+    return accessOf(investment.id);
   });
 
   route('PATCH', '/api/investments/:id', 'invest', ({ user, body, params }) => {
@@ -281,16 +340,18 @@ export function investmentRoutes(route, ctx) {
   // ── Movimientos ───────────────────────────────────────────────────────────
   route('POST', '/api/investments/:id/movements', 'invest', ({ user, body, params }) => {
     const investment = getInvestment(params.id);
-    if (investment.status === 'cerrada') fail(409, 'investment_closed');
     const type = oneOf(body.type, 'type', MOVEMENT_TYPE_LABEL, { required: true });
+    const returnKind = type === 'retorno' ? oneOf(body.return_kind, 'return_kind', ['capital', 'profit', 'unclassified'], { fallback: 'unclassified' }) : 'unclassified';
     const partner = partnerOrFail(id(body.partner_id, 'partner_id', { required: true }));
+    if (type === 'aporte') requireContributionAccess(investment, partner);
+    if (investment.status === 'cerrada') fail(409, 'investment_closed');
     const amount = minorAmount(body.amount, 'amount', { required: true });
     const date = movementDate(body.date);
     const message = text(body.message, 'message', { max: 1000, min: 3, required: true });
     const reference = text(body.reference, 'reference', { max: 80 });
     const fxRate = fxFor(investment, body);
     const m = transaction(db, () => {
-      const row = insertMovement({ investment, partner, type, amount, fxRate, date, message, reference, batchId: null, user });
+      const row = insertMovement({ investment, partner, type, returnKind, amount, fxRate, date, message, reference, batchId: null, user });
       db.prepare('UPDATE investments SET updated_at = ? WHERE id = ?').run(ctx.nowIso(), investment.id);
       return row;
     });
@@ -343,11 +404,36 @@ export function investmentRoutes(route, ctx) {
   route('POST', '/api/movements/:id/confirm', 'invest', (args) => resolve(args, 'confirmado'));
   route('POST', '/api/movements/:id/object', 'invest', (args) => resolve(args, 'objetado'));
 
+  route('POST', '/api/movements/:id/classify', 'admin', ({ user, body, params }) => {
+    const movement = getMovement(params.id);
+    if (movement.type !== 'retorno' || movement.status === 'anulado') fail(409, 'return_required');
+    if (movement.return_kind !== 'unclassified' || db.prepare('SELECT 1 FROM finance_distribution_items WHERE movement_id=?').get(movement.id)) fail(409, 'classification_locked');
+    const capital = minorAmount(body.capital_amount, 'capital_amount', { required: true, allowZero: true });
+    const profit = minorAmount(body.profit_amount, 'profit_amount', { required: true, allowZero: true });
+    const reason = text(body.reason, 'reason', { required: true, min: 3, max: 1000 });
+    if (capital + profit !== movement.amount) invalid('capital_amount', 'Capital y ganancia deben sumar exactamente el retorno original.');
+    const own = movementsOf(movement.investment_id).filter((row) => row.partner_id === movement.partner_id);
+    const contributed = own.filter((row) => row.type === 'aporte' && row.status === 'confirmado').reduce((total, row) => total + row.amount, 0);
+    const alreadyCapital = own.filter((row) => row.id !== movement.id && row.status !== 'anulado').reduce((total, row) => total + returnParts(row).capital, 0);
+    if (capital + alreadyCapital > contributed) invalid('capital_amount', 'La devolución de capital excede el capital confirmado restante.');
+    const kind = capital && profit ? 'mixed' : capital ? 'capital' : 'profit';
+    transaction(db, () => {
+      db.prepare('UPDATE movements SET return_kind=?,return_capital_amount=?,return_profit_amount=? WHERE id=?').run(kind, capital, profit, movement.id);
+      addMessage(movement.id, user.id, 'mensaje', `Clasificación del retorno: capital ${formatMoney(capital, movement.currency)}; ganancia ${formatMoney(profit, movement.currency)}. ${reason}`);
+      ctx.log(user.id, 'movement', movement.id, 'return_classified', `Retorno #${movement.id}: ${movement.return_kind} → ${kind}; capital ${capital}; ganancia ${profit}. ${reason}`, { sensitive: true });
+    });
+    return { movement: getMovement(movement.id) };
+  });
+
   route('POST', '/api/movements/:id/annul', 'invest', ({ user, body, params }) => {
     const m = getMovement(params.id);
     if (!canAnnul(m, user)) fail(403, 'cannot_annul');
     const reason = text(body.message, 'message', { max: 1000, min: 3, required: true });
     const investment = getInvestment(m.investment_id);
+    const closed = db.prepare(`SELECT 1 FROM finance_policies p WHERE p.investment_id=? AND p.closed_at IS NOT NULL
+      AND p.year=COALESCE((SELECT r.year FROM finance_distribution_items d JOIN finance_distributions r ON r.id=d.distribution_id WHERE d.movement_id=?),?)`)
+      .get(m.investment_id, m.id, Number(m.date.slice(0, 4)));
+    if (closed) fail(409, 'closed_period');
     transaction(db, () => {
       db.prepare("UPDATE movements SET status = 'anulado', resolved_by = ?, resolved_at = ? WHERE id = ?").run(user.id, ctx.nowIso(), m.id);
       addMessage(m.id, user.id, 'anulacion', reason);
@@ -382,10 +468,11 @@ export function investmentRoutes(route, ctx) {
       if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; // evita inyección de fórmulas en Excel
       return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
-    const header = ['Fecha', 'Inversión', 'Tipo', 'Socio', 'Monto', 'Moneda', 'Tipo de cambio', 'Equivalente CRC', 'Estado', 'Referencia', 'Mensaje', 'Registrado por', 'Resuelto por', 'Fecha resolución'];
+    const header = ['Fecha', 'Inversión', 'Tipo', 'Socio', 'Monto', 'Moneda', 'Tipo de cambio', 'Equivalente CRC', 'Estado', 'Referencia', 'Mensaje', 'Registrado por', 'Resuelto por', 'Fecha resolución', 'Clasificación retorno', 'Capital devuelto', 'Ganancia devuelta'];
     const lines = rows.map((m) => [
       m.date, m.investment_name, MOVEMENT_TYPE_LABEL[m.type], m.partner_name, dec(m.amount), m.currency, m.fx_rate ? String(m.fx_rate).replace('.', ',') : '',
       dec(crcOf(m)), MOVEMENT_STATUS_META[m.status]?.label ?? m.status, m.reference, m.message, m.created_by_name, m.resolved_by_name, m.resolved_at?.slice(0, 10),
+      m.type === 'retorno' ? m.return_kind : '', m.type === 'retorno' ? dec(returnParts(m).capital) : '', m.type === 'retorno' ? dec(returnParts(m).profit) : '',
     ].map(cell).join(';'));
     ctx.log(user.id, 'investment', investmentId, 'exported', `${user.name} exportó ${rows.length} movimientos a Excel`, { sensitive: true });
     res.writeHead(200, {

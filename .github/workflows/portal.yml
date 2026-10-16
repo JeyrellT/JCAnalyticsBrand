@@ -53,6 +53,13 @@ jobs:
           PLAYWRIGHT_CHROMIUM: /usr/bin/google-chrome
         run: npm run e2e
 
+      - name: Investor privacy and financial distributions in a real browser
+        env:
+          PLAYWRIGHT_CHROMIUM: /usr/bin/google-chrome
+        run: |
+          npm run e2e:investor
+          npm run e2e:finance
+
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4

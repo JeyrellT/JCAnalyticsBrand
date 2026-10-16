@@ -60,13 +60,15 @@ export function SectionJump({ routeKey, offset = 72 }) {
 
   if (items.length < 4) return null;
 
+  const scrollBehavior = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches || document.querySelector('.investor-club[data-motion="paused"]') ? 'instant' : 'smooth';
+
   const go = (index) => {
     setOpen(false);
     const el = [...document.querySelectorAll('main .section-title')].filter((t) => t.offsetParent !== null && t.textContent.trim())[index];
     const block = el?.closest('.card, section') ?? el;
     if (!block) return;
     const top = block.getBoundingClientRect().top + window.scrollY - offset;
-    window.scrollTo({ top, behavior: 'smooth' });
+    window.scrollTo({ top, behavior: scrollBehavior() });
   };
 
   return (
@@ -81,7 +83,7 @@ export function SectionJump({ routeKey, offset = 72 }) {
           <SheetHeader title="Ir a…" hint="Saltá directo a cualquier parte de esta página." onClose={() => setOpen(false)} />
           <ul className="space-y-1 px-3 pb-4">
             <li>
-              <button type="button" data-autofocus onClick={() => { setOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              <button type="button" data-autofocus onClick={() => { setOpen(false); window.scrollTo({ top: 0, behavior: scrollBehavior() }); }}
                 className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold text-brand-ink hover:bg-surface-2">
                 <ArrowUp className="h-4 w-4" aria-hidden="true" />Arriba de todo
               </button>

@@ -281,7 +281,10 @@ async function boot() {
     startAutomations(backend, viewer);
     // v5: el selector también ofrece las cuentas de cliente ({ id, name, email, title, client_name }).
     enableDemo({ personas: backend.personas(), clientPersonas: backend.clientPersonas(), password: DEMO_PASSWORD });
-    setRouterMode('memory', { initialPath: '/' });
+    // A demo link can open the matching audience selector without signing anyone in.
+    const access = new URLSearchParams(window.location.search).get('acceso');
+    const initialPath = access === 'inversionista' ? '/inversionista' : access === 'cliente' ? '/cliente' : '/';
+    setRouterMode('memory', { initialPath });
     root.render(
       <StrictMode>
         <DemoBar store={viewer} scenarios={scenarios} />

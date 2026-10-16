@@ -9,6 +9,8 @@ import { StatusBadge, SlaBadge, PersonSelect, PeoplePicker } from '../components
 import { priceParts, groupIcon, SERVICE_UNITS } from '../components/services.jsx';
 import { formatMoney } from '../lib/format.js';
 import { PROJECT_STATUS, SERVICE_GROUPS } from '../../shared/catalog.js';
+import { SERVICE_PRICING } from '../../shared/service-pricing.js';
+import ServiceTariff from '../components/ServiceTariff.jsx';
 
 const PEOPLE_ROLES = {
   lider: { label: 'Líder', tone: 'ink', order: 0 },
@@ -85,6 +87,7 @@ function ServiceForm({ service, fx, onClose, onSaved }) {
           )}
         </Field>
         <Field label="Cómo se cobra">{(id) => <Select id={id} options={SERVICE_UNITS} value={form.unit} onChange={set('unit')} />}</Field>
+        {SERVICE_PRICING[service.key] && <p className="rounded-xl bg-surface-2 p-3 text-xs leading-relaxed text-muted sm:col-span-2">Este campo cambia el precio operativo del portal. El tarifario de referencia conserva la base, la opción con IA y el soporte del documento para comparar.</p>}
         <Field label="Descripción" hint="Qué incluye, en palabras simples." className="sm:col-span-2">
           {(id) => <textarea id={id} className="input" rows={3} value={form.description} onChange={(e) => set('description')(e.target.value)} />}
         </Field>
@@ -204,6 +207,7 @@ export default function ServiceDetail({ params }) {
         </div>
       </header>
 
+      <ServiceTariff service={s} />
       {/* Sin animación de entrada: al alternar display (celular ↔ escritorio) se reiniciaría. */}
       <div className="hidden gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-4" aria-label="Indicadores">
         {stats.map((st) => <Stat key={st.label} label={st.label} value={st.value} icon={st.icon} tone={st.tone} />)}

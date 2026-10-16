@@ -11,7 +11,7 @@ import { api } from '../lib/api.js';
 import { Link } from '../lib/router.jsx';
 import { useSession } from '../lib/session.jsx';
 import { Avatar, Badge, IconTile, ProgressBar, useAction, useConfirm, cx } from '../components/ui.jsx';
-import { INVESTMENT_STATUS, MOVEMENT_STATUS_META, MOVEMENT_TYPE_LABEL } from '../../shared/catalog.js';
+import { INVESTMENT_STATUS, MOVEMENT_STATUS_META, MOVEMENT_TYPE_LABEL, RETURN_KIND_LABEL } from '../../shared/catalog.js';
 import { formatMoney, formatPercent, formatDate, formatDateTime, timeAgo, whatsappLink, toMinor, todayKey, addDays, TZ } from '../lib/format.js';
 
 // ── Utilidades ──────────────────────────────────────────────────────────────
@@ -56,10 +56,14 @@ export function chartSeries(series) {
 /** Cómo leer el neto (retornos − aportes) desde la mirada del inversionista. */
 export function netReading(net, contributed) {
   if (!contributed) return { hint: 'Sin capital confirmado todavía', short: 'Sin capital aún', good: false };
-  if (net > 0) return { hint: 'Ganancia sobre lo aportado', short: 'Ganancia', good: true };
-  if (net === 0) return { hint: 'Recuperaste todo tu capital', short: 'Capital recuperado', good: true };
-  return { hint: 'Capital aún por recuperar', short: 'Por recuperar', good: false };
+  if (net > 0) return { hint: 'Recibiste más dinero del que aportaste', short: 'Balance de cobros positivo', good: true };
+  if (net === 0) return { hint: 'Recibiste el mismo importe que aportaste', short: 'Cobros iguales a aportes', good: true };
+  return { hint: 'Recibiste menos dinero del que aportaste', short: 'Cobros menores a aportes', good: false };
 }
+
+export const movementLabel = (movement) => movement.type === 'retorno'
+  ? (RETURN_KIND_LABEL[movement.return_kind] ?? RETURN_KIND_LABEL.unclassified)
+  : (MOVEMENT_TYPE_LABEL[movement.type] ?? movement.type);
 
 /** Porcentaje esperado guardado como número (35 → "35 %", 12.5 → "12,5 %"). */
 export const expectedPct = (pct) => (pct == null ? null : formatPercent(pct / 100, Number.isInteger(pct) ? 0 : 1));
@@ -216,7 +220,7 @@ export function MovementItem({ m, showInvestment = false, highlight = false, def
   const isAporte = m.type === 'aporte';
   const Icon = movementIcon(m.type);
   const amount = formatMoney(m.amount, m.currency);
-  const typeLabel = MOVEMENT_TYPE_LABEL[m.type] ?? m.type;
+  const typeLabel = movementLabel(m);
   const voided = m.status === 'anulado' || m.status === 'objetado';
   const waitingJc = m.status === 'pendiente' && !m.can_resolve;
   const note = STATUS_NOTE[m.status];
@@ -314,6 +318,7 @@ export function MovementItem({ m, showInvestment = false, highlight = false, def
             )}
           </dl>
 
+          {m.return_kind === 'mixed' && <p className="rounded-xl bg-surface-2 p-3 text-sm">Devolución de capital: <strong>{formatMoney(m.return_capital_amount, m.currency)}</strong> · Ganancia: <strong>{formatMoney(m.return_profit_amount, m.currency)}</strong></p>}
           <Thread messages={m.messages} />
 
           {note && <p className={cx('flex items-start gap-2 rounded-xl px-3 py-2 text-xs font-medium', note.className)}><note.icon className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />{note.text}</p>}
@@ -397,7 +402,7 @@ export function MovementRow({ m }) {
     <Link to={`/inversionista/inversiones/${m.investment_id}?mov=${m.id}`} className="group row min-h-16 px-4 py-3 sm:px-5">
       <IconTile icon={Icon} tone={voided ? 'slate' : movementTone(m.type)} size="sm" />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-semibold text-ink">{MOVEMENT_TYPE_LABEL[m.type]} · {m.investment_name}</span>
+        <span className="block truncate text-sm font-semibold text-ink">{movementLabel(m)} · {m.investment_name}</span>
         <span className="block truncate text-xs text-muted">{formatDate(m.date)}{m.reference ? ` · ${m.reference}` : ''}</span>
       </span>
       <span className="flex shrink-0 flex-col items-end gap-1">

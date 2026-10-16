@@ -13,6 +13,7 @@ import { portalAdminRoutes } from './portal-admin.mjs';
 import { clientPortalRoutes } from './client-portal.mjs';
 import { investorRoutes } from './investor.mjs';
 import { inviteRoutes } from './invites.mjs';
+import { financeRoutes } from './finance.mjs';
 import { installPushDispatch } from '../notify-policy.mjs';
 import { createAutomationEngine } from '../automations.mjs';
 
@@ -26,6 +27,7 @@ export function registerRoutes(route, ctx, session) {
   dashboardRoutes(route, ctx);
   workRoutes(route, ctx);
   investmentRoutes(route, ctx);
+  financeRoutes(route, ctx);
   clientRoutes(route, ctx);
   serviceRoutes(route, ctx);
   peopleRoutes(route, ctx);

@@ -5,12 +5,12 @@ import { useState } from 'react';
 import { ArrowDownLeft, ArrowUpRight, Check, X, Ban, MessageSquare, Send, Hash, CornerDownRight, ChevronDown } from 'lucide-react';
 import { api } from '../lib/api.js';
 import { Link } from '../lib/router.jsx';
-import { Avatar, Badge, IconTile, useAction, cx } from './ui.jsx';
+import { Avatar, Badge, IconTile, Modal, Field, useAction, cx } from './ui.jsx';
 import { StatusBadge } from './common.jsx';
 import { RoleBadge } from './people.jsx';
 import { useSession } from '../lib/session.jsx';
-import { MOVEMENT_STATUS_META, isInvestorRole } from '../../shared/catalog.js';
-import { formatMoney, formatDate, timeAgo } from '../lib/format.js';
+import { MOVEMENT_STATUS_META, RETURN_KIND_LABEL, isInvestorRole } from '../../shared/catalog.js';
+import { formatMoney, formatDate, timeAgo, toMinor } from '../lib/format.js';
 
 // Cada tipo de mensaje del hilo tiene su burbuja: registro neutro, confirmación turquesa,
 // objeción coral, anulación hundida y mensaje libre en azul suave.
@@ -35,11 +35,12 @@ function awaitingText(m, partnerIsInvestor) {
 }
 
 export function MovementCard({ m, showInvestment = false, highlight = false, defaultOpen = false, onChanged }) {
-  const { team } = useSession();
+  const { team, isAdmin } = useSession();
   const partnerIsInvestor = team.some((u) => u.id === m.partner_id && isInvestorRole(u));
   const [open, setOpen] = useState(defaultOpen || highlight || m.can_resolve);
   const [reply, setReply] = useState('');
   const [mode, setMode] = useState(null); // 'object' | 'annul'
+  const [classifying, setClassifying] = useState(false);
   const [run, busy] = useAction();
   const isIn = m.type === 'aporte';
   const annulled = m.status === 'anulado';
@@ -56,7 +57,7 @@ export function MovementCard({ m, showInvestment = false, highlight = false, def
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <span className={cx('num text-lg font-bold leading-tight text-ink', annulled && 'line-through')}>{formatMoney(m.amount, m.currency)}</span>
-            <span className="text-sm text-muted">{isIn ? 'aporte de' : 'retorno a'} <span className="font-semibold text-ink">{m.partner_name}</span></span>
+            <span className="text-sm text-muted">{isIn ? 'Aporte de' : `${RETURN_KIND_LABEL[m.return_kind] ?? RETURN_KIND_LABEL.unclassified} a`} <span className="font-semibold text-ink">{m.partner_name}</span></span>
             {partnerIsInvestor && <RoleBadge role="inversionista" />}
           </span>
           <span className="mt-0.5 block text-xs text-muted sm:truncate">
@@ -78,6 +79,8 @@ export function MovementCard({ m, showInvestment = false, highlight = false, def
 
       {open && (
         <div className="animate-fade space-y-3 border-t border-line px-4 pb-4 pt-3">
+          {isAdmin && !isIn && !annulled && (!m.return_kind || m.return_kind === 'unclassified') && <div className="rounded-xl border border-amber/30 bg-amber-soft p-3 text-sm"><p className="text-amber-ink">Este retorno necesita separar la devolución de capital de la ganancia.</p><button type="button" className="btn btn-outline mt-2" onClick={() => setClassifying(true)}>Clasificar retorno</button></div>}
+          {m.return_kind === 'mixed' && <p className="rounded-xl bg-surface-2 p-3 text-sm">Capital: {formatMoney(m.return_capital_amount, m.currency)} · ganancia: {formatMoney(m.return_profit_amount, m.currency)}</p>}
           <ol className="space-y-2.5">
             {(m.messages ?? []).map((msg) => (
               <li key={msg.id} className="flex gap-2.5">
@@ -139,8 +142,37 @@ export function MovementCard({ m, showInvestment = false, highlight = false, def
           {showInvestment && <Link to={`/inversiones/${m.investment_id}?mov=${m.id}`} className="link inline-flex min-h-8 items-center gap-1 text-xs"><Hash className="h-3 w-3" />Ver en la inversión</Link>}
         </div>
       )}
+      {classifying && <ClassifyReturn movement={m} onClose={() => setClassifying(false)} onSaved={onChanged} />}
     </article>
   );
+}
+
+function ClassifyReturn({ movement, onClose, onSaved }) {
+  const [capital, setCapital] = useState('');
+  const [reason, setReason] = useState('');
+  const [failure, setFailure] = useState('');
+  const [run, busy] = useAction();
+  const amount = toMinor(capital);
+  const valid = amount != null && amount >= 0 && amount <= movement.amount && reason.trim().length >= 3;
+  const profit = amount == null || amount < 0 || amount > movement.amount ? null : movement.amount - amount;
+  async function save(event) {
+    event.preventDefault();
+    if (!valid || busy) return;
+    const result = await run(() => api(`/api/movements/${movement.id}/classify`, { method: 'POST', body: { capital_amount: amount, profit_amount: profit, reason: reason.trim() } }), {
+      success: 'Capital y ganancia clasificados. El importe y la confirmación se conservan.',
+      onError: (error, message) => setFailure(error.data?.message ?? message),
+    });
+    if (result) { onSaved?.(); onClose(); }
+  }
+  return <Modal open title="Clasificar retorno histórico" onClose={onClose} footer={<><button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button><button type="submit" form={`classify-${movement.id}`} className="btn btn-primary" disabled={!valid || busy}>{busy ? 'Guardando…' : 'Guardar clasificación'}</button></>}>
+    <form id={`classify-${movement.id}`} onSubmit={save} className="space-y-4">
+      <p className="text-sm text-muted">Retorno de {formatMoney(movement.amount, movement.currency)} a {movement.partner_name}. Esta clasificación conserva el importe, la fecha y su estado de confirmación.</p>
+      <Field label="Parte que devolvió capital" hint="Escribí 0 si todo el retorno fue ganancia.">{(id) => <input id={id} className="input" inputMode="decimal" value={capital} onChange={(event) => setCapital(event.target.value)} required />}</Field>
+      <p className="rounded-xl bg-brand-soft p-3 text-sm text-brand-ink">Parte de ganancia: <strong>{profit == null ? 'Por completar' : formatMoney(profit, movement.currency)}</strong></p>
+      <Field label="Motivo o comprobante de la clasificación">{(id) => <textarea id={id} className="input" rows={3} value={reason} onChange={(event) => setReason(event.target.value)} required />}</Field>
+      {failure && <p className="text-sm text-coral-ink" role="alert">{failure}</p>}
+    </form>
+  </Modal>;
 }
 
 function ThreadReply({ movementId, onSent, extra }) {

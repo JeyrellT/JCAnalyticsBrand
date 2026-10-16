@@ -1,22 +1,16 @@
 // ============================================================================
 //  src/data/cotizador.js
-//  COTIZADOR · modelo simple por banda de precio · JC Analytics
-//  Precios REALES del dueño (ago-26): entrada accesible por servicio —
-//  Excel $30 · documentos $40 · tesis/proyectos $50 · Alteryx/KNIME $65 ·
-//  Power Platform $85 · Power BI $125 · web con reservas $900 ·
-//  software a la medida $2.000. Tope global $6.000 (USD).
-//  Servicios con unidad propia (sep-26): edición de video $45 por pieza y
-//  community manager $150 por mes (plan recurrente, `unit: 'mes'`). Sus
-//  bandas son de referencia: ajustar aquí si el dueño fija otra tarifa.
-//  Cada servicio tiene su sub-banda [priceMin, priceMax]; tamaño y complejidad
-//  interpolan dentro de ella. El extremo bajo NUNCA baja del "desde" publicado.
-//  El cliente ve SOLO el rango (USD/su moneda) + ventana de entrega.
+//  COTIZADOR · JC Analytics
+//  Los paquetes documentados usan un precio fijo base o con IA y su alcance.
+//  Las líneas sin equivalencia en el tarifario conservan sus bandas anteriores.
+//  Soporte, impuestos, consumos y ampliaciones se muestran por separado.
 // ============================================================================
 
-import { t } from '../i18n/locale';
+import { t } from '../i18n/locale.js';
+import { SERVICE_PRICING } from '../../../portal/shared/service-pricing.js';
 
 export const CONFIG = {
-  PRICE_MIN: 30,         // piso absoluto (Excel puntual)
+  PRICE_MIN: 30,         // piso del modelo de estimación anterior
   PRICE_MAX: 6000,       // techo absoluto
   RANGE_LOW: 0.92,       // extremo bajo del rango = medio * 0.92
   RANGE_HIGH: 1.10,      // extremo alto = medio * 1.10
@@ -52,17 +46,10 @@ export const URGENCY_UI = [
 ];
 
 // ============================================================================
-//  SERVICES · 8 líneas. Cada una con su sub-banda de precio [priceMin, priceMax]
-//  dentro de [500, 6000], y su rango de semanas. bullets = "qué incluye".
+//  Líneas sin una ficha equivalente en el tarifario aprobado.
 // ============================================================================
 
-export const SERVICES = {
-  excel_vba: {
-    label: 'Excel / VBA', icon: 'Layers', accent: 'amber',
-    micro: t('Macros y reportes que se llenan solos. Desde $30.', 'Macros and reports that update themselves. From $30.'),
-    priceMin: 30, priceMax: 400, weeksMin: 0.5, weeksMax: 3,
-    bullets: t(['Automatización de macros y reportes', 'Compatibilidad entre versiones de Office', 'Plantilla reutilizable + instrucciones'], ['Macro and report automation', 'Compatibility across Office versions', 'Reusable template + instructions']),
-  },
+const LEGACY_SERVICES = {
   doc_generation: {
     label: t('Generación de documentos', 'Document generation'), icon: 'Settings', accent: 'orange',
     micro: t('Facturas, actas y PPTX en lote desde tus datos. Desde $40.', 'Generate invoices, meeting minutes and PowerPoint files in batches from your data. From $40.'),
@@ -80,18 +67,6 @@ export const SERVICES = {
     micro: t('Flujos de datos y conciliaciones sin código. Desde $65.', 'No-code data workflows and reconciliations. From $65.'),
     priceMin: 65, priceMax: 900, weeksMin: 1, weeksMax: 5,
     bullets: t(['Cruces y joins entre datasets', 'Reglas de tolerancia y conciliación', 'Workflow documentado y reejecutable'], ['Match and join datasets', 'Tolerance and reconciliation rules', 'Documented, repeatable workflow']),
-  },
-  power_automate: {
-    label: 'Power Platform', icon: 'Zap', accent: 'emerald',
-    micro: t('Power Automate, Apps y SharePoint: flujos que trabajan solos 24/7. Desde $85.', 'Power Automate, Apps and SharePoint: workflows that run around the clock. From $85.'),
-    priceMin: 85, priceMax: 1200, weeksMin: 1, weeksMax: 6,
-    bullets: t(['Flujos automáticos entre sistemas', 'Aprobaciones y lógica condicional', 'Manejo de errores + documentación'], ['Automated workflows across systems', 'Approvals and conditional logic', 'Error handling + documentation']),
-  },
-  power_bi: {
-    label: t('Dashboard Power BI', 'Power BI dashboard'), icon: 'BarChart3', accent: 'blue',
-    micro: t('Reportes vivos conectados a tus datos. Desde $125.', 'Live reports connected to your data. From $125.'),
-    priceMin: 125, priceMax: 1500, weeksMin: 1, weeksMax: 6,
-    bullets: t(['Conexión a tus fuentes de datos', 'Modelo de datos + medidas DAX', 'Publicación y acceso por rol (RLS)'], ['Connect your data sources', 'Data model + DAX measures', 'Publishing and role-based access (RLS)']),
   },
   fiscal_planilla: {
     label: t('Fiscal y planilla CR', 'Costa Rica tax & payroll'), icon: 'Receipt', accent: 'cyan',
@@ -113,30 +88,40 @@ export const SERVICES = {
     unit: 'mes',
     bullets: t(['Calendario y diseño de contenido con tu marca', 'Publicación, respuesta a mensajes y comentarios', 'Campañas en Meta Ads con reporte mensual'], ['Content calendar and branded design', 'Publishing and replies to messages and comments', 'Meta Ads campaigns with monthly reporting']),
   },
-  pagina_web: {
-    label: t('Web y plataforma a medida', 'Custom website & platform'), icon: 'Globe', accent: 'violet',
-    micro: t('Tu marca en línea, con gestión adaptada a tu negocio según alcance. Desde $900.', 'Your brand online, with management tools tailored to the agreed scope. From $900.'),
-    priceMin: 900, priceMax: 3200, weeksMin: 2, weeksMax: 6,
-    bullets: t(['Web responsive con diseño propio y catálogo de servicios', 'Backend y panel de gestión según alcance acordado', 'Módulos de reservas, inventario, pedidos o procesos según alcance', 'Publicación con tu dominio'], ['Responsive website with custom design and service catalog', 'Backend and management dashboard for the agreed scope', 'Booking, inventory, order or process modules as agreed', 'Launch on your domain']),
-  },
   python_pipeline: {
     label: t('Pipeline Python', 'Python pipeline'), icon: 'Cpu', accent: 'purple',
     micro: t('ETL programado, desplegado y monitoreado.', 'Scheduled, deployed and monitored ETL.'),
     priceMin: 1200, priceMax: 5200, weeksMin: 2, weeksMax: 8,
     bullets: t(['Ingesta y transformación de datos', 'Programación / despliegue automático', 'Logs, alertas y manejo de errores'], ['Data ingestion and transformation', 'Automated scheduling / deployment', 'Logs, alerts and error handling']),
   },
-  software_medida: {
-    label: t('Software a la medida', 'Custom software'), icon: 'MonitorSmartphone', accent: 'red',
-    micro: t('Datos, permisos y procesos en un sistema propio. A partir de $2.000.', 'Data, permissions and workflows in your own system. Starting at $2,000.'),
-    priceMin: 2000, priceMax: 5600, weeksMin: 5, weeksMax: 14, isMajor: true,
-    bullets: t(['Interfaz, backend y base de datos para tus procesos', 'Roles, permisos y bitácora según alcance', 'Integraciones con tus sistemas según alcance acordado', 'Despliegue + manual de uso'], ['Interface, backend and database for your workflows', 'Roles, permissions and audit logs as agreed', 'Integrations with your systems within the agreed scope', 'Deployment + user guide']),
-  },
+};
+
+// Fixed packages follow the approved scope sheets. Unmapped services retain their
+// earlier estimates; they are not represented as prices from the presentations.
+const FIXED_LOOK = {
+  excel_vba: ['Layers', 'amber'], dashboard_inicial: ['BarChart3', 'cyan'], power_bi: ['BarChart3', 'blue'],
+  power_automate: ['Zap', 'emerald'], crm_inicial: ['Users', 'orange'], inventario_inicial: ['Package', 'green'],
+  chatbot_atencion: ['MessageSquare', 'pink'], pagina_web: ['Globe', 'violet'], software_medida: ['MonitorSmartphone', 'red'],
+  asistente_ia_documental: ['Sparkles', 'purple'],
+};
+export const SERVICES = {
+  ...LEGACY_SERVICES,
+  ...Object.fromEntries(Object.entries(SERVICE_PRICING).map(([key, pricing]) => [key, {
+    label: t(pricing.label, pricing.label_en), icon: FIXED_LOOK[key][0], accent: FIXED_LOOK[key][1],
+    pricing, pricingMode: 'fixed', priceMin: pricing.base_usd, priceMax: pricing.base_usd,
+    weeksMin: pricing.weeks_min, weeksMax: pricing.weeks_max,
+    micro: t(`Base $${pricing.base_usd.toLocaleString('es-CR')} por el alcance descrito.`, `Base $${pricing.base_usd.toLocaleString('en-US')} for the stated scope.`),
+    scope: t(pricing.scope, pricing.scope_en), aiScope: t(pricing.ai_scope, pricing.ai_scope_en),
+    exclusions: t(pricing.exclusions, pricing.exclusions_en),
+    bullets: [t(pricing.scope, pricing.scope_en), t('Configuración, pruebas, capacitación y guía de uso', 'Configuration, testing, training and a user guide')],
+  }])),
 };
 
 // Prioridad de negocio: sistemas, finanzas y datos; marketing como complemento.
 export const SERVICE_ORDER = [
-  'software_medida', 'pagina_web', 'fiscal_planilla', 'power_bi', 'python_pipeline',
-  'alteryx_knime', 'power_automate', 'excel_vba', 'doc_generation', 'analisis_tfg',
+  'software_medida', 'pagina_web', 'crm_inicial', 'inventario_inicial', 'chatbot_atencion', 'asistente_ia_documental',
+  'dashboard_inicial', 'power_bi', 'power_automate', 'excel_vba', 'fiscal_planilla', 'python_pipeline',
+  'alteryx_knime', 'doc_generation', 'analisis_tfg',
   'community_manager', 'video_edicion',
 ];
 
@@ -168,12 +153,27 @@ const roundStep = (v) => (v < 150 ? 5 : v < 400 ? 10 : v < 1500 ? 25 : 50);
 const roundAdaptive = (v) => Math.round(v / roundStep(v)) * roundStep(v);
 
 /**
- * @param {Object} input { service, size (0..1), complexityScore (0..1), urgency }
+ * @param {Object} input { service, includeAI, size (0..1), complexityScore (0..1), urgency }
  * @returns {Object|null}
  */
 export function estimate(input) {
   const s = SERVICES[input.service];
   if (!s) return null;
+  if (s.pricingMode === 'fixed') {
+    const p = s.pricing;
+    const aiIncluded = !!(p.ai_included || input.includeAI);
+    const price = aiIncluded ? p.with_ai_usd : p.base_usd;
+    return {
+      investUSD: { low: price, high: price }, unit: null, unitSuffix: '', pricingMode: 'fixed', aiIncluded,
+      supportMonthlyUSD: p.support_monthly_usd, supportHoursPerWeek: p.support_hours_per_week,
+      delivery: {
+        weeksLow: p.weeks_min, weeksHigh: p.weeks_max,
+        label: t('Plazo estimado', 'Estimated delivery'),
+        display: p.days_min ? t(`${p.days_min}–${p.days_max} días hábiles`, `${p.days_min}–${p.days_max} business days`) : t(`${p.weeks_min}–${p.weeks_max} semanas`, `${p.weeks_min}–${p.weeks_max} weeks`),
+      },
+      _internal: { source: p.source },
+    };
+  }
   const cfg = CONFIG;
   const urg = cfg.URGENCY[input.urgency] ?? cfg.URGENCY.normal;
   const size = clamp(input.size ?? 0, 0, 1);

@@ -2,13 +2,15 @@
 // el navegador (sql.js en memoria) con datos ficticios. Ver demo/README.md.
 //   npm run dev:demo     → servidor de desarrollo en /demo/
 //   npm run build:demo   → demo-dist/portal-demo.html (fragmento para un artefacto)
-import { defineConfig } from 'vite';
+import { defineConfig, normalizePath } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
-const here = (p) => fileURLToPath(new URL(p, import.meta.url));
+// Vite usa separadores POSIX en sus IDs incluso en Windows. Todas las
+// comparaciones deben usar el mismo formato para no redirigir el shim a sí mismo.
+const here = (p) => normalizePath(fileURLToPath(new URL(p, import.meta.url)));
 
 const AUTH_REAL = here('./server/auth.mjs');
 const AUTH_SHIM = here('./demo/shims/auth.js');
@@ -33,9 +35,9 @@ function portalDemoShims() {
     enforce: 'pre',
     resolveId(source, importer) {
       if (NODE_SHIMS[source]) return NODE_SHIMS[source];
-      const from = importer?.split('?')[0];
+      const from = importer && normalizePath(importer.split('?')[0]);
       if (from && source.endsWith('auth.mjs') && from !== AUTH_SHIM && !from.startsWith('\0')
-        && resolve(dirname(from), source) === AUTH_REAL) return AUTH_SHIM;
+        && normalizePath(resolve(dirname(from), source)) === AUTH_REAL) return AUTH_SHIM;
       if (source.startsWith('node:') && from && !from.includes('/node_modules/')) {
         this.warn(`${source} (importado por ${from}) no existe en el navegador: la demo usa un módulo vacío.`);
         return STUB_PREFIX + source.slice(5);
