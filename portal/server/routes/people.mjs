@@ -55,7 +55,8 @@ export function peopleRoutes(route, ctx) {
   }
 
   route('GET', '/api/people', 'user', () => ({
-    people: describePeople(db.prepare('SELECT * FROM users WHERE active = 1 ORDER BY name').all()),
+    // Directorio de la operación (carga de trabajo): los inversionistas no están.
+    people: describePeople(db.prepare("SELECT * FROM users WHERE active = 1 AND role <> 'inversionista' ORDER BY name").all()),
   }));
 
   route('GET', '/api/people/:id', 'user', ({ user, params }) => {

@@ -95,6 +95,9 @@ const MESSAGES = {
   deliverable_locked: 'El cliente ya decidió sobre este entregable: queda como registro y no se puede borrar.',
   too_many_drafts: 'Hay demasiados borradores abiertos. Enviá o cancelá alguno antes de crear otro.',
   too_many_requests: 'Demasiadas acciones seguidas. Esperá unos minutos.',
+  // v6: configuración inicial del dueño
+  setup_done: 'El portal ya está configurado. Ingresá con tu correo y contraseña.',
+  setup_unavailable: 'El servidor no tiene un código de configuración válido (PORTAL_SETUP_CODE).',
 };
 
 export function errorMessage(error) {

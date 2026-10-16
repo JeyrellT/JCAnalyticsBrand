@@ -16,13 +16,18 @@
 // ============================================================================
 
 import { randomUUID } from 'node:crypto';
-import { INVESTMENT_CATEGORIES, INVESTMENT_STATUS, MOVEMENT_TYPE_LABEL } from '../../shared/catalog.js';
+import { INVESTMENT_CATEGORIES, INVESTMENT_STATUS, MOVEMENT_TYPE_LABEL, MOVEMENT_STATUS_META } from '../../shared/catalog.js';
 import { investmentMetrics, allocateProRata, cumulativeSeries, toCRC, formatMoney, formatPercent } from '../../shared/finance.js';
 import { fail, invalid, has, text, oneOf, dateOnly, id, minorAmount, number } from '../http.mjs';
 import { transaction } from '../schema.mjs';
 import { pendingForUser } from './core.mjs';
 
-export function investmentRoutes(route, ctx) {
+/**
+ * Reglas y lecturas de dinero compartidas por las rutas de socios (abajo) y el
+ * portal de inversionistas (routes/investor.mjs): un solo lugar para la doble
+ * confirmación, los avisos y las métricas.
+ */
+export function createMoney(ctx) {
   const { db } = ctx;
   const getInvestment = (investmentId) => db.prepare(`SELECT i.*, p.name project_name FROM investments i LEFT JOIN projects p ON p.id = i.project_id WHERE i.id = ?`).get(investmentId)
     ?? fail(404, 'not_found');
@@ -32,7 +37,8 @@ export function investmentRoutes(route, ctx) {
   const allMovements = () => db.prepare('SELECT * FROM movements').all();
   const crcOf = (m) => toCRC(m.amount, m.currency, m.fx_rate);
 
-  const isActiveInvestor = (userId) => !!db.prepare("SELECT 1 FROM users WHERE id = ? AND active = 1 AND role IN ('admin','socio')").get(userId);
+  /** ¿La persona sigue activa y puede tener capital (socio, admin o inversionista)? */
+  const isActiveInvestor = (userId) => !!db.prepare("SELECT 1 FROM users WHERE id = ? AND active = 1 AND role IN ('admin','socio','inversionista')").get(userId);
   /**
    * Confirma "cualquier otro socio" cuando quien registró es el mismo socio, o cuando ese
    * socio ya no tiene acceso (desactivado o colaborador): alguien debe custodiar su parte.
@@ -42,6 +48,8 @@ export function investmentRoutes(route, ctx) {
   /** Quién puede confirmar u objetar un movimiento pendiente. */
   function canResolve(m, user) {
     if (m.status !== 'pendiente' || m.created_by === user.id) return false;
+    // Un inversionista no custodia plata ajena: solo responde por los movimientos a su nombre.
+    if (user.role === 'inversionista') return m.partner_id === user.id;
     return anyInvestorConfirms(m) || m.partner_id === user.id;
   }
   const canAnnul = (m, user) => m.status !== 'anulado' && (user.role === 'admin' || (m.created_by === user.id && m.status !== 'confirmado'));
@@ -51,8 +59,8 @@ export function investmentRoutes(route, ctx) {
   }
 
   function partnerOrFail(partnerId) {
-    const p = db.prepare("SELECT * FROM users WHERE id = ? AND active = 1 AND role IN ('admin','socio')").get(partnerId);
-    if (!p) invalid('partner_id', 'El socio no existe o no tiene acceso a inversiones.');
+    const p = db.prepare("SELECT * FROM users WHERE id = ? AND active = 1 AND role IN ('admin','socio','inversionista')").get(partnerId);
+    if (!p) invalid('partner_id', 'La persona no existe o no puede tener capital (socio, admin o inversionista).');
     return p;
   }
 
@@ -67,6 +75,90 @@ export function investmentRoutes(route, ctx) {
     if (d > ctx.today()) invalid('date', 'La fecha no puede ser futura: registrá el movimiento cuando ocurra.');
     return d;
   }
+
+  function summarize(investment, movements) {
+    const metrics = investmentMetrics(movements);
+    const names = new Map(db.prepare('SELECT id, name, color FROM users').all().map((u) => [u.id, u]));
+    metrics.partners = metrics.partners.map((p) => ({ ...p, name: names.get(p.partner_id)?.name, color: names.get(p.partner_id)?.color }));
+    const confirmed = movements.filter((m) => m.status === 'confirmado');
+    const crc = (type) => confirmed.filter((m) => m.type === type).reduce((a, m) => a + (crcOf(m) ?? 0), 0);
+    return {
+      ...metrics,
+      contributed_crc: crc('aporte'),
+      returned_crc: crc('retorno'),
+      net_crc: crc('retorno') - crc('aporte'),
+      target_progress: investment.target_amount ? metrics.contributed / investment.target_amount : null,
+    };
+  }
+
+  function insertMovement({ investment, partner, type, amount, fxRate, date, message, reference, batchId, user }) {
+    const at = ctx.nowIso();
+    const { lastInsertRowid } = db.prepare(`INSERT INTO movements (investment_id, partner_id, type, amount, currency, fx_rate, date, message, reference,
+      status, batch_id, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?)`).run(
+      investment.id, partner.id, type, amount, investment.currency, fxRate, date, message, reference, batchId, user.id, at,
+    );
+    const movementId = Number(lastInsertRowid);
+    db.prepare("INSERT INTO movement_messages (movement_id, user_id, kind, body, created_at) VALUES (?, ?, 'registro', ?, ?)").run(movementId, user.id, message, at);
+    return db.prepare('SELECT * FROM movements WHERE id = ?').get(movementId);
+  }
+
+  function announce(m, investment, user) {
+    const amount = formatMoney(m.amount, m.currency);
+    const partnerName = ctx.userName(m.partner_id);
+    // Si confirma el propio dueño del movimiento (socio o inversionista), se le habla de vos.
+    const toPartner = !anyInvestorConfirms(m);
+    const title = toPartner
+      ? `Confirmá tu ${m.type === 'aporte' ? 'aporte' : 'retorno'}: ${amount}`
+      : m.type === 'aporte'
+        ? `Confirmá un aporte de ${partnerName}: ${amount}`
+        : `Confirmá un retorno${m.partner_id === user.id ? ` a ${partnerName}` : ''}: ${amount}`;
+    ctx.notify(confirmersFor(m), user.id, { kind: 'movement', title, body: `${investment.name} · ${user.name}: ${m.message.slice(0, 140)}`, link: `/inversiones/${investment.id}?mov=${m.id}` });
+  }
+
+  const getMovement = (movementId) => db.prepare('SELECT * FROM movements WHERE id = ?').get(movementId) ?? fail(404, 'not_found');
+  /** Una vez resuelto, los avisos "Confirmá…" de ese movimiento ya no piden acción a nadie. */
+  const settleRequests = (movementId) => db.prepare("UPDATE notifications SET read_at = ? WHERE read_at IS NULL AND kind = 'movement' AND title LIKE 'Confirmá%' AND link LIKE ?")
+    .run(ctx.nowIso(), `%?mov=${movementId}`);
+  const addMessage = (movementId, userId, kind, bodyText) => db.prepare('INSERT INTO movement_messages (movement_id, user_id, kind, body, created_at) VALUES (?, ?, ?, ?, ?)')
+    .run(movementId, userId, kind, bodyText, ctx.nowIso());
+
+  function resolve({ user, body, params }, outcome) {
+    const m = getMovement(params.id);
+    if (m.status !== 'pendiente') fail(409, 'not_pending');
+    if (!canResolve(m, user)) fail(403, 'not_your_confirmation');
+    const reply = outcome === 'confirmado'
+      ? text(body.message, 'message', { max: 1000 }) ?? 'Recibido ✓'
+      : text(body.message, 'message', { max: 1000, min: 3, required: true });
+    const investment = getInvestment(m.investment_id);
+    transaction(db, () => {
+      db.prepare('UPDATE movements SET status = ?, resolved_by = ?, resolved_at = ? WHERE id = ? AND status = ?').run(outcome, user.id, ctx.nowIso(), m.id, 'pendiente');
+      addMessage(m.id, user.id, outcome === 'confirmado' ? 'confirmacion' : 'objecion', reply);
+      settleRequests(m.id);
+    });
+    const amount = formatMoney(m.amount, m.currency);
+    const verb = outcome === 'confirmado' ? 'confirmó' : 'objetó';
+    ctx.log(user.id, 'movement', m.id, outcome, `${user.name} ${verb} ${m.type === 'aporte' ? 'el aporte' : 'el retorno'} de ${amount} en ${investment.name}`, { sensitive: true });
+    ctx.notify([m.created_by, m.partner_id], user.id, {
+      kind: 'movement',
+      title: `${user.name} ${verb} ${m.type === 'aporte' ? 'el aporte' : 'el retorno'} de ${amount}`,
+      body: `${investment.name} · “${reply.slice(0, 140)}”`,
+      link: `/inversiones/${investment.id}?mov=${m.id}`,
+    });
+    return { movement: getMovement(m.id) };
+  }
+
+  return {
+    getInvestment, movementsOf, allMovements, crcOf, isActiveInvestor, anyInvestorConfirms, canResolve, canAnnul, confirmersFor,
+    partnerOrFail, fxFor, movementDate, summarize, insertMovement, announce, getMovement, settleRequests, addMessage, resolve,
+  };
+}
+
+export function investmentRoutes(route, ctx) {
+  const { db } = ctx;
+  const {
+    getInvestment, movementsOf, allMovements, crcOf, anyInvestorConfirms, canResolve, canAnnul,
+    partnerOrFail, fxFor, movementDate, summarize, insertMovement, announce, getMovement, addMessage, settleRequests, resolve,
+  } = createMoney(ctx);
 
   function readInvestmentBody(body, current = {}) {
     const pick = (key, fn) => (has(body, key) ? fn(body[key]) : current[key] ?? null);
@@ -90,21 +182,6 @@ export function investmentRoutes(route, ctx) {
     return out;
   }
 
-  function summarize(investment, movements) {
-    const metrics = investmentMetrics(movements);
-    const names = new Map(db.prepare('SELECT id, name, color FROM users').all().map((u) => [u.id, u]));
-    metrics.partners = metrics.partners.map((p) => ({ ...p, name: names.get(p.partner_id)?.name, color: names.get(p.partner_id)?.color }));
-    const confirmed = movements.filter((m) => m.status === 'confirmado');
-    const crc = (type) => confirmed.filter((m) => m.type === type).reduce((a, m) => a + (crcOf(m) ?? 0), 0);
-    return {
-      ...metrics,
-      contributed_crc: crc('aporte'),
-      returned_crc: crc('retorno'),
-      net_crc: crc('retorno') - crc('aporte'),
-      target_progress: investment.target_amount ? metrics.contributed / investment.target_amount : null,
-    };
-  }
-
   // ── Portafolio ────────────────────────────────────────────────────────────
   route('GET', '/api/investments', 'invest', ({ user }) => {
     const investments = db.prepare(`SELECT i.*, p.name project_name FROM investments i LEFT JOIN projects p ON p.id = i.project_id
@@ -116,7 +193,7 @@ export function investmentRoutes(route, ctx) {
     const confirmed = movements.filter((m) => m.status === 'confirmado');
     const contributed = confirmed.filter((m) => m.type === 'aporte').reduce((a, m) => a + (crcOf(m) ?? 0), 0);
     const returned = confirmed.filter((m) => m.type === 'retorno').reduce((a, m) => a + (crcOf(m) ?? 0), 0);
-    const partners = db.prepare("SELECT id, name, color, role, active FROM users WHERE role IN ('admin','socio') ORDER BY name").all().map((p) => {
+    const partners = db.prepare("SELECT id, name, color, role, active FROM users WHERE role IN ('admin','socio','inversionista') ORDER BY name").all().map((p) => {
       const mine = confirmed.filter((m) => m.partner_id === p.id);
       const c = mine.filter((m) => m.type === 'aporte').reduce((a, m) => a + (crcOf(m) ?? 0), 0);
       const r = mine.filter((m) => m.type === 'retorno').reduce((a, m) => a + (crcOf(m) ?? 0), 0);
@@ -202,26 +279,6 @@ export function investmentRoutes(route, ctx) {
   });
 
   // ── Movimientos ───────────────────────────────────────────────────────────
-  function insertMovement({ investment, partner, type, amount, fxRate, date, message, reference, batchId, user }) {
-    const at = ctx.nowIso();
-    const { lastInsertRowid } = db.prepare(`INSERT INTO movements (investment_id, partner_id, type, amount, currency, fx_rate, date, message, reference,
-      status, batch_id, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?)`).run(
-      investment.id, partner.id, type, amount, investment.currency, fxRate, date, message, reference, batchId, user.id, at,
-    );
-    const movementId = Number(lastInsertRowid);
-    db.prepare("INSERT INTO movement_messages (movement_id, user_id, kind, body, created_at) VALUES (?, ?, 'registro', ?, ?)").run(movementId, user.id, message, at);
-    return db.prepare('SELECT * FROM movements WHERE id = ?').get(movementId);
-  }
-
-  function announce(m, investment, user) {
-    const amount = formatMoney(m.amount, m.currency);
-    const partnerName = ctx.userName(m.partner_id);
-    const title = m.type === 'aporte'
-      ? `Confirmá un aporte de ${partnerName}: ${amount}`
-      : `Confirmá un retorno${m.partner_id === user.id ? ` a ${partnerName}` : ''}: ${amount}`;
-    ctx.notify(confirmersFor(m), user.id, { kind: 'movement', title, body: `${investment.name} · ${user.name}: ${m.message.slice(0, 140)}`, link: `/inversiones/${investment.id}?mov=${m.id}` });
-  }
-
   route('POST', '/api/investments/:id/movements', 'invest', ({ user, body, params }) => {
     const investment = getInvestment(params.id);
     if (investment.status === 'cerrada') fail(409, 'investment_closed');
@@ -268,38 +325,6 @@ export function investmentRoutes(route, ctx) {
     for (const m of created) announce(m, investment, user);
     return { movements: created, batch_id: batchId };
   });
-
-  const getMovement = (movementId) => db.prepare('SELECT * FROM movements WHERE id = ?').get(movementId) ?? fail(404, 'not_found');
-  /** Una vez resuelto, los avisos "Confirmá…" de ese movimiento ya no piden acción a nadie. */
-  const settleRequests = (movementId) => db.prepare("UPDATE notifications SET read_at = ? WHERE read_at IS NULL AND kind = 'movement' AND title LIKE 'Confirmá%' AND link LIKE ?")
-    .run(ctx.nowIso(), `%?mov=${movementId}`);
-  const addMessage = (movementId, userId, kind, bodyText) => db.prepare('INSERT INTO movement_messages (movement_id, user_id, kind, body, created_at) VALUES (?, ?, ?, ?, ?)')
-    .run(movementId, userId, kind, bodyText, ctx.nowIso());
-
-  function resolve({ user, body, params }, outcome) {
-    const m = getMovement(params.id);
-    if (m.status !== 'pendiente') fail(409, 'not_pending');
-    if (!canResolve(m, user)) fail(403, 'not_your_confirmation');
-    const reply = outcome === 'confirmado'
-      ? text(body.message, 'message', { max: 1000 }) ?? 'Recibido ✓'
-      : text(body.message, 'message', { max: 1000, min: 3, required: true });
-    const investment = getInvestment(m.investment_id);
-    transaction(db, () => {
-      db.prepare('UPDATE movements SET status = ?, resolved_by = ?, resolved_at = ? WHERE id = ? AND status = ?').run(outcome, user.id, ctx.nowIso(), m.id, 'pendiente');
-      addMessage(m.id, user.id, outcome === 'confirmado' ? 'confirmacion' : 'objecion', reply);
-      settleRequests(m.id);
-    });
-    const amount = formatMoney(m.amount, m.currency);
-    const verb = outcome === 'confirmado' ? 'confirmó' : 'objetó';
-    ctx.log(user.id, 'movement', m.id, outcome, `${user.name} ${verb} ${m.type === 'aporte' ? 'el aporte' : 'el retorno'} de ${amount} en ${investment.name}`, { sensitive: true });
-    ctx.notify([m.created_by, m.partner_id], user.id, {
-      kind: 'movement',
-      title: `${user.name} ${verb} ${m.type === 'aporte' ? 'el aporte' : 'el retorno'} de ${amount}`,
-      body: `${investment.name} · “${reply.slice(0, 140)}”`,
-      link: `/inversiones/${investment.id}?mov=${m.id}`,
-    });
-    return { movement: getMovement(m.id) };
-  }
 
   /** Bandeja "por confirmar" del usuario, con contexto para responder sin abrir cada inversión. */
   route('GET', '/api/movements/pending', 'invest', ({ user }) => {
@@ -360,7 +385,7 @@ export function investmentRoutes(route, ctx) {
     const header = ['Fecha', 'Inversión', 'Tipo', 'Socio', 'Monto', 'Moneda', 'Tipo de cambio', 'Equivalente CRC', 'Estado', 'Referencia', 'Mensaje', 'Registrado por', 'Resuelto por', 'Fecha resolución'];
     const lines = rows.map((m) => [
       m.date, m.investment_name, MOVEMENT_TYPE_LABEL[m.type], m.partner_name, dec(m.amount), m.currency, m.fx_rate ? String(m.fx_rate).replace('.', ',') : '',
-      dec(crcOf(m)), m.status, m.reference, m.message, m.created_by_name, m.resolved_by_name, m.resolved_at?.slice(0, 10),
+      dec(crcOf(m)), MOVEMENT_STATUS_META[m.status]?.label ?? m.status, m.reference, m.message, m.created_by_name, m.resolved_by_name, m.resolved_at?.slice(0, 10),
     ].map(cell).join(';'));
     ctx.log(user.id, 'investment', investmentId, 'exported', `${user.name} exportó ${rows.length} movimientos a Excel`, { sensitive: true });
     res.writeHead(200, {

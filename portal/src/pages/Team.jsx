@@ -1,20 +1,50 @@
 // Equipo: personas con su carga y servicios, mi perfil y contraseña, y ajustes operativos (tipo de cambio, SLA, WIP, respaldo).
-import { useMemo, useState } from 'react';
+// v6: el admin agrega personas con uno de los 4 roles (incluido "Inversionista"), recibe la contraseña temporal
+// con un mensaje de WhatsApp que lleva el enlace de entrada correcto (/ o /inversionista), y los inversionistas
+// se listan aparte (no forman parte de la operación ni de la carga de trabajo).
+// /equipo?agregar=<rol> abre "Agregar persona" con ese rol (lo usa la bienvenida de la configuración inicial).
+import { useId, useMemo, useState } from 'react';
 import {
   UserPlus, KeyRound, Copy, ShieldCheck, Save, DatabaseBackup, Power, MessageCircle, Pencil, Users, UserX, AlertTriangle, UserRound, SlidersHorizontal, Palette,
+  Crown, Handshake, Wrench, Landmark, Check, Building2, Link2, Mail, ArrowRight,
 } from 'lucide-react';
 import { useSession, useResource } from '../lib/session.jsx';
 import { api } from '../lib/api.js';
 import { Link, navigate, useLocation } from '../lib/router.jsx';
 import {
-  PageHeader, PageLoader, EmptyState, Modal, Field, Select, Avatar, Tabs, IconTile, SectionHead, RowArrow, ThemePicker, useAction, useToast, useConfirm, cx,
+  PageHeader, PageLoader, EmptyState, Modal, Field, Avatar, Tabs, IconTile, SectionHead, RowArrow, ThemePicker, useAction, useToast, useConfirm, cx,
 } from '../components/ui.jsx';
 import { PersonCard, RoleBadge, LOAD_META } from '../components/people.jsx';
 import { PasswordForm } from './Login.jsx';
 import { ROLES, MEMBER_COLORS } from '../../shared/catalog.js';
 import { timeAgo, whatsappLink } from '../lib/format.js';
 
-const roleOptions = Object.entries(ROLES).map(([value, v]) => ({ value, label: v.label }));
+/** Ícono y tono de cada rol en el selector (mismos tonos que RoleBadge). */
+const ROLE_LOOK = {
+  admin: { icon: Crown, tone: 'ink' },
+  socio: { icon: Handshake, tone: 'blue' },
+  colaborador: { icon: Wrench, tone: 'slate' },
+  inversionista: { icon: Landmark, tone: 'violet' },
+};
+
+const isInvestorRoleKey = (role) => role === 'inversionista';
+/** Enlace de entrada según el rol: el equipo entra por la raíz; un inversionista, por su portal. */
+const entryUrl = (role) => `${window.location.origin}${isInvestorRoleKey(role) ? '/inversionista' : '/'}`;
+const firstName = (name = '') => name.split(' ')[0];
+
+/** Mensaje listo para enviar con el acceso (lleva el enlace correcto según el rol). */
+function accessMessage({ name, email, password, role }) {
+  const investor = isInvestorRoleKey(role);
+  return [
+    `Hola ${firstName(name)}, este es tu acceso al ${investor ? 'portal de inversionistas' : 'portal'} de JC Analytics:`,
+    entryUrl(role),
+    `Correo: ${email}`,
+    `Contraseña temporal: ${password}`,
+    investor
+      ? 'Te pedirá cambiarla al entrar. Ahí ves tu capital, tus retornos y confirmás cada movimiento a tu nombre.'
+      : 'Te pedirá cambiarla al entrar.',
+  ].join('\n');
+}
 
 /** Paleta de colores de avatar: botones redondos con anillo de marca en el elegido. */
 function ColorPicker({ value, onChange }) {
@@ -28,47 +58,136 @@ function ColorPicker({ value, onChange }) {
   );
 }
 
+/**
+ * Selector de rol en tarjetas: radios nativos (las flechas cambian la opción, Tab entra y sale del grupo).
+ * Cada tarjeta dice qué ve ese rol y por dónde entra.
+ */
+function RolePicker({ value, onChange }) {
+  const uid = useId();
+  return (
+    <fieldset>
+      <legend className="label">Rol y acceso</legend>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {Object.entries(ROLES).map(([key, meta]) => {
+          const look = ROLE_LOOK[key] ?? { icon: UserRound, tone: 'slate' };
+          const on = value === key;
+          const hintId = `${uid}-${key}`;
+          return (
+            <label key={key} className={cx(
+              'relative flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand/50',
+              on ? 'border-brand bg-brand-soft/60 shadow-card' : 'border-line bg-surface hover:border-line-strong hover:bg-surface-2',
+            )}>
+              <input type="radio" name={`${uid}-role`} value={key} checked={on} onChange={() => onChange(key)} className="sr-only" aria-label={meta.label} aria-describedby={hintId} />
+              <IconTile icon={look.icon} tone={look.tone} size="sm" />
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold text-ink">{meta.label}</span>
+                  <span className={cx('flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border transition', on ? 'border-brand bg-brand text-white' : 'border-line-strong bg-surface')} aria-hidden="true">
+                    {on && <Check className="h-3 w-3" strokeWidth={3} />}
+                  </span>
+                </span>
+                <span id={hintId} className="mt-0.5 block text-xs leading-snug text-muted">
+                  {meta.hint}
+                  <span className={cx('mt-1.5 flex items-center gap-1 font-semibold', isInvestorRoleKey(key) ? 'text-violet-ink' : 'text-muted-2')}>
+                    <Link2 className="h-3 w-3 shrink-0" aria-hidden="true" />{isInvestorRoleKey(key) ? 'Entra por su portal: /inversionista' : 'Entra al portal del equipo'}
+                  </span>
+                </span>
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
 function TempPassword({ result, onClose }) {
   const toast = useToast();
-  const text = `Hola ${result.name.split(' ')[0]}, este es tu acceso al portal de JC Analytics:\n${window.location.origin}\nCorreo: ${result.email}\nContraseña temporal: ${result.password}\nTe pedirá cambiarla al entrar.`;
-  const wa = whatsappLink(result.phone, text);
+  const text = accessMessage(result);
+  // Sin WhatsApp registrado, el enlace abre WhatsApp para elegir el contacto.
+  const wa = whatsappLink(result.phone, text) ?? `https://wa.me/?text=${encodeURIComponent(text)}`;
+  const copy = (value, done) => {
+    if (!navigator.clipboard) { toast('No se pudo copiar: copialo a mano.', 'error'); return; }
+    navigator.clipboard.writeText(value).then(() => toast(done), () => toast('No se pudo copiar: copialo a mano.', 'error'));
+  };
+  const investor = isInvestorRoleKey(result.role);
   return (
     <Modal open onClose={onClose} title="Contraseña temporal" size="sm" footer={<button type="button" className="btn btn-primary" onClick={onClose}>Listo</button>}>
-      <p className="text-sm text-muted">Compartila por un canal privado. Solo se muestra esta vez; la persona deberá cambiarla al ingresar.</p>
+      <p className="text-sm text-muted">Compartila por un canal privado. Solo se muestra esta vez; {firstName(result.name)} deberá cambiarla al ingresar.</p>
       <div className="card-panel mt-4 flex items-center gap-2 p-4 font-mono text-lg font-semibold tracking-wider">
         <span className="relative flex-1 select-all break-all">{result.password}</span>
-        <button type="button" className="tap relative flex items-center justify-center rounded-lg text-panel-muted transition hover:bg-white/10 hover:text-white" aria-label="Copiar" onClick={() => navigator.clipboard?.writeText(result.password).then(() => toast('Copiada'))}><Copy className="h-4 w-4" /></button>
+        <button type="button" className="tap relative flex items-center justify-center rounded-lg text-panel-muted transition hover:bg-white/10 hover:text-white" aria-label="Copiar contraseña" onClick={() => copy(result.password, 'Contraseña copiada')}><Copy className="h-4 w-4" /></button>
       </div>
-      {wa && <a className="btn btn-outline mt-3 w-full" href={wa} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4 text-teal-ink" />Enviar acceso por WhatsApp</a>}
+      <dl className="mt-4 divide-y divide-line overflow-hidden rounded-2xl border border-line text-sm">
+        <div className="flex items-center justify-between gap-3 px-3.5 py-2.5">
+          <dt className="text-muted">Rol</dt>
+          <dd><RoleBadge role={result.role} /></dd>
+        </div>
+        <div className="flex items-start justify-between gap-3 px-3.5 py-2.5">
+          <dt className="shrink-0 text-muted">Entra por</dt>
+          <dd className="min-w-0 break-all text-right font-semibold text-ink">{entryUrl(result.role)}</dd>
+        </div>
+        <div className="flex items-start justify-between gap-3 px-3.5 py-2.5">
+          <dt className="shrink-0 text-muted">Correo</dt>
+          <dd className="min-w-0 break-all text-right text-ink">{result.email}</dd>
+        </div>
+      </dl>
+      {investor && <p className="mt-3 flex items-start gap-2 rounded-xl bg-violet-soft px-3 py-2.5 text-xs text-violet-ink"><Landmark className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />Entra solo a su portal de inversionistas: ve su capital y sus retornos, y confirma los movimientos a su nombre.</p>}
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <a className="btn btn-outline" href={wa} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4 text-teal-ink" />Enviar por WhatsApp</a>
+        <button type="button" className="btn btn-outline" onClick={() => copy(text, 'Mensaje copiado')}><Copy className="h-4 w-4" />Copiar mensaje</button>
+      </div>
+      {!result.phone && <p className="mt-2 text-xs text-muted">Sin WhatsApp registrado: elegí el contacto al abrir WhatsApp.</p>}
     </Modal>
   );
 }
 
-function MemberModal({ member, onClose, onSaved }) {
+function MemberModal({ member, presetRole, onClose, onSaved }) {
   const [run, busy] = useAction();
-  const [form, setForm] = useState(() => member ?? { role: 'socio', color: MEMBER_COLORS[0] });
+  const confirm = useConfirm();
+  const [form, setForm] = useState(() => member ?? { role: ROLES[presetRole] ? presetRole : 'socio', color: MEMBER_COLORS[0] });
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+  const investor = isInvestorRoleKey(form.role);
+
+  /** Pasar a inversionista (o dejar de serlo) cambia qué portal abre la persona: se confirma antes. */
+  async function confirmAccessChange() {
+    if (!member || member.role === form.role || !(isInvestorRoleKey(member.role) || investor)) return true;
+    const first = firstName(member.name);
+    const label = ROLES[form.role].label.toLowerCase();
+    const message = investor
+      ? `Su acceso cambia de inmediato: deja de ver la operación (proyectos, tablero, agenda y clientes) y entra solo a su portal de inversionistas (${entryUrl('inversionista')}), donde ve su capital y confirma los movimientos a su nombre. Si tiene tareas o proyectos asignados, reasignalos.`
+      : `Su acceso cambia de inmediato: deja el portal de inversionistas y entra al portal del equipo (${entryUrl(form.role)}) como ${label}. ${form.role === 'colaborador' ? 'Como colaborador no ve inversiones; su capital y sus movimientos se conservan.' : 'Va a ver y administrar todas las inversiones del equipo.'}`;
+    return confirm({ title: investor ? `${first} pasa a ser inversionista` : `${first} pasa al equipo como ${label}`, message, confirmLabel: 'Cambiar acceso' });
+  }
+
   async function save(e) {
     e.preventDefault();
+    if (!(await confirmAccessChange())) return;
     const body = { name: form.name, role: form.role, color: form.color, phone: form.phone || null };
     if (!member) body.email = form.email;
-    const res = await run(() => api(member ? `/api/users/${member.id}` : '/api/users', { method: member ? 'PATCH' : 'POST', body }), { success: member ? 'Persona actualizada' : 'Persona agregada' });
+    const res = await run(() => api(member ? `/api/users/${member.id}` : '/api/users', { method: member ? 'PATCH' : 'POST', body }), { success: member ? 'Persona actualizada' : investor ? 'Inversionista agregado' : 'Persona agregada' });
     if (res) { onSaved(res, form); onClose(); }
   }
   return (
-    <Modal open onClose={onClose} title={member ? `Editar a ${member.name.split(' ')[0]}` : 'Agregar persona'}
+    <Modal open onClose={onClose} title={member ? `Editar a ${firstName(member.name)}` : 'Agregar persona'} size="lg"
       footer={<><button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button><button type="submit" form="member-form" className="btn btn-primary" disabled={busy || !form.name || (!member && !form.email)}>{busy ? 'Guardando…' : 'Guardar'}</button></>}>
       <form id="member-form" onSubmit={save} className="grid gap-4 sm:grid-cols-2">
-        <Field label="Nombre completo" className="sm:col-span-2">{(id) => <input id={id} className="input" value={form.name ?? ''} onChange={(e) => set('name')(e.target.value)} />}</Field>
-        {!member && <Field label="Correo" className="sm:col-span-2">{(id) => <input id={id} type="email" className="input" value={form.email ?? ''} onChange={(e) => set('email')(e.target.value)} />}</Field>}
-        <Field label="Rol" hint={ROLES[form.role]?.hint}>{(id) => <Select id={id} options={roleOptions} value={form.role} onChange={set('role')} />}</Field>
-        <Field label="WhatsApp">{(id) => <input id={id} className="input" inputMode="tel" value={form.phone ?? ''} onChange={(e) => set('phone')(e.target.value)} placeholder="8888-0000" />}</Field>
+        <Field label="Nombre completo" className="sm:col-span-2">{(id) => <input id={id} className="input" autoComplete="off" value={form.name ?? ''} onChange={(e) => set('name')(e.target.value)} />}</Field>
+        {!member && <Field label="Correo" hint="Con este correo ingresa. Recibe una contraseña temporal.">{(id) => <input id={id} type="email" inputMode="email" autoComplete="off" className="input" value={form.email ?? ''} onChange={(e) => set('email')(e.target.value)} />}</Field>}
+        <Field label="WhatsApp" className={member ? 'sm:col-span-2' : undefined} hint="Para enviarle el acceso y los avisos.">{(id) => <input id={id} className="input" type="tel" inputMode="tel" value={form.phone ?? ''} onChange={(e) => set('phone')(e.target.value)} placeholder="8888-0000" />}</Field>
+        <div className="sm:col-span-2"><RolePicker value={form.role} onChange={set('role')} /></div>
         <Field label="Color" className="sm:col-span-2">
           <div className="flex items-center gap-3">
             <Avatar name={form.name || '?'} color={form.color} size={36} />
             <ColorPicker value={form.color} onChange={set('color')} />
           </div>
         </Field>
+        {!member && (
+          <p className="flex items-start gap-2 rounded-xl bg-surface-2 px-3 py-2.5 text-xs text-muted sm:col-span-2">
+            <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span>¿Es un cliente? Los clientes no se agregan aquí: dales acceso desde su ficha en <Link to="/clientes" className="link" onClick={onClose}>Clientes</Link> → Portal del cliente.</span>
+          </p>
+        )}
       </form>
     </Modal>
   );
@@ -184,11 +303,72 @@ function LoadChip({ tone, icon: Icon, value, label }) {
   );
 }
 
+/**
+ * Inversionistas (v6): ponen capital y ven solo lo suyo en /inversionista. No están en el directorio de la
+ * operación ni en la carga de trabajo, así que se listan aparte. Los ven admin y socios; solo el admin los gestiona.
+ */
+function InvestorsSection({ investors, actions }) {
+  const { user, isAdmin } = useSession();
+  return (
+    <section className="card animate-rise overflow-hidden" aria-labelledby="inversionistas-title">
+      <SectionHead flush id="inversionistas-title" icon={Landmark} tone="violet" title="Inversionistas"
+        hint={<><span className="sm:hidden">Ven solo lo suyo, en su portal.</span><span className="hidden sm:inline">Ponen capital y ven solo lo suyo en su portal. No participan en la operación.</span></>}
+        action={isAdmin && (
+          <button type="button" className="btn btn-soft btn-sm min-h-11 sm:min-h-9" onClick={() => actions.onAdd('inversionista')}>
+            <UserPlus className="h-3.5 w-3.5" /><span className="hidden sm:inline">Agregar inversionista</span><span className="sm:hidden">Agregar</span>
+          </button>
+        )} />
+      {investors.length === 0 ? (
+        <p className="px-4 py-5 text-sm text-muted sm:px-5">Todavía no hay inversionistas. Agregá a cada persona que pone capital: confirma sus aportes y retornos desde su propio portal.</p>
+      ) : (
+        <ul className="divide-y divide-line">
+          {investors.map((m) => (
+            <li key={m.id} className="flex flex-col gap-3 px-4 py-3.5 sm:px-5 lg:flex-row lg:items-center">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <Avatar name={m.name} color={m.color} size={42} />
+                <div className="min-w-0 flex-1">
+                  <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="truncate font-semibold text-ink">{m.name}</span>
+                    <RoleBadge role={m.role} />
+                  </p>
+                  <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-muted"><Mail className="h-3 w-3 shrink-0" aria-hidden="true" /><span className="truncate">{m.email}</span></p>
+                  {isAdmin && <p className="mt-0.5 text-xs text-muted">{accessNote(m)}</p>}
+                </div>
+              </div>
+              {isAdmin && <div className="lg:w-[340px] lg:shrink-0"><MemberActions member={m} me={user.id} {...actions} /></div>}
+            </li>
+          ))}
+        </ul>
+      )}
+      <Link to="/inversiones" className="group row min-h-12 border-t border-line bg-surface-2/60 px-4 py-2.5 text-sm font-semibold text-brand-ink sm:px-5">
+        <span className="min-w-0 flex-1">Ver su capital y sus movimientos en Inversiones</span>
+        <RowArrow />
+      </Link>
+    </section>
+  );
+}
+
+/** Los accesos de clientes se dan por cliente (ficha → Portal del cliente), no desde el equipo. */
+function ClientAccessPointer() {
+  return (
+    <Link to="/clientes" className="card card-hover group row min-h-16 px-4 py-3 sm:px-5">
+      <IconTile icon={Building2} tone="blue" />
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold text-ink group-hover:text-brand-ink">Dar acceso a clientes</span>
+        <span className="mt-0.5 block text-xs leading-snug text-muted">Se da por cliente: abrí su ficha → Portal del cliente → Dar acceso.</span>
+      </span>
+      <span className="hidden items-center gap-1 text-sm font-semibold text-brand-ink sm:flex">Ir a Clientes<ArrowRight className="h-4 w-4" aria-hidden="true" /></span>
+      <RowArrow className="sm:hidden" />
+    </Link>
+  );
+}
+
 function PeopleTab({ resource, actions }) {
-  const { user, team, activeTeam, isAdmin } = useSession();
+  const { user, team, activeTeam, isAdmin, canInvest } = useSession();
   const { data, error, reload } = resource;
   const byId = useMemo(() => new Map(team.map((m) => [m.id, m])), [team]);
   const inactive = team.filter((m) => !m.active);
+  const investors = team.filter((m) => m.active && isInvestorRoleKey(m.role));
 
   // Si la carga de trabajo no responde, igual mostramos al equipo (sin contadores) para no bloquear la administración.
   const people = data?.people ?? (error ? activeTeam : null);
@@ -215,7 +395,7 @@ function PeopleTab({ resource, actions }) {
 
       {people.length === 0 ? (
         <EmptyState icon={Users} tone="teal" title="Todavía no hay personas activas"
-          action={isAdmin && <button type="button" className="btn btn-primary" onClick={() => actions.onEdit('new')}><UserPlus className="h-4 w-4" />Agregar persona</button>}>
+          action={isAdmin && <button type="button" className="btn btn-primary" onClick={() => actions.onAdd('socio')}><UserPlus className="h-4 w-4" />Agregar persona</button>}>
           Agregá a cada socio o colaborador para repartir proyectos, tareas y citas.
         </EmptyState>
       ) : (
@@ -230,6 +410,8 @@ function PeopleTab({ resource, actions }) {
           })}
         </section>
       )}
+
+      {canInvest && (isAdmin || investors.length > 0) && <InvestorsSection investors={investors} actions={actions} />}
 
       {isAdmin && inactive.length > 0 && (
         <section aria-labelledby="sin-acceso" className="rounded-2xl border border-dashed border-line-strong p-3 sm:p-4">
@@ -252,6 +434,8 @@ function PeopleTab({ resource, actions }) {
           </div>
         </section>
       )}
+
+      {isAdmin && <ClientAccessPointer />}
     </div>
   );
 }
@@ -259,7 +443,8 @@ function PeopleTab({ resource, actions }) {
 export default function Team() {
   const { user, isAdmin, loadTeam, settings } = useSession();
   const { query } = useLocation();
-  const [editing, setEditing] = useState(null);
+  // { member } edita a alguien; { role } agrega a una persona nueva con ese rol preseleccionado.
+  const [editing, setEditing] = useState(() => (isAdmin && query.has('agregar') ? { role: query.get('agregar') } : null));
   const [temp, setTemp] = useState(null);
   const people = useResource('/api/people');
   const [run, busy] = useAction();
@@ -269,24 +454,28 @@ export default function Team() {
   const tab = requested === 'perfil' || (requested === 'ajustes' && isAdmin) ? requested : 'personas';
   const setTab = (value) => navigate(value === 'personas' ? '/equipo' : `/equipo?tab=${value}`, { replace: true });
   const changed = () => { loadTeam(); people.reload(); };
+  const closeEditor = () => {
+    setEditing(null);
+    if (query.has('agregar')) navigate('/equipo', { replace: true });
+  };
 
   const reset = async (m) => {
     if (!(await confirm({ title: 'Nueva contraseña temporal', message: `Se genera una contraseña temporal para ${m.name} y se cierran sus sesiones abiertas.`, confirmLabel: 'Generar' }))) return;
     const res = await run(() => api(`/api/users/${m.id}/reset-password`, { method: 'POST' }));
-    if (res) setTemp({ name: m.name, email: m.email, phone: m.phone, password: res.temporary_password });
+    if (res) setTemp({ name: m.name, email: m.email, phone: m.phone, role: m.role, password: res.temporary_password });
   };
   const toggle = async (m) => {
     if (m.active && !(await confirm({ title: `Desactivar a ${m.name}`, message: 'Pierde el acceso de inmediato. Su historial se conserva.', confirmLabel: 'Desactivar', tone: 'danger' }))) return;
     if (await run(() => api(`/api/users/${m.id}`, { method: 'PATCH', body: { active: !m.active } }), { success: m.active ? 'Acceso desactivado' : 'Acceso reactivado' })) changed();
   };
-  const actions = { busy, onEdit: setEditing, onReset: reset, onToggle: toggle };
+  const actions = { busy, onEdit: (member) => setEditing({ member }), onAdd: (role) => setEditing({ role }), onReset: reset, onToggle: toggle };
 
   const tabs = Object.entries(TABS).filter(([value]) => value !== 'ajustes' || isAdmin).map(([value, label]) => ({ value, label }));
 
   return (
     <div className="space-y-5">
       <PageHeader eyebrow="Quiénes somos" title="Equipo" icon={Users} tone="teal" subtitle="Quién hace qué, en qué servicios está y cuánta carga tiene. Tocá una persona para ver su ficha."
-        actions={isAdmin && tab === 'personas' && <button type="button" className="btn btn-primary" onClick={() => setEditing('new')}><UserPlus className="h-4 w-4" />Agregar persona</button>} />
+        actions={isAdmin && tab === 'personas' && <button type="button" className="btn btn-primary" onClick={() => setEditing({ role: 'socio' })}><UserPlus className="h-4 w-4" />Agregar persona</button>} />
 
       <div className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0"><Tabs tabs={tabs} value={tab} onChange={setTab} /></div>
 
@@ -309,8 +498,8 @@ export default function Team() {
 
       {tab === 'ajustes' && isAdmin && <div className="max-w-3xl"><SettingsCard key={JSON.stringify(settings)} /></div>}
 
-      {editing && <MemberModal member={editing === 'new' ? null : editing} onClose={() => setEditing(null)}
-        onSaved={(res, form) => { changed(); if (res.temporary_password) setTemp({ name: res.user.name, email: res.user.email, phone: form.phone, password: res.temporary_password }); }} />}
+      {editing && <MemberModal member={editing.member ?? null} presetRole={editing.role} onClose={closeEditor}
+        onSaved={(res, form) => { changed(); if (res.temporary_password) setTemp({ name: res.user.name, email: res.user.email, phone: form.phone, role: res.user.role, password: res.temporary_password }); }} />}
       {temp && <TempPassword result={temp} onClose={() => setTemp(null)} />}
     </div>
   );

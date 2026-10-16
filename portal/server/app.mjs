@@ -58,12 +58,16 @@ const CSP = [
  * @param {object} o
  * @param {object|null} [o.push]  servicio Web Push (server/push.mjs); null = avisos solo en el buzón
  * @param {(() => Promise<unknown>)|null} [o.fetchExchangeRate]  consulta del tipo de cambio para la automatización tipo_cambio
+ * @param {string|null} [o.setupCode]  código de un solo uso para crear al dueño desde la pantalla de configuración inicial
+ *        (v6). Por defecto PORTAL_SETUP_CODE; sin código, la configuración por pantalla queda deshabilitada.
  * El servidor devuelto expone `server.ctx` (y `server.ctx.automations`) para el programador de index.mjs y las pruebas.
  */
 export function createPortalServer({
   db, env = process.env, now = () => Date.now(), staticDir = null, logger = console, push = null, fetchExchangeRate = null,
+  setupCode = env.PORTAL_SETUP_CODE ?? null,
 } = {}) {
   const ctx = createContext({ db, now, push, fetchExchangeRate });
+  ctx.setupCode = typeof setupCode === 'string' && setupCode.trim().length >= 8 ? setupCode.trim() : null;
   const router = createRouter();
 
   const isProduction = env.NODE_ENV === 'production';

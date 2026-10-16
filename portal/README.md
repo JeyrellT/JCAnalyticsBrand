@@ -128,6 +128,12 @@ node scripts/capturas.mjs capturas --tema=dark --solo=inicio,inversiones
 - **Socio.** Accede a proyectos, tablero, agenda e inversiones.
 - **Colaborador.** Accede a proyectos, tablero y agenda. **No ve inversiones** (ni en la API, el centro de operaciones, la bitácora o los avisos). Puede dar accesos al portal de clientes solo para los clientes que lleva.
 - **Cliente** (v5). Es una identidad aparte y solo entra a `/cliente`. Ve solo lo de su empresa. Puede aprobar entregables si su acceso lo permite.
+- **Inversionista** (v6). Solo entra a `/inversionista`, su portal:
+  - ve su capital, sus retornos, su participación y su TIR;
+  - confirma u objeta los movimientos a su nombre;
+  - avisa sus aportes y descarga su estado de cuenta en Excel.
+
+  No ve la operación, ni los nombres o montos de otros socios, ni las notas internas. Ver `docs/v6-contrato.md`.
 
 ## Arquitectura
 
@@ -165,6 +171,8 @@ npm run dev              # en otra terminal: interfaz en http://localhost:5173
 
 Las cuentas demo son `jeyrell@demo.jcanalytic.local` (admin), `catalina@…`, `alex@…`, `socio5@…` (socios) y `hillary@…` (colaboradora). La contraseña de todas es `DemoPortal2026`. Para recrear la base demo: `npm run seed:demo -- --reset`.
 
+Inversionista (v6): `angel@demo.jcanalytic.local`, que tiene un aporte confirmado y otro esperando su confirmación en BarberXCR.
+
 Portal de clientes (v5): `laburrada@clientes.demo.jcanalytic.local` (aprueba entregables), `marketing.laburrada@clientes.demo.jcanalytic.local` (solo lectura de entregables) y `uniquex@clientes.demo.jcanalytic.local`, con la misma contraseña. Se ingresa en `/cliente` con la opción "Cliente" del login.
 
 En Windows (PowerShell): `$env:PORTAL_DB_PATH="data/demo.sqlite"; npm run dev:api`.
@@ -196,16 +204,19 @@ La E2E usa Chromium. Busca primero `PLAYWRIGHT_CHROMIUM`, después `/opt/pw-brow
 3. **Variables:**
    - `NODE_ENV=production` → cookies `Secure` y HSTS
    - `PORTAL_DB_PATH=/data/portal.sqlite`
-   - `PORTAL_ADMIN_EMAIL=gerencia@jcanalytic.com`, `PORTAL_ADMIN_NAME=Jeyrell Tardencilla` y `PORTAL_ADMIN_PASSWORD=<temporal de 10+ caracteres con letras y números>`. Solo se usan si la base está vacía.
+   - `PORTAL_SETUP_CODE=<código largo y aleatorio>` (v6): con la base vacía, el portal muestra **"Configurá tu portal"**. Ahí el dueño pone este código, su nombre, correo y contraseña, y queda como administrador. Después la pantalla desaparece para siempre. Si no definís la variable, el servidor genera un código y lo muestra en el registro (*Deploy Logs*).
+   - Alternativa sin pantalla: `PORTAL_ADMIN_EMAIL`, `PORTAL_ADMIN_NAME` y `PORTAL_ADMIN_PASSWORD` crean al admin al arrancar con la base vacía (con clave temporal).
    - Avisos push (recomendado): `PORTAL_VAPID_PUBLIC_KEY` y `PORTAL_VAPID_PRIVATE_KEY`.
      - Sin estas variables, el portal genera las claves una vez y las guarda en la base.
      - Si las claves cambian, cada persona debe volver a activar los avisos.
      - Opcionales: `PORTAL_VAPID_SUBJECT` (por defecto `mailto:gerencia@jcanalytic.com`), `PORTAL_FX_URL` (API del tipo de cambio) y `PORTAL_SCHEDULER=0` para apagar las automatizaciones.
    - Los avisos y la instalación exigen **HTTPS** y un dominio propio. Railway lo da por defecto.
-4. **Build:** `npm ci && npm run build` · **Start:** `npm start` · **Healthcheck:** `/health`.
+4. **Build:** `npm ci --include=dev && npm run build` (Vite es dependencia de desarrollo y `NODE_ENV=production` la omitiría) · **Start:** `npm start` · **Healthcheck:** `/health`.
 5. **Dominio:** generar uno de Railway o apuntar `portal.jcanalytic.com` (CNAME) al servicio.
-6. Primer ingreso: entrar con el correo del admin y la contraseña temporal. El portal pide cambiarla. **Después borrá `PORTAL_ADMIN_PASSWORD`** de las variables.
-7. En *Equipo y ajustes → Agregar persona*, crear las otras 4 cuentas. Cada una recibe una contraseña temporal, que se puede enviar por WhatsApp desde el mismo modal.
+6. **Primer ingreso:** abrí el portal, completá "Configurá tu portal" con el código y tus datos, y entrás como administrador.
+7. **Agregar gente:**
+   - En *Equipo y ajustes → Agregar persona* se crean socios, colaboradores e **inversionistas**. Cada persona recibe una contraseña temporal, con un mensaje listo para WhatsApp que lleva el enlace correcto (`/` para el equipo, `/inversionista` para inversionistas).
+   - Los **clientes** se agregan en *Clientes → ficha → Portal del cliente → Dar acceso*.
 
 Una sola réplica, siempre: los límites de intentos de login viven en memoria y SQLite no admite escritores en paralelo entre réplicas.
 

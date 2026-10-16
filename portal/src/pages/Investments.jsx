@@ -1,4 +1,5 @@
 // Portafolio de inversiones de los socios: capital aportado, retornos, neto, múltiplo y cuentas por socio.
+// v6: la cartera incluye a los inversionistas (rol 'inversionista'), marcados con su insignia.
 import { useState } from 'react';
 import { Plus, Download, TrendingUp, Hourglass, Scale, Info, HandCoins, Users, ChartLine, Layers, ChevronRight } from 'lucide-react';
 import { useResource, useSession } from '../lib/session.jsx';
@@ -7,7 +8,8 @@ import { Link, navigate } from '../lib/router.jsx';
 import { PageHeader, PageLoader, Badge, ProgressBar, Modal, Field, Select, EmptyState, Avatar, IconTile, SectionHead, Tabs, useAction, cx } from '../components/ui.jsx';
 import { StatusBadge, MoneyInput } from '../components/common.jsx';
 import CashflowChart from '../components/CashflowChart.jsx';
-import { INVESTMENT_CATEGORIES, INVESTMENT_STATUS } from '../../shared/catalog.js';
+import { RoleBadge } from '../components/people.jsx';
+import { INVESTMENT_CATEGORIES, INVESTMENT_STATUS, isInvestorRole } from '../../shared/catalog.js';
 import { formatMoney, formatPercent, formatMultiple, formatDate, todayKey } from '../lib/format.js';
 
 export function InvestmentForm({ investment, onClose, onSaved }) {
@@ -144,7 +146,7 @@ export default function Investments() {
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="Socios" title="Inversiones" icon={TrendingUp} tone="teal" subtitle="Cada colón que entra o sale queda con su mensaje y la confirmación de quien lo recibió. Montos consolidados en colones."
+      <PageHeader eyebrow="Socios e inversionistas" title="Inversiones" icon={TrendingUp} tone="teal" subtitle="Cada colón que entra o sale queda con su mensaje y la confirmación de quien lo recibió. Montos consolidados en colones."
         actions={<>
           <a className="btn btn-outline" href="/api/investments/export.csv" download><Download className="h-4 w-4" />Excel</a>
           <button type="button" className="btn btn-primary" onClick={() => setCreating(true)}><Plus className="h-4 w-4" />Nueva inversión</button>
@@ -167,7 +169,8 @@ export default function Investments() {
         </section>
 
         <section className="card animate-rise overflow-hidden" aria-labelledby="partners-title">
-          <SectionHead flush id="partners-title" icon={Users} tone="teal" title="Cuenta de cada socio" hint="Participación = capital aportado ÷ capital total confirmado." />
+          {/* El título puede ocupar dos líneas en celular (en vez de cortarse). */}
+          <SectionHead flush id="partners-title" icon={Users} tone="teal" title="Cuenta de cada socio e inversionista" hint="Participación = capital aportado ÷ capital total confirmado." className="[&_h2]:whitespace-normal" />
           <ul className="stagger divide-y divide-line">
             {partners.map((p) => (
               <li key={p.id} className="px-4 py-3.5 sm:px-5">
@@ -176,6 +179,7 @@ export default function Investments() {
                   <div className="min-w-0 flex-1">
                     <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-sm font-semibold text-ink">
                       <span className="truncate">{p.name}</span>
+                      {isInvestorRole(p) && <RoleBadge role={p.role} />}
                       {p.id === user.id && <Badge tone="blue">Vos</Badge>}
                       {p.pending_count > 0 && <Badge tone="amber">{p.pending_count} pend.</Badge>}
                     </p>
@@ -199,7 +203,7 @@ export default function Investments() {
           action={<Tabs value={filter} onChange={setFilter} tabs={[{ value: 'vigentes', label: 'Vigentes', count: counts.vigentes }, { value: 'cerradas', label: 'Cerradas', count: counts.cerradas }, { value: 'todas', label: 'Todas', count: investments.length }]} />} />
         {list.length === 0 ? (
           <EmptyState icon={TrendingUp} tone="teal" title="Todavía no hay inversiones aquí" action={<button type="button" className="btn btn-primary" onClick={() => setCreating(true)}><Plus className="h-4 w-4" />Registrar la primera</button>}>
-            Creá una inversión (p. ej. pauta de un producto) y registrá los aportes de cada socio.
+            Creá una inversión (p. ej. pauta de un producto) y registrá los aportes de cada socio o inversionista.
           </EmptyState>
         ) : <div className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{list.map((i) => <InvestmentCard key={i.id} i={i} />)}</div>}
       </section>

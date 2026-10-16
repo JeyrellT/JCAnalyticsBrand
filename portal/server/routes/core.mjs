@@ -6,18 +6,70 @@
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { readFile, rm } from 'node:fs/promises';
-import { randomUUID } from 'node:crypto';
-import { ROLES, MEMBER_COLORS, canInvest } from '../../shared/catalog.js';
+import { randomUUID, createHash } from 'node:crypto';
+import { ROLES, MEMBER_COLORS, canInvest, isInvestorRole } from '../../shared/catalog.js';
 import { publicUser, SENSITIVE_KINDS } from '../context.mjs';
 import { fail, invalid, has, text, oneOf, email, color, id, number } from '../http.mjs';
 import { hashPassword, verifyPassword, passwordProblem, temporaryPassword, burnPasswordCheck } from '../auth.mjs';
 import { pendingForUser } from './common.mjs';
+import { transaction } from '../schema.mjs';
 
 // La regla de doble control vive en common.mjs (también la usan las automatizaciones).
 export { pendingForUser };
 
 export function coreRoutes(route, ctx, session) {
   const { db } = ctx;
+
+  // ── Configuración inicial (v6) ────────────────────────────────────────────
+  // Con la base vacía, la primera persona que abre el portal crea la cuenta del dueño (admin)
+  // con un código de un solo uso (PORTAL_SETUP_CODE o el que muestra el registro del servidor).
+  // Apenas existe una persona, estas rutas quedan cerradas para siempre.
+  const nobodyYet = () => db.prepare('SELECT COUNT(*) n FROM users').get().n === 0;
+  const digest = (value) => createHash('sha256').update(String(value)).digest('hex');
+  /** Comparación en tiempo constante (sobre las huellas, que siempre miden lo mismo). */
+  const sameSecret = (a, b) => {
+    const x = digest(a);
+    const y = digest(b);
+    let diff = 0;
+    for (let i = 0; i < x.length; i += 1) diff |= x.charCodeAt(i) ^ y.charCodeAt(i);
+    return diff === 0;
+  };
+  const normalizeCode = (value) => String(value ?? '').trim().toUpperCase().replace(/[\s-]/g, '');
+
+  route('GET', '/api/setup', 'public', () => ({ needed: nobodyYet(), available: !!ctx.setupCode }));
+
+  route('POST', '/api/setup', 'public', async ({ body, req, res, ip }) => {
+    if (!nobodyYet()) fail(409, 'setup_done');
+    if (!ctx.setupCode) fail(503, 'setup_unavailable');
+    // Límite por IP (no global): nadie puede bloquearle la configuración al dueño desde otra red.
+    const keys = [`ip:${ip}`, `setup:${ip}`];
+    if (session.limiter.blocked(keys)) fail(429, 'too_many_attempts');
+    session.limiter.fail(keys);
+    if (!sameSecret(normalizeCode(body.code), normalizeCode(ctx.setupCode))) {
+      ctx.log(null, 'auth', null, 'setup_failed', 'Código de configuración inicial incorrecto');
+      invalid('code', 'Código incorrecto. Está en la variable PORTAL_SETUP_CODE o en el registro del servidor.');
+    }
+    const name = text(body.name, 'name', { max: 80, min: 2, required: true });
+    const mail = email(body.email);
+    const problem = passwordProblem(body.password);
+    if (problem) invalid('password', problem);
+    const phone = text(body.phone, 'phone', { max: 30 });
+    const hash = await hashPassword(body.password);
+    // Se vuelve a verificar dentro de la transacción: dos pestañas a la vez no crean dos dueños.
+    const userId = transaction(db, () => {
+      if (!nobodyYet()) fail(409, 'setup_done');
+      if (db.prepare('SELECT 1 FROM client_accounts WHERE email = ?').get(mail)) invalid('email', 'Ese correo ya tiene acceso como cliente.');
+      const id = Number(db.prepare(`INSERT INTO users (email, name, role, color, phone, password_hash, must_change_password, created_at)
+        VALUES (?, ?, 'admin', '#0065df', ?, ?, 0, ?)`).run(mail, name, phone, hash, ctx.nowIso()).lastInsertRowid);
+      db.prepare("DELETE FROM app_secrets WHERE key = 'setup_code'").run();
+      return id;
+    });
+    session.limiter.reset(keys);
+    session.start(res, req, userId, ip);
+    db.prepare('UPDATE users SET last_login_at = ? WHERE id = ?').run(ctx.nowIso(), userId);
+    ctx.log(userId, 'user', userId, 'setup', `${name} configuró el portal y quedó como administrador`);
+    return { user: publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(userId)) };
+  });
 
   // ── Sesión ────────────────────────────────────────────────────────────────
   route('POST', '/api/auth/login', 'public', async ({ body, req, res, ip }) => {
@@ -49,7 +101,7 @@ export function coreRoutes(route, ctx, session) {
     user: publicUser(user),
     settings: ctx.settings(),
     unread: unreadCount(user),
-    pending_confirmations: canInvest(user) ? pendingForUser(ctx, user).length : 0,
+    pending_confirmations: canInvest(user) || isInvestorRole(user) ? pendingForUser(ctx, user).length : 0,
     push_available: !!ctx.push,
   }));
 
@@ -155,7 +207,7 @@ export function coreRoutes(route, ctx, session) {
 
   // ── Buzón ─────────────────────────────────────────────────────────────────
   // Quien deja de ser socio (o es desactivado y reactivado como colaborador) tampoco ve avisos viejos de dinero.
-  const hiddenKinds = (user) => (canInvest(user) ? '' : `AND kind NOT IN (${SENSITIVE_KINDS.map((k) => `'${k}'`).join(',')})`);
+  const hiddenKinds = (user) => (canInvest(user) || isInvestorRole(user) ? '' : `AND kind NOT IN (${SENSITIVE_KINDS.map((k) => `'${k}'`).join(',')})`);
   function unreadCount(user) {
     return db.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND read_at IS NULL ${hiddenKinds(user)}`).get(user.id).n;
   }

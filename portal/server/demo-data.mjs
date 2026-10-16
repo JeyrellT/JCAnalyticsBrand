@@ -35,6 +35,8 @@ export async function seedDemoData({ db, passwordHash, login, loginClient = null
     ['alex@demo.jcanalytic.local', 'Alex Benedict', 'socio', '#8b5cf6', null],
     ['hillary@demo.jcanalytic.local', 'Hillary Porras', 'colaborador', '#ff5a00', null],
     ['socio5@demo.jcanalytic.local', 'Socio Inversionista', 'socio', '#00a6b2', null],
+    // v6: inversionista externo (solo ve su portal de inversiones).
+    ['angel@demo.jcanalytic.local', 'Ángel Mora', 'inversionista', '#e8b32c', '+506 8700-1234'],
   ];
   const U = {};
   for (const [email, name, role, color, phone] of people) {
@@ -171,6 +173,13 @@ export async function seedDemoData({ db, passwordHash, login, loginClient = null
   await confirm(alex, await mov(jey, infraInv, { type: 'aporte', partner_id: U.jeyrell, amount: 240_00, fx_rate: 512.4, date: day(-30), message: 'Mi mitad de infraestructura.' }), 'Recibido ✓');
 
   await cata('POST', `/api/investments/${barberInv}/notes`, { body: 'Llegamos a 14 barberías. Propongo reinvertir 20 % del próximo retorno en pauta local en Heredia.' });
+
+  // ── Inversionista externo (v6) ────────────────────────────────────────────
+  // Ángel entró a BarberXCR después de los repartos: un aporte confirmado y otro esperando SU confirmación.
+  const angel = await as('angel');
+  const angelFirst = await mov(jey, barberInv, { type: 'aporte', partner_id: U.angel, amount: 500_000_00, date: day(-12), reference: 'SINPE 66120', message: 'Aporte de Ángel para la expansión a Heredia.' });
+  await angel('POST', `/api/investor/movements/${angelFirst}/confirm`, { message: 'Enviado desde mi cuenta BN ✓' });
+  await mov(jey, barberInv, { type: 'aporte', partner_id: U.angel, amount: 250_000_00, date: day(-1), reference: 'SINPE 70211', message: 'Segundo tramo acordado en la reunión del lunes.' });
 
   const clients = loginClient ? await seedClientPortal({ db, hash, iso, day, U, C, P, cata, alex, loginClient }) : [];
   return { users: people.map(([email, name, role]) => ({ email, name, role })), clients };

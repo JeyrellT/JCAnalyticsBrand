@@ -42,7 +42,9 @@ export function createContext({ db, now = () => Date.now(), push = null, fetchEx
   function notify(userIds, actorId, { kind, title, body = null, link = null }) {
     let unique = [...new Set(userIds.filter((u) => u && u !== actorId))];
     if (SENSITIVE_KINDS.includes(kind)) {
-      const allowed = new Set(investorIds());
+      // Socios, admin e inversionistas. Los avisos generales de dinero se envían a investorIds()
+      // (sin inversionistas); a un inversionista solo le llegan los dirigidos a él (sus movimientos).
+      const allowed = new Set(moneyHolderIds());
       unique = unique.filter((u) => allowed.has(u));
     }
     const at = nowIso();
@@ -63,8 +65,11 @@ export function createContext({ db, now = () => Date.now(), push = null, fetchEx
   }
 
   const userName = (userId) => db.prepare('SELECT name FROM users WHERE id = ?').get(userId)?.name ?? 'Alguien';
+  /** Socios y admin activos: custodian el dinero del equipo y reciben los avisos generales de inversiones. */
   const investorIds = () => db.prepare("SELECT id FROM users WHERE active = 1 AND role IN ('admin','socio')").all().map((r) => r.id);
-  const activeUserIds = () => db.prepare('SELECT id FROM users WHERE active = 1').all().map((r) => r.id);
+  const moneyHolderIds = () => db.prepare("SELECT id FROM users WHERE active = 1 AND role IN ('admin','socio','inversionista')").all().map((r) => r.id);
+  /** Personas de la operación (sin inversionistas). */
+  const activeUserIds = () => db.prepare("SELECT id FROM users WHERE active = 1 AND role <> 'inversionista'").all().map((r) => r.id);
 
   /**
    * Semáforo del compromiso "avance cada N horas" para proyectos de cliente
@@ -82,7 +87,7 @@ export function createContext({ db, now = () => Date.now(), push = null, fetchEx
   }
 
   return {
-    db, now, nowIso, today, settings, numberSetting, notify, log, userName, investorIds, activeUserIds, projectSla,
+    db, now, nowIso, today, settings, numberSetting, notify, log, userName, investorIds, moneyHolderIds, activeUserIds, projectSla,
     // push y fetchExchangeRate se leen siempre como ctx.push / ctx.fetchExchangeRate: la demo puede
     // reemplazarlos después de crear el contexto.
     push, fetchExchangeRate, setPushHook: (fn) => { pushHook = typeof fn === 'function' ? fn : null; },

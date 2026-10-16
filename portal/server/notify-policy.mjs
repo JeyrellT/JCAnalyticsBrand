@@ -7,7 +7,7 @@
 //  respuesta HTTP. Ver docs/v3-contrato.md § "Push: arquitectura".
 // ============================================================================
 
-import { NOTIFICATION_CATEGORIES, notificationCategory, canInvest } from '../shared/catalog.js';
+import { NOTIFICATION_CATEGORIES, notificationCategory, canInvest, isInvestorRole } from '../shared/catalog.js';
 import { SENSITIVE_KINDS } from './context.mjs';
 
 /** Servicios de push aceptados (defensa SSRF): el host debe ser uno de estos o un subdominio. */
@@ -94,7 +94,7 @@ export function pushBlockReason(user, kind, prefs, ms) {
   if (!user || !user.active) return 'inactive';
   if (!prefs.push_enabled) return 'push_disabled';
   const category = notificationCategory(kind);
-  if (category === 'dinero' && !canInvest(user)) return 'not_investor';
+  if (category === 'dinero' && !canInvest(user) && !isInvestorRole(user)) return 'not_investor';
   if (prefs.categories[category] === false) return 'category_off';
   // En horario tranquilo solo pasan los pedidos de confirmación de dinero.
   if (inQuietHours(prefs, ms) && kind !== 'movement') return 'quiet_hours';
@@ -103,7 +103,7 @@ export function pushBlockReason(user, kind, prefs, ms) {
 
 /** Avisos sin leer que ve esta persona (mismo criterio que el buzón): el número del globo del ícono. */
 export function unreadBadge(db, user) {
-  const hidden = canInvest(user) ? '' : `AND kind NOT IN (${SENSITIVE_KINDS.map((k) => `'${k}'`).join(',')})`;
+  const hidden = canInvest(user) || isInvestorRole(user) ? '' : `AND kind NOT IN (${SENSITIVE_KINDS.map((k) => `'${k}'`).join(',')})`;
   return db.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND read_at IS NULL ${hidden}`).get(user.id).n;
 }
 
