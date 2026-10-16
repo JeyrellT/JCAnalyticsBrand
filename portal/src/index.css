@@ -416,3 +416,20 @@ body {
   .brief-print-row { break-inside: avoid; page-break-inside: avoid; }
   .brief-print a { color: inherit; text-decoration: none; }
 }
+
+/* ── v8 · Celular primero ─────────────────────────────────────────────────
+   · iOS hace zoom en campos de menos de 16 px: en pantallas táctiles van a 16 px.
+   · Sin destello gris al tocar; los toques no esperan el doble toque.
+   · Con el teclado abierto se esconden la barra inferior y los botones flotantes
+     (html[data-typing], lo pone Layout) para que no tapen el campo. */
+@media (pointer: coarse) {
+  .input, select.input, textarea.input { font-size: 16px; }
+}
+html { -webkit-tap-highlight-color: transparent; }
+a, button, label, select, summary { touch-action: manipulation; }
+.mobile-tabbar, .float-jump { transition: transform 220ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease; }
+html[data-typing] .mobile-tabbar { transform: translateY(115%); }
+html[data-typing] .float-jump { opacity: 0; pointer-events: none; }
+.float-jump { bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px)); }
+.ptr-indicator { transition: transform 160ms ease, opacity 160ms ease; }
+@media (prefers-reduced-motion: reduce) { .mobile-tabbar, .float-jump, .ptr-indicator { transition: none; } }

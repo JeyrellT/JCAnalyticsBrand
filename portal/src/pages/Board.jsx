@@ -2,7 +2,7 @@
 // En el celular se ve una columna a la vez (chips arriba) y cada tarjeta trae "Mover a…".
 // Los límites WIP (Lean) de "En progreso" y "Revisión" se configuran en Equipo y ajustes.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Search, MessageSquare, CalendarClock, Trash2, Send, Filter, KanbanSquare, SlidersHorizontal, Inbox, AlertTriangle } from 'lucide-react';
+import { Plus, Search, MessageSquare, CalendarClock, Trash2, Send, Filter, KanbanSquare, SlidersHorizontal, Inbox, AlertTriangle, ArrowRight } from 'lucide-react';
 import { useResource, useSession } from '../lib/session.jsx';
 import { api } from '../lib/api.js';
 import { useLocation, navigate, Link } from '../lib/router.jsx';
@@ -91,6 +91,7 @@ function TaskCard({ t, onOpen, onMove, dragging, setDragging }) {
   const due = t.status !== 'hecho' ? dueLabel(t.due_date) : null;
   const pr = TASK_PRIORITY[t.priority];
   const isDragging = dragging === t.id;
+  const next = TASK_STATUS_ORDER[TASK_STATUS_ORDER.indexOf(t.status) + 1];
   return (
     <article
       draggable
@@ -113,13 +114,17 @@ function TaskCard({ t, onOpen, onMove, dragging, setDragging }) {
         </span>
         {t.assignee_name ? <Avatar name={t.assignee_name} color={t.assignee_color} size={24} /> : <span className="h-6 w-6 shrink-0 rounded-full border border-dashed border-line-strong" title="Sin asignar" />}
       </div>
-      {/* En escritorio se arrastra (o se cambia la columna en el detalle); en táctil, este selector. */}
-      <label className="mt-2.5 flex items-center gap-2 border-t border-line pt-2.5 text-xs font-semibold text-muted lg:hidden">
-        Mover a
-        <select className="input h-11 min-w-0 flex-1" value={t.status} onChange={(e) => onMove(t, e.target.value)} aria-label={`Mover "${t.title}"`}>
-          {statusOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      {/* En escritorio se arrastra; en táctil, un toque avanza a la columna siguiente y el selector mueve a cualquiera. */}
+      <div className="mt-2.5 flex items-center gap-2 border-t border-line pt-2.5 lg:hidden">
+        {next ? (
+          <button type="button" className="btn btn-soft btn-sm min-h-11 min-w-0 flex-1 justify-center" onClick={() => onMove(t, next)} aria-label={`Pasar "${t.title}" a ${TASK_STATUS[next].label}`}>
+            <span className="truncate">{TASK_STATUS[next].label}</span><ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+          </button>
+        ) : <span className="flex-1 text-xs font-semibold text-teal-ink">Terminada</span>}
+        <select className="input h-11 w-[8.5rem] shrink-0 text-[13px]" value={t.status} onChange={(e) => onMove(t, e.target.value)} aria-label={`Mover "${t.title}" a otra columna`}>
+          {statusOptions.map((o) => <option key={o.value} value={o.value}>{o.value === t.status ? 'Mover a…' : o.label}</option>)}
         </select>
-      </label>
+      </div>
     </article>
   );
 }
@@ -237,6 +242,21 @@ export default function Board() {
     else if (status === 'hecho' && task.status !== 'hecho') reload();
   }
 
+  // Celular: un deslizamiento horizontal claro (> 70 px y más horizontal que vertical) cambia de columna.
+  const swipe = useRef(null);
+  const swipeStart = (e) => { const p = e.touches[0]; swipe.current = { x: p.clientX, y: p.clientY }; };
+  const swipeEnd = (e) => {
+    const from = swipe.current;
+    swipe.current = null;
+    if (!from || window.matchMedia('(min-width: 64rem)').matches) return;
+    const p = e.changedTouches[0];
+    const dx = p.clientX - from.x;
+    const dy = p.clientY - from.y;
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const i = TASK_STATUS_ORDER.indexOf(mobileCol) + (dx < 0 ? 1 : -1);
+    if (i >= 0 && i < TASK_STATUS_ORDER.length) setMobileCol(TASK_STATUS_ORDER[i]);
+  };
+
   // Celular: al mover con "Mover a", la vista sigue a la tarjeta hasta su nueva columna.
   function moveFromSelect(task, status) {
     setMobileCol(status);
@@ -263,7 +283,7 @@ export default function Board() {
     <>
       <PageHeader eyebrow="Operación" title="Tablero" icon={KanbanSquare} tone="blue"
         subtitle={<>
-          <span className="lg:hidden">Elegí una columna y usá «Mover a» en cada tarjeta.</span>
+          <span className="lg:hidden">Deslizá a los lados para cambiar de columna; un toque avanza cada tarea.</span>
           <span className="hidden lg:inline">Arrastrá las tarjetas entre columnas. La franja de cada tarjeta marca su prioridad.</span>
         </>}
         actions={<button type="button" className="btn btn-primary" onClick={() => setCreating(true)}><Plus className="h-4 w-4" />Nueva tarea</button>} />
@@ -307,7 +327,8 @@ export default function Board() {
             })}
           </div>
 
-          <div className="relative flex flex-col gap-3 lg:grid lg:grid-cols-5 lg:items-start">
+          {/* Celular: deslizar a los lados cambia de columna (como pasar de pestaña). */}
+          <div className="relative flex flex-col gap-3 lg:grid lg:grid-cols-5 lg:items-start" onTouchStart={swipeStart} onTouchEnd={swipeEnd}>
             {columns.map(({ status, tasks }) => {
               const limit = wip[status];
               const over = Boolean(limit) && tasks.length > limit;

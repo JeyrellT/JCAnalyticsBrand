@@ -14,6 +14,7 @@ import { Avatar, ThemeToggle, ThemePicker, cx } from '../components/ui.jsx';
 import { Sheet, SheetHeader } from '../components/QuickActions.jsx';
 import { useClientCounts, firstName } from './components.jsx';
 import logoMark from '../assets/logo-mark.webp';
+import { useTypingFlag, SectionJump, PullToRefresh } from '../components/mobile.jsx';
 
 const NAV = [
   { to: '/cliente', label: 'Inicio', icon: House, exact: true },
@@ -200,7 +201,7 @@ function DesktopTabs() {
 function MobileTabs() {
   const { isActive, approvals } = useNav();
   return (
-    <nav className="safe-bottom glass fixed inset-x-0 bottom-0 z-30 border-t border-line shadow-up lg:hidden" aria-label="Secciones del portal">
+    <nav className="mobile-tabbar safe-bottom glass fixed inset-x-0 bottom-0 z-30 border-t border-line shadow-up lg:hidden" aria-label="Secciones del portal">
       <ul className="mx-auto grid max-w-lg grid-cols-5 px-1">
         {NAV.map((n) => {
           const active = isActive(n);
@@ -241,6 +242,7 @@ function Footer() {
 
 export default function ClientLayout({ children }) {
   const { full } = useLocation();
+  useTypingFlag(); // v8: con el teclado abierto se esconde la barra inferior
   const { account, client } = useSession();
   // La hoja de cuenta se cierra sola al cambiar de página (también con atrás/adelante).
   const [sheet, setSheet] = useState(false);
@@ -281,6 +283,8 @@ export default function ClientLayout({ children }) {
           <Footer />
         </div>
       </main>
+      <SectionJump routeKey={full} />
+      <PullToRefresh />
 
       <MobileTabs />
       {sheet && <AccountSheet onClose={() => setSheet(false)} />}

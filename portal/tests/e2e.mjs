@@ -329,7 +329,10 @@ try {
     await noOverflow('inicio');
 
     // Tablero: una columna a la vez, se cambia con chips y "Mover a" sigue a la tarjeta.
-    await nav().getByRole('link', { name: 'Tablero' }).click();
+    // v8: la barra inferior trae el Buzón; el Tablero está en "Más".
+    await nav().getByRole('link', { name: /^Buzón/ }).waitFor();
+    await nav().getByRole('button', { name: /^Más/ }).click();
+    await m.getByRole('dialog', { name: 'Más secciones' }).getByRole('link', { name: 'Tablero' }).click();
     await m.getByRole('heading', { name: 'Tablero', level: 1 }).waitFor();
     await shot(m, '21-movil-tablero');
     await noOverflow('tablero');
@@ -337,6 +340,9 @@ try {
     const mobileCard = m.locator('article', { hasText: 'Recordatorios automáticos por WhatsApp' });
     await mobileCard.getByLabel(/Mover/).selectOption('por_hacer');
     await m.getByRole('region', { name: 'Por hacer' }).locator('article', { hasText: 'Recordatorios automáticos por WhatsApp' }).waitFor();
+    // Un toque la avanza a la columna siguiente y la vista la sigue.
+    await m.getByRole('button', { name: /^Pasar "Recordatorios automáticos por WhatsApp.*" a En progreso$/ }).click();
+    await m.getByRole('region', { name: 'En progreso' }).locator('article', { hasText: 'Recordatorios automáticos por WhatsApp' }).waitFor();
 
     // Botón "+": crear una tarea desde cualquier pantalla.
     await nav().getByRole('button', { name: 'Crear' }).click();

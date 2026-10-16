@@ -3,6 +3,7 @@
 // v6: un movimiento puede ser de un inversionista; lo confirma él mismo desde su portal.
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Pencil, ArrowDownLeft, ArrowUpRight, Split, Download, Send, Target, Percent, Scale, Hourglass, TrendingUp, Info, BookOpen, Users, ChartLine, MessageSquareText } from 'lucide-react';
+import { useLimited } from '../components/mobile.jsx';
 import { useResource, useSession } from '../lib/session.jsx';
 import { api } from '../lib/api.js';
 import { Link, useLocation } from '../lib/router.jsx';
@@ -193,6 +194,7 @@ export default function InvestmentDetail({ params }) {
     if (tab === 'aporte' || tab === 'retorno') return list.filter((m) => m.type === tab);
     return list;
   }, [data, tab]);
+  const [shownMovements, moreMovements] = useLimited(movements, 8, movements.findIndex((mv) => mv.id === highlight)); // v8
 
   if (!data) return <PageLoader error={error} onRetry={reload} />;
   const { investment: inv, metrics: m, series } = data;
@@ -265,7 +267,10 @@ export default function InvestmentDetail({ params }) {
               Cada aporte o retorno lleva un mensaje y lo confirma quien recibe la plata.
             </EmptyState>
           ) : (
-            <div className="stagger space-y-3">{movements.map((mv) => <MovementCard key={mv.id} m={mv} highlight={mv.id === highlight} onChanged={changed} />)}</div>
+            <>
+              <div className="stagger space-y-3">{shownMovements.map((mv) => <MovementCard key={mv.id} m={mv} highlight={mv.id === highlight} onChanged={changed} />)}</div>
+              {moreMovements}
+            </>
           )}
         </section>
 
