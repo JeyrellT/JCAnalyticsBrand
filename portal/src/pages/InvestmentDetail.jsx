@@ -17,6 +17,7 @@ import { InvestmentForm } from './Investments.jsx';
 import { INVESTMENT_CATEGORIES, INVESTMENT_STATUS, isInvestorRole } from '../../shared/catalog.js';
 import { allocateProRata } from '../../shared/finance.js';
 import { formatMoney, formatPercent, formatMultiple, formatDate, todayKey, timeAgo } from '../lib/format.js';
+import '../styles/investment-detail.css';
 
 /**
  * Quién confirma un movimiento nuevo (doble control, igual que el servidor):
@@ -261,8 +262,8 @@ export default function InvestmentDetail({ params }) {
 
       <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
         <section aria-labelledby="ledger-title" className="min-w-0">
-          <SectionHead id="ledger-title" icon={BookOpen} tone="blue" title="Libro de movimientos" hint="Cada aporte o retorno lleva su mensaje y la confirmación de quien recibe." className="flex-wrap"
-            action={<Tabs value={tab} onChange={setTab} tabs={[
+          <SectionHead id="ledger-title" icon={BookOpen} tone="blue" title="Libro de movimientos" hint="Cada aporte o retorno lleva su mensaje y la confirmación de quien recibe." className="investment-ledger-heading flex-wrap"
+            action={<Tabs className="investment-ledger-tabs" value={tab} onChange={setTab} tabs={[
               { value: 'todos', label: 'Todos', count: data.movements.length },
               { value: 'pendientes', label: 'Abiertos', count: pendingN },
               { value: 'aporte', label: 'Aportes' },
