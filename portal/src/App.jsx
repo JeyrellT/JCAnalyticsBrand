@@ -1,9 +1,10 @@
-import { Suspense, lazy, useEffect } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { SessionProvider, useSession } from './lib/session.jsx';
 import { useLocation, matchPath } from './lib/router.jsx';
 import { ToastProvider, ConfirmProvider, PageLoader, EmptyState } from './components/ui.jsx';
 import Layout from './components/Layout.jsx';
 import { Login, ForcePasswordChange } from './pages/Login.jsx';
+import { api, isDemo } from './lib/api.js';
 import Dashboard from './pages/Dashboard.jsx';
 import { WifiOff, Compass } from 'lucide-react';
 
@@ -32,6 +33,9 @@ const InvestorApp = lazy(() => import('./investor/InvestorApp.jsx'));
 const Briefs = lazy(() => import('./pages/Briefs.jsx'));
 const BriefDetail = lazy(() => import('./pages/BriefDetail.jsx'));
 const BriefPrint = lazy(() => import('./pages/BriefPrint.jsx'));
+// v6: configuración inicial del dueño (solo con la base vacía) y su bienvenida de una sola vez.
+const Setup = lazy(() => import('./pages/Setup.jsx').then((m) => ({ default: m.Setup })));
+const SetupWelcome = lazy(() => import('./pages/Setup.jsx').then((m) => ({ default: m.SetupWelcome })));
 
 const ROUTES = [
   ['/', Dashboard],
@@ -74,9 +78,31 @@ function Router() {
   return <EmptyState icon={Compass} title="Esta sección no existe">Revisá el enlace o volvé al centro de operaciones.</EmptyState>;
 }
 
+/**
+ * v6: ¿falta la configuración inicial del dueño? Se pregunta una sola vez y solo sin sesión
+ * (la demo nunca la necesita). null mientras se averigua; si la consulta falla, se sigue al ingreso.
+ */
+function useSetupStatus(anonymous) {
+  const [status, setStatus] = useState(null);
+  const ask = anonymous && status === null && !isDemo();
+  useEffect(() => {
+    if (!ask) return undefined;
+    let alive = true;
+    const settle = (next) => { if (alive) setStatus(next); };
+    api('/api/setup', { quiet: true }).then(
+      (r) => settle({ needed: !!r?.needed, available: !!r?.available }),
+      () => settle({ needed: false, available: false }),
+    );
+    return () => { alive = false; };
+  }, [ask]);
+  return [status, setStatus];
+}
+
 export function App() {
   const session = useSession();
   const { path } = useLocation(); // v5: la vista imprimible del brief va sin Layout
+  const [setup, setSetup] = useSetupStatus(session.status === 'anonymous');
+  const [welcome, setWelcome] = useState(null); // v6: bienvenida de una sola vez tras la configuración inicial
   if (session.status === 'loading') return <PageLoader />;
   if (session.status === 'offline') {
     return (
@@ -87,14 +113,31 @@ export function App() {
       </div>
     );
   }
-  if (session.status === 'anonymous') return <Login />;
+  if (session.status === 'anonymous') {
+    // v6: con la base vacía, el dueño crea su cuenta (una sola vez) en lugar de ingresar.
+    if (!setup && !isDemo()) return <PageLoader />;
+    if (setup?.needed) {
+      const closed = { needed: false, available: false };
+      return (
+        <Suspense fallback={<PageLoader />}>
+          <Setup available={setup.available} onDone={(user) => { setSetup(closed); setWelcome(user); }} onConfigured={() => setSetup(closed)} />
+        </Suspense>
+      );
+    }
+    return <Login />;
+  }
   if (session.isClient) return <Suspense fallback={<PageLoader />}><ClientApp /></Suspense>;
   if (session.user.must_change_password) return <ForcePasswordChange />;
   if (session.isInvestor) return <Suspense fallback={<PageLoader />}><InvestorApp /></Suspense>;
   // v5: brief en A4 (para imprimir o guardar como PDF), sin la barra lateral ni la inferior.
   const printParams = matchPath('/briefs/:id/imprimir', path);
   if (printParams) return <Suspense fallback={<PageLoader />}><BriefPrint params={printParams} /></Suspense>;
-  return <Layout><Router /></Layout>;
+  return (
+    <>
+      <Layout><Router /></Layout>
+      {welcome && <Suspense fallback={null}><SetupWelcome user={welcome} onClose={() => setWelcome(null)} /></Suspense>}
+    </>
+  );
 }
 
 /** Raíz de la app con sus proveedores (la usan main.jsx y la demo del navegador). */
