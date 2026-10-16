@@ -211,7 +211,7 @@ La E2E usa Chromium. Busca primero `PLAYWRIGHT_CHROMIUM`, después `/opt/pw-brow
      - Si las claves cambian, cada persona debe volver a activar los avisos.
      - Opcionales: `PORTAL_VAPID_SUBJECT` (por defecto `mailto:gerencia@jcanalytic.com`), `PORTAL_FX_URL` (API del tipo de cambio) y `PORTAL_SCHEDULER=0` para apagar las automatizaciones.
    - Los avisos y la instalación exigen **HTTPS** y un dominio propio. Railway lo da por defecto.
-4. **Build:** `npm ci --include=dev && npm run build` (Vite es dependencia de desarrollo y `NODE_ENV=production` la omitiría) · **Start:** `npm start` · **Healthcheck:** `/health`.
+4. **Build y arranque:** quedan en `portal/railway.json` (configuración como código). Railpack instala las dependencias y corre `npm run build`. **Start:** `npm start` · **Healthcheck:** `/health`. Con `NODE_ENV=production`, agregá `NPM_CONFIG_PRODUCTION=false` para que se instale Vite, que es dependencia de desarrollo.
 5. **Dominio:** generar uno de Railway o apuntar `portal.jcanalytic.com` (CNAME) al servicio.
 6. **Primer ingreso:** abrí el portal, completá "Configurá tu portal" con el código y tus datos, y entrás como administrador.
 7. **Agregar gente:**
