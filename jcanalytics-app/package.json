@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "check:site": "node scripts/check-site.mjs",
     "check:tools": "node --test scripts/test-reconcile.mjs scripts/test-retry-simulator.mjs",
+    "check:pricing": "node --test scripts/test-pricing.mjs",
     "sync:assistant": "node scripts/sync-assistant-knowledge.mjs",
     "check:assistant": "node --test ../assistant-api/server.test.mjs && node scripts/check-assistant.mjs"
   },

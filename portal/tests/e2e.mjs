@@ -74,7 +74,7 @@ async function login(page, who) {
   await page.locator('main h1').first().waitFor();
 }
 
-const shot = (page, name) => page.screenshot({ path: join(shots, `${name}.png`), fullPage: true });
+const shot = (page, name) => page.screenshot({ path: join(shots, `${name}.png`), fullPage: true, animations: 'disabled' });
 
 try {
   // ── Escritorio: Catalina (socia) ──────────────────────────────────────────
@@ -228,10 +228,10 @@ try {
   await check('servicios: catálogo con líderes y detalle', async () => {
     await page.goto(`${base}/servicios`);
     await page.getByRole('heading', { name: 'Servicios', level: 1 }).waitFor();
-    await page.getByText('Dashboard Power BI').first().waitFor();
+    await page.getByText('Power BI de gestión').first().waitFor();
     await shot(page, '15-servicios');
-    await page.getByRole('link', { name: /Dashboard Power BI/ }).first().click();
-    await page.getByRole('heading', { name: 'Dashboard Power BI', level: 1 }).waitFor();
+    await page.getByRole('link', { name: /Power BI de gestión/ }).first().click();
+    await page.getByRole('heading', { name: 'Power BI de gestión', level: 1 }).waitFor();
     await page.getByRole('heading', { name: 'Quién lo hace' }).waitFor();
     await page.getByText('Jeyrell').first().waitFor();
   });
@@ -281,9 +281,11 @@ try {
     const adminPage = await newPage({ width: 1440, height: 900 });
     await login(adminPage, 'jeyrell');
     await adminPage.goto(`${base}/automatizaciones`);
-    await adminPage.getByRole('heading', { name: 'Automatizaciones', level: 1 }).waitFor();
+    await adminPage.getByRole('heading', { name: /^Automatizaciones/, level: 1 }).waitFor();
+    await adminPage.getByRole('complementary', { name: 'Biblioteca de flujos' }).getByRole('button', { name: /^Recordatorio de citas/ }).click();
     await adminPage.getByRole('switch', { name: 'Recordatorio de citas' }).waitFor();
     await shot(adminPage, '19-automatizaciones');
+    await adminPage.getByRole('complementary', { name: 'Biblioteca de flujos' }).getByRole('button', { name: /^Tareas recurrentes/ }).click();
     await adminPage.getByRole('button', { name: /Probar ahora: Tareas recurrentes/ }).click();
     await adminPage.locator('[aria-live="polite"]').getByText(/./).first().waitFor();
     await adminPage.getByRole('button', { name: 'Nueva tarea recurrente' }).first().click();

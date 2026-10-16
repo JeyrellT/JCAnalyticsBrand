@@ -6,11 +6,14 @@ import { useResource, useSession } from '../../lib/session.jsx';
 import { PageHeader, PageLoader, EmptyState, Tabs, cx } from '../../components/ui.jsx';
 import { formatMoney, todayKey } from '../../lib/format.js';
 import { MovementItem, monthLabel, displayName, longDate, netReading } from '../components.jsx';
+import { ReturnBreakdown } from '../InvestorReturns.jsx';
 
 const FILTERS = {
   todos: () => true,
   pendientes: (m) => m.status === 'pendiente',
   confirmados: (m) => m.status === 'confirmado',
+  capital: (m) => m.type === 'retorno' && ['capital', 'mixed'].includes(m.return_kind),
+  ganancias: (m) => m.type === 'retorno' && ['profit', 'mixed'].includes(m.return_kind),
 };
 
 /** Suma en colones de lo confirmado de un tipo (cada movimiento en dólares con su tipo de cambio). */
@@ -44,11 +47,7 @@ export default function InvestorMovements() {
   if (!data) return <PageLoader error={error} onRetry={reload} />;
   const { movements, portfolio: pf } = data;
   const changed = () => { reload(); refresh(); };
-  const counts = {
-    todos: movements.length,
-    pendientes: movements.filter(FILTERS.pendientes).length,
-    confirmados: movements.filter(FILTERS.confirmados).length,
-  };
+  const counts = Object.fromEntries(Object.entries(FILTERS).map(([key, matches]) => [key, movements.filter(matches).length]));
   const net = netReading(pf.net_crc, pf.contributed_crc);
   const hasUsd = movements.some((m) => m.currency === 'USD');
 
@@ -77,6 +76,7 @@ export default function InvestorMovements() {
         </dl>
         {hasUsd && <p className="border-t border-line bg-surface-2/60 px-4 py-2.5 text-xs text-muted sm:px-5">Totales en colones: lo que está en dólares usa el tipo de cambio guardado en cada movimiento.</p>}
       </section>
+      <ReturnBreakdown metrics={pf} portfolio />
 
       {movements.length === 0 ? (
         <EmptyState icon={ReceiptText} tone="violet" title="Todavía no hay movimientos a tu nombre">
@@ -89,6 +89,8 @@ export default function InvestorMovements() {
               { value: 'todos', label: 'Todos', count: counts.todos },
               { value: 'pendientes', label: 'Por confirmar', count: counts.pendientes },
               { value: 'confirmados', label: 'Confirmados', count: counts.confirmados },
+              { value: 'capital', label: 'Capital devuelto', count: counts.capital },
+              { value: 'ganancias', label: 'Ganancias', count: counts.ganancias },
             ]} />
           </div>
 

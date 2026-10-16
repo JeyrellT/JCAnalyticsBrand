@@ -9,6 +9,7 @@
 // ============================================================================
 
 import { SERVICE_DEFAULTS } from '../shared/catalog.js';
+import { SERVICE_PRICING } from '../shared/service-pricing.js';
 
 export const MIGRATIONS = [
   `
@@ -567,6 +568,73 @@ export const MIGRATIONS = [
     used_at TEXT NOT NULL
   );
   CREATE INDEX invite_uses_invite ON invite_uses(invite_id);
+  `,
+  // 8 · Cada inversionista puede aportar solo en las inversiones habilitadas por un admin.
+  //     El backfill conserva los accesos existentes una sola vez; revocar no borra movimientos.
+  `
+  CREATE TABLE investment_access (
+    investment_id INTEGER NOT NULL REFERENCES investments(id) ON DELETE CASCADE,
+    investor_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    granted_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    granted_at TEXT NOT NULL,
+    PRIMARY KEY (investment_id, investor_id)
+  );
+  CREATE INDEX investment_access_investor ON investment_access(investor_id);
+  INSERT INTO investment_access (investment_id, investor_id, granted_by, granted_at)
+    SELECT DISTINCT m.investment_id, m.partner_id, NULL, strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+    FROM movements m JOIN users u ON u.id = m.partner_id WHERE u.role = 'inversionista';
+  `,
+  // 9 · Libro de costos/cobros y anticipos anuales de campañas; sin inventar datos históricos.
+  `
+  ALTER TABLE movements ADD COLUMN return_kind TEXT NOT NULL DEFAULT 'unclassified' CHECK (return_kind IN ('capital','profit','mixed','unclassified'));
+  ALTER TABLE movements ADD COLUMN return_capital_amount INTEGER CHECK (return_capital_amount >= 0);
+  ALTER TABLE movements ADD COLUMN return_profit_amount INTEGER CHECK (return_profit_amount >= 0);
+  CREATE TABLE finance_entries (
+    id INTEGER PRIMARY KEY, kind TEXT NOT NULL CHECK (kind IN ('revenue','expense')), category TEXT NOT NULL,
+    amount INTEGER NOT NULL CHECK (amount > 0), currency TEXT NOT NULL CHECK (currency IN ('CRC','USD')),
+    fx_rate REAL, amount_crc INTEGER NOT NULL CHECK (amount_crc > 0), date TEXT NOT NULL,
+    paid INTEGER NOT NULL CHECK (paid IN (0,1)), paid_date TEXT, description TEXT NOT NULL, reference TEXT,
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','void')), void_reason TEXT,
+    created_by INTEGER NOT NULL REFERENCES users(id), created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+  );
+  CREATE INDEX finance_entries_date ON finance_entries(date, status);
+  CREATE TABLE finance_allocations (
+    id INTEGER PRIMARY KEY, entry_id INTEGER NOT NULL REFERENCES finance_entries(id) ON DELETE CASCADE,
+    amount INTEGER NOT NULL CHECK (amount > 0), amount_crc INTEGER NOT NULL CHECK (amount_crc >= 0),
+    service_key TEXT REFERENCES service_lines(key), project_id INTEGER REFERENCES projects(id), investment_id INTEGER REFERENCES investments(id)
+  );
+  CREATE INDEX finance_allocations_investment ON finance_allocations(investment_id, entry_id);
+  CREATE TABLE finance_cost_plans (
+    id INTEGER PRIMARY KEY, name TEXT NOT NULL, service_key TEXT REFERENCES service_lines(key), currency TEXT NOT NULL,
+    units INTEGER NOT NULL CHECK (units > 0), price_per_unit INTEGER NOT NULL CHECK (price_per_unit >= 0),
+    margin_bps INTEGER NOT NULL CHECK (margin_bps BETWEEN 0 AND 9500), costs_json TEXT NOT NULL,
+    created_by INTEGER NOT NULL REFERENCES users(id), created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+  );
+  CREATE TABLE finance_policies (
+    investment_id INTEGER NOT NULL REFERENCES investments(id), year INTEGER NOT NULL,
+    configured INTEGER NOT NULL DEFAULT 0, rate_bps INTEGER NOT NULL DEFAULT 2000 CHECK (rate_bps BETWEEN 1 AND 10000),
+    beneficiary_ids TEXT NOT NULL DEFAULT '[]',
+    reserve_amount INTEGER NOT NULL DEFAULT 0 CHECK (reserve_amount >= 0), costs_reviewed_through TEXT, fx_rate REAL,
+    closed_at TEXT, close_snapshot TEXT, updated_by INTEGER NOT NULL REFERENCES users(id), updated_at TEXT NOT NULL,
+    PRIMARY KEY (investment_id, year)
+  );
+  CREATE TABLE finance_distributions (
+    id INTEGER PRIMARY KEY, investment_id INTEGER NOT NULL REFERENCES investments(id), year INTEGER NOT NULL, month TEXT NOT NULL,
+    date TEXT NOT NULL, profit_amount INTEGER NOT NULL CHECK (profit_amount >= 0), capital_amount INTEGER NOT NULL CHECK (capital_amount >= 0),
+    message TEXT NOT NULL, reference TEXT, idempotency_key TEXT NOT NULL UNIQUE, request_json TEXT NOT NULL,
+    snapshot_json TEXT NOT NULL, created_by INTEGER NOT NULL REFERENCES users(id), created_at TEXT NOT NULL
+  );
+  CREATE TABLE finance_distribution_items (
+    id INTEGER PRIMARY KEY, distribution_id INTEGER NOT NULL REFERENCES finance_distributions(id), partner_id INTEGER NOT NULL REFERENCES users(id),
+    return_kind TEXT NOT NULL CHECK (return_kind IN ('capital','profit')), amount INTEGER NOT NULL CHECK (amount > 0),
+    movement_id INTEGER NOT NULL UNIQUE REFERENCES movements(id)
+  );
+  CREATE INDEX finance_distributions_period ON finance_distributions(investment_id, year, month);
+  CREATE TABLE finance_month_weights (
+    investment_id INTEGER NOT NULL REFERENCES investments(id), month TEXT NOT NULL, weights_json TEXT NOT NULL,
+    created_at TEXT NOT NULL, PRIMARY KEY (investment_id, month)
+  );
+  ${Object.entries(SERVICE_PRICING).map(([key, pricing]) => `UPDATE service_lines SET price_from_usd = ${pricing.base_usd} WHERE key = '${key}';`).join('\n')}
   `,
 ];
 

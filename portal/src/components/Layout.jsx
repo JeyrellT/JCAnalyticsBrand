@@ -6,7 +6,7 @@ import { useState } from 'react';
 import {
   LayoutDashboard, FolderKanban, KanbanSquare, CalendarDays, TrendingUp, Inbox, Users, History, LogOut, Menu, X,
   Building2, Layers, Plus, LayoutGrid, Bot, BellRing, ChevronRight,
-  ClipboardList, // v5
+  ClipboardList, ArrowUpRight, Sparkles, PanelLeftClose, PanelLeftOpen, WalletCards,
 } from 'lucide-react';
 import { Link, useLocation } from '../lib/router.jsx';
 import { useSession } from '../lib/session.jsx';
@@ -15,6 +15,8 @@ import { Avatar, ThemeToggle, ThemePicker, cx } from './ui.jsx';
 import QuickActions, { Sheet, SheetHeader } from './QuickActions.jsx';
 import logoMark from '../assets/logo-mark.webp';
 import { useTypingFlag, SectionJump, PullToRefresh } from './mobile.jsx';
+import CommandPalette from './CommandPalette.jsx';
+import '../styles/workspace.css';
 
 // `label` se usa en la barra lateral y el menú; `short`, en las pestañas y mosaicos del celular.
 const GROUPS = [
@@ -37,7 +39,7 @@ const GROUPS = [
       { to: '/equipo', label: 'Equipo y ajustes', short: 'Equipo', icon: Users, tone: 'teal' },
     ],
   },
-  { label: 'Socios', invest: true, items: [{ to: '/inversiones', label: 'Inversiones', short: 'Inversiones', icon: TrendingUp, tone: 'teal' }] },
+  { label: 'Socios', invest: true, items: [{ to: '/inversiones', label: 'Inversiones', short: 'Inversiones', icon: TrendingUp, tone: 'teal' }, { to: '/finanzas', label: 'Finanzas y costos', short: 'Finanzas', icon: WalletCards, tone: 'teal' }] },
   {
     label: 'Control',
     items: [
@@ -55,7 +57,7 @@ const byPath = Object.fromEntries(ALL.map((n) => [n.to, n]));
 const TABS = ['/', '/buzon'].map((to) => byPath[to]);
 const TABS_END = [byPath['/agenda']];
 // Mosaicos de "Más", en el orden en que se piensa la empresa.
-const MORE = ['/tablero', '/proyectos', '/clientes', '/briefs' /* v5 */, '/servicios', '/equipo', '/inversiones', '/automatizaciones', '/notificaciones', '/bitacora'].map((to) => byPath[to]);
+const MORE = ['/tablero', '/proyectos', '/clientes', '/briefs' /* v5 */, '/servicios', '/equipo', '/inversiones', '/finanzas', '/automatizaciones', '/notificaciones', '/bitacora'].map((to) => byPath[to]);
 
 function useNav() {
   const { canInvest, unread, pending } = useSession();
@@ -77,13 +79,13 @@ function BadgeCount({ n, className }) {
 
 function Brand({ onNavigate, compact = false }) {
   return (
-    <Link to="/" onClick={onNavigate} className="flex items-center gap-2.5 rounded-xl">
+    <Link to="/" onClick={onNavigate} className="workspace-brand flex items-center gap-2.5 rounded-xl" aria-label="JC Analytics · Inicio">
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.25),inset_0_0_0_1px_rgba(7,26,54,0.06)]">
         <img src={logoMark} alt="" className="h-7 w-7 object-contain" />
       </span>
-      <span className="leading-tight">
+      <span className="workspace-brand-text leading-tight">
         <span className="block font-display text-[15px] font-bold text-white">JC Analytics</span>
-        {!compact && <span className="block text-[10.5px] font-semibold uppercase tracking-[0.18em] text-teal">Portal del equipo</span>}
+        {!compact && <span className="workspace-brand-caption block text-[10.5px] font-semibold uppercase tracking-[0.18em] text-teal">Punto de encuentro</span>}
       </span>
     </Link>
   );
@@ -92,10 +94,10 @@ function Brand({ onNavigate, compact = false }) {
 function UserBlock({ onNavigate, light = false }) {
   const { user, logout } = useSession();
   return (
-    <div className={cx('flex items-center gap-3 rounded-2xl p-2.5', light ? 'border border-line bg-surface-2' : 'border border-panel-line bg-white/[0.04]')}>
+    <div className={cx('workspace-user flex items-center gap-3 rounded-2xl p-2.5', light ? 'border border-line bg-surface-2' : 'border border-panel-line bg-white/[0.04]')}>
       <Link to="/equipo?tab=perfil" onClick={onNavigate} className="flex min-w-0 flex-1 items-center gap-3 rounded-xl" aria-label={`${user.name}, mi perfil`}>
         <Avatar name={user.name} color={user.color} size={36} />
-        <span className="min-w-0 flex-1">
+        <span className="workspace-user-info min-w-0 flex-1">
           <span className={cx('block truncate text-sm font-semibold', light ? 'text-ink' : 'text-white')}>{user.name}</span>
           <span className={cx('block truncate text-[11.5px]', light ? 'text-muted' : 'text-panel-muted')}>{ROLES[user.role]?.label} · Mi perfil</span>
         </span>
@@ -126,11 +128,11 @@ function NavList({ onNavigate }) {
               const active = isActive(n);
               return (
                 <li key={n.to}>
-                  <Link to={n.to} onClick={onNavigate} aria-current={active ? 'page' : undefined}
+                  <Link to={n.to} onClick={onNavigate} aria-current={active ? 'page' : undefined} aria-label={n.label} aria-description={n.badge && badge ? `${badge} pendientes` : undefined} title={n.label}
                     className={cx('relative flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-[13.5px] font-medium transition lg:min-h-10',
                       active ? 'nav-active bg-white/[0.09] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]' : 'text-panel-muted hover:bg-white/[0.06] hover:text-white')}>
                     <n.icon className={cx('h-[18px] w-[18px] shrink-0 transition', active ? 'text-teal' : 'opacity-90')} strokeWidth={active ? 2.3 : 2} />
-                    <span className="flex-1">{n.label}</span>
+                    <span className="workspace-nav-label flex-1">{n.label}</span>
                     {n.badge && <BadgeCount n={badge} />}
                   </Link>
                 </li>
@@ -190,10 +192,18 @@ function MoreSheet({ onClose }) {
 }
 
 export default function Layout({ children }) {
-  const { full } = useLocation();
+  const { full, path } = useLocation();
   const { isActive, allowed, badge } = useNav();
   // Hoja abierta: 'crear' | 'mas' | 'menu'. Se cierra sola al cambiar de página (también con atrás/adelante).
   const [sheet, setSheet] = useState(null);
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem('jcp:sidebar-collapsed') === '1'; } catch { return false; }
+  });
+  const toggleSidebar = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    try { localStorage.setItem('jcp:sidebar-collapsed', next ? '1' : '0'); } catch { /* Layout also works without storage. */ }
+  };
   const [seenAt, setSeenAt] = useState(full);
   if (seenAt !== full) {
     setSeenAt(full);
@@ -204,15 +214,18 @@ export default function Layout({ children }) {
   const moreActive = MORE.filter(allowed).some(isActive);
 
   return (
-    <div className="min-h-dvh lg:flex">
+    <div className={cx('workspace-shell min-h-dvh lg:flex', collapsed && 'workspace-is-collapsed')}>
+      <a className="workspace-skip-link" href="#workspace-main" onClick={(event) => { event.preventDefault(); document.getElementById('workspace-main')?.focus(); }}>Saltar al contenido</a>
       {/* Escritorio */}
-      <aside className="shell-panel sticky top-0 hidden h-dvh w-[268px] shrink-0 flex-col gap-5 border-r border-panel-line p-4 lg:flex">
+      <aside id="workspace-sidebar" className="workspace-sidebar shell-panel sticky top-0 hidden h-dvh w-[238px] shrink-0 flex-col gap-5 border-r border-panel-line p-4 lg:flex">
         <div className="flex items-center justify-between pl-1 pt-1"><Brand /><ThemeToggle light className="lg:min-h-9 lg:min-w-9" /></div>
         <button type="button" onClick={() => setSheet('crear')} className="btn btn-primary w-full justify-start" aria-haspopup="dialog" aria-label="Crear">
-          <Plus className="h-4 w-4" strokeWidth={2.5} />Crear
-          <span className="ml-auto flex items-center gap-1 text-[11.5px] font-medium text-white/70">Tarea, cita, avance <ChevronRight className="h-3.5 w-3.5" /></span>
+          <Plus className="h-4 w-4" strokeWidth={2.5} /><span className="workspace-create-label">Crear</span>
+          <span className="workspace-create-hint ml-auto flex items-center gap-1 text-[11.5px] font-medium text-white/70">Tarea, cita, avance <ChevronRight className="h-3.5 w-3.5" /></span>
         </button>
         <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1"><NavList /></div>
+        <Link to="/automatizaciones" className="workspace-side-note"><Sparkles size={18} /><span>Más ideas.<br /><strong>Menos tareas repetidas.</strong></span><ArrowUpRight size={15} /></Link>
+        {collapsed && <div className="workspace-compact-theme"><ThemeToggle light /></div>}
         <UserBlock />
       </aside>
 
@@ -228,8 +241,14 @@ export default function Layout({ children }) {
         </div>
       </header>
 
-      <main className="main-safe min-w-0 flex-1 px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">
-        <div className="mx-auto max-w-[1280px]">{children}</div>
+      <main id="workspace-main" tabIndex={-1} className="workspace-main main-safe min-w-0 flex-1 px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">
+        <div className="workspace-toolbar">
+          <button type="button" className="workspace-sidebar-toggle" onClick={toggleSidebar} aria-label={collapsed ? 'Expandir navegación' : 'Contraer navegación'} aria-expanded={!collapsed} aria-controls="workspace-sidebar" title={collapsed ? 'Expandir navegación' : 'Más espacio para trabajar'}>{collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}</button>
+          <div className="workspace-breadcrumb"><span>Tu espacio</span><ChevronRight size={12} /><strong>{ALL.find((item) => item.to === path || (item.to !== '/' && path.startsWith(`${item.to}/`)))?.label || 'Detalle'}</strong></div>
+          <CommandPalette />
+          <Link to="/buzon" className="workspace-inbox" aria-label={badge ? `Abrir buzón, ${badge} pendientes` : 'Abrir buzón'}><BellRing size={17} />{badge > 0 && <span>{badge > 99 ? '99+' : badge}</span>}</Link>
+        </div>
+        <div className="workspace-content mx-auto max-w-[1440px]">{children}</div>
       </main>
 
       {/* Móvil: barra inferior */}

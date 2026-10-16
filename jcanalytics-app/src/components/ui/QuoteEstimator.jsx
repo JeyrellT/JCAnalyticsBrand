@@ -1,8 +1,7 @@
 // ============================================================================
 //  src/components/ui/QuoteEstimator.jsx
-//  Cotizador simple: 3 decisiones (tipo · tamaño · complejidad) + urgencia.
-//  Proyectos desde $30 (Excel puntual) hasta $6.000 (software a la medida),
-//  convertible a LatAm. El cliente ve SOLO rango + ventana de entrega.
+//  Paquetes con alcance y opción de IA; estimación por bandas para otras líneas.
+//  Implementación y soporte separados, con conversión referencial a LatAm.
 // ============================================================================
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -11,7 +10,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 const _MOTION = motion;
 import {
   BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settings, Lightbulb, Receipt, Globe,
-  Clapperboard, Megaphone,
+  Clapperboard, Megaphone, Users, Package, Sparkles,
   ArrowRight, Clock, CheckCircle, ShieldCheck, Calculator, MessageSquare, ChevronUp,
 } from 'lucide-react';
 import {
@@ -22,7 +21,7 @@ import { useCurrency } from '../../hooks/useCurrency';
 import CurrencySelector from './CurrencySelector';
 import { t } from '../../i18n/locale';
 
-const ICONS = { BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settings, Lightbulb, Receipt, Globe, Clapperboard, Megaphone };
+const ICONS = { BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settings, Lightbulb, Receipt, Globe, Clapperboard, Megaphone, Users, Package, Sparkles, MessageSquare };
 
 const ACCENT = {
   blue:    { card: 'border-blue-500/60 bg-blue-500/10',       icon: 'text-blue-400' },
@@ -77,11 +76,12 @@ export default function QuoteEstimator() {
   const reduce = useReducedMotion();
   const { activeCode, setActiveCode, convert, currencyList } = useCurrency('USD');
 
-  // ── Inputs (solo 3 decisiones + urgencia) ──────────────────────────────
+  // ── Paquete y opciones de estimación ──────────────────────────────────
   const [service, setService] = useState('software_medida');
   const [sizeIdx, setSizeIdx] = useState(1);            // 0..3 (Estándar por defecto)
   const [complexityId, setComplexityId] = useState('estandar');
   const [urgency, setUrgency] = useState('normal');
+  const [includeAI, setIncludeAI] = useState(false);
 
   const [touched, setTouched] = useState(() => new Set());
   const touch = (f) => setTouched((prev) => (prev.has(f) ? prev : new Set(prev).add(f)));
@@ -96,6 +96,7 @@ export default function QuoteEstimator() {
   const resultRef = useRef(null);
   const rootRef = useRef(null);
   const svc = SERVICES[service];
+  const fixed = svc.pricingMode === 'fixed';
 
   // ── Barra resumen móvil ──────────────────────────────────────────────────
   // Solo tiene sentido mientras el usuario está DENTRO del cotizador y el
@@ -141,15 +142,17 @@ export default function QuoteEstimator() {
   const size = SIZE_UI[sizeIdx]?.val ?? 0;
 
   const result = useMemo(
-    () => estimate({ service, size, complexityScore, urgency }),
-    [service, size, complexityScore, urgency],
+    () => estimate({ service, size, complexityScore, urgency, includeAI }),
+    [service, size, complexityScore, urgency, includeAI],
   );
   const range = useMemo(
     () => (result ? convert(result.investUSD.low, result.investUSD.high) : null),
     [result, convert],
   );
   const singlePrice = result && result.investUSD.low === result.investUSD.high;
-  const bullets = useMemo(() => [...svc.bullets, ...GUARANTEE_BULLETS], [svc]);
+  const bullets = useMemo(() => fixed
+    ? [...svc.bullets, ...(result.aiIncluded ? [svc.aiScope] : []), t('30 días de corrección de defectos del alcance entregado', '30 days of defect corrections within the delivered scope')]
+    : [...svc.bullets, ...GUARANTEE_BULLETS], [svc, fixed, result.aiIncluded]);
   const confidence = Math.min(1, 0.45 + 0.16 * touched.size);
 
   function handleQuoteRequest(e) {
@@ -166,15 +169,23 @@ export default function QuoteEstimator() {
       '',
       t('--- Proyecto cotizado (preliminar) ---', '--- Project estimate (preliminary) ---'),
       `${t('Tipo de solución', 'Solution type')}: ${svc.label}`,
-      `${t('Tamaño', 'Size')}: ${SIZE_UI[sizeIdx]?.label}`,
-      `${t('Complejidad', 'Complexity')}: ${COMPLEXITY_UI.find((c) => c.id === complexityId)?.label}`,
-      `${t('Urgencia', 'Urgency')}: ${URGENCY_UI.find((u) => u.id === urgency)?.label}`,
+      ...(fixed ? [
+        `${t('Modalidad', 'Package')}: ${result.aiIncluded ? t('Con IA', 'With AI') : t('Base funcional', 'Functional base')}`,
+        `${t('Alcance', 'Scope')}: ${svc.scope}`,
+        ...(result.aiIncluded ? [`IA: ${svc.aiScope}`] : []),
+        `${t('Soporte mensual aparte', 'Separate monthly support')}: ${result.supportMonthlyUSD ? `$${result.supportMonthlyUSD} USD · ${result.supportHoursPerWeek} ${t('h/semana', 'h/week')}` : t('No aplica', 'Not applicable')}`,
+        t('Datos y contenidos listos. Impuestos, licencias, consumos y adicionales aparte.', 'Data and content must be ready. Taxes, licenses, usage and extras are separate.'),
+      ] : [
+        `${t('Tamaño', 'Size')}: ${SIZE_UI[sizeIdx]?.label}`,
+        `${t('Complejidad', 'Complexity')}: ${COMPLEXITY_UI.find((c) => c.id === complexityId)?.label}`,
+        `${t('Urgencia', 'Urgency')}: ${URGENCY_UI.find((u) => u.id === urgency)?.label}`,
+      ]),
       '',
       t('--- Estimado mostrado al cliente ---', '--- Estimate shown to the client ---'),
       `${t('Inversión preliminar (USD)', 'Preliminary investment (USD)')}: ${usd}${localLabel}`,
       `${result.delivery.label}: ${result.delivery.display}`,
       '',
-      t('Nota: estimado no vinculante; afinamos el alcance en la sesión sin costo.', 'Note: this estimate is non-binding; we refine the scope during a free consultation.'),
+      fixed ? t('Precio fijo para el alcance descrito. Cualquier ampliación se cotiza y aprueba aparte.', 'Fixed price for the stated scope. Any extension is quoted and approved separately.') : t('Nota: estimado no vinculante; afinamos el alcance en la sesión sin costo.', 'Note: this estimate is non-binding; we refine the scope during a free consultation.'),
     ].join('\n');
     const subject = t('Solicitud de cotización preliminar — JC Analytics', 'Preliminary quote request — JC Analytics');
     window.location.href = `mailto:gerencia@jcanalytic.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -185,7 +196,7 @@ export default function QuoteEstimator() {
     ? `https://wa.me/50670330596?text=${encodeURIComponent(
         `${t(`Hola, coticé un proyecto (${svc.label}) y quiero afinar el alcance. Estimado:`, `Hi, I estimated a project (${svc.label}) and would like to discuss the scope. Estimate:`)} ${
           singlePrice ? `$${result.investUSD.high}` : `$${result.investUSD.low}–$${result.investUSD.high}`
-        }${result.unitSuffix} USD, ${result.delivery.display}.`,
+        }${result.unitSuffix} USD, ${result.delivery.display}.${fixed ? ` ${result.aiIncluded ? t('Con IA.', 'With AI.') : t('Base funcional.', 'Functional base.')} ${t('Impuestos, consumos y soporte aparte.', 'Taxes, usage and support are separate.')}` : ''}`,
       )}`
     : 'https://wa.me/50670330596';
 
@@ -205,7 +216,7 @@ export default function QuoteEstimator() {
           </h2>
         </div>
         <p className="max-w-xs text-paper/55 text-lg leading-snug">
-          {t('Elegí tu solución y explorá un rango preliminar, sin compromiso.', 'Choose your solution and explore an initial price range, with no commitment.')}
+          {t('Elegí una solución, revisá el alcance y conocé su precio. Los adicionales se acuerdan aparte.', 'Choose a solution, review its scope and see the price. Extras are agreed separately.')}
         </p>
       </div>
 
@@ -224,7 +235,7 @@ export default function QuoteEstimator() {
                 const a = ACCENT[s.accent] || ACCENT.blue;
                 return (
                   <motion.button
-                    key={key} type="button" role="radio" aria-checked={active}
+                    key={key} type="button" role="radio" aria-checked={active} data-service-key={key}
                     onClick={() => { setService(key); touch('service'); }}
                     whileHover={reduce ? undefined : { scale: 1.02 }}
                     whileTap={reduce ? undefined : { scale: 0.97 }}
@@ -244,6 +255,20 @@ export default function QuoteEstimator() {
             </p>
           </div>
 
+          {fixed ? <div className={block}>
+            <p className="text-sm font-bold text-neutral-300 mb-3"><span className="text-lime-400 font-mono mr-1.5">2.</span>{t('Un alcance claro, un precio definido', 'A clear scope, a defined price')}</p>
+            <p className="text-sm leading-relaxed text-neutral-300">{svc.scope}</p>
+            <p className="text-xs leading-relaxed text-neutral-400 mt-3">{svc.exclusions}</p>
+            {svc.pricing.ai_included ? <p className="flex items-center gap-2 text-sm text-lime-300 mt-5"><Sparkles size={18} />{t('La IA ya está incluida en este servicio.', 'AI is already included in this service.')}</p> : <fieldset className="grid sm:grid-cols-2 gap-3 mt-5">
+              <legend className="text-xs font-bold text-neutral-400 mb-3">{t('Elegí la modalidad', 'Choose the package')}</legend>
+              {[false, true].map((ai) => <label key={String(ai)} className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-lime ${includeAI === ai ? 'border-lime/50 bg-lime/10' : 'border-neutral-700 bg-neutral-900/50'}`}>
+                <input className="accent-lime mt-1" type="radio" name="quote-ai" checked={includeAI === ai} onChange={() => setIncludeAI(ai)} aria-label={ai ? t('Con IA', 'With AI') : t('Base funcional', 'Functional base')} />
+                <span><strong className="block text-sm text-white">{ai ? t('Con IA', 'With AI') : t('Base funcional', 'Functional base')}</strong><span className="block mt-1 font-mono text-lime-300">${(ai ? svc.pricing.with_ai_usd : svc.pricing.base_usd).toLocaleString('en-US')} USD</span></span>
+              </label>)}
+            </fieldset>}
+            {(includeAI || svc.pricing.ai_included) && <p className="mt-4 rounded-xl bg-lime/5 border border-lime/15 p-3 text-xs leading-relaxed text-neutral-300"><strong className="text-lime-300">{t('Función de IA incluida: ', 'Included AI function: ')}</strong>{svc.aiScope}</p>}
+            <p className="mt-5 text-xs leading-relaxed text-neutral-400">{t('La tarifa presupone datos, contenidos y accesos listos. Si necesitás otras funciones, preparación de información o una entrega urgente, acordamos los adicionales antes de iniciar.', 'This price assumes ready data, content and access. Extra features, information preparation or urgent delivery are agreed before work begins.')}</p>
+          </div> : <>
           {/* 2. Tamaño */}
           <div className={block}>
             <div className="flex items-end justify-between mb-2">
@@ -285,6 +310,7 @@ export default function QuoteEstimator() {
             <p className="text-sm font-bold text-neutral-300 mb-3">{t('¿Para cuándo?', 'When do you need it?')} <span className="font-normal text-neutral-500">{t('(opcional)', '(optional)')}</span></p>
             <SegmentedToggle label={t('Urgencia del proyecto', 'Project urgency')} options={URGENCY_UI} value={urgency} onChange={(id) => { setUrgency(id); touch('urgency'); }} />
           </div>
+          </>}
         </div>
 
         {/* ───────── DERECHA: resultado (recibo) ───────── */}
@@ -292,13 +318,14 @@ export default function QuoteEstimator() {
           <div className="glass-premium rounded-[2rem] p-6 sm:p-7" aria-live="polite">
             <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/10">
               <span className="text-xs font-mono uppercase tracking-[0.18em] text-neutral-400">JC Analytics · {t('Estimado', 'Estimate')}</span>
-              <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-lime-500/10 text-lime-300 border border-lime-500/20">{t('preliminar', 'preliminary')}</span>
+              <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-lime-500/10 text-lime-300 border border-lime-500/20">{fixed ? t('alcance definido', 'defined scope') : t('preliminar', 'preliminary')}</span>
             </div>
 
             {/* Rango / precio */}
-            <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-2">{t('Inversión estimada', 'Estimated investment')}</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-2">{fixed ? t('Implementación · pago único', 'Implementation · one-time payment') : t('Inversión estimada', 'Estimated investment')}</p>
             <motion.div
               key={`${result.investUSD.low}-${result.investUSD.high}-${activeCode}`}
+              data-quote-price
               initial={reduce ? false : { opacity: 0.35, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: reduce ? 0 : 0.3 }}
@@ -310,7 +337,7 @@ export default function QuoteEstimator() {
               )}
             </motion.div>
             <div className="flex items-center justify-between gap-3 mt-3">
-              <span className="text-[11px] text-neutral-500 leading-snug">{t('Preliminar · no vinculante · tasas ref.', 'Preliminary · non-binding · reference rates')} ({FX_UPDATED})</span>
+              <span className="text-[11px] text-neutral-500 leading-snug">{fixed ? t('USD sin impuestos. Conversión referencial', 'USD excluding taxes. Reference conversion') : t('Preliminar · no vinculante · tasas ref.', 'Preliminary · non-binding · reference rates')} ({FX_UPDATED})</span>
               <CurrencySelector activeCode={activeCode} onChange={setActiveCode} currencies={currencyList} />
             </div>
 
@@ -321,14 +348,20 @@ export default function QuoteEstimator() {
               </div>
               <div className="font-mono text-xl font-bold text-white">{result.delivery.display}</div>
               <p className="text-[11px] text-neutral-500 mt-1">
-                {result.unit === 'mes'
+                {fixed ? t('A partir de recibir los insumos y accesos completos.', 'After all required materials and access are received.') : result.unit === 'mes'
                   ? t('Tiempo para levantar marca, calendario y accesos antes del primer mes.', 'Time to set up your brand, content calendar and access before the first month.')
                   : t('Incluye ~media semana de arranque en cola — equipo enfocado.', 'Includes about half a week of scheduling before work begins.')}
               </p>
             </div>
 
+            {fixed && <div className="mt-4 rounded-xl border border-white/10 p-4 text-xs leading-relaxed text-neutral-400">
+              <p className="text-neutral-200 font-semibold">{t('Operación y soporte, por separado', 'Operations and support, separately')}</p>
+              <p className="mt-2">{result.supportMonthlyUSD ? t(`Soporte: $${result.supportMonthlyUSD} USD/mes · ${result.supportHoursPerWeek} h/semana.`, `Support: $${result.supportMonthlyUSD} USD/month · ${result.supportHoursPerWeek} h/week.`) : t('Este entregable autogestionado no requiere soporte mensual.', 'This self-managed deliverable does not require monthly support.')}</p>
+              <p className="mt-2">{t('Licencias, API, voz, dominio, hosting y consumo se cotizan según lo que necesite la solución.', 'Licenses, API usage, voice, domain, hosting and consumption are quoted according to the solution’s needs.')}</p>
+            </div>}
+
             {/* Meter de detalle */}
-            <div className="mt-5">
+            {!fixed && <div className="mt-5">
               <div className="flex items-center justify-between text-[11px] text-neutral-400 mb-1.5">
                 <span>{t('Detalle del alcance', 'Scope detail')}</span><span>{Math.round(confidence * 100)}%</span>
               </div>
@@ -340,7 +373,7 @@ export default function QuoteEstimator() {
                 />
               </div>
               <p className="text-[11px] text-neutral-500 mt-1.5">{t('Entre más detalle nos das, más afinamos el alcance en la sesión.', 'The more you share, the more precisely we can define your scope during the consultation.')}</p>
-            </div>
+            </div>}
 
             {/* Qué incluye */}
             <div className="mt-5">
@@ -398,7 +431,7 @@ export default function QuoteEstimator() {
 
               <p className="mt-4 text-[11px] text-neutral-500 leading-snug flex items-start gap-1.5">
                 <ShieldCheck size={13} className="text-neutral-400 shrink-0 mt-0.5" />
-                {t('Estimado preliminar y no vinculante. La cifra final puede ajustarse según el alcance real; la definimos juntos sin costo en la primera sesión.', 'This preliminary estimate is non-binding. The final price depends on the agreed scope, which we define together during your free first consultation.')}
+                {fixed ? t('Precio fijo para el alcance descrito, sin impuestos. Preparación de datos y adicionales se cotizan y aprueban aparte. Confirmamos el alcance antes de empezar.', 'Fixed price for the stated scope, excluding taxes. Data preparation and extras are quoted and approved separately. We confirm the scope before starting.') : t('Estimado preliminar y no vinculante. La cifra final puede ajustarse según el alcance real; la definimos juntos sin costo en la primera sesión.', 'This preliminary estimate is non-binding. The final price depends on the agreed scope, which we define together during your free first consultation.')}
               </p>
             </div>
           </div>

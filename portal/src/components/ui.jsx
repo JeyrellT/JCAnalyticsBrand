@@ -1,11 +1,12 @@
 // Componentes de interfaz reutilizables del portal (sistema visual v4).
 // Todo color pasa por tokens semánticos (src/index.css): funcionan en claro y oscuro.
-import { createContext, useCallback, useContext, useEffect, useId, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useEffectEvent, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Loader2, AlertTriangle, CheckCircle2, Info, Sun, Moon, MonitorSmartphone, ChevronRight } from 'lucide-react';
 import { initials } from '../lib/format.js';
 import { errorMessage } from '../lib/api.js';
 import { useTheme, THEMES } from '../lib/theme.js';
+import '../styles/interface.css';
 
 export const cx = (...c) => c.filter(Boolean).join(' ');
 
@@ -67,7 +68,17 @@ export function PageLoader({ error, onRetry }) {
       </div>
     );
   }
-  return <div className="flex justify-center py-20"><Spinner className="h-7 w-7" /></div>;
+  return (
+    <div className="portal-loading-shell" role="status" aria-live="polite" aria-label="Cargando la sección">
+      <span className="sr-only">Preparando tu espacio…</span>
+      <div className="portal-loading-caption" aria-hidden="true"><Spinner /><span>Preparando tu espacio</span></div>
+      <div className="portal-loading-layout" aria-hidden="true">
+        <span className="portal-loading-kicker" /><span className="portal-loading-title" />
+        <div className="portal-loading-banner"><span /><span /><span /></div>
+        <div className="portal-loading-cards">{[0, 1, 2].map((item) => <div key={item}><i /><span /><span /><span /></div>)}</div>
+      </div>
+    </div>
+  );
 }
 
 export function EmptyState({ icon: Icon = Info, title, children, action, tone = 'blue', className }) {
@@ -212,35 +223,52 @@ export function ThemePicker({ className }) {
 }
 
 // ── Modal / hoja inferior en móvil ────────────────────────────────────────
-let openModals = 0;
+const modalStack = [];
+let modalOverflow = '';
+const modalControls = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex="0"]';
 export function Modal({ open, onClose, title, children, footer, size = 'md' }) {
   const panel = useRef(null);
+  const close = useEffectEvent(() => onClose());
   useEffect(() => {
     if (!open) return undefined;
+    const root = panel.current;
     const previous = document.activeElement;
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (event) => {
+      if (modalStack.at(-1) !== root) return;
+      if (event.key === 'Escape') { event.preventDefault(); close(); return; }
+      if (event.key !== 'Tab') return;
+      const controls = [...root.querySelectorAll(modalControls)].filter((element) => element.getClientRects().length > 0);
+      const first = controls[0];
+      const last = controls.at(-1);
+      if (!first) { event.preventDefault(); root.focus(); }
+      else if (!root.contains(document.activeElement) || document.activeElement === root) { event.preventDefault(); (event.shiftKey ? last : first).focus(); }
+      else if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
     document.addEventListener('keydown', onKey);
     // Con modales anidados (p. ej. "Nuevo cliente" sobre "Nuevo proyecto"), el scroll
     // de la página se libera solo cuando se cierra el último.
-    openModals += 1;
+    if (!modalStack.length) modalOverflow = document.body.style.overflow;
+    modalStack.push(root);
     document.body.style.overflow = 'hidden';
-    const first = panel.current?.querySelector('input:not([type=hidden]), select, textarea, button[data-autofocus]');
+    const first = root?.querySelector('[data-autofocus], input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled])') ?? root;
     first?.focus({ preventScroll: true });
     return () => {
       document.removeEventListener('keydown', onKey);
-      openModals = Math.max(0, openModals - 1);
-      if (!openModals) document.body.style.overflow = '';
-      previous?.focus?.({ preventScroll: true });
+      const index = modalStack.indexOf(root);
+      if (index !== -1) modalStack.splice(index, 1);
+      if (!modalStack.length) document.body.style.overflow = modalOverflow;
+      if (previous?.isConnected && (!modalStack.length || modalStack.at(-1).contains(previous))) previous.focus?.({ preventScroll: true });
     };
-  }, [open, onClose]);
+  }, [open]);
   if (!open) return null;
   const width = { sm: 'sm:max-w-md', md: 'sm:max-w-xl', lg: 'sm:max-w-3xl' }[size];
-  // Se monta en <body>: dentro de una tarjeta con animación (transform) el fondo fijo quedaría
-  // recortado a la tarjeta en vez de cubrir la pantalla.
+  // El shell no tiene transform: evita el recorte de las tarjetas animadas y
+  // conserva los colores de este workspace. Los otros portales usan <body>.
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label={title}>
-      <button type="button" className="animate-fade absolute inset-0 bg-panel/55 backdrop-blur-[3px]" aria-label="Cerrar" onClick={onClose} />
-      <div ref={panel} className={cx('animate-sheet relative flex max-h-[92dvh] w-full flex-col rounded-t-3xl border border-line bg-surface shadow-pop sm:rounded-3xl', width)}>
+    <div className="portal-modal fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label={title}>
+      <button type="button" tabIndex={-1} className="animate-fade absolute inset-0 bg-panel/55 backdrop-blur-[3px]" aria-label="Cerrar" onClick={onClose} />
+      <div ref={panel} tabIndex={-1} className={cx('portal-modal-panel animate-sheet relative flex max-h-[92dvh] w-full flex-col rounded-t-3xl border border-line bg-surface shadow-pop sm:rounded-3xl', width)}>
         <span className="mx-auto mt-2.5 h-1.5 w-10 shrink-0 rounded-full bg-line-strong sm:hidden" aria-hidden="true" />
         <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
           <h2 className="font-display text-lg font-bold">{title}</h2>
@@ -250,7 +278,7 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }) {
         {footer && <div className="safe-bottom-pad flex flex-wrap justify-end gap-2 border-t border-line bg-surface-2/60 px-5 pt-3 sm:rounded-b-3xl">{footer}</div>}
       </div>
     </div>,
-    document.body,
+    document.querySelector('.workspace-shell, .investor-club') ?? document.body,
   );
 }
 

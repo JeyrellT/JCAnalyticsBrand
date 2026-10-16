@@ -6,11 +6,13 @@
 //  Los servicios replican el catálogo público (jcanalytics-app/src/data/cotizador.js).
 // ============================================================================
 
+import { SERVICE_PRICING } from './service-pricing.js';
+
 export const ROLES = {
-  admin: { label: 'Administrador', hint: 'Gestiona usuarios, configuración y respaldos.' },
-  socio: { label: 'Socio', hint: 'Proyectos, agenda e inversiones.' },
+  admin: { label: 'Administrador', hint: 'Gestiona usuarios, accesos a inversiones, configuración y respaldos.' },
+  socio: { label: 'Socio', hint: 'Proyectos, agenda y acceso a todas las inversiones.' },
   colaborador: { label: 'Colaborador', hint: 'Proyectos, tablero y agenda. Sin acceso a inversiones.' },
-  inversionista: { label: 'Inversionista', hint: 'Solo su portal de inversiones: su capital, retornos y confirmaciones. Sin acceso a la operación.' },
+  inversionista: { label: 'Inversionista', hint: 'Su portal, su historial y las inversiones que le habilite el administrador. Sin acceso a la operación.' },
 };
 
 /** Socios y admin: ven y administran TODAS las inversiones del equipo. */
@@ -37,6 +39,7 @@ export const SERVICES = {
   video_edicion: 'Edición de video',
   producto_saas: 'Producto propio (SaaS)',
   otro: 'Otro',
+  ...Object.fromEntries(Object.entries(SERVICE_PRICING).map(([key, pricing]) => [key, pricing.label])),
 };
 
 /** Áreas de negocio para agrupar el catálogo de servicios. */
@@ -70,6 +73,7 @@ export const SERVICE_DEFAULTS = {
   video_edicion: { group: 'marketing', price_from_usd: 45, unit: 'pieza' },
   producto_saas: { group: 'productos', price_from_usd: null, unit: null },
   otro: { group: 'sistemas', price_from_usd: null, unit: null },
+  ...Object.fromEntries(Object.entries(SERVICE_PRICING).map(([key, pricing]) => [key, { group: pricing.group, price_from_usd: pricing.base_usd, unit: null }])),
 };
 
 /** Rol de cada persona dentro de un proyecto. */
@@ -154,6 +158,8 @@ export const INVESTMENT_CATEGORIES = {
   producto_propio: 'Producto propio',
   proyecto_cliente: 'Proyecto de cliente',
   marketing: 'Marketing y pauta',
+  meta_ads: 'Meta Ads',
+  google_ads: 'Google Ads',
   equipo: 'Equipo y herramientas',
   operacion: 'Capital de trabajo',
   otro: 'Otro',
@@ -168,6 +174,8 @@ export const INVESTMENT_STATUS = {
 };
 
 export const MOVEMENT_TYPE_LABEL = { aporte: 'Aporte', retorno: 'Retorno' };
+
+export const RETURN_KIND_LABEL = { capital: 'Devolución de capital', profit: 'Ganancia', mixed: 'Capital y ganancia', unclassified: 'Retorno sin clasificar' };
 
 export const MOVEMENT_STATUS_META = {
   pendiente: { label: 'Por confirmar', tone: 'amber' },

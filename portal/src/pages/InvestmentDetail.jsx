@@ -12,6 +12,7 @@ import { StatusBadge, MoneyInput } from '../components/common.jsx';
 import { RoleBadge } from '../components/people.jsx';
 import { MovementCard } from '../components/movements.jsx';
 import CashflowChart from '../components/CashflowChart.jsx';
+import InvestmentAccess from '../components/InvestmentAccess.jsx';
 import { InvestmentForm } from './Investments.jsx';
 import { INVESTMENT_CATEGORIES, INVESTMENT_STATUS, isInvestorRole } from '../../shared/catalog.js';
 import { allocateProRata } from '../../shared/finance.js';
@@ -29,7 +30,7 @@ function confirmerFor(partner, self) {
     : { name: first, hint: `lo confirma ${first} con su mensaje de vuelta.` };
 }
 
-function MovementModal({ investment, type, onClose, onSaved }) {
+function MovementModal({ investment, allowedInvestorIds = [], type, onClose, onSaved }) {
   const { user, investors, settings } = useSession();
   const [run, busy] = useAction();
   const [form, setForm] = useState({ partner_id: user.id, amount: null, date: todayKey(), message: '', reference: '', fx_rate: settings.fx_usd_crc ?? '' });
@@ -39,10 +40,13 @@ function MovementModal({ investment, type, onClose, onSaved }) {
   const confirmer = confirmerFor(partner, self);
   // Socios y admin primero; los inversionistas en su propio grupo del selector.
   const team = investors.filter((p) => !isInvestorRole(p));
-  const outside = investors.filter((p) => isInvestorRole(p));
+  const outside = investors.filter((p) => isInvestorRole(p) && (type !== 'aporte' || allowedInvestorIds.includes(p.id)));
+  const eligible = [...team, ...outside];
+  const validPartner = eligible.some((p) => p.id === form.partner_id);
 
   async function save(e) {
     e.preventDefault();
+    if (!validPartner || busy) return;
     const body = { type, partner_id: form.partner_id, amount: form.amount, date: form.date, message: form.message, reference: form.reference || null };
     if (investment.currency === 'USD' && String(form.fx_rate ?? '').trim()) body.fx_rate = Number(String(form.fx_rate).replace(',', '.'));
     const res = await run(() => api(`/api/investments/${investment.id}/movements`, { method: 'POST', body }), { success: `Registrado. Queda por confirmar por ${confirmer.name}.` });
@@ -51,11 +55,12 @@ function MovementModal({ investment, type, onClose, onSaved }) {
 
   return (
     <Modal open onClose={onClose} title={type === 'aporte' ? 'Registrar aporte' : 'Registrar retorno a un socio o inversionista'}
-      footer={<><button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button><button type="submit" form="mov-form" className="btn btn-primary" disabled={busy || !form.amount || form.amount <= 0 || form.message.trim().length < 3}>{busy ? 'Guardando…' : 'Registrar'}</button></>}>
+      footer={<><button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button><button type="submit" form="mov-form" className="btn btn-primary" disabled={busy || !validPartner || !form.amount || form.amount <= 0 || form.message.trim().length < 3}>{busy ? 'Guardando…' : 'Registrar'}</button></>}>
       <form id="mov-form" onSubmit={save} className="grid gap-4 sm:grid-cols-2">
         <Field label={type === 'aporte' ? 'Socio o inversionista que aporta' : 'Socio o inversionista que recibe'}>
           {(id) => (
-            <select id={id} className="input" value={form.partner_id ?? ''} onChange={(e) => set('partner_id')(Number(e.target.value))}>
+            <select id={id} className="input" value={validPartner ? form.partner_id : ''} disabled={!eligible.length} onChange={(e) => set('partner_id')(Number(e.target.value))}>
+              {!validPartner && <option value="">{eligible.length ? 'Elegí una persona' : 'No hay personas disponibles'}</option>}
               {outside.length > 0 ? (
                 <>
                   <optgroup label="Socios y administración">{team.map((p) => <option key={p.id} value={p.id}>{p.name}{p.id === user.id ? ' (vos)' : ''}</option>)}</optgroup>
@@ -75,6 +80,7 @@ function MovementModal({ investment, type, onClose, onSaved }) {
           {(id) => <textarea id={id} className="input" rows={3} value={form.message} onChange={(e) => set('message')(e.target.value)} placeholder={type === 'aporte' ? 'Ej.: Transferí por SINPE mi parte de la pauta de noviembre.' : 'Ej.: Retorno de octubre por 12 suscripciones activas.'} />}
         </Field>
       </form>
+      {type === 'aporte' && <p className="mt-4 rounded-xl bg-surface-2 px-3 py-2.5 text-xs leading-relaxed text-muted">{outside.length ? 'Se muestran los inversionistas habilitados para esta inversión. Los socios y la administración tienen acceso a todas.' : 'Esta inversión todavía no tiene inversionistas habilitados. Los socios y la administración pueden registrar sus aportes; el administrador gestiona los demás permisos desde Acceso de inversionistas.'}</p>}
       <p className="mt-4 flex items-start gap-2 rounded-xl bg-surface-2 px-3 py-2.5 text-xs text-muted"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /><span>Doble control: {confirmer.hint} Solo lo confirmado suma en los indicadores.</span></p>
     </Modal>
   );
@@ -201,6 +207,7 @@ export default function InvestmentDetail({ params }) {
   const changed = () => { reload(); refresh(); };
   const cur = inv.currency;
   const closed = inv.status === 'cerrada';
+  const campaign = ['meta_ads', 'google_ads'].includes(inv.category);
   const pendingN = data.movements.filter((x) => ['pendiente', 'objetado'].includes(x.status)).length;
   const targetDone = inv.target_amount ? m.target_progress >= 1 : false;
 
@@ -223,8 +230,7 @@ export default function InvestmentDetail({ params }) {
           </div>
           <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             <button type="button" className="btn btn-primary" disabled={closed} onClick={() => setModal('aporte')}><ArrowDownLeft className="h-4 w-4" />Aporte</button>
-            <button type="button" className="btn btn-teal" disabled={closed || !m.contributed} onClick={() => setModal('distribute')} title={!m.contributed ? 'Se necesita capital confirmado' : undefined}><Split className="h-4 w-4" />Repartir retorno</button>
-            <button type="button" className="btn btn-outline col-span-2 sm:col-span-1" disabled={closed} onClick={() => setModal('retorno')}><ArrowUpRight className="h-4 w-4" />Retorno individual</button>
+            {campaign ? <Link className="btn btn-teal" to={`/finanzas?tab=repartos&investment_id=${inv.id}`}><Split className="h-4 w-4" />Anticipos y capital</Link> : <><button type="button" className="btn btn-teal" disabled={closed || !m.contributed} onClick={() => setModal('distribute')} title={!m.contributed ? 'Se necesita capital confirmado' : undefined}><Split className="h-4 w-4" />Repartir retorno</button><button type="button" className="btn btn-outline col-span-2 sm:col-span-1" disabled={closed} onClick={() => setModal('retorno')}><ArrowUpRight className="h-4 w-4" />Retorno individual</button></>}
             <a className="btn btn-outline" href={`/api/investments/export.csv?investment_id=${inv.id}`} download><Download className="h-4 w-4" />Excel</a>
             <button type="button" className="btn btn-ghost" onClick={() => setModal('edit')}><Pencil className="h-4 w-4" />Editar</button>
           </div>
@@ -275,6 +281,7 @@ export default function InvestmentDetail({ params }) {
         </section>
 
         <aside className="min-w-0 space-y-6">
+          <InvestmentAccess key={inv.id} investmentId={inv.id} investmentName={inv.name} allowedInvestorIds={data.allowed_investor_ids ?? []} onSaved={reload} />
           <section className="card animate-rise overflow-hidden" aria-labelledby="share-title">
             <SectionHead flush id="share-title" icon={Users} tone="teal" title="Participación" hint="De socios e inversionistas, según su capital confirmado." />
             {m.partners.length === 0 ? <p className="px-4 py-5 text-sm text-muted sm:px-5">Aún no hay aportes confirmados.</p> : (
@@ -304,7 +311,7 @@ export default function InvestmentDetail({ params }) {
         </aside>
       </div>
 
-      {(modal === 'aporte' || modal === 'retorno') && <MovementModal investment={inv} type={modal} onClose={() => setModal(null)} onSaved={changed} />}
+      {(modal === 'aporte' || modal === 'retorno') && <MovementModal investment={inv} allowedInvestorIds={data.allowed_investor_ids ?? []} type={modal} onClose={() => setModal(null)} onSaved={changed} />}
       {modal === 'distribute' && <DistributeModal investment={inv} metrics={m} onClose={() => setModal(null)} onSaved={changed} />}
       {modal === 'edit' && <InvestmentForm investment={inv} onClose={() => setModal(null)} onSaved={reload} />}
     </div>

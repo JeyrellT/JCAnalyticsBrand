@@ -1,0 +1,35 @@
+/* Loading surfaces reserve space while data arrives and inherit each portal's palette. */
+.portal-loading-shell { padding: 12px 0 24px; min-height: 400px; }
+.portal-loading-caption { display: flex; align-items: center; gap: 9px; margin-bottom: 28px; color: var(--muted); font-size: 12px; }
+.portal-loading-caption > svg { width: 15px; height: 15px; }
+.portal-loading-layout { display: flex; flex-direction: column; gap: 12px; }
+.portal-loading-layout > span,
+.portal-loading-banner > span,
+.portal-loading-cards > div > span,
+.portal-loading-cards > div > i { display: block; border-radius: 5px; background: var(--surface-3); animation: portal-loading-breathe 1.8s ease-in-out infinite; }
+.portal-loading-kicker { width: 90px; height: 10px; }
+.portal-loading-title { width: min(300px, 80%); height: 32px; }
+.portal-loading-banner { margin-top: 16px; min-height: 160px; display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 28px; border-radius: 18px; background: var(--surface-2); border: 1px solid var(--line); }
+.portal-loading-banner > span { width: min(380px, 90%); height: 14px; }
+.portal-loading-banner > span:first-child { width: min(270px, 65%); height: 26px; }
+.portal-loading-banner > span:last-child { width: min(180px, 50%); }
+.portal-loading-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 8px; }
+.portal-loading-cards > div { border: 1px solid var(--line); padding: 24px; border-radius: 14px; background: var(--surface); }
+.portal-loading-cards > div > i { width: 32px; height: 32px; margin-bottom: 24px; border-radius: 10px; }
+.portal-loading-cards > div > span { width: 80%; height: 12px; margin: 12px 0; }
+.portal-loading-cards > div > span:last-child { width: 50%; }
+.portal-loading-cards > div:nth-child(2) > * { animation-delay: 150ms; }
+.portal-loading-cards > div:nth-child(3) > * { animation-delay: 300ms; }
+.portal-modal-panel:focus { outline: none; }
+.workspace-shell .portal-modal-panel { box-shadow: 0 28px 100px #0c1d2950, 0 3px 12px #0c1d291a; }
+.workspace-shell .portal-modal-panel h2 { letter-spacing: -.025em; }
+.workspace-shell .portal-modal-panel .input { border-radius: 10px; }
+@keyframes portal-loading-breathe { 0%, 100% { opacity: .6; } 50% { opacity: 1; } }
+@media (max-width: 600px) {
+  .portal-loading-cards { grid-template-columns: 1fr; }
+  .portal-loading-cards > div:not(:first-child) { display: none; }
+  .portal-loading-banner { padding: 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-loading-layout *, .portal-loading-caption > svg { animation: none !important; }
+}

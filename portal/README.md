@@ -1,5 +1,7 @@
 # Portal del equipo JC Analytics
 
+La experiencia **Punto de encuentro** incorpora un inicio visual para el equipo, foco personal con cambios de tareas, búsqueda con Ctrl/⌘ K y un estudio interactivo de automatizaciones. Ver [uso y verificación](docs/punto-de-encuentro.md).
+
 Aplicación privada (detrás de login) para el equipo de 5 personas: **portal de proyectos**, **centro de operaciones** (tablero kanban + agenda de citas) e **inversiones de socios** con confirmación de cada movimiento de dinero y su "mensaje de vuelta".
 
 Desde la v5 incluye además el **portal de clientes** (`/cliente`). Cada cliente sigue su servicio con JC Analytics desde ahí: etapas, avances, entregables por aprobar, solicitudes, documentos y reuniones. Las solicitudes usan el **brief creativo** (el formato "CREATIVIDAD" de JC), con versiones congeladas y verificables. El cliente no ve la operación interna: ni tareas, ni montos, ni notas del equipo. Ver `docs/v5-contrato.md`.
@@ -124,16 +126,17 @@ node scripts/capturas.mjs capturas --tema=dark --solo=inicio,inversiones
 
 ### Roles
 
-- **Administrador.** Puede hacer todo, además de gestionar personas, ajustes y respaldos, y anular movimientos ya confirmados.
-- **Socio.** Accede a proyectos, tablero, agenda e inversiones.
+- **Administrador.** Puede hacer todo, además de gestionar personas, permisos por inversionista, ajustes y respaldos, y anular movimientos ya confirmados.
+- **Socio.** Accede a proyectos, tablero, agenda y todas las inversiones. Solo el administrador cambia los permisos de los inversionistas.
 - **Colaborador.** Accede a proyectos, tablero y agenda. **No ve inversiones** (ni en la API, el centro de operaciones, la bitácora o los avisos). Puede dar accesos al portal de clientes solo para los clientes que lleva.
 - **Cliente** (v5). Es una identidad aparte y solo entra a `/cliente`. Ve solo lo de su empresa. Puede aprobar entregables si su acceso lo permite.
 - **Inversionista** (v6). Solo entra a `/inversionista`, su portal:
   - ve su capital, sus retornos, su participación y su TIR;
   - confirma u objeta los movimientos a su nombre;
-  - avisa sus aportes y descarga su estado de cuenta en Excel.
+  - explora las inversiones que le habilitó el administrador, avisa aportes en ellas y descarga su estado de cuenta en Excel;
+  - conserva su historial, confirmaciones y retornos si el administrador retira el permiso para nuevos aportes.
 
-  No ve la operación, ni los nombres o montos de otros socios, ni las notas internas. Ver `docs/v6-contrato.md`.
+  No ve la operación, ni los nombres o montos de otros socios, ni las notas internas. Ver `docs/v6-contrato.md` y `docs/club-de-inversionistas.md`.
 
 ## Arquitectura
 
@@ -220,6 +223,7 @@ La E2E usa Chromium. Busca primero `PLAYWRIGHT_CHROMIUM`, después `/opt/pw-brow
 6. **Primer ingreso:** abrí el portal, completá "Configurá tu portal" con el código y tus datos, y entrás como administrador.
 7. **Agregar gente:**
    - En *Equipo y ajustes → Agregar persona* se crean socios, colaboradores e **inversionistas**. Cada persona recibe una contraseña temporal, con un mensaje listo para WhatsApp que lleva el enlace correcto (`/` para el equipo, `/inversionista` para inversionistas).
+   - El administrador habilita inversiones en *Inversiones → abrir inversión → Acceso de inversionistas → Administrar acceso*. Marca las personas y guarda. Las inversiones nuevas empiezan sin inversionistas habilitados; los socios mantienen acceso a todas.
    - Los **clientes** se agregan en *Clientes → ficha → Portal del cliente → Dar acceso*.
 
 Una sola réplica, siempre: los límites de intentos de login viven en memoria y SQLite no admite escritores en paralelo entre réplicas.

@@ -1,0 +1,31 @@
+.ir-breakdown { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); overflow: hidden; }
+.ir-breakdown-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.ir-breakdown-heading > span { display: flex; align-items: center; gap: 7px; color: var(--brand-ink); font-size: 9px; font-weight: 650; letter-spacing: .1em; }
+.ir-breakdown-heading > p { color: var(--muted); font-size: 10px; }
+.ir-figures { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); }
+.ir-figures > div { min-width: 0; padding: 22px 20px; }
+.ir-figures > div + div { border-left: 1px solid var(--line); }
+.ir-figures > div:nth-child(2) { background: var(--brand-soft); }
+.ir-figures dt { display: flex; align-items: center; gap: 7px; color: var(--ink-2); font-size: 11px; }
+.ir-figures dd { margin: 11px 0 6px; color: var(--ink); font-family: var(--font-display); font-size: clamp(20px, 2.3vw, 29px); font-weight: 550; letter-spacing: -.04em; overflow-wrap: anywhere; }
+.ir-figures p, .ir-note { color: var(--muted); font-size: 10px; line-height: 1.7; }
+.ir-note { display: flex; align-items: flex-start; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--line); background: var(--surface-2); }
+.ir-note svg { margin-top: 2px; flex-shrink: 0; }
+.ir-annual { display: grid; grid-template-columns: 1.15fr 1fr; border: 1px solid #493853; border-radius: 20px; overflow: hidden; background: #35243f; color: #f6eee8; }
+.ir-annual-intro { padding: 32px; }
+.ir-annual-kicker { display: flex; align-items: center; gap: 8px; color: #ceb6d6; font-size: 9px; letter-spacing: .13em; }
+.ir-annual h2 { margin: 21px 0 15px; font-family: var(--font-display); font-size: clamp(24px,3vw,35px); font-weight: 500; line-height: 1.18; letter-spacing: -.035em; }
+.ir-annual h2 em { color: #f2bf9e; font-family: Georgia,serif; font-weight: 400; }
+.ir-annual-intro > p, .ir-annual-rule > p { max-width: 390px; font-size: 11px; line-height: 1.9; color: #d1c0d6; }
+.ir-annual-rule { display: flex; flex-direction: column; justify-content: center; padding: 32px; background: #f2d8c00c; border-left: 1px solid #d9bcdf25; }
+.ir-annual-rate { color: #efd5fa; font-family: var(--font-display); font-size: 60px; line-height: 1.05; letter-spacing: -.06em; }
+.ir-annual-rate > small { display: block; margin: 8px 0 17px; font-family: var(--font-body); font-size: 10px; letter-spacing: .02em; color: #dbccdf; }
+.ir-annual-status { display: flex; align-items: center; gap: 7px; margin-top: 18px; color: #f3c8a7; font-size: 9px; }
+.ir-annual-status i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.ir-annual-personal { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); border-top: 1px solid #d9bcdf25; }
+.ir-annual-personal > div { min-width: 0; padding: 20px 26px; }
+.ir-annual-personal dt { color: #cbb6d2; font-size: 10px; line-height: 1.6; }
+.ir-annual-personal dd { color: #f5eee8; font-family: var(--font-display); font-size: 25px; margin-top: 9px; overflow-wrap: anywhere; }
+.ir-annual-footer, .ir-annual-adjustment { grid-column: 1 / -1; padding: 13px 26px; border-top: 1px solid #d9bcdf25; color: #cbb6d2; font-size: 10px; line-height: 1.8; }
+.ir-annual-adjustment { color: #f3c8a7; }
+@media(max-width:640px) { .ir-figures, .ir-annual, .ir-annual-personal { grid-template-columns: 1fr; } .ir-figures > div { padding: 17px 20px; } .ir-figures > div + div { border-left: 0; border-top: 1px solid var(--line); } .ir-annual-intro, .ir-annual-rule { padding: 24px; } .ir-annual-rule { border-left: 0; border-top: 1px solid #d9bcdf25; } .ir-annual-personal > div { padding: 16px 24px; } }

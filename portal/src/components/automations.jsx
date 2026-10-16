@@ -164,7 +164,7 @@ export function HowItWorks() {
 }
 
 // ── Tarjeta de automatización ─────────────────────────────────────────────
-function ConfigEditor({ automation, onSave }) {
+export function ConfigEditor({ automation, onSave }) {
   const schema = useMemo(() => automation.config_schema ?? [], [automation.config_schema]);
   const config = readConfig(automation.config);
   const baseId = useId();

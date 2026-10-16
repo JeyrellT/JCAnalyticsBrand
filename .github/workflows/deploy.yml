@@ -44,6 +44,10 @@ jobs:
         working-directory: jcanalytics-app
         run: npm run check:tools
 
+      - name: Verify sourced prices and AI package totals
+        working-directory: jcanalytics-app
+        run: npm run check:pricing
+
       - name: Verify assistant API and bilingual chat
         working-directory: jcanalytics-app
         run: |

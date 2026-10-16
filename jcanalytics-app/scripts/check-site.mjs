@@ -358,12 +358,26 @@ async function checkContactTelemetry(page, language, preparedBody) {
 
 async function checkEstimator(page, language) {
   const before = await page.$eval('#cotizar .quote-result', (node) => node.innerText);
-  const button = await clickButtonText(page, '#cotizar button[role="radio"]', 'Excel / VBA');
+  const button = await page.$('#cotizar [data-service-key="excel_vba"]');
+  await button.click();
   await page.waitForFunction((node) => node.getAttribute('aria-checked') === 'true', {}, button);
   const after = await page.$eval('#cotizar .quote-result', (node) => node.innerText);
   assert.notEqual(after, before, 'Changing service must update the estimate');
-  assert.ok(after.toLocaleLowerCase().includes(COPY[language].estimateLabel.toLocaleLowerCase()));
-  assert.match(after, language === 'en' ? /weeks?/ : /semanas?/);
+  assert.match(after, language === 'en' ? /one-time payment/i : /pago único/i);
+  assert.match(after, language === 'en' ? /3–5 business days/ : /3–5 días hábiles/);
+  assert.equal(compact(await page.$eval('#cotizar [data-quote-price]', node => node.textContent)), '$60');
+  await page.click('#cotizar input[name="quote-ai"][aria-label="' + (language === 'en' ? 'With AI' : 'Con IA') + '"]');
+  await page.waitForFunction(() => document.querySelector('#cotizar [data-quote-price]').textContent === '$165');
+  await page.click('#cotizar [data-service-key="pagina_web"]');
+  await page.waitForFunction(() => document.querySelector('#cotizar [data-quote-price]').textContent === '$770');
+  const webResult = await page.$eval('#cotizar .quote-result', node => node.innerText);
+  assert.match(webResult, /\$30/);
+  assert.match(webResult, language === 'en' ? /2 h\/week/ : /2 h\/semana/);
+  await page.click('#cotizar input[name="quote-ai"][aria-label="' + (language === 'en' ? 'Functional base' : 'Base funcional') + '"]');
+  await page.waitForFunction(() => document.querySelector('#cotizar [data-quote-price]').textContent === '$570');
+  const whatsapp = new URL(await page.$eval('#cotizar .quote-result a[href^="https://wa.me"]', node => node.href));
+  assert.match(whatsapp.searchParams.get('text'), /\$570/);
+  assert.match(whatsapp.searchParams.get('text'), language === 'en' ? /Functional base/ : /Base funcional/);
 }
 
 async function checkMenu(page, language) {

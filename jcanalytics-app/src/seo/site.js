@@ -1,4 +1,5 @@
 import { articles, topics } from '../content/catalog.js';
+import { SERVICE_PRICING } from '../../../portal/shared/service-pricing.js';
 import { alternatePath, homePath, journalPath, articlePath, routes, resolveRoute } from './routes.js';
 
 // Shared by the Vite HTML transform, the static build and the visible FAQ.
@@ -20,7 +21,7 @@ export const content = {
     ],
     faq: [
       ['What can JC Analytics build for my business?', 'We design websites and custom software with the backend, dashboards and integrations your business needs. We also work on financial analysis, Power BI, process automation, machine learning and digital marketing. Start with a specific business problem and we will help define the scope.'],
-      ['How much does a custom website cost?', 'Web projects start at US$900. The estimator provides an indicative range; features, integrations and complexity affect the final cost. We agree on the scope, budget and timeline before development begins.'],
+      ['How much does a custom website cost?', `The website with bookings package costs US$${SERVICE_PRICING.pagina_web.base_usd}, or US$${SERVICE_PRICING.pagina_web.with_ai_usd} with the specified AI advisor. It includes up to 5 sections, 10 services and 1 calendar, with client-supplied content. Taxes, domain, hosting, usage and monthly support are separate. Larger projects and extras are quoted for the agreed scope.`],
       ['Can you improve a website or system I already use?', 'Yes. We review your existing website, data and tools to identify what can be improved or integrated. A new backend, dashboard or automation can be scoped around your existing operation.'],
       ['Do you work remotely and in English?', 'We are based in Costa Rica and can discuss your project in English or Spanish. We work remotely with businesses across Costa Rica. Tell us where your team is located so we can agree on communication and project logistics.'],
       ['How do you approach an AI integration?', 'We start with one practical use case, such as finding information in documents, classifying data or supporting your team. We assess the available data, integrations and validation criteria before agreeing on implementation.'],
@@ -40,7 +41,7 @@ export const content = {
     ],
     faq: [
       ['¿Qué puede desarrollar JC Analytics para mi negocio?', 'Diseñamos páginas web y software a medida con el backend, los dashboards y las integraciones que necesita tu negocio. También trabajamos en análisis financiero, Power BI, automatización, machine learning y marketing digital. Partimos de un problema concreto para ayudarte a definir el alcance.'],
-      ['¿Cuánto cuesta una página web a medida?', 'Los proyectos web arrancan en US$900. El cotizador ofrece un rango orientativo; las funcionalidades, integraciones y complejidad afectan el costo final. Acordamos alcance, presupuesto y tiempos antes de iniciar el desarrollo.'],
+      ['¿Cuánto cuesta una página web a medida?', `La web con reservas cuesta US$${SERVICE_PRICING.pagina_web.base_usd}, o US$${SERVICE_PRICING.pagina_web.with_ai_usd} con el asesor de IA descrito. Incluye hasta 5 secciones, 10 servicios y 1 agenda, con contenidos entregados por el comprador. Impuestos, dominio, hosting, consumos y soporte mensual se cobran aparte. Los proyectos más amplios y adicionales se cotizan según alcance.`],
       ['¿Pueden mejorar una web o un sistema que ya utilizo?', 'Sí. Revisamos tu web, tus datos y tus herramientas para identificar qué se puede mejorar o integrar. Un nuevo backend, dashboard o automatización puede definirse alrededor de tu operación actual.'],
       ['¿Trabajan de forma remota y en inglés?', 'Estamos en Costa Rica y podemos conversar sobre tu proyecto en español o inglés. Trabajamos de forma remota con empresas de todo Costa Rica. Contanos dónde está tu equipo para acordar la comunicación y la logística del proyecto.'],
       ['¿Cómo abordan una integración de inteligencia artificial?', 'Empezamos con un caso de uso concreto, como consultar documentos, clasificar información o asistir a tu equipo. Evaluamos los datos disponibles, las integraciones y los criterios de validación antes de acordar la implementación.'],
