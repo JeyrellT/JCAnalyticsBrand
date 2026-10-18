@@ -3,6 +3,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { servicePages } from '../../content/services';
 import { homePath, journalPath, servicePath } from '../../seo/routes';
 import { wa, EMAIL, PHONE, NAV_LINKS } from './links';
+import { PortalAccessList } from './PortalAccess';
 
 const SERVICE_LABELS = {
   'web-development': t('Desarrollo web', 'Web development'),
@@ -32,6 +33,10 @@ const Footer = () => (
             <li><a href={`tel:+${PHONE}`}>+506 7033 0596</a></li>
           </ul>
         </div>
+        <nav aria-label={t('Acceso al portal', 'Portal access')}>
+          <p className="footer-label">{t('Portal', 'Portal')}</p>
+          <PortalAccessList compact className="portal-access-list--footer" />
+        </nav>
         <div>
           <p className="footer-label">{t('Estudio', 'Studio')}</p><p className="footer-location">Heredia, Costa Rica</p>
           <a href={topHref} className="footer-back-top">{t('Volver arriba', 'Back to top')} <ArrowUpRight size={17} aria-hidden="true" /></a>

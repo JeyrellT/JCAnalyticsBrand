@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion, useScroll } from 'framer-motion';
 import { Menu, X, ArrowUpRight, ArrowRight, Grid2X2, Layers3, ChartNoAxesCombined, BrainCircuit, PanelsTopLeft, Sparkles, MessageCircle, LockKeyhole } from 'lucide-react';
-import { wa, EASE, PHONE, EMAIL, NAV_LINKS, PORTAL_URL, prepareContact } from './links';
+import PortalAccess, { PortalAccessList } from './PortalAccess';
+import { wa, EASE, PHONE, EMAIL, NAV_LINKS, prepareContact } from './links';
 import '../../styles/navigation.css';
 import { t, locale } from '../../i18n/locale';
 import { journalPath } from '../../seo/routes';
@@ -167,9 +168,7 @@ const Nav = () => {
             ))}
           </nav>
           <div className="jca-navigation__actions">
-            <a className="jca-nav-portal" href={PORTAL_URL} aria-label={t('Portal del equipo: ingresar', 'Team portal: sign in')} title={t('Portal del equipo', 'Team portal')}>
-              <LockKeyhole size={16} strokeWidth={2} aria-hidden="true" /><span>{t('Portal', 'Portal')}</span>
-            </a>
+            <PortalAccess />
             <a className="nav-insights" href={journalPath(locale)}>{t('Ideas', 'Insights')}</a>
             <LanguageSwitcher />
             <a href={wa(t('Hola, quiero cotizar un proyecto con JC Analytics.', 'Hi, I would like a project estimate from JC Analytics.'))} target="_blank" rel="noreferrer" className="jca-nav-contact">
@@ -202,9 +201,6 @@ const Nav = () => {
             </div>
             <div className="jca-menu__access">
               <LanguageSwitcher />
-              <a className="jca-menu__portal" href={PORTAL_URL} onClick={() => setOpen(false)}>
-                <LockKeyhole size={16} strokeWidth={2} aria-hidden="true" />{t('Portal del equipo', 'Team portal')}<ArrowUpRight size={16} aria-hidden="true" />
-              </a>
             </div>
             <div className="jca-menu__eyebrow"><span aria-hidden="true" />{t('ESTÁS EN:', 'YOU ARE HERE:')} {currentName}</div>
             <p className="jca-menu__title">{t('Elegí tu', 'Choose your')} <em>{t('próximo paso.', 'next step.')}</em></p>
@@ -217,6 +213,10 @@ const Nav = () => {
               ))}
             </nav>
             <div className="jca-menu__shortcuts"><a href="#cotizar" onClick={(event) => visit(event, '#cotizar')}>{t('Estimar mi proyecto', 'Estimate my project')} <ArrowRight size={15} aria-hidden="true" /></a><a href="#equipo" onClick={(event) => visit(event, '#equipo')}>{t('El equipo', 'The team')} <ArrowRight size={15} aria-hidden="true" /></a><a href={journalPath(locale)} onClick={() => setOpen(false)}>{t('Ideas', 'Insights')} <ArrowRight size={15} aria-hidden="true" /></a></div>
+            <section className="jca-menu__portal-block" aria-label={t('Acceso al portal', 'Portal access')}>
+              <p className="jca-menu__portal-title"><LockKeyhole size={14} strokeWidth={2} aria-hidden="true" />{t('Acceso al portal', 'Portal access')}</p>
+              <PortalAccessList compact className="portal-access-list--dark" onNavigate={() => setOpen(false)} />
+            </section>
             <div className="jca-menu__bottom">
               <a href={wa(t('Hola, quiero cotizar un proyecto con JC Analytics.', 'Hi, I would like a project estimate from JC Analytics.'))} target="_blank" rel="noreferrer" onClick={() => setOpen(false)} className="jca-menu__contact">
                 {t('Conversemos sobre tu idea', "Let's talk about your idea")}<span aria-hidden="true"><ArrowUpRight size={21} /></span>
