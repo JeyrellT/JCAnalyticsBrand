@@ -90,7 +90,7 @@
 .footer-topline { padding-bottom: 2.5rem; border-bottom: 1px solid #ffffff1a; }
 .footer-topline > span:first-child { color: #ccd9e6; }
 .footer-topline > span:last-child span { color: #9cdfe5; margin-left: .75rem; }
-.footer-links-grid { display: grid; grid-template-columns: 1fr 1fr 1.35fr 1fr; gap: 2rem; padding-top: 3rem; }
+.footer-links-grid { display: grid; grid-template-columns: 1fr 1fr 1.35fr 1.15fr 1fr; gap: 2rem; padding-top: 3rem; }
 .footer-label { font: 400 .65rem var(--font-mono); text-transform: uppercase; letter-spacing: .15em; color: #8095ae; margin-bottom: 1.3rem; }
 .footer-links-grid li + li { margin-top: .5rem; }
 .footer-links-grid a, .footer-location { color: #c5d1df; font-size: .85rem; line-height: 1.8; transition: color 250ms; }
