@@ -13,6 +13,8 @@
 //      abre ninguna ruta del equipo, ni al revés.
 //    · Límite de intentos de login por IP y por correo.
 //    · Encabezados CSP, anti-iframe y HSTS en producción.
+//    · /mcp (conexión con Claude, server/mcp.mjs): token personal en vez de
+//      cookie; solo herramientas que llaman rutas existentes con sus permisos.
 // ============================================================================
 
 import { createServer } from 'node:http';
@@ -23,6 +25,7 @@ import { HttpError, readJson, parseCookies, serializeCookie } from './http.mjs';
 import { createLoginLimiter, newSessionToken, hashToken } from './auth.mjs';
 import { registerRoutes } from './routes/index.mjs';
 import { createRouter, isClientRoute } from './router.mjs';
+import { createMcpHandler } from './mcp.mjs';
 
 const COOKIE = 'jcp_session';
 const IDLE_MS = 12 * 3_600_000;         // la sesión expira tras 12 h sin uso
@@ -166,6 +169,7 @@ export function createPortalServer({
   }
 
   registerRoutes(router.route, ctx, session);
+  const handleMcp = createMcpHandler({ ctx, router, isSecure, originAllowed: (req) => originAllowed(req), logger });
 
   function securityHeaders(res, req) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -248,16 +252,19 @@ export function createPortalServer({
         return json(res, 200, { status: 'ok' });
       }
       if (pathname.startsWith('/api/')) await handleApi(req, res, pathname, parsed.searchParams);
+      else if (pathname === '/mcp' || pathname.startsWith('/mcp/')) await handleMcp(req, res, pathname);
       else await serveStatic(req, res, pathname);
     } catch (error) {
       if (error instanceof HttpError) {
         json(res, error.status, { error: error.code, ...error.extra });
       } else {
-        logger.error(`[portal] ${req.method} ${pathname} failed: ${error?.stack ?? error}`);
+        logger.error(`[portal] ${req.method} ${pathname.startsWith('/mcp/') ? '/mcp/…' : pathname} failed: ${error?.stack ?? error}`);
         json(res, 500, { error: 'server_error' });
       }
     } finally {
-      if (env.PORTAL_LOG_REQUESTS === '1') logger.info(`[portal] ${req.method} ${pathname} ${res.statusCode} ${Date.now() - started}ms`);
+      // El token de /mcp/<token> nunca llega a los registros.
+      const logged = pathname.startsWith('/mcp/') ? '/mcp/…' : pathname;
+      if (env.PORTAL_LOG_REQUESTS === '1') logger.info(`[portal] ${req.method} ${logged} ${res.statusCode} ${Date.now() - started}ms`);
     }
   });
   server.ctx = ctx;

@@ -112,6 +112,8 @@ const MESSAGES = {
   // v6: configuración inicial del dueño
   setup_done: 'El portal ya está configurado. Ingresá con tu correo y contraseña.',
   setup_unavailable: 'El servidor no tiene un código de configuración válido (PORTAL_SETUP_CODE).',
+  // Conexión con Claude (MCP)
+  too_many_tokens: 'Llegaste al máximo de conexiones activas. Revocá una que no uses.',
 };
 
 export function errorMessage(error) {

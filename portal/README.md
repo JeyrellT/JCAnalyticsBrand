@@ -78,6 +78,8 @@ Los movimientos en dólares **guardan su tipo de cambio**, así el consolidado e
 
 Cada aprobación, cambio pedido o brief enviado avisa al equipo, en el buzón y por push (categoría "Portal de clientes"). El equipo, a su vez, avisa al cliente dentro de su portal.
 
+**Conectar con Claude (`/mcp`).** Cada persona del equipo genera una conexión en "Equipo → Mi perfil → Conectar con Claude". Desde una conversación con Claude (claude.ai, escritorio, celular o Claude Code) se crean y consultan proyectos, clientes, tareas y avances, con sus mismos permisos y con registro en la bitácora ("vía Claude"). Ver [docs/mcp-claude.md](docs/mcp-claude.md).
+
 **Bitácora (`/bitacora`).** Registro de quién hizo qué y cuándo. Los colaboradores no ven las entradas de dinero.
 
 **Automatizaciones (`/automatizaciones`).** El portal revisa la operación cada minuto y avisa a la persona correcta, en el buzón y en el celular. Cada aviso sale una sola vez. Hay 9 automatizaciones:

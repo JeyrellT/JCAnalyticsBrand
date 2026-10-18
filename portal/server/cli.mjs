@@ -5,14 +5,18 @@
 //    npm run user:create -- --email ana@jcanalytic.com --name "Ana" --role socio
 //    npm run user:reset  -- --email ana@jcanalytic.com
 //    npm run user:list
+//    npm run mcp:token -- --email ana@jcanalytic.com --name "Claude Code"
 //
 //  Imprime una contraseña temporal; la persona la cambia al entrar.
+//  mcp:token imprime un token para conectar Claude (docs/mcp-claude.md); también
+//  se genera desde el portal: Equipo → Mi perfil → Conectar con Claude.
 // ============================================================================
 
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { openDatabase } from './db.mjs';
-import { hashPassword, temporaryPassword } from './auth.mjs';
+import { hashPassword, temporaryPassword, newSessionToken, hashToken } from './auth.mjs';
+import { MCP_TOKEN_PREFIX } from './routes/mcp-tokens.mjs';
 import { ROLES, MEMBER_COLORS } from '../shared/catalog.js';
 
 const [command, ...rest] = process.argv.slice(2);
@@ -44,7 +48,14 @@ if (command === 'list') {
   db.prepare('UPDATE users SET password_hash = ?, must_change_password = 1, active = 1 WHERE id = ?').run(await hashPassword(temp), user.id);
   db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id);
   console.info(`Contraseña restablecida para ${email}\nContraseña temporal: ${temp}`);
+} else if (command === 'mcp-token') {
+  const email = values.email?.trim().toLowerCase();
+  const user = db.prepare("SELECT * FROM users WHERE email = ? AND active = 1 AND role <> 'inversionista'").get(email ?? '') ?? exit('No existe una persona activa del equipo con ese correo.');
+  const token = `${MCP_TOKEN_PREFIX}${newSessionToken()}`;
+  db.prepare('INSERT INTO mcp_tokens (user_id, name, token_hash, hint, created_at) VALUES (?, ?, ?, ?, ?)')
+    .run(user.id, values.name?.trim() || 'Claude', hashToken(token), token.slice(-4), new Date().toISOString());
+  console.info(`Token MCP para ${email} (se muestra una sola vez):\n${token}`);
 } else {
-  exit('Comandos: create | reset | list');
+  exit('Comandos: create | reset | list | mcp-token');
 }
 db.close();
