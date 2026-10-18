@@ -636,6 +636,22 @@ export const MIGRATIONS = [
   );
   ${Object.entries(SERVICE_PRICING).map(([key, pricing]) => `UPDATE service_lines SET price_from_usd = ${pricing.base_usd} WHERE key = '${key}';`).join('\n')}
   `,
+
+  // 10 · Conexión con Claude (MCP, ver docs/mcp-claude.md). Tokens personales: solo se guarda el hash;
+  //      el token actúa con los permisos de su dueño y se revoca sin tocar la contraseña.
+  `
+  CREATE TABLE mcp_tokens (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    name TEXT NOT NULL,
+    token_hash TEXT NOT NULL UNIQUE,
+    hint TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    last_used_at TEXT,
+    revoked_at TEXT
+  );
+  CREATE INDEX mcp_tokens_user ON mcp_tokens(user_id, revoked_at);
+  `,
 ];
 
 export const DEFAULT_SETTINGS = {

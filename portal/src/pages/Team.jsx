@@ -20,6 +20,7 @@ import { ROLES, MEMBER_COLORS } from '../../shared/catalog.js';
 import { timeAgo, whatsappLink } from '../lib/format.js';
 import { InvitesPanel, InviteShare, inviteAudience, cap } from '../components/invites.jsx';
 import { INVITE_LIMITS } from '../../shared/invites.js';
+import { ClaudeConnectionCard } from '../components/ClaudeConnection.jsx';
 
 /** Ícono y tono de cada rol en el selector (mismos tonos que RoleBadge). */
 const ROLE_LOOK = {
@@ -554,6 +555,7 @@ export default function Team() {
             <SectionHead flush id="appearance-title" icon={Palette} tone="violet" title="Apariencia" hint="Claro, oscuro o como el celular." />
             <div className="p-4 sm:p-5"><ThemePicker /></div>
           </section>
+          <ClaudeConnectionCard />
         </div>
       )}
 

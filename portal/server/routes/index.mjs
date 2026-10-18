@@ -14,6 +14,7 @@ import { clientPortalRoutes } from './client-portal.mjs';
 import { investorRoutes } from './investor.mjs';
 import { inviteRoutes } from './invites.mjs';
 import { financeRoutes } from './finance.mjs';
+import { mcpTokenRoutes } from './mcp-tokens.mjs';
 import { installPushDispatch } from '../notify-policy.mjs';
 import { createAutomationEngine } from '../automations.mjs';
 
@@ -41,4 +42,6 @@ export function registerRoutes(route, ctx, session) {
   investorRoutes(route, ctx);
   // v7: enlaces de registro (docs/v7-contrato.md).
   inviteRoutes(route, ctx, session);
+  // Conexión con Claude por MCP (docs/mcp-claude.md).
+  mcpTokenRoutes(route, ctx);
 }

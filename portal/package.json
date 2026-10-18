@@ -24,7 +24,8 @@
     "seed:demo": "node --disable-warning=ExperimentalWarning server/seed-demo.mjs",
     "user:create": "node --disable-warning=ExperimentalWarning server/cli.mjs create",
     "user:reset": "node --disable-warning=ExperimentalWarning server/cli.mjs reset",
-    "user:list": "node --disable-warning=ExperimentalWarning server/cli.mjs list"
+    "user:list": "node --disable-warning=ExperimentalWarning server/cli.mjs list",
+    "mcp:token": "node --disable-warning=ExperimentalWarning server/cli.mjs mcp-token"
   },
   "dependencies": {
     "lucide-react": "^0.577.0",
