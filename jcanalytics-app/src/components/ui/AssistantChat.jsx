@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, LoaderCircle, MessageCircle, Send, Sparkles, X } from 'lucide-react';
 import { locale, t } from '../../i18n/locale';
-import { wa } from '../site/links';
+import { wa, PHONE_DISPLAY } from '../site/links';
 import '../../styles/assistant.css';
 
 const ENDPOINT = import.meta.env.VITE_ASSISTANT_API_URL || (import.meta.env.DEV ? '/api/chat' : 'https://assistant-api-production-0d9b.up.railway.app/api/chat');
+const LOCAL_PHONE = PHONE_DISPLAY.replace(/^\+506 (\d{4}) (\d{4})$/, '$1-$2');
 const FALLBACK = t(
-  'Para darte una respuesta precisa, el equipo puede ayudarte por WhatsApp al 7033-0596. Continuá con tu consulta usando el botón de abajo.',
-  'For an accurate answer, our team can help on WhatsApp at +506 7033-0596. Continue with your question using the button below.',
+  `Para darte una respuesta precisa, el equipo puede ayudarte por WhatsApp al ${LOCAL_PHONE}. Continuá con tu consulta usando el botón de abajo.`,
+  `For an accurate answer, our team can help on WhatsApp at +506 ${LOCAL_PHONE}. Continue with your question using the button below.`,
 );
+// La API responde con la línea principal; se muestra la línea asignada al visitante.
+const withVisitorLine = (text) => text.replace(/7033-0596/g, LOCAL_PHONE);
 const STARTERS = t(['¿Qué servicios ofrecen?', '¿Cuánto cuesta una página web?', 'Quiero hablar con el equipo'], ['What services do you offer?', 'How much does a website cost?', 'I want to speak with a human']);
 
 export default function AssistantChat() {
@@ -102,7 +105,7 @@ export default function AssistantChat() {
       <div className="assistant-panel">
         <header className="assistant-header"><span className="assistant-avatar"><Sparkles size={22} aria-hidden="true" /></span><div><h2 id="assistant-title">{t('Asistente de JC Analytics', 'JC Analytics assistant')}</h2><p>{t('Una buena pregunta es el primer paso.', 'A good question is the first step.')}</p></div><button type="button" onClick={closeChat} aria-label={t('Cerrar asistente', 'Close assistant')}><X size={21} aria-hidden="true" /></button></header>
         <div ref={logRef} className="assistant-log" role="log" aria-live="polite" aria-relevant="additions" aria-label={t('Conversación con la asistente', 'Conversation with the assistant')}>
-          {messages.map((message, index) => <div key={index} className={`assistant-message assistant-message--${message.role}`}><span className="assistant-message__author">{message.role === 'user' ? t('Vos', 'You') : t('Asistente', 'Assistant')}</span><p>{message.content}</p>{message.handoff && <a className="assistant-handoff" href={whatsapp} target="_blank" rel="noopener noreferrer"><MessageCircle size={18} aria-hidden="true" />{t('Continuar por WhatsApp', 'Continue on WhatsApp')}<ArrowUpRight size={16} aria-hidden="true" /></a>}</div>)}
+          {messages.map((message, index) => <div key={index} className={`assistant-message assistant-message--${message.role}`}><span className="assistant-message__author">{message.role === 'user' ? t('Vos', 'You') : t('Asistente', 'Assistant')}</span><p>{message.role === 'assistant' ? withVisitorLine(message.content) : message.content}</p>{message.handoff && <a className="assistant-handoff" href={whatsapp} target="_blank" rel="noopener noreferrer"><MessageCircle size={18} aria-hidden="true" />{t('Continuar por WhatsApp', 'Continue on WhatsApp')}<ArrowUpRight size={16} aria-hidden="true" /></a>}</div>)}
           {pending && <div className="assistant-pending" role="status"><LoaderCircle size={16} aria-hidden="true" />{t('Preparando tu respuesta…', 'Preparing your answer…')}</div>}
         </div>
         {messages.length === 1 && <div className="assistant-starters" aria-label={t('Preguntas para empezar', 'Questions to get started')}>{STARTERS.map(question => <button type="button" key={question} onClick={() => sendMessage(question)}>{question}<ArrowUpRight size={14} aria-hidden="true" /></button>)}</div>}

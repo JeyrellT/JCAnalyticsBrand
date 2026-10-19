@@ -6,7 +6,36 @@
 
 import { t } from '../../i18n/locale';
 
-export const PHONE = '50670330596';
+// Dos líneas de WhatsApp atienden las consultas. Cada visitante queda asignado
+// al azar (50/50) a una de ellas y la conserva en todo el sitio y en visitas
+// siguientes: así ambas reciben la misma oportunidad y un mismo cliente no
+// escribe a las dos. Para probar una línea: ?wa_line=a o ?wa_line=b.
+export const WA_LINES = [
+  { id: 'a', phone: '50670330596', display: '+506 7033 0596' },
+  { id: 'b', phone: '50688646581', display: '+506 8864 6581' },
+];
+const LINE_KEY = 'jc_wa_line';
+
+const pickLine = () => {
+  if (typeof window === 'undefined') return WA_LINES[0];
+  const byId = (id) => WA_LINES.find((line) => line.id === id);
+  const forced = byId(new URLSearchParams(window.location.search).get('wa_line'));
+  if (forced) return forced;
+  // El prerender (navegador automatizado) siempre usa la línea principal para
+  // que el HTML estático no cambie entre builds.
+  if (window.navigator?.webdriver) return WA_LINES[0];
+  let stored = null;
+  try { stored = byId(window.localStorage.getItem(LINE_KEY)); } catch { /* almacenamiento bloqueado */ }
+  if (stored) return stored;
+  const line = WA_LINES[Math.random() < 0.5 ? 0 : 1];
+  try { window.localStorage.setItem(LINE_KEY, line.id); } catch { /* sin persistencia: se sortea por visita */ }
+  return line;
+};
+
+const LINE = pickLine();
+export const WA_LINE = LINE.id;
+export const PHONE = LINE.phone;
+export const PHONE_DISPLAY = LINE.display;
 export const EMAIL = 'gerencia@jcanalytic.com';
 
 // Entrada al portal privado del equipo (proyectos, agenda, inversiones de socios).

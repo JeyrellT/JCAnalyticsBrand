@@ -20,6 +20,7 @@ import { FX_UPDATED } from '../../data/currencies';
 import { useCurrency } from '../../hooks/useCurrency';
 import CurrencySelector from './CurrencySelector';
 import { t } from '../../i18n/locale';
+import { wa } from '../site/links';
 
 const ICONS = { BarChart3, Zap, Layers, Cpu, Database, MonitorSmartphone, Settings, Lightbulb, Receipt, Globe, Clapperboard, Megaphone, Users, Package, Sparkles, MessageSquare };
 
@@ -193,12 +194,12 @@ export default function QuoteEstimator() {
   }
 
   const whatsappHref = result
-    ? `https://wa.me/50670330596?text=${encodeURIComponent(
+    ? wa(
         `${t(`Hola, coticé un proyecto (${svc.label}) y quiero afinar el alcance. Estimado:`, `Hi, I estimated a project (${svc.label}) and would like to discuss the scope. Estimate:`)} ${
           singlePrice ? `$${result.investUSD.high}` : `$${result.investUSD.low}–$${result.investUSD.high}`
         }${result.unitSuffix} USD, ${result.delivery.display}.${fixed ? ` ${result.aiIncluded ? t('Con IA.', 'With AI.') : t('Base funcional.', 'Functional base.')} ${t('Impuestos, consumos y soporte aparte.', 'Taxes, usage and support are separate.')}` : ''}`,
-      )}`
-    : 'https://wa.me/50670330596';
+      )
+    : wa();
 
   const scrollToResult = () =>
     resultRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });

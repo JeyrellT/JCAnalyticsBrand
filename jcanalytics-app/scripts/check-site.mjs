@@ -332,14 +332,16 @@ async function checkContactTelemetry(page, language, preparedBody) {
       contact_channel: channel,
       site_language: language,
       section_id: 'contacto',
+      ...(channel === 'email' ? {} : { contact_line: 'a' }),
     }];
-    assert.deepEqual(submission.events, [event('whatsapp')], 'Submit tracks only channel, language and section');
+    const conversion = ['event', 'conversion', { send_to: 'AW-18237462818/5C2RCMSwvaIdEKKypvhD', value: 10, currency: 'USD', transport_type: 'beacon' }];
+    assert.deepEqual(submission.events, [event('whatsapp'), conversion], 'Submit tracks channel, language, section and line, then one Ads conversion');
 
     const beforeEmail = page.url();
     await page.click('#contacto .contact-email a');
-    await page.waitForFunction(() => window.__testContactTelemetry.events.length >= 2);
+    await page.waitForFunction(() => window.__testContactTelemetry.events.length >= 3);
     const events = await page.evaluate(() => window.__testContactTelemetry.events);
-    assert.deepEqual(events, [event('whatsapp'), event('email')], 'Email click records the correct channel exactly once');
+    assert.deepEqual(events, [event('whatsapp'), conversion, event('email')], 'Email click records the correct channel exactly once');
     assert.equal(page.url(), beforeEmail, 'Email navigation stays suppressed in the check');
     const serialized = JSON.stringify(events);
     for (const privateValue of ['Browser QA', 'qa-private@example.invalid', 'Test project scope', preparedBody]) {
@@ -942,6 +944,53 @@ async function checkRetrySimulator(browser, origin, language, width) {
   }
 }
 
+// Every WhatsApp and phone link on a page must point to the visitor's single assigned line.
+async function contactLines(page) {
+  const lines = await page.$$eval('a[href^="https://wa.me/"], a[href^="tel:"]', (links) => [...new Set(links.map((link) => {
+    const url = new URL(link.href);
+    return url.protocol === 'tel:' ? url.pathname : url.pathname.slice(1);
+  }))]);
+  return lines.sort();
+}
+
+async function checkWhatsAppLines(browser, origin) {
+  const LINES = { a: '50670330596', b: '50688646581' };
+  for (const [id, phone] of Object.entries(LINES)) {
+    const { page, verifyErrors } = await openPage(browser, origin, 1440);
+    try {
+      await navigate(page, `${origin}${COPY.es.path}?wa_line=${id}`);
+      await page.waitForSelector('#contacto form');
+      assert.deepEqual(await contactLines(page), [`+${phone}`, phone], `?wa_line=${id} routes every contact link to one line`);
+      verifyErrors();
+    } finally {
+      await page.close();
+    }
+  }
+  // Real visitors (not automated) are assigned at random once and keep that line.
+  const { page, verifyErrors } = await openPage(browser, origin, 1440);
+  try {
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => false });
+      const forced = Number(sessionStorage.getItem('__testRandom') ?? '0.9');
+      Math.random = () => forced;
+    });
+    await navigate(page, `${origin}${COPY.es.path}`);
+    assert.equal(await page.evaluate(() => localStorage.getItem('jc_wa_line')), 'b', 'A random draw >= 0.5 assigns the second line');
+    assert.deepEqual(await contactLines(page), [`+${LINES.b}`, LINES.b]);
+    await page.evaluate(() => sessionStorage.setItem('__testRandom', '0.1'));
+    await navigate(page, `${origin}${COPY.es.path}`);
+    assert.deepEqual(await contactLines(page), [`+${LINES.b}`, LINES.b], 'The assigned line is kept on later visits');
+    await page.evaluate(() => { localStorage.removeItem('jc_wa_line'); });
+    await navigate(page, `${origin}${COPY.es.path}`);
+    assert.equal(await page.evaluate(() => localStorage.getItem('jc_wa_line')), 'a', 'A random draw < 0.5 assigns the first line');
+    assert.deepEqual(await contactLines(page), [`+${LINES.a}`, LINES.a]);
+    verifyErrors();
+    console.log('[check-site] PASS WhatsApp lines: forced a/b, random 50/50 assignment and sticky line per visitor');
+  } finally {
+    await page.close();
+  }
+}
+
 async function main() {
   await Promise.all(routes.map((route) => stat(join(DIST, route.path, 'index.html'))));
   await checkPublicPrivacy();
@@ -959,6 +1008,7 @@ async function main() {
     const snapshots = new Map();
     for (const route of routes) await checkStaticRoute(browser, origin, route, snapshots);
     await checkInternalLinks(origin, snapshots);
+    await checkWhatsAppLines(browser, origin);
     for (const width of [1440, 390]) {
       for (const language of ['en', 'es']) {
         const { page, verifyErrors } = await openPage(browser, origin, width);

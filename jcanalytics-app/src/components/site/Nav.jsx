@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion, useScroll } from 'framer-motion';
 import { Menu, X, ArrowUpRight, ArrowRight, Grid2X2, Layers3, ChartNoAxesCombined, BrainCircuit, PanelsTopLeft, Sparkles, MessageCircle, LockKeyhole } from 'lucide-react';
-import { wa, EASE, PHONE, EMAIL, NAV_LINKS, PORTAL_URL, prepareContact } from './links';
+import { wa, EASE, PHONE, PHONE_DISPLAY, EMAIL, NAV_LINKS, PORTAL_URL, prepareContact } from './links';
 import '../../styles/navigation.css';
 import { t, locale } from '../../i18n/locale';
 import { journalPath } from '../../seo/routes';
@@ -221,7 +221,7 @@ const Nav = () => {
               <a href={wa(t('Hola, quiero cotizar un proyecto con JC Analytics.', 'Hi, I would like a project estimate from JC Analytics.'))} target="_blank" rel="noreferrer" onClick={() => setOpen(false)} className="jca-menu__contact">
                 {t('Conversemos sobre tu idea', "Let's talk about your idea")}<span aria-hidden="true"><ArrowUpRight size={21} /></span>
               </a>
-              <div className="jca-menu__details"><a href={`mailto:${EMAIL}`}>{EMAIL}</a><a href={`tel:+${PHONE}`}>+506 7033 0596</a></div>
+              <div className="jca-menu__details"><a href={`mailto:${EMAIL}`}>{EMAIL}</a><a href={`tel:+${PHONE}`}>{PHONE_DISPLAY}</a></div>
               <span className="jca-menu__location">{t('Costa Rica · Ideas sin fronteras', 'Costa Rica · Ideas without borders')}</span>
             </div>
           </motion.div>
