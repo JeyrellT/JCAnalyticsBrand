@@ -15,7 +15,12 @@ export function trackContactClicks() {
     if (!link && !isContactForm) return;
     const href = link?.getAttribute('href') ?? '';
     const channel = isContactForm || href.startsWith('https://wa.me/') ? 'whatsapp' : href.startsWith('mailto:') ? 'email' : href.startsWith('tel:') ? 'phone' : null;
-    if (!channel || typeof window.gtag !== 'function') return;
+    if (!channel) return;
+    // Meta Pixel: a completed contact form is a Lead; any other contact click is Contact.
+    if (typeof window.fbq === 'function') {
+      window.fbq('track', isContactForm ? 'Lead' : 'Contact', { content_name: channel, content_category: locale });
+    }
+    if (typeof window.gtag !== 'function') return;
     window.gtag('event', 'contact_click', {
       contact_channel: channel,
       site_language: locale,
