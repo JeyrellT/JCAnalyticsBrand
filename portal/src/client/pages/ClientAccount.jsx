@@ -1,7 +1,7 @@
 // Mi cuenta (cliente): perfil, contraseña, sesión, tema, contacto del ejecutivo y cómo cuidamos su información.
 import { useState } from 'react';
-import { UserRound, KeyRound, ShieldCheck, LogOut, Palette, Building2, Mail, BadgeCheck, Lock, Clock3, EyeOff, Users } from 'lucide-react';
-import { useSession } from '../../lib/session.jsx';
+import { UserRound, KeyRound, ShieldCheck, LogOut, Palette, Building2, Mail, BadgeCheck, Lock, Clock3, EyeOff, Users, MessageCircle } from 'lucide-react';
+import { useSession, useResource } from '../../lib/session.jsx';
 import { api } from '../../lib/api.js';
 import { PageHeader, SectionHead, Field, ThemePicker, IconTile, useAction, useToast, cx } from '../../components/ui.jsx';
 import { formatDateTime } from '../../lib/format.js';
@@ -57,6 +57,68 @@ function ProfileForm() {
   );
 }
 
+/**
+ * Avisos por WhatsApp: el cliente genera un código y lo envía desde su WhatsApp; así se
+ * comprueba que el número es suyo. Puede pausarlos o desvincular el número cuando quiera.
+ */
+function WhatsappSection() {
+  const { data, error, reload, setData } = useResource('/api/client/whatsapp');
+  const [run, busy] = useAction();
+  const [code, setCode] = useState(null);
+  const wa = data?.whatsapp;
+  if (!wa) return error ? null : <div className="p-4 sm:p-5"><p className="text-sm text-muted">Cargando…</p></div>;
+  if (!wa.available) return <p className="p-4 text-sm text-muted sm:p-5">Los avisos por WhatsApp todavía no están disponibles. Mientras tanto, te avisamos aquí en el portal.</p>;
+
+  const generate = async () => {
+    const res = await run(() => api('/api/client/whatsapp/link', { method: 'POST' }));
+    if (res?.link) setCode(res.link);
+  };
+  const toggle = async () => {
+    const res = await run(() => api('/api/client/whatsapp', { method: 'PATCH', body: { opt_in: !wa.opt_in } }), { success: wa.opt_in ? 'Pausamos los avisos por WhatsApp.' : 'Vuelven los avisos por WhatsApp.' });
+    if (res) setData(res);
+  };
+  const unlink = async () => {
+    const res = await run(() => api('/api/client/whatsapp', { method: 'DELETE' }), { success: 'Desvinculamos tu número.' });
+    if (res) { setData(res); setCode(null); }
+  };
+
+  if (wa.linked) {
+    return (
+      <div className="space-y-4 p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <IconTile icon={MessageCircle} tone={wa.opt_in ? 'teal' : 'slate'} size="sm" />
+          <div className="min-w-0 text-sm">
+            <p className="font-semibold text-ink">{wa.opt_in ? 'Te llegan los avisos por WhatsApp' : 'Avisos por WhatsApp en pausa'}</p>
+            <p className="text-muted">Número vinculado <span className="num">{wa.phone}</span>{wa.linked_at && ` desde ${formatDateTime(wa.linked_at)}`}.</p>
+            <p className="mt-1 text-muted">Te avisamos de avances, entregables por revisar, documentos nuevos y tus reuniones, entre 7:00 a.m. y 8:00 p.m. También podés escribirle al asistente: te cuenta cómo van tus proyectos o te pasa con tu ejecutivo.</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className={cx('btn', wa.opt_in ? 'btn-outline' : 'btn-teal')} onClick={toggle} disabled={busy}>{wa.opt_in ? 'Pausar avisos' : 'Reactivar avisos'}</button>
+          <button type="button" className="btn btn-ghost text-coral-ink" onClick={unlink} disabled={busy}>Desvincular número</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 p-4 sm:p-5">
+      <p className="text-sm text-ink-2">Recibí en tu WhatsApp los avisos de tu portal: avances, entregables por revisar, documentos y recordatorios de reuniones. Solo de tu servicio, nunca publicidad.</p>
+      {code ? (
+        <div className="space-y-3 rounded-xl bg-surface-2 p-4">
+          <p className="text-sm text-ink-2">Enviá este mensaje desde <strong>tu</strong> WhatsApp al {code.number}. Así comprobamos que el número es tuyo.</p>
+          <p className="num select-all text-center font-display text-2xl font-bold tracking-[0.2em] text-ink">{code.text}</p>
+          {code.link && <a href={code.link} target="_blank" rel="noopener noreferrer" className="btn btn-teal w-full justify-center"><MessageCircle className="h-4 w-4" />Abrir WhatsApp con el mensaje</a>}
+          <p className="text-xs text-muted">El código vence a los 30 minutos y sirve una sola vez. <button type="button" className="font-semibold text-brand-ink underline" onClick={() => { setCode(null); reload(); }}>Ya lo envié</button></p>
+        </div>
+      ) : (
+        <button type="button" className="btn btn-teal" onClick={generate} disabled={busy}><MessageCircle className="h-4 w-4" />Activar avisos por WhatsApp</button>
+      )}
+      <p className="text-xs text-muted">Podés pausarlos cuando quieras desde aquí o escribiendo AVISOS NO en el chat.</p>
+    </div>
+  );
+}
+
 const PRIVACY = [
   [Users, 'Solo las personas de tu empresa con acceso ven este portal. Nadie más.'],
   [EyeOff, 'Ves el avance de tu servicio, nunca datos de otros clientes.'],
@@ -78,6 +140,11 @@ export default function ClientAccount() {
           <section className="card animate-rise overflow-hidden" aria-labelledby="profile-title">
             <SectionHead flush id="profile-title" icon={UserRound} tone="blue" title="Tus datos" hint="Así te ve el equipo de JC Analytics" />
             <ProfileForm />
+          </section>
+
+          <section className="card animate-rise overflow-hidden" aria-labelledby="whatsapp-title">
+            <SectionHead flush id="whatsapp-title" icon={MessageCircle} tone="teal" title="Avisos por WhatsApp" hint="Las novedades de tu servicio en tu celular" />
+            <WhatsappSection />
           </section>
 
           <section className="card animate-rise overflow-hidden" aria-labelledby="password-title">

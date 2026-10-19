@@ -15,6 +15,8 @@
 //    · Encabezados CSP, anti-iframe y HSTS en producción.
 //    · /mcp (conexión con Claude, server/mcp.mjs): token personal en vez de
 //      cookie; solo herramientas que llaman rutas existentes con sus permisos.
+//    · /webhooks/whatsapp (Meta, docs/whatsapp.md): sin cookie ni encabezado
+//      propio; lo autentica la firma HMAC del cuerpo crudo con META_APP_SECRET.
 // ============================================================================
 
 import { createServer } from 'node:http';
@@ -26,6 +28,7 @@ import { createLoginLimiter, newSessionToken, hashToken } from './auth.mjs';
 import { registerRoutes } from './routes/index.mjs';
 import { createRouter, isClientRoute } from './router.mjs';
 import { createMcpHandler } from './mcp.mjs';
+import { createWhatsAppWebhook } from './whatsapp/http.mjs';
 
 const COOKIE = 'jcp_session';
 const IDLE_MS = 12 * 3_600_000;         // la sesión expira tras 12 h sin uso
@@ -63,13 +66,18 @@ const CSP = [
  * @param {(() => Promise<unknown>)|null} [o.fetchExchangeRate]  consulta del tipo de cambio para la automatización tipo_cambio
  * @param {string|null} [o.setupCode]  código de un solo uso para crear al dueño desde la pantalla de configuración inicial
  *        (v6). Por defecto PORTAL_SETUP_CODE; sin código, la configuración por pantalla queda deshabilitada.
+ * @param {object|null} [o.whatsapp]  transporte de WhatsApp (server/whatsapp/meta.mjs); null = sin WhatsApp
+ * @param {object} [o.whatsappOptions]  tiempos del asistente ({ batch, pace }); las pruebas los ponen en 0
+ * @param {string[]} [o.whatsappMissing]  nombres de variables de WhatsApp que faltan (para el panel)
  * El servidor devuelto expone `server.ctx` (y `server.ctx.automations`) para el programador de index.mjs y las pruebas.
  */
 export function createPortalServer({
   db, env = process.env, now = () => Date.now(), staticDir = null, logger = console, push = null, fetchExchangeRate = null,
-  setupCode = env.PORTAL_SETUP_CODE ?? null,
+  setupCode = env.PORTAL_SETUP_CODE ?? null, whatsapp = null, whatsappOptions = undefined, whatsappMissing = [],
 } = {}) {
-  const ctx = createContext({ db, now, push, fetchExchangeRate });
+  const ctx = createContext({ db, now, push, fetchExchangeRate, whatsapp });
+  ctx.waOptions = { logger, ...whatsappOptions };
+  ctx.waMissing = whatsappMissing;
   ctx.setupCode = typeof setupCode === 'string' && setupCode.trim().length >= 8 ? setupCode.trim() : null;
   const router = createRouter();
 
@@ -170,6 +178,7 @@ export function createPortalServer({
 
   registerRoutes(router.route, ctx, session);
   const handleMcp = createMcpHandler({ ctx, router, isSecure, originAllowed: (req) => originAllowed(req), logger });
+  const handleWhatsApp = createWhatsAppWebhook({ ctx, logger });
 
   function securityHeaders(res, req) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -252,6 +261,7 @@ export function createPortalServer({
         return json(res, 200, { status: 'ok' });
       }
       if (pathname.startsWith('/api/')) await handleApi(req, res, pathname, parsed.searchParams);
+      else if (pathname === '/webhooks/whatsapp') await handleWhatsApp(req, res, parsed.searchParams);
       else if (pathname === '/mcp' || pathname.startsWith('/mcp/')) await handleMcp(req, res, pathname);
       else await serveStatic(req, res, pathname);
     } catch (error) {

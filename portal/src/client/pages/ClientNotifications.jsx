@@ -1,7 +1,7 @@
 // Avisos del portal de clientes: lo nuevo de solicitudes, entregables, avances y documentos.
 // Tocar un aviso lo marca como leído y lleva a su sección.
 import { useState } from 'react';
-import { Bell, ClipboardList, PackageCheck, History, FolderOpen, UserCog, CheckCheck, BellOff } from 'lucide-react';
+import { Bell, ClipboardList, PackageCheck, History, FolderOpen, UserCog, CheckCheck, BellOff, Megaphone } from 'lucide-react';
 import { useSession, useResource } from '../../lib/session.jsx';
 import { Link } from '../../lib/router.jsx';
 import { api } from '../../lib/api.js';
@@ -14,6 +14,7 @@ const KIND = {
   deliverable: { icon: PackageCheck, tone: 'amber' },
   avance: { icon: History, tone: 'teal' },
   documento: { icon: FolderOpen, tone: 'blue' },
+  aviso: { icon: Megaphone, tone: 'violet' },
   cuenta: { icon: UserCog, tone: 'slate' },
 };
 

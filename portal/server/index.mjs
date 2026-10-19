@@ -15,6 +15,8 @@
 //    PORTAL_FX_URL           API del tipo de cambio (por defecto https://api.hacienda.go.cr/indicadores/tc/dolar)
 //    PORTAL_SCHEDULER=0      apaga el programador de automatizaciones (corre cada 60 s)
 //    PORTAL_SETUP_CODE       código de la configuración inicial por pantalla (v6). Sin él, se genera uno y se muestra en el registro.
+//    META_APP_SECRET, WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_DISPLAY_NUMBER, WHATSAPP_AVISOS…
+//                            WhatsApp Cloud API (ver server/whatsapp/meta.mjs y docs/whatsapp.md)
 // ============================================================================
 
 import { fileURLToPath } from 'node:url';
@@ -23,6 +25,7 @@ import { openDatabase } from './db.mjs';
 import { createPortalServer } from './app.mjs';
 import { hashPassword, passwordProblem, temporaryPassword } from './auth.mjs';
 import { createPushService } from './push.mjs';
+import { createWhatsAppTransport, missingConfig } from './whatsapp/meta.mjs';
 
 const dbPath = process.env.PORTAL_DB_PATH || fileURLToPath(new URL('../data/portal.sqlite', import.meta.url));
 const db = openDatabase(dbPath);
@@ -75,20 +78,31 @@ async function fetchExchangeRate() {
   return res.json();
 }
 
+// WhatsApp (docs/whatsapp.md): sin las variables obligatorias, el portal sigue sin WhatsApp y el panel dice qué falta.
+const whatsappMissing = missingConfig(process.env);
+const whatsapp = createWhatsAppTransport({ env: process.env, logger: console });
+if (!whatsapp && whatsappMissing.length < 3) console.error(`[portal] WhatsApp desactivado: faltan ${whatsappMissing.join(', ')}`);
+
 const distDir = fileURLToPath(new URL('../dist', import.meta.url));
-const server = createPortalServer({ db, staticDir: existsSync(distDir) ? distDir : null, push, fetchExchangeRate, setupCode });
+const server = createPortalServer({ db, staticDir: existsSync(distDir) ? distDir : null, push, fetchExchangeRate, setupCode, whatsapp, whatsappMissing });
 const port = Number(process.env.PORT) || 3002;
-server.listen(port, () => console.info(`[portal] escuchando en el puerto ${port} · base ${dbPath}${push ? ' · push activo' : ''}`));
+server.listen(port, () => console.info(`[portal] escuchando en el puerto ${port} · base ${dbPath}${push ? ' · push activo' : ''}${whatsapp ? ` · WhatsApp activo${whatsapp.outbound ? ' con avisos' : ' (avisos apagados)'}` : ''}`));
 
 // Programador de automatizaciones: una pasada por minuto (la primera, poco después de arrancar).
 let schedulerTimer = null;
 let firstTick = null;
 if (process.env.PORTAL_SCHEDULER !== '0') {
-  const tick = () => server.ctx.automations.runDue()
-    .then((results) => {
-      for (const r of results) if (r.error) console.error(`[portal] automatización ${r.key}: ${r.summary}`);
-    })
-    .catch((error) => console.error(`[portal] programador: ${error?.stack ?? error}`));
+  const tick = () => {
+    server.ctx.automations.runDue()
+      .then((results) => {
+        for (const r of results) if (r.error) console.error(`[portal] automatización ${r.key}: ${r.summary}`);
+      })
+      .catch((error) => console.error(`[portal] programador: ${error?.stack ?? error}`));
+    // Cola de avisos por WhatsApp: recordatorios de reuniones y envío de lo que toca.
+    server.ctx.wa.tick()
+      .then((r) => { if (r.failed) console.error(`[portal] WhatsApp: ${r.failed} aviso(s) fallaron; ver el panel.`); })
+      .catch((error) => console.error(`[portal] WhatsApp: ${error?.stack ?? error}`));
+  };
   schedulerTimer = setInterval(tick, 60_000);
   firstTick = setTimeout(tick, 5_000);
 }

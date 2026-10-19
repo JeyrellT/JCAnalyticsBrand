@@ -188,6 +188,59 @@ function AccountForm({ clientId, account, defaults, onClose, onSaved }) {
   );
 }
 
+/** Aviso del equipo a un cliente: queda en su portal y sale por WhatsApp a quienes activaron los avisos. */
+function AnnounceForm({ client, accounts, onClose, onSent }) {
+  const [run, busy] = useAction();
+  const toast = useToast();
+  const [form, setForm] = useState({ title: '', text: '', urgent: false });
+  const [errors, setErrors] = useState({});
+  const set = (k) => (v) => { setForm((f) => ({ ...f, [k]: v })); setErrors((e) => (e[k] ? { ...e, [k]: null } : e)); };
+  const withWa = accounts.filter((a) => a.active && a.wa_opt_in).length;
+  const active = accounts.filter((a) => a.active).length;
+
+  async function send(e) {
+    e.preventDefault();
+    if (form.title.trim().length < 3) { setErrors({ title: 'Escribí un título corto (mínimo 3 letras).' }); return; }
+    if (form.text.trim().length < 5) { setErrors({ text: 'Escribí el mensaje para el cliente.' }); return; }
+    const res = await run(() => api(`/api/clients/${client.id}/announce`, { method: 'POST', body: { title: form.title.trim(), text: form.text.trim(), urgent: form.urgent } }), { onError: fieldError(setErrors) });
+    if (!res) return;
+    toast(res.whatsapp ? `Aviso en el portal de ${plural(res.accounts, 'persona', 'personas')} y en cola para ${plural(res.whatsapp, 'WhatsApp', 'WhatsApps')}.` : `Aviso en el portal de ${plural(res.accounts, 'persona', 'personas')}.`);
+    onSent();
+    onClose();
+  }
+
+  return (
+    <Modal open onClose={onClose} title={`Enviar aviso a ${client.name}`}
+      footer={<>
+        <button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+        <button type="submit" form="announce-form" className="btn btn-primary" disabled={busy}><MessageCircle className="h-4 w-4" />{busy ? 'Enviando…' : 'Enviar aviso'}</button>
+      </>}>
+      <form id="announce-form" onSubmit={send} className="space-y-4" noValidate>
+        <Callout tone={withWa ? 'teal' : 'slate'} icon={MessageCircle}>
+          {withWa
+            ? `Llega al portal de ${plural(active, 'persona', 'personas')} y por WhatsApp a ${plural(withWa, 'persona que activó', 'personas que activaron')} los avisos.`
+            : `Llega al portal de ${plural(active, 'persona', 'personas')}. Nadie de ${client.name} activó todavía los avisos por WhatsApp (lo hacen desde Mi cuenta en su portal).`}
+        </Callout>
+        <Field label="Título" hint="Aparece en el portal y en el aviso de WhatsApp." error={errors.title}>
+          {(id) => <input id={id} className="input" value={form.title} onChange={(e) => set('title')(e.target.value)} placeholder="Ej.: Cambio de fecha de entrega" maxLength={120} />}
+        </Field>
+        <Field label="Mensaje" hint="Concreto y sobre su servicio: así Meta lo trata como aviso, no como publicidad." error={errors.text}>
+          {(id) => <textarea id={id} className="input" rows={4} value={form.text} onChange={(e) => set('text')(e.target.value)} placeholder="Ej.: Movimos la entrega al jueves 16 para incluir las fotos nuevas." maxLength={600} />}
+        </Field>
+        <SwitchRow id="announce-urgent" checked={form.urgent} onChange={set('urgent')} label="Urgente"
+          hint="Sale de inmediato aunque sea fuera del horario de 7:00 a 20:00. Usalo solo si no puede esperar." />
+      </form>
+    </Modal>
+  );
+}
+
+function WhatsappBadge({ account: a }) {
+  if (!a.active) return null;
+  if (a.wa_opt_in) return <Badge tone="teal"><MessageCircle className="h-3 w-3" aria-hidden="true" />Avisos por WhatsApp</Badge>;
+  if (a.wa_linked) return <Badge tone="slate"><MessageCircle className="h-3 w-3" aria-hidden="true" />WhatsApp pausado</Badge>;
+  return null;
+}
+
 function AccountRow({ account: a, canManage, busy, onEdit, onToggleApprove, onToggleActive, onReset }) {
   const lastLogin = a.last_login_at ? `Último ingreso ${timeAgo(a.last_login_at)}` : 'Aún no ingresa';
   return (
@@ -204,6 +257,7 @@ function AccountRow({ account: a, canManage, busy, onEdit, onToggleApprove, onTo
             {a.active ? <Badge tone="teal" dot>Con acceso</Badge> : <Badge tone="slate" dot>Sin acceso</Badge>}
             {!canManage && a.can_approve && <Badge tone="blue"><ShieldCheck className="h-3 w-3" aria-hidden="true" />Aprueba entregables</Badge>}
             {a.active && a.must_change_password && <Badge tone="amber"><KeyRound className="h-3 w-3" aria-hidden="true" />Clave temporal pendiente</Badge>}
+            <WhatsappBadge account={a} />
             <span className="text-xs text-muted">{a.active ? lastLogin : 'Su historial se conserva'}</span>
           </div>
         </div>
@@ -235,6 +289,7 @@ function AccessesPanel({ client, accounts, canManage, onReload }) {
   const confirm = useConfirm();
   const [editing, setEditing] = useState(null);
   const [reveal, setReveal] = useState(null);
+  const [announcing, setAnnouncing] = useState(false);
   const active = accounts.filter((a) => a.active);
   // El primer acceso se precarga con la persona de contacto de la ficha.
   const defaults = accounts.length ? null : { name: client.contact_name ?? '', email: client.contact_email ?? '', phone: client.contact_phone ?? '' };
@@ -268,7 +323,10 @@ function AccessesPanel({ client, accounts, canManage, onReload }) {
           <span className="min-w-0">Cada persona entra con su correo en <span className="break-all font-semibold text-ink-2">{clientPortalUrl().replace(/^https?:\/\//, '')}</span></span>
         </p>
         {canManage && accounts.length > 0 && (
-          <button type="button" className="btn btn-soft shrink-0" onClick={() => setEditing('new')}><UserPlus className="h-4 w-4" />Dar acceso</button>
+          <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex">
+            {active.length > 0 && <button type="button" className="btn btn-outline" onClick={() => setAnnouncing(true)}><MessageCircle className="h-4 w-4 text-teal-ink" />Enviar aviso</button>}
+            <button type="button" className="btn btn-soft" onClick={() => setEditing('new')}><UserPlus className="h-4 w-4" />Dar acceso</button>
+          </div>
         )}
       </div>
       {!canManage && (
@@ -301,6 +359,7 @@ function AccessesPanel({ client, accounts, canManage, onReload }) {
         </Layer>
       )}
       {reveal && <Layer><AccessReveal result={reveal} onClose={() => setReveal(null)} /></Layer>}
+      {announcing && <Layer><AnnounceForm client={client} accounts={accounts} onClose={() => setAnnouncing(false)} onSent={onReload} /></Layer>}
       {canManage && (
         <details className="group border-t border-line">
           <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold sm:px-5">

@@ -56,6 +56,7 @@ export const CLIENT_NOTIFICATION_KINDS = {
   deliverable: 'Entregables',
   avance: 'Avances',
   documento: 'Documentos',
+  aviso: 'Avisos del equipo',
   cuenta: 'Cuenta',
 };
 

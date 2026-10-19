@@ -55,6 +55,13 @@ Los movimientos en dólares **guardan su tipo de cambio**, así el consolidado e
 
 **Buzón (`/buzon`).** Reúne los movimientos por confirmar, con la respuesta en el mismo lugar, y los avisos (tareas asignadas, citas, comentarios, confirmaciones).
 
+**WhatsApp (`/whatsapp`).** Conecta el portal con la WhatsApp Cloud API de Meta:
+- **Avisos al cliente:** los avisos del portal (avances, entregables, documentos, solicitudes) y los recordatorios de reuniones le llegan por WhatsApp a quien lo activó desde *Mi cuenta*. Salen de 7:00 a 20:00, con plantillas aprobadas y reintentos.
+- **Asistente:** contesta a cada cliente con los datos de su portal y le pasa el caso al equipo cuando hace falta una persona.
+- **Bandeja del equipo:** desde ahí se responde, se toma el control y se ve la cola de avisos.
+
+Desde la ficha del cliente, **Enviar aviso** lo publica en su portal y por WhatsApp. Ver [docs/whatsapp.md](docs/whatsapp.md).
+
 **Briefs (`/briefs`).** Bandeja de los briefs creativos de todos los clientes, ordenada por lo que requiere acción: primero los enviados por revisar, después los que tienen ajustes y los que están en producción.
 - El formulario sigue el formato CREATIVIDAD: material requerido, objetivo, marca, oferta, mensaje clave, URLs de redireccionamiento, RRSS, base de datos, editable, creatividad, configuración de envío, correo de testeo, fecha de envío, disclaimer, línea gráfica y nota.
 - Valida lo que hace falta para enviar:

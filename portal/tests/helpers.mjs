@@ -12,11 +12,15 @@ export const PASSWORD = 'ClaveSegura2026';
  * @param {object|null} [o.push]  servicio push falso (ver fakePush) o null
  * @param {Function|null} [o.fetchExchangeRate]  consulta del tipo de cambio inyectada
  * @param {string|null} [o.setupCode]  código de configuración inicial (v6)
+ * @param {object|null} [o.whatsapp]  transporte de WhatsApp falso (ver fakeWhatsApp en whatsapp.test.mjs) o null
  */
-export async function startServer({ startAt = Date.parse('2026-10-10T15:00:00Z'), push = null, fetchExchangeRate = null, setupCode = null } = {}) {
+export async function startServer({ startAt = Date.parse('2026-10-10T15:00:00Z'), push = null, fetchExchangeRate = null, setupCode = null, whatsapp = null } = {}) {
   const db = openDatabase(':memory:');
   const clock = { t: startAt };
-  const server = createPortalServer({ db, env: {}, now: () => clock.t, logger: { error() {}, info() {} }, push, fetchExchangeRate, setupCode });
+  const server = createPortalServer({
+    db, env: {}, now: () => clock.t, logger: { error() {}, info() {} }, push, fetchExchangeRate, setupCode,
+    whatsapp, whatsappOptions: { batch: { silenceMs: 0, mediaSilenceMs: 0, capMs: 0 }, pace: 0 },
+  });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   const hash = await hashPassword(PASSWORD);
