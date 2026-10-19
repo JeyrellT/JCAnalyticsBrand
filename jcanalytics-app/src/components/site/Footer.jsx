@@ -2,7 +2,7 @@ import { t, locale } from '../../i18n/locale';
 import { ArrowUpRight } from 'lucide-react';
 import { servicePages } from '../../content/services';
 import { homePath, journalPath, servicePath } from '../../seo/routes';
-import { wa, EMAIL, PHONE, NAV_LINKS } from './links';
+import { wa, EMAIL, PHONE, PHONE_DISPLAY, NAV_LINKS } from './links';
 
 const SERVICE_LABELS = {
   'web-development': t('Desarrollo web', 'Web development'),
@@ -29,7 +29,7 @@ const Footer = () => (
           <ul>
             <li><a href={wa()} target="_blank" rel="noreferrer">WhatsApp <span aria-hidden="true">↗</span></a></li>
             <li><a href={`mailto:${EMAIL}`}>{EMAIL}</a></li>
-            <li><a href={`tel:+${PHONE}`}>+506 7033 0596</a></li>
+            <li><a href={`tel:+${PHONE}`}>{PHONE_DISPLAY}</a></li>
           </ul>
         </div>
         <div>
