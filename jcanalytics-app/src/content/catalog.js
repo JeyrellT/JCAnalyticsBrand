@@ -2,9 +2,10 @@ import { dataArticles } from './articles-data.js';
 import { experienceArticles } from './articles-experience.js';
 import { intelligenceArticles } from './articles-intelligence.js';
 import { reconciliationArticle } from './article-list-reconciliation.js';
+import { blogArticles } from './articles-blog.js';
 import { safeRetriesArticle } from './article-safe-retries.js';
 export { servicePages } from './services.js';
-export const articles = [reconciliationArticle, safeRetriesArticle, ...dataArticles, ...experienceArticles, ...intelligenceArticles];
+export const articles = [reconciliationArticle, safeRetriesArticle, ...dataArticles, ...experienceArticles, ...intelligenceArticles, ...blogArticles];
 export const topics = {
   data: { en: 'Data & decisions', es: 'Datos y decisiones' },
   experience: { en: 'Digital experience', es: 'Experiencia digital' },

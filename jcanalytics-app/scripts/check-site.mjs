@@ -537,9 +537,9 @@ async function checkInternalLinks(origin, snapshots) {
 }
 
 async function checkSitemap(browser, origin) {
-  assert.equal(articles.length, 8, 'The public catalog contains eight intended bilingual articles');
+  assert.equal(articles.length, 10, 'The public catalog contains ten intended bilingual articles');
   assert.deepEqual(articles.filter((article) => article.tool).map((article) => article.tool).sort(), ['list-reconciler', 'retry-simulator'], 'Exactly two articles provide the intended practical tools');
-  assert.equal(routes.length, 28, 'The public catalog contains 28 intended language routes');
+  assert.equal(routes.length, 32, 'The public catalog contains 32 intended language routes');
   assert.equal(new Set(routes.map((route) => route.path)).size, routes.length, 'Public routes are unique');
   const response = await fetch(`${origin}/sitemap.xml`);
   assert.equal(response.status, 200);
