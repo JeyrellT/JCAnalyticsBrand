@@ -6,7 +6,7 @@ import { useState } from 'react';
 import {
   LayoutDashboard, FolderKanban, KanbanSquare, CalendarDays, TrendingUp, Inbox, Users, History, LogOut, Menu, X,
   Building2, Layers, Plus, LayoutGrid, Bot, BellRing, ChevronRight,
-  ClipboardList, ArrowUpRight, Sparkles, PanelLeftClose, PanelLeftOpen, WalletCards,
+  ClipboardList, ArrowUpRight, Sparkles, PanelLeftClose, PanelLeftOpen, WalletCards, MessageCircle,
 } from 'lucide-react';
 import { Link, useLocation } from '../lib/router.jsx';
 import { useSession } from '../lib/session.jsx';
@@ -27,6 +27,7 @@ const GROUPS = [
       { to: '/tablero', label: 'Tablero', short: 'Tablero', icon: KanbanSquare, tone: 'blue' },
       { to: '/agenda', label: 'Agenda', short: 'Agenda', icon: CalendarDays, tone: 'violet' },
       { to: '/buzon', label: 'Buzón', short: 'Buzón', icon: Inbox, badge: true, tone: 'teal' },
+      { to: '/whatsapp', label: 'WhatsApp', short: 'WhatsApp', icon: MessageCircle, tone: 'teal' },
     ],
   },
   {

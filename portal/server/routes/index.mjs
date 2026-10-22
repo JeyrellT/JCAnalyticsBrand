@@ -15,14 +15,18 @@ import { investorRoutes } from './investor.mjs';
 import { inviteRoutes } from './invites.mjs';
 import { financeRoutes } from './finance.mjs';
 import { mcpTokenRoutes } from './mcp-tokens.mjs';
+import { whatsappRoutes } from './whatsapp.mjs';
 import { installPushDispatch } from '../notify-policy.mjs';
 import { createAutomationEngine } from '../automations.mjs';
+import { createWhatsAppService } from '../whatsapp/service.mjs';
 
 export function registerRoutes(route, ctx, session) {
   // v3: cada aviso de ctx.notify pasa por la política de push, y el motor de
   // automatizaciones queda en ctx.automations (index.mjs y la demo llaman a runDue()).
   installPushDispatch(ctx);
   if (!ctx.automations) ctx.automations = createAutomationEngine(ctx);
+  // WhatsApp (docs/whatsapp.md): cola de avisos a clientes, asistente y bandeja del equipo.
+  if (!ctx.wa) ctx.wa = createWhatsAppService(ctx, ctx.waOptions);
 
   coreRoutes(route, ctx, session);
   dashboardRoutes(route, ctx);
@@ -44,4 +48,5 @@ export function registerRoutes(route, ctx, session) {
   inviteRoutes(route, ctx, session);
   // Conexión con Claude por MCP (docs/mcp-claude.md).
   mcpTokenRoutes(route, ctx);
+  whatsappRoutes(route, ctx);
 }

@@ -198,7 +198,7 @@ export const NOTIFICATION_CATEGORIES = {
   agenda: { label: 'Citas y recordatorios', hint: 'Citas nuevas o movidas, recordatorios y citas sin confirmar.', kinds: ['appointment'] },
   proyectos: { label: 'Proyectos, clientes y servicios', hint: 'Cuando te asignan o te suman a un proyecto o servicio.', kinds: ['project', 'service'] },
   dinero: { label: 'Dinero de socios', hint: 'Aportes, retornos y mensajes por confirmar. Solo socios y admin.', kinds: ['movement', 'investment', 'message'], invest: true },
-  clientes: { label: 'Portal de clientes', hint: 'Briefs enviados, comentarios y decisiones de clientes sobre entregables.', kinds: ['brief', 'deliverable'] },
+  clientes: { label: 'Portal de clientes', hint: 'Briefs enviados, comentarios, decisiones sobre entregables y clientes que piden hablar por WhatsApp.', kinds: ['brief', 'deliverable', 'whatsapp'] },
   registros: { label: 'Registros con enlace', hint: 'Cuando alguien se da de alta con un enlace de registro que creaste.', kinds: ['registro'] },
   resumen: { label: 'Resumen "Mi día"', hint: 'Un aviso por la mañana con tus citas, tareas y confirmaciones.', kinds: ['digest'] },
   automatizaciones: { label: 'Alertas automáticas', hint: 'Avance de 72 h, fin de soporte y tipo de cambio.', kinds: ['automation'] },

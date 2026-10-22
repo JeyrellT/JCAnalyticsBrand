@@ -20,8 +20,10 @@ const DAY = 24 * HOUR;
  *        null = sin push (las notificaciones quedan solo en el buzón).
  * @param {(() => Promise<unknown>)|null} [o.fetchExchangeRate]  consulta el tipo de cambio (automatización
  *        tipo_cambio). En Node lo inyecta index.mjs con fetch; null = "sin conexión configurada".
+ * @param {object|null} [o.whatsapp]  transporte de WhatsApp Cloud API (server/whatsapp/meta.mjs) o un doble en
+ *        las pruebas; null = sin WhatsApp (los avisos quedan solo en el portal).
  */
-export function createContext({ db, now = () => Date.now(), push = null, fetchExchangeRate = null }) {
+export function createContext({ db, now = () => Date.now(), push = null, fetchExchangeRate = null, whatsapp = null }) {
   /** Gancho que recibe cada aviso creado para decidir si además se envía como push. */
   let pushHook = null;
   const nowIso = () => new Date(now()).toISOString();
@@ -90,7 +92,7 @@ export function createContext({ db, now = () => Date.now(), push = null, fetchEx
     db, now, nowIso, today, settings, numberSetting, notify, log, userName, investorIds, moneyHolderIds, activeUserIds, projectSla,
     // push y fetchExchangeRate se leen siempre como ctx.push / ctx.fetchExchangeRate: la demo puede
     // reemplazarlos después de crear el contexto.
-    push, fetchExchangeRate, setPushHook: (fn) => { pushHook = typeof fn === 'function' ? fn : null; },
+    push, fetchExchangeRate, whatsapp, setPushHook: (fn) => { pushHook = typeof fn === 'function' ? fn : null; },
   };
 }
 

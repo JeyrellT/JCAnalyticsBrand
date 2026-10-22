@@ -1,5 +1,5 @@
 // Buzón: movimientos que esperan mi confirmación (con respuesta en el lugar) y avisos del equipo.
-import { Inbox as InboxIcon, CheckCheck, Bell, Wallet, ListChecks, CalendarDays, FolderKanban, MessageSquare, TrendingUp, HandCoins, Hourglass, Sparkles } from 'lucide-react';
+import { Inbox as InboxIcon, CheckCheck, Bell, Wallet, ListChecks, CalendarDays, FolderKanban, MessageSquare, TrendingUp, HandCoins, Hourglass, Sparkles, MessageCircle } from 'lucide-react';
 import { useResource, useSession } from '../lib/session.jsx';
 import { useLimited } from '../components/mobile.jsx';
 import { api } from '../lib/api.js';
@@ -8,7 +8,7 @@ import { PageHeader, PageLoader, EmptyState, Badge, IconTile, SectionHead, RowAr
 import { MovementCard } from '../components/movements.jsx';
 import { timeAgo } from '../lib/format.js';
 
-const ICONS = { movement: Wallet, task: ListChecks, appointment: CalendarDays, project: FolderKanban, comment: MessageSquare, message: MessageSquare, investment: TrendingUp };
+const ICONS = { movement: Wallet, task: ListChecks, appointment: CalendarDays, project: FolderKanban, comment: MessageSquare, message: MessageSquare, investment: TrendingUp, whatsapp: MessageCircle };
 
 function PendingMovements({ onChanged }) {
   const { data, error, reload } = useResource('/api/movements/pending');

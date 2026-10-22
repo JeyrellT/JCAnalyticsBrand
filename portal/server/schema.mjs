@@ -652,6 +652,73 @@ export const MIGRATIONS = [
   );
   CREATE INDEX mcp_tokens_user ON mcp_tokens(user_id, revoked_at);
   `,
+
+  // 11 · WhatsApp (Cloud API de Meta, ver docs/whatsapp.md): conversaciones con el asistente,
+  //      cola de avisos a clientes (outbox con clave única) y vínculo opt-in de cada cuenta de cliente.
+  `
+  CREATE TABLE wa_conversations (
+    id INTEGER PRIMARY KEY,
+    wa_id TEXT NOT NULL UNIQUE,
+    name TEXT,
+    account_id INTEGER REFERENCES client_accounts(id) ON DELETE SET NULL,
+    bot_state TEXT NOT NULL DEFAULT '{}',
+    paused_until TEXT,
+    team_control INTEGER NOT NULL DEFAULT 0,
+    pending INTEGER NOT NULL DEFAULT 0,
+    urgent INTEGER NOT NULL DEFAULT 0,
+    reason TEXT,
+    attended_at TEXT,
+    last_client_at TEXT,
+    last_reply_at TEXT,
+    last_message_at TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX wa_conversations_recent ON wa_conversations(last_message_at);
+
+  CREATE TABLE wa_messages (
+    id INTEGER PRIMARY KEY,
+    conversation_id INTEGER NOT NULL REFERENCES wa_conversations(id) ON DELETE CASCADE,
+    origin TEXT NOT NULL CHECK (origin IN ('cliente','asistente','equipo','plantilla','aviso','sistema')),
+    body TEXT NOT NULL,
+    external_id TEXT UNIQUE,
+    media_type TEXT,
+    media_id TEXT,
+    user_id INTEGER REFERENCES users(id),
+    status TEXT,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX wa_messages_conversation ON wa_messages(conversation_id, created_at);
+
+  CREATE TABLE wa_outbox (
+    id INTEGER PRIMARY KEY,
+    dedupe_key TEXT NOT NULL UNIQUE,
+    kind TEXT NOT NULL,
+    account_id INTEGER NOT NULL REFERENCES client_accounts(id) ON DELETE CASCADE,
+    template TEXT NOT NULL,
+    variables TEXT NOT NULL,
+    text_body TEXT NOT NULL,
+    ref_id INTEGER,
+    urgent INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'pendiente' CHECK (status IN ('pendiente','enviando','enviado','omitido','fallido')),
+    scheduled_for TEXT NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    reason TEXT,
+    external_id TEXT,
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    sent_at TEXT
+  );
+  CREATE INDEX wa_outbox_due ON wa_outbox(status, scheduled_for);
+  CREATE INDEX wa_outbox_account ON wa_outbox(account_id, created_at);
+
+  ALTER TABLE client_accounts ADD COLUMN wa_id TEXT;
+  ALTER TABLE client_accounts ADD COLUMN wa_opt_in INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE client_accounts ADD COLUMN wa_linked_at TEXT;
+  ALTER TABLE client_accounts ADD COLUMN wa_code_hash TEXT;
+  ALTER TABLE client_accounts ADD COLUMN wa_code_expires_at TEXT;
+  CREATE UNIQUE INDEX client_accounts_wa ON client_accounts(wa_id) WHERE wa_id IS NOT NULL;
+  `,
 ];
 
 export const DEFAULT_SETTINGS = {
@@ -660,6 +727,7 @@ export const DEFAULT_SETTINGS = {
   wip_en_progreso: '6',       // Límite WIP (Lean) de la columna "En progreso".
   wip_revision: '4',
   brief_lead_days: '3',       // Días mínimos de producción entre el envío de un brief y su fecha de salida.
+  wa_meeting_reminder_hours: '24', // WhatsApp: horas antes de una reunión con el cliente para recordársela (0 = no).
 };
 
 /**

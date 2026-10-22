@@ -24,12 +24,24 @@ export function createPortalHelpers(ctx) {
   const insertClientNotification = db.prepare(
     'INSERT INTO client_notifications (account_id, kind, title, body, link, created_at) VALUES (?, ?, ?, ?, ?, ?)',
   );
-  /** Aviso en el portal a todas las cuentas activas del cliente (menos quien hizo la acción). */
-  function notifyClient(clientId, { kind, title, body = null, link = null }, { exceptAccountId = null } = {}) {
+  /**
+   * Aviso en el portal a todas las cuentas activas del cliente (menos quien hizo la acción).
+   * Las cuentas con WhatsApp vinculado y permiso vigente lo reciben además por WhatsApp
+   * (ctx.wa, server/whatsapp/service.mjs): la cola decide cuándo y cómo sale.
+   */
+  function notifyClient(clientId, { kind, title, body = null, link = null }, { exceptAccountId = null, urgent = false, actorId = null } = {}) {
     const ids = db.prepare('SELECT id FROM client_accounts WHERE client_id = ? AND active = 1').all(clientId)
       .map((r) => r.id).filter((accountId) => accountId !== exceptAccountId);
     const at = ctx.nowIso();
-    for (const accountId of ids) insertClientNotification.run(accountId, kind, String(title).slice(0, 160), body ? String(body).slice(0, 300) : null, link, at);
+    const cleanTitle = String(title).slice(0, 160);
+    const cleanBody = body ? String(body).slice(0, 300) : null;
+    const created = ids.map((accountId) => ({
+      accountId, kind, title: cleanTitle, body: cleanBody, link, urgent, createdBy: actorId,
+      notificationId: Number(insertClientNotification.run(accountId, kind, cleanTitle, cleanBody, link, at).lastInsertRowid),
+    }));
+    if (created.length && ctx.wa) {
+      try { ctx.wa.onClientNotifications(created); } catch { /* WhatsApp es un extra: nunca rompe la acción */ }
+    }
     return ids.length;
   }
 
@@ -60,6 +72,9 @@ export function createPortalHelpers(ctx) {
     active: !!row.active,
     created_at: row.created_at,
     last_login_at: row.last_login_at,
+    wa_linked: !!row.wa_id,
+    wa_opt_in: !!row.wa_id && !!row.wa_opt_in,
+    wa_linked_at: row.wa_id ? row.wa_linked_at : null,
   });
   const accountsOf = (clientId) => db.prepare('SELECT * FROM client_accounts WHERE client_id = ? ORDER BY active DESC, name').all(clientId).map(publicAccount);
 
