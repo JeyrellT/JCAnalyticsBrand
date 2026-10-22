@@ -13,3 +13,10 @@ Temas pendientes por falta de fuentes primarias verificadas (2026-10-20). Public
 - **Lean Six Sigma Costa Rica:** CITEC (CFIA) ofreció Yellow Belt en ago-sep 2026; buscar nuevas ediciones y temario.
 - **Pendiente tras el 18 nov:** resultados de los tres proyectos finalistas y premios.
 - Sin material nuevo verificable sobre avances de IA en octubre 2026; acumular para mañana.
+
+## Actualización 2026-10-22
+
+- **Publicado:** gobernanza de accesos para agentes de IA (comunicados oficiales de SailPoint del 6 oct 2026; cifras de la encuesta marcadas como reportadas por el proveedor).
+- **Lean Six Sigma Costa Rica:** Learnersink anuncia Green Belt presencial en San José del 27 al 30 oct 2026, pero es un proveedor comercial con afirmaciones de mercado sin verificar; no publicado. CITEC sigue sin fechas de octubre.
+- **Automatización con agentes (pendiente):** confirmar en anuncios oficiales de Salesforce (Agentforce), UiPath y Microsoft lo citado por agregadores en septiembre-octubre.
+- **Sin técnicas nuevas de automatización sin tecnología** con fuente primaria; acumular para mañana.
