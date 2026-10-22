@@ -133,12 +133,12 @@ node scripts/capturas.mjs capturas --tema=dark --solo=inicio,inversiones
 - **Colaborador.** Accede a proyectos, tablero y agenda. **No ve inversiones** (ni en la API, el centro de operaciones, la bitácora o los avisos). Puede dar accesos al portal de clientes solo para los clientes que lleva.
 - **Cliente** (v5). Es una identidad aparte y solo entra a `/cliente`. Ve solo lo de su empresa. Puede aprobar entregables si su acceso lo permite.
 - **Inversionista** (v6). Solo entra a `/inversionista`, su portal:
-  - ve su capital, sus retornos, su participación y su TIR;
+  - ve primero lo que espera su confirmación (doble control) y después su capital, sus retornos, su participación y su TIR, solo con lo confirmado;
   - confirma u objeta los movimientos a su nombre;
   - explora las inversiones que le habilitó el administrador, avisa aportes en ellas y descarga su estado de cuenta en Excel;
   - conserva su historial, confirmaciones y retornos si el administrador retira el permiso para nuevos aportes.
 
-  No ve la operación, ni los nombres o montos de otros socios, ni las notas internas. Ver `docs/v6-contrato.md` y `docs/club-de-inversionistas.md`.
+  No ve la operación, ni los nombres o montos de otros socios, ni las notas internas. Ver `docs/v6-contrato.md` y `docs/portal-de-inversionistas.md`.
 
 ## Arquitectura
 

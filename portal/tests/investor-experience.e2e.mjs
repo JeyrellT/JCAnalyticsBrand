@@ -1,6 +1,6 @@
 // Investor experience: real isolated SQLite/API, keyboard behavior and private data.
 // Build first, then npm run e2e:investor. PLAYWRIGHT_CHROMIUM overrides Chrome discovery.
-/* global document, innerWidth */
+/* global document, innerWidth, getComputedStyle */
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { mkdtemp, mkdir, rm } from 'node:fs/promises';
@@ -103,6 +103,15 @@ async function noOverflow(page, label) {
   const size = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth }));
   assert.ok(size.scroll <= size.width + 1, `${label}: document ${size.scroll}px exceeds viewport ${size.width}px`);
 }
+/** Visible text below 11px (sr-only text and hidden elements excluded). */
+const tinyText = (page) => page.evaluate(() => [...document.querySelectorAll('header *, main *')].filter((element) => {
+  if (![...element.childNodes].some((node) => node.nodeType === 3 && node.textContent.trim())) return false;
+  const rect = element.getBoundingClientRect();
+  const style = getComputedStyle(element);
+  return rect.width > 1 && rect.height > 1 && style.visibility !== 'hidden' && parseFloat(style.fontSize) < 11;
+}).map((element) => `${element.tagName.toLowerCase()} ${getComputedStyle(element).fontSize} «${element.textContent.trim().slice(0, 40)}»`));
+const control = (page) => page.getByRole('region', { name: 'Doble control', exact: true });
+const movementIds = (locator) => locator.evaluateAll((nodes) => nodes.map((node) => Number(node.id.slice(4))));
 
 try {
   browser = await chromium.launch({ executablePath });
@@ -143,68 +152,61 @@ try {
     assert.equal(new URL(page.url()).pathname, '/inversionista');
   });
 
-  await check('home maps real positions, supports keyboard and pages, and preserves money', async () => {
+  await check('home leads with the double control, confirmed totals and every position without touching money', async () => {
     currentPage = page;
     await open(page);
     const before = financialSnapshot();
     const overview = await json(page, '/api/investor/overview');
-    for (const [selector, value] of [['capital', overview.portfolio.contributed_crc], ['returned', overview.portfolio.returned_crc], ['net', overview.portfolio.net_crc]]) {
+    const pf = overview.portfolio;
+    for (const [selector, value] of [['capital', pf.contributed_crc], ['returned', pf.returned_crc], ['net', pf.net_crc]]) {
       assert.equal(await page.locator(`[data-portfolio-${selector}]`).textContent(), formatMoney(value, 'CRC'));
     }
-    const map = page.getByRole('group', { name: 'Mapa de tus inversiones', exact: true });
-    const nodes = map.getByRole('button');
-    assert.equal(await nodes.count(), 5);
-    await nodes.first().focus();
-    await page.keyboard.press('ArrowRight');
-    assert.equal(await nodes.nth(1).getAttribute('aria-pressed'), 'true');
-    assert.equal(await nodes.nth(1).evaluate((node) => node === document.activeElement), true);
-    await page.keyboard.press('End');
-    assert.equal(await nodes.last().getAttribute('aria-pressed'), 'true');
-    await page.keyboard.press('Home');
-    assert.equal(await nodes.first().getAttribute('aria-pressed'), 'true');
-    for (let index = 0; index < overview.investments.length; index += 1) {
-      if (index && index % 5 === 0) await page.getByRole('button', { name: 'Ver inversiones siguientes', exact: true }).click();
-      const position = overview.investments[index];
-      await map.getByRole('button', { name: `Explorar ${position.name}`, exact: true }).click();
-      const panel = page.locator(`.ih-position[data-investment-id="${position.id}"]`);
-      await panel.waitFor();
-      assert.deepEqual(await panel.locator('.ih-position-figures dd').allTextContents(), [position.mine.contributed, position.mine.returned, position.mine.net].map((amount) => formatMoney(amount, position.currency)));
-      assert.equal(await panel.locator('.ih-share strong').textContent(), formatPercent(position.mine.share, 1));
-      assert.equal(await panel.getByRole('progressbar').getAttribute('aria-valuenow'), String(Math.round(position.mine.share * 100)));
-      assert.equal(await panel.getByRole('link', { name: 'Conocer esta inversión' }).getAttribute('href'), `/inversionista/inversiones/${position.id}`);
+    assert.equal(await page.locator('[data-portfolio-pending]').textContent(), String(pf.pending_count));
+    const waiting = overview.to_confirm.length;
+    assert.ok(waiting > 1, 'fixture has several movements awaiting the investor');
+    assert.ok((await control(page).textContent()).includes(`${waiting} movimientos esperan tu confirmación.`));
+    for (const section of [control(page), page.locator('section[aria-labelledby="totals-title"]')]) {
+      const box = await section.boundingBox();
+      assert.ok(box.y + box.height <= 1000, 'control status and totals are visible without scrolling');
     }
-    assert.equal(await page.getByRole('button', { name: 'Ver inversiones siguientes', exact: true }).isDisabled(), true);
-    await page.getByRole('button', { name: 'Ver inversiones anteriores', exact: true }).click();
-    assert.equal(await page.getByRole('button', { name: 'Ver inversiones anteriores', exact: true }).isDisabled(), true);
-    const recent = overview.recent.at(-1);
-    await page.getByRole('group', { name: 'Explorar movimientos recientes', exact: true }).getByRole('button', { name: new RegExp(`^Ver movimiento ${recent.id}:`) }).click();
-    assert.equal(await page.locator('.ih-journey-detail').getAttribute('data-movement-id'), String(recent.id));
+    assert.deepEqual(await movementIds(page.locator('#por-confirmar article[id^="mov-"]')), overview.to_confirm.map((row) => row.id));
+    await control(page).getByRole('button', { name: 'Revisar y confirmar', exact: true }).click();
+    await waitUntil(() => page.locator('#por-confirmar').evaluate((node) => node === document.activeElement), 'review button focuses the confirmation list');
+    assert.equal(await page.locator('[data-investment-id]').count(), overview.investments.length);
+    for (const position of overview.investments) {
+      const row = page.locator(`[data-investment-id="${position.id}"]`);
+      assert.equal(await row.getAttribute('href'), `/inversionista/inversiones/${position.id}`);
+      assert.deepEqual(await row.locator('[data-position-contributed], [data-position-returned], [data-position-net]').allTextContents(),
+        [position.mine.contributed, position.mine.returned, position.mine.net].map((amount) => formatMoney(amount, position.currency)));
+      assert.equal(await row.locator('[data-position-share]').textContent(), formatPercent(position.mine.share, 1));
+    }
+    const recentLinks = page.locator('section[aria-labelledby="recent-title"] a[href*="?mov="]');
+    assert.deepEqual(await recentLinks.evaluateAll((links) => links.map((link) => link.getAttribute('href'))),
+      overview.recent.slice(0, 5).map((row) => `/inversionista/inversiones/${row.investment_id}?mov=${row.id}`));
     assert.equal(financialSnapshot(), before);
   });
 
-  await check('detail switches own and aggregate figures, filters actual movements, and keeps notice focus', async () => {
+  await check('detail shows the own position next to project aggregates, filters actual movements, and keeps notice focus', async () => {
     currentPage = page;
     await open(page, `/inversionista/inversiones/${usdId}`);
     const before = financialSnapshot();
     const { investment, movements } = await json(page, `/api/investor/investments/${usdId}`);
-    const facts = page.locator('.ii-facts dl dd:not(.ii-fact-hint)');
-    assert.deepEqual(await facts.allTextContents(), [investment.mine.contributed, investment.mine.returned, investment.mine.net].map((value) => formatMoney(value, 'USD')));
-    assert.equal(await page.getByRole('img', { name: `Tu participación: ${formatPercent(investment.mine.share)} del capital confirmado del grupo`, exact: true }).count(), 1);
-    const views = page.getByRole('group', { name: 'Mirada de la inversión', exact: true });
-    await views.getByRole('button', { name: 'El proyecto', exact: true }).focus();
-    await page.keyboard.press('Space');
-    assert.equal(await views.getByRole('button', { name: 'El proyecto', exact: true }).getAttribute('aria-pressed'), 'true');
-    assert.deepEqual(await facts.allTextContents(), [formatMoney(investment.totals.contributed, 'USD'), formatMoney(investment.totals.returned, 'USD'), String(investment.totals.holders)]);
-    assert.ok(!(await page.locator('.ii-position').textContent()).includes(secretMarker));
-    await views.getByRole('button', { name: 'Tu parte', exact: true }).click();
-    const filters = page.getByRole('group', { name: 'Filtrar movimientos', exact: true });
+    assert.deepEqual(await page.locator('[data-position-contributed], [data-position-returned], [data-position-net]').allTextContents(),
+      [investment.mine.contributed, investment.mine.returned, investment.mine.net].map((value) => formatMoney(value, 'USD')));
+    assert.equal(await page.locator('[data-position-share]').textContent(), formatPercent(investment.mine.share, 1));
+    assert.deepEqual(await page.locator('[data-project-contributed], [data-project-returned], [data-project-holders]').allTextContents(),
+      [formatMoney(investment.totals.contributed, 'USD'), formatMoney(investment.totals.returned, 'USD'), String(investment.totals.holders)]);
+    assert.ok(!(await page.locator('main').textContent()).includes(secretMarker));
+    const ledger = page.locator('#ii-ledger');
     for (const [label, predicate] of [['Pendientes', (row) => row.status === 'pendiente'], ['Confirmados', (row) => row.status === 'confirmado'], ['Retornos', (row) => row.type === 'retorno'], ['Todos', () => true]]) {
-      await filters.getByRole('button', { name: label, exact: true }).click();
-      assert.equal(await filters.getByRole('button', { name: label, exact: true }).getAttribute('aria-pressed'), 'true');
-      assert.deepEqual(await page.locator('#ii-ledger article[id^="mov-"]').evaluateAll((nodes) => nodes.map((node) => Number(node.id.slice(4)))), movements.filter(predicate).map((row) => row.id));
+      const tab = ledger.getByRole('tab', { name: new RegExp(`^${label}`) });
+      await tab.click();
+      assert.equal(await tab.getAttribute('aria-selected'), 'true');
+      assert.deepEqual(await movementIds(ledger.locator('article[id^="mov-"]')), movements.filter(predicate).map((row) => row.id));
     }
-    await page.getByRole('navigation', { name: 'Secciones de esta inversión' }).getByRole('button', { name: 'Historia', exact: true }).click();
-    assert.equal(await page.locator('#ii-history').evaluate((node) => node === document.activeElement), true);
+    await control(page).getByRole('button', { name: 'Ver pendientes', exact: true }).click();
+    assert.equal(await ledger.getByRole('tab', { name: /^Pendientes/ }).getAttribute('aria-selected'), 'true');
+    await waitUntil(() => ledger.evaluate((node) => node === document.activeElement), 'Ver pendientes focuses the ledger');
     const noticeButton = page.getByRole('button', { name: 'Avisar un aporte', exact: true });
     await noticeButton.click();
     const notice = page.getByRole('dialog', { name: 'Avisar un aporte', exact: true });
@@ -218,58 +220,46 @@ try {
     assert.equal(financialSnapshot(), before);
   });
 
-  await check('mini challenges teach with real amounts, persist per user and never mutate finances', async () => {
+  await check('confirm and object dialogs repeat the movement and change nothing until submitted', async () => {
     currentPage = page;
     await open(page);
     const before = financialSnapshot();
-    const portfolio = (await json(page, '/api/investor/overview')).portfolio;
+    const pending = (await json(page, '/api/investor/overview')).to_confirm[0];
+    const item = page.locator(`#mov-${pending.id}`);
     const mutations = [];
     const watch = (request) => { if (request.url().includes('/api/') && !['GET', 'HEAD', 'OPTIONS'].includes(request.method())) mutations.push(`${request.method()} ${request.url()}`); };
     page.on('request', watch);
     try {
-      const game = page.locator('.investor-playbook');
-      const cards = game.locator('.ip-card');
-      assert.equal(await cards.count(), 3);
-      for (const [index, correct] of [1, 1, 2].entries()) {
-        if (await cards.nth(index).getAttribute('aria-pressed') !== 'true') await cards.nth(index).click();
-        assert.equal(await cards.nth(index).getAttribute('aria-pressed'), 'true');
-        await game.locator('.ip-option').first().click();
-        assert.match(await game.locator('.ip-feedback').textContent(), /Todavía no/);
-        await game.locator('.ip-option').nth(correct).click();
-        assert.match(await game.locator('.ip-feedback').textContent(), /¡Eso es!/);
-        if (index === 1) {
-          const equation = await game.locator('.ip-equation').textContent();
-          for (const value of [portfolio.returned_crc, portfolio.contributed_crc, portfolio.net_crc]) assert.ok(equation.includes(formatMoney(value, 'CRC')));
-        }
-        if (index < 2) {
-          await game.getByRole('button', { name: 'Explorar otra idea', exact: true }).click();
-          assert.equal(await cards.nth(index + 1).getAttribute('aria-pressed'), 'true');
-          await waitUntil(() => game.locator('#ip-question h3').evaluate((node) => node === document.activeElement), 'next challenge puts keyboard focus on its question');
-        }
-      }
-      assert.match(await game.locator('.ip-finish').textContent(), /Colección completa/);
-      await game.screenshot({ path: join(shots, 'investor-playbook-complete.png'), animations: 'disabled', style: '.club-header { visibility: hidden !important; }' });
-      const storageKey = `jcp:investor:playbook:${owner.id}`;
-      assert.deepEqual(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), storageKey), ['confirmado', 'neto', 'participacion']);
-      await open(page);
-      assert.equal(await game.locator('.ip-card.is-complete').count(), 3);
-      await game.getByRole('button', { name: 'Volver a jugar', exact: true }).click();
-      assert.equal(await game.locator('.ip-card.is-complete').count(), 0);
-      assert.equal(await game.locator('.ip-finish').count(), 0);
-      assert.deepEqual(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), storageKey), []);
+      await item.getByRole('button', { name: 'Objetar', exact: true }).click();
+      const object = page.getByRole('dialog', { name: 'Objetar movimiento', exact: true });
+      assert.ok((await object.textContent()).includes(formatMoney(pending.amount, pending.currency)));
+      const send = object.getByRole('button', { name: 'Enviar objeción', exact: true });
+      const reason = object.getByLabel('Motivo de la objeción');
+      assert.equal(await reason.evaluate((node) => node === document.activeElement), true, 'the reason takes focus');
+      assert.equal(await send.isDisabled(), true, 'an objection needs a reason');
+      await reason.fill('No');
+      assert.equal(await send.isDisabled(), true);
+      await reason.fill('El monto no coincide con mi transferencia.');
+      assert.equal(await send.isDisabled(), false);
+      await object.getByRole('button', { name: 'Cancelar', exact: true }).click();
+      await object.waitFor({ state: 'hidden' });
+      const confirmButton = item.getByRole('button', { name: 'Confirmar', exact: true });
+      await confirmButton.click();
+      const confirm = page.getByRole('dialog', { name: /Confirmás/ });
+      const summary = await confirm.textContent();
+      for (const text of [formatMoney(pending.amount, pending.currency), pending.investment_name]) assert.ok(summary.includes(text), text);
+      assert.equal(await confirm.getByLabel('Mensaje de vuelta (opcional)').evaluate((node) => node === document.activeElement), false, 'the optional message does not open the keyboard');
+      await page.keyboard.press('Escape');
+      await confirm.waitFor({ state: 'hidden' });
+      assert.equal(await confirmButton.evaluate((node) => node === document.activeElement), true, 'focus returns to the action');
       assert.deepEqual(mutations, []);
       assert.equal(financialSnapshot(), before);
     } finally { page.off('request', watch); }
   });
 
-  await check('shell preferences persist, keyboard skip works and empty accounts show no invented capital', async () => {
+  await check('theme and keyboard skip work, and empty accounts show no invented capital', async () => {
     currentPage = page;
     await open(page);
-    await page.getByRole('button', { name: 'Pausar animaciones del club', exact: true }).click();
-    assert.equal(await page.locator('.investor-club').getAttribute('data-motion'), 'paused');
-    await open(page);
-    assert.equal(await page.locator('.investor-club').getAttribute('data-motion'), 'paused');
-    await page.getByRole('button', { name: 'Activar animaciones del club', exact: true }).click();
     await page.getByRole('button', { name: 'Cambiar a tema oscuro', exact: true }).click();
     assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark');
     await open(page, '/inversionista/cuenta');
@@ -285,16 +275,13 @@ try {
       const overview = await json(empty, '/api/investor/overview');
       assert.equal(overview.investments.length, 0);
       assert.equal(overview.portfolio.contributed_crc, 0);
-      assert.equal(await empty.locator('[data-portfolio-capital]').textContent(), formatMoney(0, 'CRC'));
-      await empty.getByText('Tu mapa todavía está por dibujarse', { exact: true }).waitFor();
-      assert.equal(await empty.locator('.ih-world').count(), 0);
-      assert.equal(await empty.locator('.ip-card.is-complete').count(), 0);
+      for (const selector of ['capital', 'returned', 'net']) assert.equal(await empty.locator(`[data-portfolio-${selector}]`).textContent(), formatMoney(0, 'CRC'));
+      assert.equal(await empty.locator('[data-portfolio-pending]').textContent(), '0');
+      assert.ok((await control(empty).textContent()).includes('Todavía no hay movimientos a tu nombre.'));
+      await empty.getByText('Cuando haya movimientos a tu nombre, sus inversiones aparecen aquí.', { exact: true }).waitFor();
+      assert.equal(await empty.locator('[data-investment-id]').count(), 0);
+      assert.equal(await empty.locator('#por-confirmar').count(), 0);
       assert.ok(!(await empty.locator('main').textContent()).includes('Atlas · infraestructura compartida'));
-      await empty.locator('.ip-card').nth(1).click();
-      await empty.locator('.ip-option').nth(1).click();
-      const zeroFigures = await empty.locator('.ip-equation > span').allTextContents();
-      assert.equal(zeroFigures.length, 3);
-      assert.ok(zeroFigures.every((value) => value.endsWith(formatMoney(0, 'CRC'))));
       await empty.setViewportSize({ width: 360, height: 844 });
       await noOverflow(empty, 'empty investor home 360 light');
       await empty.screenshot({ path: join(shots, 'investor-empty-360-light.png'), fullPage: true, animations: 'disabled' });
@@ -351,8 +338,9 @@ try {
     await configure(true);
     currentPage = page;
     await open(page);
-    const card = page.locator(`.io-card[data-available-investment-id="${investment.id}"]`);
-    await card.getByRole('link', { name: `Ver inversión ${investment.name}`, exact: true }).click();
+    const available = page.locator(`[data-available-investment-id="${investment.id}"]`);
+    assert.ok((await available.textContent()).includes(investment.name));
+    await available.click();
     await page.getByRole('heading', { name: investment.name, exact: true, level: 1 }).waitFor();
     const before = await json(page, `/api/investor/investments/${investment.id}`);
     assert.equal(before.investment.mine.contributed, 0);
@@ -404,12 +392,13 @@ try {
     } finally { await socio.context().close(); currentPage = page; }
   });
 
-  await check('investor pages fit mobile, tablet and desktop in both themes', async () => {
+  await check('investor pages fit mobile, tablet and desktop in both themes with readable text', async () => {
     currentPage = page;
     const pages = [
       ['home', '/inversionista'],
       ['detail', `/inversionista/inversiones/${usdId}`],
       ['movements', '/inversionista/movimientos'],
+      ['notices', '/inversionista/avisos'],
       ['account', '/inversionista/cuenta'],
     ];
     for (const theme of ['light', 'dark']) {
@@ -421,9 +410,14 @@ try {
           assert.equal(await page.locator('html').getAttribute('data-theme'), theme);
           await noOverflow(page, `${name} ${width} ${theme}`);
           assert.ok(!(await page.locator('main').textContent()).includes(secretMarker));
+          assert.deepEqual(await tinyText(page), [], `${name} ${width} ${theme}: text under 11px`);
+          if (name === 'home') {
+            const box = await control(page).boundingBox();
+            assert.ok(box.y + box.height <= (width < 500 ? 844 : 1000), `home ${width} ${theme}: the double control is visible without scrolling`);
+          }
           await page.screenshot({ path: join(shots, `investor-${name}-${width}-${theme}.png`), fullPage: true, animations: 'disabled' });
-          if (width === 390 && theme === 'dark' && name === 'home') await page.locator('.ih-explorer').screenshot({ path: join(shots, 'map-390-dark.png'), animations: 'disabled' });
-          if (width === 390 && theme === 'dark' && name === 'detail') await page.locator('.ii-position').screenshot({ path: join(shots, 'position-390-dark.png'), animations: 'disabled' });
+          if (width === 390 && theme === 'dark' && name === 'home') await page.locator('section[aria-labelledby="totals-title"]').screenshot({ path: join(shots, 'totals-390-dark.png'), animations: 'disabled' });
+          if (width === 390 && theme === 'dark' && name === 'detail') await page.locator('section[aria-labelledby="position-title"]').screenshot({ path: join(shots, 'position-390-dark.png'), animations: 'disabled' });
           if (width === 1440 && theme === 'light' && ['home', 'detail'].includes(name)) await page.screenshot({ path: join(shots, `investor-${name}-preview.png`), animations: 'disabled' });
         }
       }
