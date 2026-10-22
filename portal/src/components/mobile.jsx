@@ -60,7 +60,7 @@ export function SectionJump({ routeKey, offset = 72 }) {
 
   if (items.length < 4) return null;
 
-  const scrollBehavior = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches || document.querySelector('.investor-club[data-motion="paused"]') ? 'instant' : 'smooth';
+  const scrollBehavior = () => (window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth');
 
   const go = (index) => {
     setOpen(false);

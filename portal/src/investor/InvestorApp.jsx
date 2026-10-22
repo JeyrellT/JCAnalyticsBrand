@@ -17,7 +17,7 @@ const InvestorAccount = lazy(() => import('./pages/InvestorAccount.jsx'));
 
 // [patrón, página, título de la pestaña del navegador]
 const ROUTES = [
-  ['/inversionista', InvestorHome, 'Mi inversión'],
+  ['/inversionista', InvestorHome, 'Inicio'],
   ['/inversionista/inversiones/:id', InvestorInvestment, 'Inversión'],
   ['/inversionista/movimientos', InvestorMovements, 'Movimientos'],
   ['/inversionista/avisos', InvestorNotifications, 'Avisos'],

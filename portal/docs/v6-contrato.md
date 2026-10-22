@@ -107,7 +107,7 @@ La contraseña sigue la política de siempre: 10 o más caracteres, letras y nú
 
 | Ruta | Pantalla |
 |---|---|
-| `/inversionista` | Mi inversión: resumen, por confirmar, inversiones, evolución y contacto |
+| `/inversionista` | Inicio: doble control, totales, por confirmar, inversiones, movimientos recientes, evolución y contacto |
 | `/inversionista/inversiones/:id` | Detalle de una inversión con sus movimientos |
 | `/inversionista/movimientos` | Estado de cuenta y descarga |
 | `/inversionista/avisos` | Avisos |

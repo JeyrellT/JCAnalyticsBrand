@@ -105,9 +105,8 @@ export default function InvestorNotifications() {
   }, { success: 'Listo: todos los avisos quedaron leídos.' });
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <PageHeader eyebrow="Novedades de tu inversión" title="Avisos" icon={Bell} tone="amber"
-        subtitle="Confirmaciones pendientes, respuestas de JC Analytics y mensajes sobre tus movimientos."
+    <div className="max-w-4xl space-y-5 sm:space-y-6">
+      <PageHeader title="Avisos" subtitle="Lo que espera tu confirmación, las respuestas de JC Analytics y los mensajes sobre tus movimientos."
         actions={unread > 0 && (
           <button type="button" className="btn btn-outline tap lg:min-h-10" onClick={markAll} disabled={busy}>
             <CheckCheck className="h-4 w-4" aria-hidden="true" />Marcar todo como leído
@@ -122,7 +121,7 @@ export default function InvestorNotifications() {
       )}
 
       {notifications.length === 0 ? (
-        <EmptyState icon={BellOff} tone="amber" title="Sin avisos por ahora">
+        <EmptyState icon={BellOff} tone="slate" title="Sin avisos por ahora">
           Te avisamos aquí cuando JC Analytics registre un movimiento a tu nombre, confirme un aporte o te escriba.
         </EmptyState>
       ) : list.length === 0 ? (
@@ -130,7 +129,7 @@ export default function InvestorNotifications() {
       ) : (
         <div className="space-y-5">
           {groups.map((g) => (
-            <section key={g.key} aria-labelledby={`day-${g.key}`} className="animate-rise">
+            <section key={g.key} aria-labelledby={`day-${g.key}`}>
               <h2 id={`day-${g.key}`} className="mb-2 px-1 text-[11px] font-bold uppercase tracking-[0.14em] text-muted">{dayLabel(g.key)}</h2>
               <ul className="card divide-y divide-line overflow-hidden">
                 {g.items.map((n) => <li key={n.id}><NotificationRow n={n} onOpen={open} /></li>)}

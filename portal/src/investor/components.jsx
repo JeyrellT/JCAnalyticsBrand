@@ -1,16 +1,16 @@
-// Piezas del portal de inversionistas (v6): movimientos con su hilo y sus acciones,
-// tarjetas de inversión, contacto y notas de confianza. Lenguaje del inversionista
-// ("tu aporte", "tu participación"); nunca nombres ni montos de otros participantes.
+// Piezas del portal de inversionistas: cifras, estado del doble control, inversiones y
+// movimientos con su hilo y sus acciones. Lenguaje del inversionista ("tu aporte", "tu
+// participación"); nunca nombres ni montos de otros participantes.
 // Todo color pasa por tokens (claro y oscuro) y todo monto por shared/finance.js.
 import { useId, useState } from 'react';
 import {
   ArrowUpRight, ArrowDownLeft, Check, X, Ban, Send, ChevronDown, ChevronRight, Hourglass, ShieldCheck, MessageCircle, Mail,
-  ArrowLeft, CornerDownRight, UserRound, Target, CircleCheck, CircleAlert, CircleSlash, Info, ArrowRight,
+  ArrowLeft, HandCoins, CircleCheck, CircleAlert, CircleSlash, ArrowRight, Download,
 } from 'lucide-react';
 import { api } from '../lib/api.js';
 import { Link } from '../lib/router.jsx';
 import { useSession } from '../lib/session.jsx';
-import { Avatar, Badge, IconTile, ProgressBar, useAction, useConfirm, cx } from '../components/ui.jsx';
+import { Avatar, Badge, IconTile, Modal, Field, useAction, cx } from '../components/ui.jsx';
 import { INVESTMENT_STATUS, MOVEMENT_STATUS_META, MOVEMENT_TYPE_LABEL, RETURN_KIND_LABEL } from '../../shared/catalog.js';
 import { formatMoney, formatPercent, formatDate, formatDateTime, timeAgo, whatsappLink, toMinor, todayKey, addDays, TZ } from '../lib/format.js';
 
@@ -53,13 +53,10 @@ export function chartSeries(series) {
   ];
 }
 
-/** Cómo leer el neto (retornos − aportes) desde la mirada del inversionista. */
-export function netReading(net, contributed) {
-  if (!contributed) return { hint: 'Sin capital confirmado todavía', short: 'Sin capital aún', good: false };
-  if (net > 0) return { hint: 'Recibiste más dinero del que aportaste', short: 'Balance de cobros positivo', good: true };
-  if (net === 0) return { hint: 'Recibiste el mismo importe que aportaste', short: 'Cobros iguales a aportes', good: true };
-  return { hint: 'Recibiste menos dinero del que aportaste', short: 'Cobros menores a aportes', good: false };
-}
+/** Tono del neto (retornos − aportes): turquesa solo si ya recuperaste lo aportado. */
+export const netTone = (net, contributed) => (contributed > 0 && net >= 0 ? 'text-teal-ink' : 'text-ink');
+/** Tono de lo recibido: turquesa solo cuando hay algo; un cero no se resalta. */
+export const receivedTone = (amount) => (amount > 0 ? 'text-teal-ink' : 'text-ink');
 
 export const movementLabel = (movement) => movement.type === 'retorno'
   ? (RETURN_KIND_LABEL[movement.return_kind] ?? RETURN_KIND_LABEL.unclassified)
@@ -88,15 +85,6 @@ export function BackLink({ to, children }) {
   );
 }
 
-/** Enlace "ver todo" para el encabezado de una sección. */
-export function SeeAll({ to, children }) {
-  return (
-    <Link to={to} className="link tap -my-2 flex items-center gap-0.5 text-sm lg:min-h-9">
-      {children}<ChevronRight className="h-4 w-4" aria-hidden="true" />
-    </Link>
-  );
-}
-
 export function InvestmentStatusBadge({ status, label }) {
   const meta = INVESTMENT_STATUS[status];
   return <Badge tone={meta?.tone ?? 'slate'} dot>{label ?? meta?.label ?? status}</Badge>;
@@ -111,6 +99,90 @@ export function MovementStatusBadge({ status }) {
 /** Ícono del movimiento desde la mirada del inversionista: el aporte sale hacia la inversión, el retorno vuelve. */
 export const movementIcon = (type) => (type === 'aporte' ? ArrowUpRight : ArrowDownLeft);
 export const movementTone = (type) => (type === 'aporte' ? 'blue' : 'teal');
+
+/** Descarga del estado de cuenta (Excel, separador ; y BOM UTF-8). */
+export function StatementLink({ className }) {
+  return (
+    <a href="/api/investor/statement.csv" download className={cx('btn btn-outline tap lg:min-h-10', className)}>
+      <Download className="h-4 w-4" aria-hidden="true" />Estado de cuenta (Excel)
+    </a>
+  );
+}
+
+// ── Cifras ──────────────────────────────────────────────────────────────────
+/**
+ * Cifra principal de un resumen; va dentro de <dl className="grid gap-px bg-line">.
+ * Los montos nunca se recortan: si no caben, bajan de línea.
+ */
+export function Figure({ label, value, hint, tone = 'text-ink', valueProps, children }) {
+  return (
+    <div className="min-w-0 bg-surface px-4 py-3.5 sm:px-5 sm:py-4">
+      <dt className="text-xs font-medium text-muted">{label}</dt>
+      <dd className={cx('num mt-1 text-[21px] font-bold leading-tight [overflow-wrap:anywhere] sm:text-2xl', tone)} {...valueProps}>{value}</dd>
+      {hint && <dd className="mt-1 text-xs leading-snug text-muted">{hint}</dd>}
+      {children && <dd className="mt-2">{children}</dd>}
+    </div>
+  );
+}
+
+/** Cifra secundaria: detalle bajo las principales o columnas de una fila. */
+export function MiniFigure({ label, value, tone = 'text-ink', valueProps }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs text-muted">{label}</dt>
+      <dd className={cx('num mt-0.5 text-[15px] font-semibold leading-snug [overflow-wrap:anywhere]', tone)} {...valueProps}>{value}</dd>
+    </div>
+  );
+}
+
+/** Pie de una tarjeta de cifras: aclaraciones cortas (moneda, retornos por conciliar). */
+export function FigureNote({ children, tone = 'muted' }) {
+  return (
+    <p className={cx('border-t border-line px-4 py-2.5 text-xs leading-relaxed sm:px-5', tone === 'amber' ? 'bg-amber-soft text-amber-ink' : 'bg-surface-2/60 text-muted')}>
+      {children}
+    </p>
+  );
+}
+
+// ── Doble control ───────────────────────────────────────────────────────────
+const CONTROL = {
+  confirm: { tone: 'amber', icon: HandCoins },
+  awaiting: { tone: 'blue', icon: Hourglass },
+  clear: { tone: 'teal', icon: ShieldCheck },
+  empty: { tone: 'slate', icon: ShieldCheck },
+};
+
+/**
+ * Estado del doble control: lo que espera tu confirmación, lo que espera a JC Analytics o
+ * si todo está confirmado por las dos partes. Es lo primero que se lee en cada pantalla.
+ */
+export function ControlStatus({ toConfirm = 0, awaiting = 0, empty = false, action, className }) {
+  const headingId = useId();
+  const key = toConfirm ? 'confirm' : awaiting ? 'awaiting' : empty ? 'empty' : 'clear';
+  const { tone, icon } = CONTROL[key];
+  const text = {
+    confirm: `${plural(toConfirm, 'movimiento espera', 'movimientos esperan')} tu confirmación.`,
+    awaiting: `${plural(awaiting, 'aviso tuyo espera', 'avisos tuyos esperan')} que JC Analytics confirme la plata.`,
+    clear: 'Todo al día: ningún movimiento espera confirmación.',
+    empty: 'Todavía no hay movimientos a tu nombre.',
+  }[key];
+  const also = toConfirm && awaiting ? ` Además, ${plural(awaiting, 'aviso tuyo espera', 'avisos tuyos esperan')} a JC Analytics.` : '';
+  return (
+    <section aria-labelledby={headingId} className={cx('card flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:gap-4 sm:px-5', key === 'confirm' && 'border-amber/50', className)}>
+      <div className="flex min-w-0 flex-1 items-start gap-3">
+        <IconTile icon={icon} tone={tone} size="sm" />
+        <div className="min-w-0">
+          <h2 id={headingId} className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted">Doble control</h2>
+          <p className="mt-0.5 text-sm font-semibold text-ink">{text}</p>
+          <p className="mt-0.5 text-xs text-muted">
+            {key === 'empty' ? 'Cuando JC Analytics registre uno, te avisamos para que lo revisés y lo confirmés.' : `Solo lo confirmado por las dos partes suma en tus totales.${also}`}
+          </p>
+        </div>
+      </div>
+      {action}
+    </section>
+  );
+}
 
 // ── Entrada de monto ────────────────────────────────────────────────────────
 /**
@@ -139,7 +211,34 @@ export function AmountInput({ id, currency = 'CRC', onChange, describedBy }) {
   );
 }
 
-// ── Movimiento: fila desplegable con su hilo y acciones ─────────────────────
+// ── Inversiones ─────────────────────────────────────────────────────────────
+/** Una inversión en el resumen: estado, pendientes y tu parte (solo lo confirmado, en su moneda). */
+export function PositionRow({ p }) {
+  const cur = p.currency;
+  const { mine } = p;
+  return (
+    <Link to={`/inversionista/inversiones/${p.id}`} data-investment-id={p.id}
+      className="group grid gap-3 px-4 py-4 transition-colors hover:bg-surface-2 sm:px-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.45fr)_16px] lg:items-center lg:gap-6">
+      <div className="min-w-0">
+        <p className="font-semibold leading-snug text-ink group-hover:text-brand-ink">{p.name}</p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-muted">
+          <span>{p.category_label} · {cur}</span>
+          <InvestmentStatusBadge status={p.status} label={p.status_label} />
+          {mine.pending_count > 0 && <Badge tone="amber"><Hourglass className="h-3 w-3" aria-hidden="true" />{mine.pending_count} por confirmar</Badge>}
+        </div>
+      </div>
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 sm:grid-cols-4">
+        <MiniFigure label="Aportado" value={formatMoney(mine.contributed, cur)} valueProps={{ 'data-position-contributed': '' }} />
+        <MiniFigure label="Recibido" value={formatMoney(mine.returned, cur)} tone={receivedTone(mine.returned)} valueProps={{ 'data-position-returned': '' }} />
+        <MiniFigure label="Neto" value={formatMoney(mine.net, cur)} tone={netTone(mine.net, mine.contributed)} valueProps={{ 'data-position-net': '' }} />
+        <MiniFigure label="Participación" value={formatPercent(mine.share, 1)} valueProps={{ 'data-position-share': '' }} />
+      </dl>
+      <ChevronRight className="hidden h-4 w-4 text-muted-2 transition group-hover:translate-x-0.5 group-hover:text-ink lg:block" aria-hidden="true" />
+    </Link>
+  );
+}
+
+// ── Movimiento: fila con su estado, sus acciones y su hilo ──────────────────
 const KIND = {
   registro: { label: 'Registro', className: 'bg-surface-2' },
   confirmacion: { label: 'Confirmación', className: 'bg-teal-soft' },
@@ -151,18 +250,17 @@ const KIND = {
 function Thread({ messages }) {
   if (!messages?.length) return null;
   return (
-    <ol className="space-y-2.5" aria-label="Mensajes del movimiento">
+    <ol className="space-y-2" aria-label="Mensajes del movimiento">
       {messages.map((msg) => {
         const mine = !!msg.mine;
         const kind = KIND[msg.kind] ?? KIND.mensaje;
         return (
           <li key={msg.id} className={cx('flex gap-2.5', mine && 'flex-row-reverse')}>
-            {mine ? <span className="w-7 shrink-0" aria-hidden="true" /> : <Avatar name={msg.user_name} color={msg.user_color} size={28} className="mt-0.5" />}
-            <div className={cx('min-w-0 max-w-[min(100%,34rem)] rounded-2xl px-3.5 py-2.5', mine ? 'rounded-tr-md' : 'rounded-tl-md',
+            {mine ? <span className="w-6 shrink-0" aria-hidden="true" /> : <Avatar name={msg.user_name} color={msg.user_color} size={24} className="mt-0.5" />}
+            <div className={cx('min-w-0 max-w-[min(100%,34rem)] rounded-2xl px-3 py-2', mine ? 'rounded-tr-md' : 'rounded-tl-md',
               mine && msg.kind === 'mensaje' ? 'bg-brand-soft' : kind.className)}>
               <p className="text-[11px] text-muted">
                 <span className="font-semibold text-ink">{mine ? 'Vos' : msg.user_name}</span>
-                {!mine && <span> · JC Analytics</span>}
                 <span> · {kind.label} · </span>
                 <time dateTime={msg.created_at} title={formatDateTime(msg.created_at)}>{timeAgo(msg.created_at)}</time>
               </p>
@@ -204,185 +302,176 @@ const STATUS_NOTE = {
   anulado: { icon: CircleSlash, className: 'bg-surface-3 text-ink-2', text: 'Anulado: queda en el historial, pero no cuenta en tus totales.' },
 };
 
+/** Quién registró el movimiento, dicho desde la mirada del inversionista. */
+const registeredBy = (m, user) => (m.created_by === user?.id ? 'Vos' : `${m.created_by_name} · JC Analytics`);
+
+function Detail({ label, children }) {
+  return (
+    <div className="flex min-w-0 justify-between gap-3 sm:block">
+      <dt className="text-muted">{label}</dt>
+      <dd className="truncate font-medium text-ink">{children}</dd>
+    </div>
+  );
+}
+
 /**
- * Movimiento a nombre del inversionista. Se usa dentro de una lista (<ul class="card divide-y">):
- * cabecera con monto, tipo, fecha y estado; al abrir, el detalle, el hilo y lo que le toca hacer.
+ * Confirmar, objetar o retirar un aviso: el diálogo repite los datos del movimiento para
+ * que se decida con todo a la vista. Confirmar admite un mensaje de vuelta opcional;
+ * objetar y retirar piden el motivo.
+ */
+function ResolveDialog({ mode, m, onClose, onDone }) {
+  const { user } = useSession();
+  const [message, setMessage] = useState('');
+  const [run, busy] = useAction();
+  const formId = useId();
+  const isAporte = m.type === 'aporte';
+  const config = {
+    confirm: {
+      title: isAporte ? '¿Confirmás este aporte?' : '¿Confirmás que recibiste este retorno?',
+      intro: isAporte ? 'Confirmalo solo si coincide con lo que enviaste.' : 'Confirmalo solo si la plata ya te llegó.',
+      label: 'Mensaje de vuelta (opcional)', placeholder: 'Recibido ✓', required: false,
+      submit: 'Sí, confirmar', button: 'btn-teal', icon: Check, path: 'confirm',
+      success: 'Listo: confirmaste el movimiento. Ya cuenta en tus totales.',
+      note: 'Al confirmarlo pasa a contar en tus totales y queda registrado con tu mensaje.',
+    },
+    object: {
+      title: 'Objetar movimiento', intro: 'Contanos qué no coincide: JC Analytics lo revisa y te escribe.',
+      label: 'Motivo de la objeción', placeholder: 'Ej.: envié ₡200.000, no ₡250.000.', required: true,
+      submit: 'Enviar objeción', button: 'btn-danger', icon: X, path: 'object',
+      success: 'Objeción enviada. JC Analytics la revisa y te escribe.',
+      note: 'Mientras se revisa, el movimiento no cuenta en tus totales.',
+    },
+    annul: {
+      title: 'Retirar aviso', intro: 'El aviso deja de estar pendiente y queda como anulado en tu historial. Si hace falta, podés avisar de nuevo con los datos correctos.',
+      label: 'Motivo para retirarlo', placeholder: 'Ej.: escribí mal el monto, lo aviso de nuevo.', required: true,
+      submit: 'Retirar aviso', button: 'btn-danger', icon: Ban, path: 'annul',
+      success: 'Retiraste el aviso. Quedó anulado.',
+    },
+  }[mode];
+  const text = message.trim();
+  const valid = !config.required || text.length >= 3;
+
+  async function submit(e) {
+    e.preventDefault();
+    if (!valid) return;
+    const ok = await run(() => api(`/api/investor/movements/${m.id}/${config.path}`, { method: 'POST', body: { message: text || undefined } }), { success: config.success });
+    if (ok) { onClose(); onDone?.(); }
+  }
+
+  return (
+    <Modal open onClose={onClose} title={config.title} size="sm"
+      footer={<>
+        <button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+        <button type="submit" form={formId} className={cx('btn', config.button)} disabled={busy || !valid}><config.icon className="h-4 w-4" aria-hidden="true" />{config.submit}</button>
+      </>}>
+      <form id={formId} onSubmit={submit} className="space-y-4" noValidate>
+        {/* Con el mensaje opcional, el foco va al resumen: en el celular no se abre el teclado sin pedirlo. */}
+        <dl tabIndex={-1} data-autofocus={config.required ? undefined : true} className="grid grid-cols-2 gap-x-4 gap-y-2.5 rounded-xl bg-surface-2 p-3.5 text-sm">
+          <div className="col-span-2">
+            <dt className="text-xs text-muted">{movementLabel(m)}</dt>
+            <dd className="num text-xl font-bold text-ink">{formatMoney(m.amount, m.currency)}</dd>
+            {m.currency === 'USD' && m.amount_crc != null && <dd className="text-xs text-muted">≈ {formatMoney(m.amount_crc, 'CRC')} con el tipo de cambio guardado</dd>}
+          </div>
+          <div className="col-span-2 min-w-0"><dt className="text-xs text-muted">Inversión</dt><dd className="font-medium text-ink">{m.investment_name}</dd></div>
+          <div className="min-w-0"><dt className="text-xs text-muted">Fecha</dt><dd className="font-medium text-ink">{formatDate(m.date)}</dd></div>
+          <div className="min-w-0"><dt className="text-xs text-muted">Registrado por</dt><dd className="truncate font-medium text-ink">{registeredBy(m, user)}</dd></div>
+          {m.reference && <div className="col-span-2 min-w-0"><dt className="text-xs text-muted">Referencia</dt><dd className="truncate font-medium text-ink">{m.reference}</dd></div>}
+        </dl>
+        <p className="text-sm text-ink-2">{config.intro}</p>
+        <Field label={config.label}>
+          {(id) => <textarea id={id} data-autofocus={config.required ? true : undefined} className="input" rows={2} maxLength={1000} value={message}
+            onChange={(e) => setMessage(e.target.value)} placeholder={config.placeholder} required={config.required} />}
+        </Field>
+        {config.note && <p className="text-xs text-muted">{config.note}</p>}
+      </form>
+    </Modal>
+  );
+}
+
+/**
+ * Movimiento a nombre del inversionista. Se usa dentro de una lista (<ul className="divide-y">):
+ * cabecera con monto, tipo, fecha y estado; si te toca, Confirmar y Objetar a la vista; al
+ * abrirlo, el detalle, el hilo de mensajes y la respuesta.
  */
 export function MovementItem({ m, showInvestment = false, highlight = false, defaultOpen = false, onChanged, investmentLink = false }) {
   const [open, setOpen] = useState(defaultOpen || highlight);
-  const [mode, setMode] = useState(null); // null | 'object' | 'annul'
-  const [reply, setReply] = useState('');
-  const [run, busy] = useAction();
-  const confirm = useConfirm();
+  const [dialog, setDialog] = useState(null); // null | 'confirm' | 'object' | 'annul'
   const { user } = useSession();
   const panelId = useId();
-  const replyId = useId();
-  const isAporte = m.type === 'aporte';
   const Icon = movementIcon(m.type);
-  const amount = formatMoney(m.amount, m.currency);
-  const typeLabel = movementLabel(m);
   const voided = m.status === 'anulado' || m.status === 'objetado';
-  const waitingJc = m.status === 'pendiente' && !m.can_resolve;
+  const pending = m.status === 'pendiente';
   const note = STATUS_NOTE[m.status];
-  const extraMessages = Math.max(0, (m.messages?.length ?? 0) - 1);
-
-  const post = async (path, body, success) => {
-    const ok = await run(() => api(path, { method: 'POST', body }), { success });
-    if (ok) { setReply(''); setMode(null); onChanged?.(); }
-  };
-
-  async function confirmMovement() {
-    const yes = await confirm({
-      title: isAporte ? '¿Confirmás este aporte?' : '¿Confirmás que recibiste este retorno?',
-      message: `${typeLabel} de ${amount} en ${m.investment_name}, del ${formatDate(m.date)}. Al confirmarlo pasa a contar en tus totales y queda registrado con tu mensaje.`,
-      confirmLabel: 'Sí, confirmar',
-    });
-    if (yes) await post(`/api/investor/movements/${m.id}/confirm`, { message: reply.trim() || undefined }, 'Listo: confirmaste el movimiento. Ya cuenta en tus totales.');
-  }
-
-  async function objectMovement() {
-    await post(`/api/investor/movements/${m.id}/object`, { message: reply.trim() }, 'Objeción enviada. JC Analytics la revisa y te escribe.');
-  }
-
-  async function annulNotice() {
-    const yes = await confirm({
-      title: '¿Retirar este aviso?',
-      message: `El aviso de ${amount} deja de estar pendiente y queda como anulado en tu estado de cuenta. Si hace falta, podés avisar de nuevo con los datos correctos.`,
-      confirmLabel: 'Retirar aviso',
-      tone: 'danger',
-    });
-    if (yes) await post(`/api/investor/movements/${m.id}/annul`, { message: reply.trim() }, 'Retiraste el aviso. Quedó anulado.');
-  }
-
-  const detail = [
-    showInvestment && m.investment_name,
-    formatDate(m.date),
-    m.reference,
-  ].filter(Boolean);
+  const origin = m.messages?.find((msg) => msg.kind === 'registro');
+  const waitingFor = pending ? (m.can_resolve ? 'Te toca confirmar' : 'Espera a JC Analytics') : null;
+  const meta = [showInvestment && m.investment_name, formatDate(m.date), m.reference].filter(Boolean);
+  const status = (
+    <>
+      <MovementStatusBadge status={m.status} />
+      {waitingFor && <span className={cx('text-[11px]', m.can_resolve ? 'font-semibold text-amber-ink' : 'text-muted')}>{waitingFor}</span>}
+    </>
+  );
 
   return (
     <article id={`mov-${m.id}`} className={cx('scroll-mt-32 transition-colors', highlight && 'bg-brand-soft/40 shadow-[inset_3px_0_0_var(--brand)]', m.can_resolve && !highlight && 'shadow-[inset_3px_0_0_var(--amber)]')}>
       <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls={panelId}
-        className="flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-surface-2/70 sm:items-center sm:gap-4 sm:px-5">
-        <IconTile icon={Icon} tone={voided ? 'slate' : movementTone(m.type)} />
+        className="flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-surface-2/70 sm:items-center sm:px-5">
+        <IconTile icon={Icon} tone={voided ? 'slate' : movementTone(m.type)} size="sm" />
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <span className={cx('num text-[17px] font-bold leading-tight text-ink', voided && 'text-muted line-through decoration-1')}>{amount}</span>
-            <span className="text-sm font-medium text-muted">{typeLabel}</span>
+            <span className={cx('num text-base font-bold leading-tight text-ink', voided && 'text-muted line-through decoration-1')}>{formatMoney(m.amount, m.currency)}</span>
+            <span className="text-sm text-muted">{movementLabel(m)}</span>
           </span>
-          <span className="mt-0.5 block text-xs text-muted sm:truncate">
-            {detail.map((d, i) => <span key={i} className={i === 0 && showInvestment ? 'font-semibold text-ink-2' : undefined}>{i > 0 && ' · '}{d}</span>)}
+          <span className="mt-0.5 block text-xs text-muted">
+            {meta.map((d, i) => <span key={i} className={i === 0 && showInvestment ? 'font-semibold text-ink-2' : undefined}>{i > 0 && ' · '}{d}</span>)}
             {m.currency === 'USD' && m.amount_crc != null && <span> · ≈ {formatMoney(m.amount_crc, 'CRC')}</span>}
           </span>
-          <span className="mt-2 flex flex-wrap items-center gap-1.5 sm:hidden">
-            <MovementStatusBadge status={m.status} />
-            {m.can_resolve && <Badge tone="amber">Te toca responder</Badge>}
-          </span>
+          <span className="mt-1.5 flex flex-wrap items-center gap-1.5 sm:hidden">{status}</span>
         </span>
-        <span className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
-          <MovementStatusBadge status={m.status} />
-          {m.can_resolve ? <span className="text-[11px] font-semibold text-amber-ink">Te toca responder</span>
-            : extraMessages > 0 && <span className="text-[11px] text-muted">{plural(extraMessages + 1, 'mensaje', 'mensajes')}</span>}
-        </span>
-        <ChevronDown className={cx('mt-2.5 h-4 w-4 shrink-0 text-muted-2 transition sm:mt-0', open && 'rotate-180')} aria-hidden="true" />
+        <span className="hidden shrink-0 flex-col items-end gap-1 sm:flex">{status}</span>
+        <ChevronDown className={cx('mt-2 h-4 w-4 shrink-0 text-muted-2 transition sm:mt-0', open && 'rotate-180')} aria-hidden="true" />
       </button>
 
+      {m.can_resolve && (
+        <div className="flex flex-wrap items-center gap-2 pb-3.5 pl-[60px] pr-4 sm:pl-16 sm:pr-5">
+          {origin && (
+            <p className="w-full text-xs text-ink-2">
+              <span className="text-muted">{origin.user_name}: </span>«{origin.body}»
+            </p>
+          )}
+          <button type="button" className="btn btn-teal btn-sm" onClick={() => setDialog('confirm')}><Check className="h-4 w-4" aria-hidden="true" />Confirmar</button>
+          <button type="button" className="btn btn-outline btn-sm" onClick={() => setDialog('object')}><X className="h-4 w-4" aria-hidden="true" />Objetar</button>
+        </div>
+      )}
+
       {open && (
-        <div id={panelId} className="animate-fade space-y-3.5 px-4 pb-4 sm:px-5 sm:pl-[76px] lg:*:max-w-3xl">
-          <dl className="grid gap-x-6 gap-y-1.5 rounded-xl border border-line px-3.5 py-2.5 text-xs sm:grid-cols-2">
-            <div className="flex min-w-0 justify-between gap-3 sm:block">
-              <dt className="text-muted">Registrado por</dt>
-              <dd className="truncate font-medium text-ink">{m.created_by === user?.id ? 'Vos' : `${m.created_by_name} · JC Analytics`}</dd>
-            </div>
-            <div className="flex min-w-0 justify-between gap-3 sm:block">
-              <dt className="text-muted">Fecha del movimiento</dt>
-              <dd className="font-medium text-ink">{formatDate(m.date)}</dd>
-            </div>
-            {m.reference && (
-              <div className="flex min-w-0 justify-between gap-3 sm:block">
-                <dt className="text-muted">Referencia</dt>
-                <dd className="truncate font-medium text-ink">{m.reference}</dd>
-              </div>
-            )}
-            {m.currency === 'USD' && m.fx_rate && (
-              <div className="flex min-w-0 justify-between gap-3 sm:block">
-                <dt className="text-muted">Tipo de cambio</dt>
-                <dd className="num font-medium text-ink">₡{String(m.fx_rate).replace('.', ',')} por $</dd>
-              </div>
-            )}
-            {m.resolved_by_name && m.status !== 'pendiente' && (
-              <div className="flex min-w-0 justify-between gap-3 sm:block">
-                <dt className="text-muted">{m.status === 'confirmado' ? 'Confirmado por' : m.status === 'objetado' ? 'Objetado por' : 'Anulado por'}</dt>
-                <dd className="truncate font-medium text-ink">{m.resolved_by === user?.id ? 'Vos' : m.resolved_by_name}</dd>
-              </div>
+        <div id={panelId} className="animate-fade space-y-3 pb-4 pl-4 pr-4 sm:pl-16 sm:pr-5 lg:*:max-w-3xl">
+          <dl className="grid gap-x-6 gap-y-1 rounded-xl border border-line px-3.5 py-2.5 text-xs sm:grid-cols-2">
+            <Detail label="Registrado por">{registeredBy(m, user)}</Detail>
+            <Detail label="Fecha del movimiento">{formatDate(m.date)}</Detail>
+            {m.reference && <Detail label="Referencia">{m.reference}</Detail>}
+            {m.currency === 'USD' && m.fx_rate && <Detail label="Tipo de cambio"><span className="num">₡{String(m.fx_rate).replace('.', ',')} por $</span></Detail>}
+            {m.resolved_by_name && !pending && (
+              <Detail label={m.status === 'confirmado' ? 'Confirmado por' : m.status === 'objetado' ? 'Objetado por' : 'Anulado por'}>
+                {m.resolved_by === user?.id ? 'Vos' : m.resolved_by_name}
+              </Detail>
             )}
           </dl>
-
-          {m.return_kind === 'mixed' && <p className="rounded-xl bg-surface-2 p-3 text-sm">Devolución de capital: <strong>{formatMoney(m.return_capital_amount, m.currency)}</strong> · Ganancia: <strong>{formatMoney(m.return_profit_amount, m.currency)}</strong></p>}
+          {m.return_kind === 'mixed' && <p className="rounded-xl bg-surface-2 px-3.5 py-2.5 text-sm">Devolución de capital: <strong>{formatMoney(m.return_capital_amount, m.currency)}</strong> · Ganancia: <strong>{formatMoney(m.return_profit_amount, m.currency)}</strong></p>}
           <Thread messages={m.messages} />
-
           {note && <p className={cx('flex items-start gap-2 rounded-xl px-3 py-2 text-xs font-medium', note.className)}><note.icon className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />{note.text}</p>}
-
-          {waitingJc && mode !== 'annul' && (
+          {pending && !m.can_resolve && (
             <p className="flex items-start gap-2 rounded-xl bg-amber-soft px-3 py-2 text-xs font-medium text-amber-ink">
-              <CornerDownRight className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <Hourglass className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               Esperando que JC Analytics confirme que recibió la plata. Mientras tanto no suma en tus totales.
             </p>
           )}
-
-          {m.can_resolve && mode === null && (
-            <div className="rounded-2xl border border-teal/30 bg-teal-soft p-3.5 sm:p-4">
-              <div className="flex items-start gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-teal)] text-[var(--accent-teal-fg)]" aria-hidden="true"><Check className="h-4 w-4" strokeWidth={2.5} /></span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-display text-[15px] font-bold text-ink">{isAporte ? '¿Coincide con lo que enviaste?' : '¿Te llegó este retorno?'}</p>
-                  <p className="text-xs text-ink-2">Si todo está bien, confirmalo: desde ese momento cuenta en tus totales. Si algo no coincide, objetalo y contanos qué pasó.</p>
-                </div>
-              </div>
-              <label htmlFor={replyId} className="sr-only">Mensaje de vuelta (opcional)</label>
-              <textarea id={replyId} className="input mt-3" rows={2} maxLength={1000} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Recibido ✓ (podés agregar un detalle)" />
-              <div className="mt-2.5 flex flex-wrap gap-2">
-                <button type="button" className="btn btn-teal tap flex-1 sm:flex-none" disabled={busy} onClick={confirmMovement}><Check className="h-4 w-4" />Confirmar</button>
-                <button type="button" className="btn btn-outline tap flex-1 sm:flex-none" disabled={busy} onClick={() => setMode('object')}><X className="h-4 w-4" />Objetar</button>
-              </div>
-            </div>
-          )}
-
-          {mode === 'object' && (
-            <div className="rounded-2xl border border-coral/30 bg-coral-soft p-3.5 sm:p-4">
-              <p className="font-display text-[15px] font-bold text-ink">¿Qué no coincide?</p>
-              <p className="text-xs text-ink-2">Contanos el motivo: JC Analytics lo revisa y te escribe. El movimiento no cuenta en tus totales mientras tanto.</p>
-              <label htmlFor={replyId} className="sr-only">Motivo de la objeción (obligatorio)</label>
-              <textarea id={replyId} className="input mt-3" rows={2} maxLength={1000} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Ej.: envié ₡200.000, no ₡250.000." required />
-              <div className="mt-2.5 flex flex-wrap gap-2">
-                <button type="button" className="btn btn-danger tap flex-1 sm:flex-none" disabled={busy || reply.trim().length < 3} onClick={objectMovement}>Enviar objeción</button>
-                <button type="button" className="btn btn-ghost tap" onClick={() => { setMode(null); setReply(''); }}>Cancelar</button>
-              </div>
-            </div>
-          )}
-
-          {mode === 'annul' && (
-            <div className="rounded-2xl border border-line bg-surface-2 p-3.5 sm:p-4">
-              <p className="font-display text-[15px] font-bold text-ink">Retirar tu aviso</p>
-              <p className="text-xs text-ink-2">Contanos por qué (p. ej., el monto quedó mal escrito). Queda como anulado en tu historial.</p>
-              <label htmlFor={replyId} className="sr-only">Motivo para retirar el aviso (obligatorio)</label>
-              <textarea id={replyId} className="input mt-3" rows={2} maxLength={1000} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Ej.: escribí mal el monto, lo aviso de nuevo." required />
-              <div className="mt-2.5 flex flex-wrap gap-2">
-                <button type="button" className="btn btn-dark tap flex-1 sm:flex-none" disabled={busy || reply.trim().length < 3} onClick={annulNotice}><Ban className="h-4 w-4" />Retirar aviso</button>
-                <button type="button" className="btn btn-ghost tap" onClick={() => { setMode(null); setReply(''); }}>Cancelar</button>
-              </div>
-            </div>
-          )}
-
-          {mode === null && (
-            <Reply movementId={m.id} onSent={onChanged}
-              extra={m.can_annul && (
-                <button type="button" className="btn btn-ghost tap text-muted hover:text-coral-ink lg:min-h-10" onClick={() => setMode('annul')}>
-                  <Ban className="h-4 w-4" />Retirar aviso
-                </button>
-              )} />
-          )}
-
+          <Reply movementId={m.id} onSent={onChanged}
+            extra={m.can_annul && (
+              <button type="button" className="btn btn-ghost tap text-muted hover:text-coral-ink lg:min-h-10" onClick={() => setDialog('annul')}>
+                <Ban className="h-4 w-4" aria-hidden="true" />Retirar aviso
+              </button>
+            )} />
           {investmentLink && (
             <Link to={`/inversionista/inversiones/${m.investment_id}?mov=${m.id}`} className="link inline-flex min-h-9 items-center gap-1 text-xs">
               Ver en {m.investment_name}<ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -390,6 +479,8 @@ export function MovementItem({ m, showInvestment = false, highlight = false, def
           )}
         </div>
       )}
+
+      {dialog && <ResolveDialog mode={dialog} m={m} onClose={() => setDialog(null)} onDone={onChanged} />}
     </article>
   );
 }
@@ -402,8 +493,8 @@ export function MovementRow({ m }) {
     <Link to={`/inversionista/inversiones/${m.investment_id}?mov=${m.id}`} className="group row min-h-16 px-4 py-3 sm:px-5">
       <IconTile icon={Icon} tone={voided ? 'slate' : movementTone(m.type)} size="sm" />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-semibold text-ink">{movementLabel(m)} · {m.investment_name}</span>
-        <span className="block truncate text-xs text-muted">{formatDate(m.date)}{m.reference ? ` · ${m.reference}` : ''}</span>
+        <span className="block truncate text-sm font-semibold text-ink">{movementLabel(m)}</span>
+        <span className="block truncate text-xs text-muted">{formatDate(m.date)} · {m.investment_name}</span>
       </span>
       <span className="flex shrink-0 flex-col items-end gap-1">
         <span className={cx('num text-sm font-bold text-ink', voided && 'text-muted line-through decoration-1')}>{formatMoney(m.amount, m.currency)}</span>
@@ -413,134 +504,28 @@ export function MovementRow({ m }) {
   );
 }
 
-// ── Inversiones ─────────────────────────────────────────────────────────────
-function Figure({ label, value, tone }) {
-  return (
-    <div className="min-w-0">
-      <dt className="truncate text-[11px] font-medium text-muted">{label}</dt>
-      <dd className={cx('num mt-0.5 truncate text-[15px] font-bold sm:text-base', tone ?? 'text-ink')}>{value}</dd>
-    </div>
-  );
-}
-
-/** Tarjeta de una inversión desde la posición del inversionista (lo suyo completo; del total, solo agregados). */
-export function PositionCard({ p }) {
-  const cur = p.currency;
-  const { mine, totals } = p;
-  const progress = totals.target_progress;
-  const expected = [expectedPct(p.expected_return_pct) && `Retorno esperado ${expectedPct(p.expected_return_pct)}`, p.expected_date && `recuperación prevista ${formatDate(p.expected_date)}`]
-    .filter(Boolean).join(' · ');
-  return (
-    <Link to={`/inversionista/inversiones/${p.id}`} className="card card-hover group flex min-w-0 flex-col gap-4 p-4 sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="eyebrow truncate">{p.category_label}{cur === 'USD' ? ' · Dólares' : ''}</p>
-          <h3 className="mt-1 font-display text-[18px] font-bold leading-snug text-ink transition-colors group-hover:text-brand-ink">{p.name}</h3>
-          {p.project_name && <p className="mt-0.5 truncate text-xs text-muted">{p.project_name}</p>}
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <InvestmentStatusBadge status={p.status} label={p.status_label} />
-          {mine.pending_count > 0 && <Badge tone="amber"><Hourglass className="h-3 w-3" aria-hidden="true" />{mine.pending_count} por confirmar</Badge>}
-        </div>
-      </div>
-
-      <dl className="grid grid-cols-3 gap-2 rounded-xl bg-surface-2 px-3.5 py-3">
-        <Figure label="Aportaste" value={formatMoney(mine.contributed, cur, { compact: true })} />
-        <Figure label="Recibiste" value={formatMoney(mine.returned, cur, { compact: true })} tone="text-teal-ink" />
-        <Figure label="Neto" value={formatMoney(mine.net, cur, { compact: true })} tone={netReading(mine.net, mine.contributed).good ? 'text-teal-ink' : 'text-ink'} />
-      </dl>
-
-      <div>
-        <div className="mb-1.5 flex items-baseline justify-between gap-2 text-xs">
-          <span className="text-muted">Tu participación</span>
-          <span className="num text-sm font-bold text-ink">{formatPercent(mine.share)}</span>
-        </div>
-        <ProgressBar value={mine.share} tone="teal" label="Tu participación en la inversión" />
-        <p className="mt-1.5 truncate text-[11.5px] text-muted">
-          {plural(totals.holders, 'participante', 'participantes')} en total · capital confirmado {formatMoney(totals.contributed, cur, { compact: true })}
-        </p>
-      </div>
-
-      {progress != null && (
-        <div>
-          <div className="mb-1.5 flex items-baseline justify-between gap-2 text-xs">
-            <span className="flex items-center gap-1.5 text-muted"><Target className="h-3.5 w-3.5" aria-hidden="true" />Meta de capital</span>
-            <span className={cx('num font-semibold', progress >= 1 ? 'text-teal-ink' : 'text-ink-2')}>{formatPercent(progress, 0)}{progress >= 1 ? ' · lograda' : ''}</span>
-          </div>
-          <ProgressBar value={progress} tone={progress >= 1 ? 'teal' : 'brand'} label="Avance de la meta de capital" />
-        </div>
-      )}
-
-      <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-line pt-3 text-xs text-muted">
-        <span className="min-w-0">{expected || 'Sin fecha de recuperación definida'}</span>
-        <span className="flex shrink-0 items-center gap-0.5 font-semibold text-brand-ink">Ver detalle<ChevronRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" aria-hidden="true" /></span>
-      </div>
-    </Link>
-  );
-}
-
-// ── Contacto y confianza ────────────────────────────────────────────────────
-/** A quién escribirle en JC Analytics (los administradores): WhatsApp y correo. */
+// ── Contacto ────────────────────────────────────────────────────────────────
+/** A quién escribirle en JC Analytics (los administradores): WhatsApp y correo, en una línea. */
 export function ContactCard({ contacts = [], className }) {
   return (
-    <section id="contacto" className={cx('card scroll-mt-32 overflow-hidden', className)} aria-labelledby="contact-title">
-      <div className="border-b border-line px-4 py-3.5 sm:px-5">
-        <h2 id="contact-title" className="section-title">Tu contacto en JC Analytics</h2>
-        <p className="text-xs text-muted">Para dudas sobre tus aportes, retornos o confirmaciones.</p>
-      </div>
+    <section id="contacto" className={cx('card scroll-mt-32 px-4 py-3.5 sm:px-5', className)} aria-labelledby="contact-title">
+      <h2 id="contact-title" className="text-sm font-semibold text-ink">¿Dudas sobre un aporte o un retorno?</h2>
       {contacts.length === 0 ? (
-        <div className="flex items-center gap-3 px-4 py-4 sm:px-5">
-          <IconTile icon={UserRound} tone="teal" />
-          <p className="text-sm text-muted">Escribinos a nuestro canal habitual; pronto vas a ver aquí a tu contacto directo.</p>
-        </div>
+        <p className="mt-0.5 text-xs text-muted">Escribinos por el canal habitual de JC Analytics.</p>
       ) : (
-        <ul className="divide-y divide-line">
+        <ul className="mt-2 divide-y divide-line">
           {contacts.map((c) => {
             const wa = c.phone ? whatsappLink(c.phone, `Hola ${firstName(c.name)}, te escribo desde el portal de inversionistas de JC Analytics.`) : null;
             return (
-              <li key={`${c.name}-${c.email}`} className="p-4 sm:p-5">
-                <div className="flex items-center gap-3">
-                  <Avatar name={c.name} color="#0065df" size={44} />
-                  <div className="min-w-0">
-                    <p className="truncate font-display text-[16px] font-bold text-ink">{c.name}</p>
-                    <p className="truncate text-xs text-muted">Administración · JC Analytics</p>
-                  </div>
+              <li key={`${c.name}-${c.email}`} className="flex flex-col gap-2 py-2 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
+                <p className="min-w-0 text-sm text-ink-2"><span className="font-semibold text-ink">{c.name}</span> · Administración</p>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm"><MessageCircle className="h-4 w-4" aria-hidden="true" />WhatsApp<span className="sr-only"> (se abre en otra pestaña)</span></a>}
+                  {c.email && <a href={`mailto:${c.email}`} className="btn btn-ghost btn-sm"><Mail className="h-4 w-4" aria-hidden="true" />Correo</a>}
                 </div>
-                {(wa || c.email) && (
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                    {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="btn btn-teal tap"><MessageCircle className="h-4 w-4" aria-hidden="true" />WhatsApp<span className="sr-only"> (se abre en otra pestaña)</span></a>}
-                    {c.email && (
-                      <a href={`mailto:${c.email}`} className={cx('btn btn-outline tap min-w-0', !wa && 'sm:col-span-2 lg:col-span-1 xl:col-span-2')}>
-                        <Mail className="h-4 w-4 shrink-0" aria-hidden="true" /><span className="truncate">{wa ? 'Correo' : c.email}</span>
-                      </a>
-                    )}
-                  </div>
-                )}
               </li>
             );
           })}
-        </ul>
-      )}
-    </section>
-  );
-}
-
-/** Nota de confianza: cómo funciona el doble control. */
-export function TrustNote({ className, compact = false }) {
-  return (
-    <section className={cx('card-sunken p-4 sm:p-5', className)} aria-labelledby="trust-title">
-      <div className="flex items-center gap-3">
-        <IconTile icon={ShieldCheck} tone="teal" size="sm" />
-        <h2 id="trust-title" className="section-title">Doble confirmación</h2>
-      </div>
-      <p className="mt-3 text-sm leading-relaxed text-ink-2">
-        Cada movimiento requiere la confirmación de las dos partes; solo lo confirmado cuenta en tus totales.
-      </p>
-      {!compact && (
-        <ul className="mt-3 space-y-2 text-[13px] text-ink-2">
-          <li className="flex items-start gap-2"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-ink" aria-hidden="true" />Si JC Analytics registra un movimiento a tu nombre, lo confirmás vos.</li>
-          <li className="flex items-start gap-2"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-ink" aria-hidden="true" />Si vos avisás un aporte, lo confirma JC Analytics al verificar la plata.</li>
-          <li className="flex items-start gap-2"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-ink" aria-hidden="true" />Todo queda con fecha, mensaje y quién lo hizo.</li>
         </ul>
       )}
     </section>
