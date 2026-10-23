@@ -1,6 +1,6 @@
 // Movimientos de dinero entre socios e inversiones: tarjeta con hilo de mensajes,
-// confirmación con "mensaje de vuelta", objeción y anulación.
-// v6: el socio de un movimiento puede ser un inversionista (insignia y texto de "a quién espera").
+// aprobación del admin (con mensaje de vuelta opcional), rechazo y anulación.
+// v6: el socio de un movimiento puede ser un inversionista (insignia en la tarjeta).
 import { useState } from 'react';
 import { ArrowDownLeft, ArrowUpRight, Check, X, Ban, MessageSquare, Send, Hash, CornerDownRight, ChevronDown } from 'lucide-react';
 import { api } from '../lib/api.js';
@@ -12,34 +12,25 @@ import { useSession } from '../lib/session.jsx';
 import { MOVEMENT_STATUS_META, RETURN_KIND_LABEL, isInvestorRole } from '../../shared/catalog.js';
 import { formatMoney, formatDate, timeAgo, toMinor } from '../lib/format.js';
 
-// Cada tipo de mensaje del hilo tiene su burbuja: registro neutro, confirmación turquesa,
-// objeción coral, anulación hundida y mensaje libre en azul suave.
+// Cada tipo de mensaje del hilo tiene su burbuja: registro neutro, aprobación turquesa,
+// rechazo coral, anulación hundida y mensaje libre en azul suave.
 const KIND_STYLE = {
   registro: { label: 'Registro', className: 'bg-surface-2' },
-  confirmacion: { label: 'Mensaje de vuelta', className: 'bg-teal-soft' },
-  objecion: { label: 'Objeción', className: 'bg-coral-soft' },
+  confirmacion: { label: 'Aprobación', className: 'bg-teal-soft' },
+  objecion: { label: 'Rechazo', className: 'bg-coral-soft' },
   anulacion: { label: 'Anulación', className: 'bg-surface-3' },
   mensaje: { label: 'Mensaje', className: 'bg-brand-soft/60' },
 };
 
-/**
- * A quién espera un movimiento pendiente (doble control). El servidor manda `awaiting` ('otro socio' o el
- * nombre de quien confirma); el buzón no lo trae y se deduce. v6: un inversionista confirma lo suyo desde su
- * portal, y si él mismo avisó el aporte, lo confirma un socio o administrador.
- */
-function awaitingText(m, partnerIsInvestor) {
-  const anyPartner = m.awaiting ? m.awaiting === 'otro socio' : m.created_by === m.partner_id;
-  if (anyPartner) return partnerIsInvestor ? 'Esperando confirmación de un socio o administrador.' : 'Esperando confirmación de otro socio o administrador.';
-  const who = m.awaiting ?? m.partner_name;
-  return partnerIsInvestor ? `Esperando que ${String(who).split(' ')[0]} lo confirme desde su portal de inversionista.` : `Esperando confirmación de ${who}.`;
-}
+/** A quién espera un pendiente: toda la plata la aprueba la administración (el buzón no trae `awaiting`). */
+const awaitingText = (m) => `Esperando la aprobación de ${m.awaiting ?? 'la administración'}.`;
 
 export function MovementCard({ m, showInvestment = false, highlight = false, defaultOpen = false, onChanged }) {
   const { team, isAdmin } = useSession();
   const partnerIsInvestor = team.some((u) => u.id === m.partner_id && isInvestorRole(u));
-  const [open, setOpen] = useState(defaultOpen || highlight || m.can_resolve);
+  const [open, setOpen] = useState(defaultOpen || highlight);
   const [reply, setReply] = useState('');
-  const [mode, setMode] = useState(null); // 'object' | 'annul'
+  const [mode, setMode] = useState(null); // 'object' (rechazar) | 'annul'
   const [classifying, setClassifying] = useState(false);
   const [run, busy] = useAction();
   const isIn = m.type === 'aporte';
@@ -77,6 +68,15 @@ export function MovementCard({ m, showInvestment = false, highlight = false, def
         <ChevronDown className={cx('hidden h-4 w-4 shrink-0 text-muted-2 transition sm:block', open && 'rotate-180')} aria-hidden="true" />
       </button>
 
+      {/* Aprobar con un toque sin abrir la tarjeta; para dejar una nota o rechazar, se abre. */}
+      {m.can_resolve && !open && (
+        <div className="flex flex-wrap items-center gap-2 border-t border-line bg-teal-soft/60 px-4 py-2.5">
+          <span className="mr-auto text-xs font-medium text-ink-2">Espera tu aprobación</span>
+          <button type="button" className="btn btn-teal tap" disabled={busy} onClick={() => act(`/api/movements/${m.id}/confirm`, {}, 'Aprobado. Ya suma en los indicadores.')}><Check className="h-4 w-4" />Aprobar</button>
+          <button type="button" className="btn btn-outline tap" disabled={busy} onClick={() => { setOpen(true); setMode('object'); }}><X className="h-4 w-4" />Rechazar</button>
+        </div>
+      )}
+
       {open && (
         <div className="animate-fade space-y-3 border-t border-line px-4 pb-4 pt-3">
           {isAdmin && !isIn && !annulled && (!m.return_kind || m.return_kind === 'unclassified') && <div className="rounded-xl border border-amber/30 bg-amber-soft p-3 text-sm"><p className="text-amber-ink">Este retorno necesita separar la devolución de capital de la ganancia.</p><button type="button" className="btn btn-outline mt-2" onClick={() => setClassifying(true)}>Clasificar retorno</button></div>}
@@ -94,7 +94,7 @@ export function MovementCard({ m, showInvestment = false, highlight = false, def
           </ol>
 
           {m.status === 'pendiente' && !m.can_resolve && (
-            <p className="flex items-center gap-2 rounded-xl bg-amber-soft px-3 py-2 text-xs font-medium text-amber-ink"><CornerDownRight className="h-3.5 w-3.5 shrink-0" />{awaitingText(m, partnerIsInvestor)}</p>
+            <p className="flex items-center gap-2 rounded-xl bg-amber-soft px-3 py-2 text-xs font-medium text-amber-ink"><CornerDownRight className="h-3.5 w-3.5 shrink-0" />{awaitingText(m)}</p>
           )}
 
           {m.can_resolve && mode !== 'object' && (
@@ -102,25 +102,25 @@ export function MovementCard({ m, showInvestment = false, highlight = false, def
               <div className="flex items-start gap-3">
                 <IconTile icon={Check} tone="teal" size="sm" className="bg-teal text-white" />
                 <div className="min-w-0 flex-1">
-                  <p className="font-display text-[15px] font-bold text-ink">{isIn ? '¿Recibiste este aporte?' : '¿Te llegó este retorno?'}</p>
-                  <p className="text-xs text-muted">Confirmá con tu mensaje de vuelta. Queda registrado en la bitácora.</p>
+                  <p className="font-display text-[15px] font-bold text-ink">{isIn ? '¿Aprobás este aporte?' : '¿Aprobás este retorno?'}</p>
+                  <p className="text-xs text-muted">Al aprobarlo suma en los indicadores. La nota es opcional.</p>
                 </div>
               </div>
-              <textarea className="input mt-3" rows={2} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Recibido ✓ (podés agregar un detalle)" aria-label="Mensaje de vuelta" />
+              <textarea className="input mt-3" rows={2} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Aprobado ✓ (opcional)" aria-label="Nota de aprobación" />
               <div className="mt-2.5 flex flex-wrap gap-2">
-                <button type="button" className="btn btn-teal tap flex-1 sm:flex-none" disabled={busy} onClick={() => act(`/api/movements/${m.id}/confirm`, { message: reply || undefined }, 'Confirmado. Se envió tu mensaje de vuelta.')}><Check className="h-4 w-4" />Confirmar recibido</button>
-                <button type="button" className="btn btn-outline tap" disabled={busy} onClick={() => setMode('object')}><X className="h-4 w-4" />Objetar</button>
+                <button type="button" className="btn btn-teal tap flex-1 sm:flex-none" disabled={busy} onClick={() => act(`/api/movements/${m.id}/confirm`, { message: reply || undefined }, 'Aprobado. Ya suma en los indicadores.')}><Check className="h-4 w-4" />Aprobar</button>
+                <button type="button" className="btn btn-outline tap" disabled={busy} onClick={() => setMode('object')}><X className="h-4 w-4" />Rechazar</button>
               </div>
             </div>
           )}
 
           {mode === 'object' && (
             <div className="rounded-2xl border border-coral/30 bg-coral-soft p-3.5 sm:p-4">
-              <p className="font-display text-[15px] font-bold text-ink">¿Qué no coincide?</p>
-              <p className="text-xs text-muted">Quien lo registró recibe tu objeción y puede corregirlo.</p>
-              <textarea className="input mt-3" rows={2} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Ej.: me llegaron ₡19.500, no ₡20.000." aria-label="Motivo de la objeción" />
+              <p className="font-display text-[15px] font-bold text-ink">¿Por qué lo rechazás?</p>
+              <p className="text-xs text-muted">Quien lo registró recibe el motivo. No suma en los indicadores; si hace falta, se registra de nuevo.</p>
+              <textarea className="input mt-3" rows={2} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Ej.: me llegaron ₡19.500, no ₡20.000." aria-label="Motivo del rechazo" />
               <div className="mt-2.5 flex flex-wrap gap-2">
-                <button type="button" className="btn btn-danger tap" disabled={busy || reply.trim().length < 3} onClick={() => act(`/api/movements/${m.id}/object`, { message: reply }, 'Objeción enviada')}>Enviar objeción</button>
+                <button type="button" className="btn btn-danger tap" disabled={busy || reply.trim().length < 3} onClick={() => act(`/api/movements/${m.id}/object`, { message: reply }, 'Movimiento rechazado')}>Rechazar movimiento</button>
                 <button type="button" className="btn btn-ghost tap" onClick={() => setMode(null)}>Cancelar</button>
               </div>
             </div>
@@ -137,7 +137,8 @@ export function MovementCard({ m, showInvestment = false, highlight = false, def
               </div>
             </div>
           ) : mode !== 'object' && (
-            <ThreadReply movementId={m.id} onSent={onChanged} extra={m.can_annul && <button type="button" className="btn btn-ghost tap text-muted hover:text-coral-ink" onClick={() => setMode('annul')}><Ban className="h-3.5 w-3.5" />Anular</button>} />
+            // Mientras está por aprobar, "Rechazar" ya cubre lo que haría "Anular".
+            <ThreadReply movementId={m.id} onSent={onChanged} extra={m.can_annul && !m.can_resolve && <button type="button" className="btn btn-ghost tap text-muted hover:text-coral-ink" onClick={() => setMode('annul')}><Ban className="h-3.5 w-3.5" />Anular</button>} />
           )}
           {showInvestment && <Link to={`/inversiones/${m.investment_id}?mov=${m.id}`} className="link inline-flex min-h-8 items-center gap-1 text-xs"><Hash className="h-3 w-3" />Ver en la inversión</Link>}
         </div>

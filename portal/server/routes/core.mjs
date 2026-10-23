@@ -14,7 +14,7 @@ import { hashPassword, verifyPassword, passwordProblem, temporaryPassword, burnP
 import { pendingForUser } from './common.mjs';
 import { transaction } from '../schema.mjs';
 
-// La regla de doble control vive en common.mjs (también la usan las automatizaciones).
+// La regla de aprobación vive en common.mjs (también la usan las automatizaciones).
 export { pendingForUser };
 
 export function coreRoutes(route, ctx, session) {

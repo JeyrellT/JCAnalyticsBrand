@@ -148,29 +148,23 @@ export async function seedDemoData({ db, passwordHash, login, loginClient = null
   const mov = async (api, investmentId, body) => (await api('POST', `/api/investments/${investmentId}/movements`, body)).movement.id;
   const confirm = (api, movementId, message) => api('POST', `/api/movements/${movementId}/confirm`, { message });
 
-  // Aportes a BarberXCR (confirmados por otro socio, con mensaje de vuelta).
-  await confirm(cata, await mov(jey, barberInv, { type: 'aporte', partner_id: U.jeyrell, amount: 600_000_00, date: day(-58), reference: 'SINPE 81233', message: 'Aporte inicial para pauta y onboarding.' }), 'Recibido en la cuenta del proyecto ✓');
+  // Aportes a BarberXCR: lo que registra el admin queda aprobado; lo de los socios lo aprueba el admin.
+  await mov(jey, barberInv, { type: 'aporte', partner_id: U.jeyrell, amount: 600_000_00, date: day(-58), reference: 'SINPE 81233', message: 'Aporte inicial para pauta y onboarding.' });
   await confirm(jey, await mov(cata, barberInv, { type: 'aporte', partner_id: U.catalina, amount: 400_000_00, date: day(-57), reference: 'SINPE 81301', message: 'Mi parte del capital de crecimiento.' }), 'Recibido, gracias Cata.');
   await confirm(jey, await mov(alex, barberInv, { type: 'aporte', partner_id: U.alex, amount: 300_000_00, date: day(-50), message: 'Transferencia BN, aporte de Alex.' }), 'Confirmado en estado de cuenta.');
   await confirm(jey, await mov(s5, barberInv, { type: 'aporte', partner_id: U.socio5, amount: 200_000_00, date: day(-45), reference: 'SINPE 90122', message: 'Me sumo a BarberXCR.' }), 'Bienvenido, recibido ✓');
-  // Primer retorno repartido según capital.
-  const dist1 = await jey('POST', `/api/investments/${barberInv}/distribute`, { amount: 180_000_00, date: day(-15), message: 'Primer retorno: 14 barberías con suscripción activa en septiembre.' });
-  const apis = { [U.jeyrell]: jey, [U.catalina]: cata, [U.alex]: alex, [U.socio5]: s5 };
-  for (const m of dist1.movements) {
-    const confirmer = m.partner_id === U.jeyrell ? cata : apis[m.partner_id];
-    await confirm(confirmer, m.id, m.partner_id === U.jeyrell ? 'Depositado a Jeyrell, verificado.' : 'Me llegó ✓ gracias.');
-  }
-  // Segundo retorno: algunos ya confirmaron, otros pendientes (aparecen en el buzón).
-  const dist2 = await jey('POST', `/api/investments/${barberInv}/distribute`, { amount: 95_000_00, date: day(-1), message: 'Retorno de octubre (primera quincena).' });
-  for (const m of dist2.movements.filter((x) => x.partner_id === U.catalina)) await confirm(cata, m.id, 'Recibido por SINPE ✓');
+  // Primer retorno repartido según capital: lo registra el admin y queda aprobado.
+  await jey('POST', `/api/investments/${barberInv}/distribute`, { amount: 180_000_00, date: day(-15), message: 'Primer retorno: 14 barberías con suscripción activa en septiembre.' });
+  // Segundo retorno: lo registra una socia y queda por aprobar (aparece en el buzón del admin).
+  await cata('POST', `/api/investments/${barberInv}/distribute`, { amount: 95_000_00, date: day(-1), message: 'Retorno de octubre (primera quincena).' });
 
-  // Pauta: un aporte confirmado y otro pendiente de confirmar.
+  // Pauta: un aporte aprobado y otro por aprobar.
   await confirm(jey, await mov(cata, adsInv, { type: 'aporte', partner_id: U.catalina, amount: 150_000_00, date: day(-10), message: 'Pauta de octubre (Reels La Burrada y BarberXCR).' }), 'Recibido. Hillary ya cargó la campaña.');
   await mov(alex, adsInv, { type: 'aporte', partner_id: U.alex, amount: 100_000_00, date: day(-2), reference: 'SINPE 77310', message: 'Mi parte de la pauta de noviembre.' });
 
   // Infraestructura en dólares con tipo de cambio guardado.
   await confirm(jey, await mov(alex, infraInv, { type: 'aporte', partner_id: U.alex, amount: 240_00, fx_rate: 512.4, date: day(-30), message: 'Railway + dominios anual (factura adjunta en Drive).' }), 'Recibido ✓');
-  await confirm(alex, await mov(jey, infraInv, { type: 'aporte', partner_id: U.jeyrell, amount: 240_00, fx_rate: 512.4, date: day(-30), message: 'Mi mitad de infraestructura.' }), 'Recibido ✓');
+  await mov(jey, infraInv, { type: 'aporte', partner_id: U.jeyrell, amount: 240_00, fx_rate: 512.4, date: day(-30), message: 'Mi mitad de infraestructura.' });
 
   await cata('POST', `/api/investments/${barberInv}/notes`, { body: 'Llegamos a 14 barberías. Propongo reinvertir 20 % del próximo retorno en pauta local en Heredia.' });
 
@@ -178,11 +172,11 @@ export async function seedDemoData({ db, passwordHash, login, loginClient = null
   // El admin habilita cada inversión: una con historial y otra disponible para explorar.
   await jey('PUT', `/api/investments/${barberInv}/access`, { allowed_investor_ids: [U.angel] });
   await jey('PUT', `/api/investments/${infraInv}/access`, { allowed_investor_ids: [U.angel] });
-  // Ángel entró a BarberXCR después de los repartos: un aporte confirmado y otro esperando SU confirmación.
+  // Ángel entró a BarberXCR después de los repartos: un aporte que registró el admin (aprobado) y otro que
+  // avisó él desde su portal, esperando la aprobación del admin.
   const angel = await as('angel');
-  const angelFirst = await mov(jey, barberInv, { type: 'aporte', partner_id: U.angel, amount: 500_000_00, date: day(-12), reference: 'SINPE 66120', message: 'Aporte de Ángel para la expansión a Heredia.' });
-  await angel('POST', `/api/investor/movements/${angelFirst}/confirm`, { message: 'Enviado desde mi cuenta BN ✓' });
-  await mov(jey, barberInv, { type: 'aporte', partner_id: U.angel, amount: 250_000_00, date: day(-1), reference: 'SINPE 70211', message: 'Segundo tramo acordado en la reunión del lunes.' });
+  await mov(jey, barberInv, { type: 'aporte', partner_id: U.angel, amount: 500_000_00, date: day(-12), reference: 'SINPE 66120', message: 'Aporte de Ángel para la expansión a Heredia.' });
+  await angel('POST', `/api/investor/investments/${barberInv}/movements`, { amount: 250_000_00, date: day(-1), reference: 'SINPE 70211', message: 'Segundo tramo acordado en la reunión del lunes.' });
 
   // ── Finanzas de ejemplo: campañas ficticias, nunca datos del negocio real ──
   const [demoYear, demoMonth] = day(0).slice(0, 7).split('-').map(Number);
@@ -195,7 +189,7 @@ export async function seedDemoData({ db, passwordHash, login, loginClient = null
       description: 'Datos ficticios para explorar el libro de ventas, costos y anticipos. No representan resultados reales ni una rentabilidad ofrecida.' })).investment;
     await jey('PUT', `/api/investments/${campaign.id}/access`, { allowed_investor_ids: [U.angel] });
     await confirm(jey, await mov(cata, campaign.id, { type: 'aporte', partner_id: U.catalina, amount: 30_000_00,
-      date: `${priorMonth}-01`, message: 'DEMO: aporte ficticio para aprender el flujo de confirmación.' }), 'DEMO: confirmación de ejemplo, sin transferencia real.');
+      date: `${priorMonth}-01`, message: 'DEMO: aporte ficticio para aprender el flujo de aprobación.' }), 'DEMO: aprobación de ejemplo, sin transferencia real.');
     for (const [kind, categoryKey, amount, paid, labelText, date] of [
       ['revenue', 'sale', revenue, true, 'Venta cobrada', '19'],
       ['expense', 'ads', ads, true, 'Publicidad pagada', '12'],

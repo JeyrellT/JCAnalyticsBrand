@@ -99,10 +99,10 @@ export function dashboardRoutes(route, ctx) {
       };
       if (myPending.length) {
         const sum = myPending.reduce((a, m) => a + (toCRC(m.amount, m.currency, m.fx_rate) ?? 0), 0);
-        alerts.unshift({ tone: 'violet', kind: 'movement', title: `${myPending.length} ${myPending.length === 1 ? 'movimiento espera' : 'movimientos esperan'} tu confirmación`, detail: `Total ≈ ${formatMoney(sum, 'CRC')}. Respondé con tu mensaje de vuelta.`, link: '/buzon' });
+        alerts.unshift({ tone: 'violet', kind: 'movement', title: `${myPending.length} ${myPending.length === 1 ? 'movimiento espera' : 'movimientos esperan'} tu aprobación`, detail: `Total ≈ ${formatMoney(sum, 'CRC')}. Aprobalos o rechazalos desde el buzón.`, link: '/buzon' });
       }
       const objected = movements.filter((m) => m.status === 'objetado' && m.created_by === user.id);
-      if (objected.length) alerts.unshift({ tone: 'red', kind: 'movement', title: `${objected.length} ${objected.length === 1 ? 'movimiento tuyo fue objetado' : 'movimientos tuyos fueron objetados'}`, detail: 'Revisá el motivo y corregí o anulá el registro.', link: '/inversiones' });
+      if (objected.length) alerts.unshift({ tone: 'red', kind: 'movement', title: `${objected.length} ${objected.length === 1 ? 'movimiento tuyo fue rechazado' : 'movimientos tuyos fueron rechazados'}`, detail: 'Revisá el motivo y registralo de nuevo si hace falta.', link: '/inversiones' });
     }
 
     const sensitive = canInvest(user) ? '' : 'AND a.sensitive = 0';

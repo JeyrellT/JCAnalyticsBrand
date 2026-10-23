@@ -1,5 +1,5 @@
 // Estado de cuenta del inversionista: todos sus movimientos agrupados por mes, con su estado,
-// filtros (todos · por confirmar · confirmados), totales y la descarga para Excel.
+// filtros (todos · por aprobar · aprobados), totales y la descarga para Excel.
 import { useMemo, useState } from 'react';
 import { ReceiptText, Download, ListChecks, CheckCheck, Hourglass } from 'lucide-react';
 import { useResource, useSession } from '../../lib/session.jsx';
@@ -80,15 +80,15 @@ export default function InvestorMovements() {
 
       {movements.length === 0 ? (
         <EmptyState icon={ReceiptText} tone="violet" title="Todavía no hay movimientos a tu nombre">
-          Cuando JC Analytics registre tu primer aporte, aparece aquí para que lo confirmés.
+          Cuando JC Analytics registre tu primer aporte, aparece aquí con su historia.
         </EmptyState>
       ) : (
         <>
           <div className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
             <Tabs value={filter} onChange={setFilter} tabs={[
               { value: 'todos', label: 'Todos', count: counts.todos },
-              { value: 'pendientes', label: 'Por confirmar', count: counts.pendientes },
-              { value: 'confirmados', label: 'Confirmados', count: counts.confirmados },
+              { value: 'pendientes', label: 'Por aprobar', count: counts.pendientes },
+              { value: 'confirmados', label: 'Aprobados', count: counts.confirmados },
               { value: 'capital', label: 'Capital devuelto', count: counts.capital },
               { value: 'ganancias', label: 'Ganancias', count: counts.ganancias },
             ]} />
@@ -96,7 +96,7 @@ export default function InvestorMovements() {
 
           {groups.length === 0 ? (
             filter === 'pendientes'
-              ? <EmptyState icon={CheckCheck} tone="teal" title="Nada por confirmar">Todos tus movimientos ya fueron confirmados o resueltos.</EmptyState>
+              ? <EmptyState icon={CheckCheck} tone="teal" title="Nada por aprobar">Todos tus movimientos ya fueron aprobados o resueltos.</EmptyState>
               : <EmptyState icon={ListChecks} tone="slate" title="Sin movimientos en esta vista">Probá con otro filtro.</EmptyState>
           ) : (
             <div className="space-y-6">

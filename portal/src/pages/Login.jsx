@@ -113,7 +113,7 @@ function ClientCollage() {
   );
 }
 
-/** Collage del portal de inversionistas: su posición, un aporte por confirmar y un retorno confirmado con mensaje de vuelta. */
+/** Collage del portal de inversionistas: su posición, un aporte avisado por aprobar y un retorno aprobado con su mensaje. */
 function InvestorCollage() {
   return (
     <div className="relative mx-auto h-[300px] w-full max-w-[460px]" aria-hidden="true">
@@ -128,21 +128,18 @@ function InvestorCollage() {
         <div className="mt-3 flex items-center justify-between text-[11px] text-white/55"><span>Participación</span><span className="font-semibold text-white">18 %</span></div>
         <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full w-[18%] rounded-full bg-teal" /></div>
       </div>
-      {/* Aporte por confirmar */}
+      {/* Aporte avisado, por aprobar */}
       <div className="animate-float absolute right-0 top-0 w-[236px] rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 shadow-pop backdrop-blur-md" style={{ '--tilt': '3deg', animationDelay: '1.2s' }}>
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber/20 text-amber"><HandCoins className="h-5 w-5" /></span>
           <div className="min-w-0">
-            <p className="truncate text-[13.5px] font-semibold text-white">Confirmá un aporte</p>
+            <p className="truncate text-[13.5px] font-semibold text-white">Aviso de aporte</p>
             <p className="text-[11.5px] text-white/55">₡250 000 · SINPE 70211</p>
           </div>
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-1.5 text-[11.5px] font-semibold">
-          <span className="flex items-center justify-center gap-1 rounded-lg bg-teal/25 py-1.5 text-teal"><Check className="h-3.5 w-3.5" />Confirmar</span>
-          <span className="flex items-center justify-center rounded-lg bg-white/10 py-1.5 text-white/75">Objetar</span>
-        </div>
+        <p className="mt-3 flex items-center justify-center gap-1 rounded-lg bg-amber/20 py-1.5 text-[11.5px] font-semibold text-amber"><Check className="h-3.5 w-3.5" />Por aprobar · JC Analytics</p>
       </div>
-      {/* Retorno confirmado con su mensaje de vuelta */}
+      {/* Retorno aprobado con su mensaje */}
       <div className="animate-float absolute bottom-0 left-1/2 w-[286px] -translate-x-1/2 rounded-2xl border border-white/10 bg-white/[0.09] p-3.5 shadow-pop backdrop-blur-md" style={{ '--tilt': '1.5deg', animationDelay: '0.6s' }}>
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal/20 text-teal"><CheckCheck className="h-5 w-5" /></span>
@@ -150,9 +147,9 @@ function InvestorCollage() {
             <p className="font-display text-xl font-bold leading-none text-white tabular-nums">₡38 000</p>
             <p className="mt-1 truncate text-[11.5px] text-white/55">retorno · octubre</p>
           </div>
-          <span className="chip bg-teal/20 text-teal"><CheckCircle2 className="h-3 w-3" />Confirmado</span>
+          <span className="chip bg-teal/20 text-teal"><CheckCircle2 className="h-3 w-3" />Aprobado</span>
         </div>
-        <p className="mt-3 rounded-xl rounded-tl-sm bg-white/[0.08] px-3 py-2 text-[12px] leading-snug text-white/80">“Recibido en mi cuenta BN, gracias ✓”</p>
+        <p className="mt-3 rounded-xl rounded-tl-sm bg-white/[0.08] px-3 py-2 text-[12px] leading-snug text-white/80">“Retorno de octubre enviado por SINPE ✓”</p>
       </div>
     </div>
   );
@@ -167,7 +164,7 @@ const SHELL_COPY = {
     points: [
       [KanbanSquare, 'Tablero kanban y avances a clientes cada 72 h.'],
       [CalendarDays, 'Agenda de citas con detección de choques.'],
-      [TrendingUp, 'Aportes y retornos de socios con confirmación y mensaje de vuelta.'],
+      [TrendingUp, 'Aportes y retornos de socios, aprobados por la administración.'],
     ],
     footer: 'Sesión cifrada · solo el equipo de JC Analytics',
   },
@@ -185,10 +182,10 @@ const SHELL_COPY = {
   investor: {
     tag: 'Portal de inversionistas',
     eyebrow: 'Portal de inversionistas',
-    title: 'Tu capital con JC Analytics, claro y confirmado.',
+    title: 'Tu capital con JC Analytics, claro y aprobado.',
     points: [
       [Wallet, 'Tu capital, tus retornos y tu participación en cada inversión.'],
-      [CheckCheck, 'Doble confirmación: cada colón queda con su mensaje de vuelta.'],
+      [CheckCheck, 'Cada colón lo aprueba JC Analytics y queda con su mensaje.'],
       [FileSpreadsheet, 'Estado de cuenta para Excel y conversación directa con el equipo.'],
     ],
     footer: 'Sesión cifrada · solo inversionistas de JC Analytics',
@@ -416,13 +413,13 @@ const DEMO_SCOPE = {
   admin: 'Ve todo: operaciones, inversiones y ajustes del equipo.',
   socio: 'Operaciones del equipo e inversiones de socios.',
   colaborador: 'Operaciones del equipo, sin acceso a inversiones.',
-  inversionista: 'Solo su portal: su capital, sus retornos y lo que tiene que confirmar.',
+  inversionista: 'Solo su portal: su capital, sus retornos y sus avisos de aporte.',
 };
 
 /** Encabezado del selector de personas de la demo según el acceso. */
 const DEMO_COPY = {
   team: { title: '¿Con quién querés entrar?', lead: 'Elegí una persona del equipo para recorrer el portal con sus permisos. Podés cambiar de persona cuando quieras.', list: 'Personas de la demo' },
-  investor: { title: '¿Con qué inversionista querés entrar?', lead: 'Mirá el portal como lo ve un inversionista: su capital, sus retornos y los movimientos que tiene que confirmar.', list: 'Inversionistas de la demo' },
+  investor: { title: '¿Con qué inversionista querés entrar?', lead: 'Mirá el portal como lo ve un inversionista: su capital, sus retornos y sus movimientos.', list: 'Inversionistas de la demo' },
   client: { title: '¿Con qué cliente querés entrar?', lead: 'Mirá el portal como lo ve cada empresa: sus proyectos, entregables por aprobar, solicitudes y documentos.', list: 'Clientes de la demo' },
 };
 

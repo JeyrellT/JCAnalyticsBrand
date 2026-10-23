@@ -267,14 +267,15 @@ test('política: categoría, push apagado, horario tranquilo y dinero solo para 
     assert.equal(deliveriesTo(w, w.ids.ana).length, 1, 'push apagado');
     await w.api.ana.patch('/api/me/notification-prefs', { push_enabled: true });
 
-    // Horario tranquilo (21:00–07:00 CR): sin push, salvo pedidos de confirmación de dinero.
+    // Horario tranquilo (21:00–07:00 CR): sin push, salvo los avisos de dinero.
     w.at(cr('2026-10-12', '22:15'));
     await w.api.beto.post('/api/appointments', { title: 'Demo nocturna', kind: 'demo', starts_at: '2026-10-14T16:00:00Z', ends_at: '2026-10-14T17:00:00Z', attendees: [w.ids.ana, w.ids.beto] });
     assert.equal(deliveriesTo(w, w.ids.ana).length, 1, 'cita en horario tranquilo: solo buzón');
     const inv = (await w.api.beto.post('/api/investments', { name: 'Pauta Q4', category: 'marketing', currency: 'CRC' })).data.investment;
-    await w.api.beto.post(`/api/investments/${inv.id}/movements`, { type: 'aporte', partner_id: w.ids.ana, amount: 100_000_00, message: 'Mi parte de la pauta' });
+    // El admin registra un aporte a nombre de Ana: queda aprobado y a Ana le llega el aviso.
+    await w.api.admin.post(`/api/investments/${inv.id}/movements`, { type: 'aporte', partner_id: w.ids.ana, amount: 100_000_00, message: 'Tu parte de la pauta' });
     mine = deliveriesTo(w, w.ids.ana);
-    assert.equal(mine.length, 2, 'el pedido de confirmación pasa el horario tranquilo');
+    assert.equal(mine.length, 2, 'el aviso de dinero pasa el horario tranquilo');
     assert.equal(mine[1].payload.category, 'dinero');
     w.at(cr('2026-10-13', '07:00'));
     await w.api.beto.post('/api/tasks', { title: 'Mañanera', assignee_id: w.ids.ana });
@@ -403,11 +404,11 @@ test('automatizaciones: forma de la lista, permisos y configuración', async () 
   } finally { await w.close(); }
 });
 
-test('resumen_diario: a las 07:30 CR, una sola vez, sin ceros y con dinero solo para socios', async () => {
+test('resumen_diario: a las 07:30 CR, una sola vez, sin ceros y con dinero solo para la administración', async () => {
   const w = await world({ startAt: cr('2026-10-11', '18:00') });
   try {
     await w.api.ana.post('/api/push/subscribe', subscription(FCM()));
-    // Ana: 1 cita hoy, 1 tarea que vence hoy, 1 vencida y 1 movimiento por confirmar. Cata: 1 tarea hoy. Beto: nada.
+    // Ana: 1 cita hoy, 1 tarea que vence hoy y 1 vencida. Cata: 1 tarea hoy. Beto: nada. Admin: 1 movimiento por aprobar.
     await w.api.beto.post('/api/appointments', { title: 'Alcance El Roble', kind: 'alcance', starts_at: '2026-10-12T16:00:00Z', ends_at: '2026-10-12T17:00:00Z', attendees: [w.ids.ana] });
     await w.api.beto.post('/api/appointments', { title: 'Cancelada', kind: 'demo', status: 'cancelada', starts_at: '2026-10-12T18:00:00Z', ends_at: '2026-10-12T19:00:00Z', attendees: [w.ids.ana] });
     await w.api.beto.post('/api/tasks', { title: 'Hoy', assignee_id: w.ids.ana, due_date: '2026-10-12' });
@@ -428,12 +429,16 @@ test('resumen_diario: a las 07:30 CR, una sola vez, sin ceros y con dinero solo 
     const res = await w.engine.run('resumen_diario');
     assert.equal(res.recipients, 2);
     const [ana] = await digests('ana');
-    assert.equal(ana.body, 'Hoy: 1 cita · 2 tareas (1 vencida) · 1 por confirmar');
+    assert.equal(ana.body, 'Hoy: 1 cita · 2 tareas (1 vencida)', 'los socios no aprueban plata: sin "por aprobar"');
     assert.equal(ana.link, '/');
     const [cata] = await digests('cata');
-    assert.equal(cata.body, 'Hoy: 0 citas · 1 tarea', 'sin "por confirmar" para colaboradores');
+    assert.equal(cata.body, 'Hoy: 0 citas · 1 tarea', 'sin "por aprobar" para colaboradores');
     assert.equal((await digests('beto')).length, 0, 'todo en cero: no se envía');
     assert.equal((await digests('admin')).length, 0, 'resumen apagado');
+    // Con el resumen encendido, la administración ve la plata por aprobar.
+    await w.api.admin.patch('/api/me/notification-prefs', { digest_enabled: true });
+    await w.engine.run('resumen_diario', { force: true });
+    assert.equal((await digests('admin'))[0]?.body, 'Hoy: 0 citas · 0 tareas · 1 por aprobar');
     assert.equal(deliveriesTo(w, w.ids.ana).filter((d) => d.payload.category === 'resumen').length, 1);
 
     w.at(cr('2026-10-12', '07:31'));
@@ -595,7 +600,7 @@ test('tareas_vencen (08:00) y fin_soporte (7 días antes)', async () => {
   } finally { await w.close(); }
 });
 
-test('dinero_pendiente: movimientos con más de 24 h, a quien debe confirmar', async () => {
+test('dinero_pendiente: movimientos con más de 24 h, a la administración', async () => {
   const w = await world({ startAt: cr('2026-10-11', '08:00') });
   try {
     const inv = (await w.api.beto.post('/api/investments', { name: 'BarberXCR', category: 'producto_propio', currency: 'CRC' })).data.investment;
@@ -603,25 +608,25 @@ test('dinero_pendiente: movimientos con más de 24 h, a quien debe confirmar', a
     w.at(cr('2026-10-12', '08:00'));
     await w.api.beto.post(`/api/investments/${inv.id}/movements`, { type: 'aporte', partner_id: w.ids.ana, amount: 1_000_00, message: 'Reciente' });
     await w.api.admin.post('/api/push/subscribe', subscription(FCM()));
-    const reminders = async (who) => (await w.inbox(who)).filter((n) => n.title.startsWith('Por confirmar'));
+    const reminders = async (who) => (await w.inbox(who)).filter((n) => n.title.startsWith('Por aprobar'));
 
     w.at(cr('2026-10-12', '08:59'));
     assert.equal(await w.engine.run('dinero_pendiente'), null);
     w.at(cr('2026-10-12', '09:00'));
     const r = await w.engine.run('dinero_pendiente');
     assert.equal(r.recipients, 1);
-    const [n] = await reminders('ana');
+    const [n] = await reminders('admin');
     assert.equal(n.kind, 'movement');
     assert.match(n.title, /Aporte de ₡200[.\s ]000/);
     assert.equal(n.link, `/inversiones/${inv.id}?mov=${old.id}`);
-    for (const who of ['admin', 'beto', 'cata']) assert.equal((await reminders(who)).length, 0, who);
-    assert.equal(w.push.deliveries.filter((d) => d.payload.title.startsWith('Por confirmar')).length, 0);
+    for (const who of ['ana', 'beto', 'cata']) assert.equal((await reminders(who)).length, 0, who);
+    assert.equal(w.push.deliveries.filter((d) => d.payload.title.startsWith('Por aprobar')).length, 1, 'al celular del admin');
 
     await w.engine.run('dinero_pendiente', { force: true });
-    assert.equal((await reminders('ana')).length, 1, 'una vez por día');
+    assert.equal((await reminders('admin')).length, 1, 'una vez por día');
     w.at(cr('2026-10-13', '09:00'));
     await w.engine.run('dinero_pendiente');
-    assert.equal((await reminders('ana')).length, 3, 'al día siguiente recuerda los dos (ya tienen más de 24 h)');
+    assert.equal((await reminders('admin')).length, 3, 'al día siguiente recuerda los dos (ya tienen más de 24 h)');
     assert.ok(w.log().some((l) => l.dedupe_key === `money:${old.id}:2026-10-13`));
 
     // El historial de dinero no se muestra a colaboradores.

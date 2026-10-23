@@ -1,6 +1,6 @@
 // Detalle de una inversión: indicadores, participación por socio, libro de movimientos
 // con su hilo de mensajes, reparto pro-rata de retornos y novedades.
-// v6: un movimiento puede ser de un inversionista; lo confirma él mismo desde su portal.
+// Toda la plata la aprueba la administración: lo que registra un admin queda aprobado de una vez.
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Pencil, ArrowDownLeft, ArrowUpRight, Split, Download, Send, Target, Percent, Scale, Hourglass, TrendingUp, Info, BookOpen, Users, ChartLine, MessageSquareText } from 'lucide-react';
 import { useLimited } from '../components/mobile.jsx';
@@ -19,26 +19,16 @@ import { allocateProRata } from '../../shared/finance.js';
 import { formatMoney, formatPercent, formatMultiple, formatDate, todayKey, timeAgo } from '../lib/format.js';
 import '../styles/investment-detail.css';
 
-/**
- * Quién confirma un movimiento nuevo (doble control, igual que el servidor):
- * a tu nombre → otro socio o el admin; a nombre de un socio → ese socio; de un inversionista → él mismo, desde su portal.
- */
-function confirmerFor(partner, self) {
-  if (self || !partner) return { name: 'otro socio o administrador', hint: 'como lo registrás a tu nombre, lo confirma otro socio o administrador.' };
-  const first = partner.name.split(' ')[0];
-  return isInvestorRole(partner)
-    ? { name: first, hint: `lo confirma ${first} desde su portal de inversionista, con su mensaje de vuelta.` }
-    : { name: first, hint: `lo confirma ${first} con su mensaje de vuelta.` };
-}
+/** Igual que el servidor: lo que registra un admin queda aprobado; lo de los demás espera a la administración. */
+const approvalNote = (isAdmin) => (isAdmin
+  ? 'Como sos administrador, queda aprobado al registrarlo y suma de una vez en los indicadores.'
+  : 'Queda por aprobar hasta que la administración lo revise. Solo lo aprobado suma en los indicadores.');
 
 function MovementModal({ investment, allowedInvestorIds = [], type, onClose, onSaved }) {
-  const { user, investors, settings } = useSession();
+  const { user, investors, settings, isAdmin } = useSession();
   const [run, busy] = useAction();
   const [form, setForm] = useState({ partner_id: user.id, amount: null, date: todayKey(), message: '', reference: '', fx_rate: settings.fx_usd_crc ?? '' });
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
-  const self = form.partner_id === user.id;
-  const partner = investors.find((p) => p.id === form.partner_id);
-  const confirmer = confirmerFor(partner, self);
   // Socios y admin primero; los inversionistas en su propio grupo del selector.
   const team = investors.filter((p) => !isInvestorRole(p));
   const outside = investors.filter((p) => isInvestorRole(p) && (type !== 'aporte' || allowedInvestorIds.includes(p.id)));
@@ -50,7 +40,7 @@ function MovementModal({ investment, allowedInvestorIds = [], type, onClose, onS
     if (!validPartner || busy) return;
     const body = { type, partner_id: form.partner_id, amount: form.amount, date: form.date, message: form.message, reference: form.reference || null };
     if (investment.currency === 'USD' && String(form.fx_rate ?? '').trim()) body.fx_rate = Number(String(form.fx_rate).replace(',', '.'));
-    const res = await run(() => api(`/api/investments/${investment.id}/movements`, { method: 'POST', body }), { success: `Registrado. Queda por confirmar por ${confirmer.name}.` });
+    const res = await run(() => api(`/api/investments/${investment.id}/movements`, { method: 'POST', body }), { success: isAdmin ? 'Registrado y aprobado.' : 'Registrado. Queda por aprobar por la administración.' });
     if (res) { onSaved(); onClose(); }
   }
 
@@ -82,7 +72,7 @@ function MovementModal({ investment, allowedInvestorIds = [], type, onClose, onS
         </Field>
       </form>
       {type === 'aporte' && <p className="mt-4 rounded-xl bg-surface-2 px-3 py-2.5 text-xs leading-relaxed text-muted">{outside.length ? 'Se muestran los inversionistas habilitados para esta inversión. Los socios y la administración tienen acceso a todas.' : 'Esta inversión todavía no tiene inversionistas habilitados. Los socios y la administración pueden registrar sus aportes; el administrador gestiona los demás permisos desde Acceso de inversionistas.'}</p>}
-      <p className="mt-4 flex items-start gap-2 rounded-xl bg-surface-2 px-3 py-2.5 text-xs text-muted"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /><span>Doble control: {confirmer.hint} Solo lo confirmado suma en los indicadores.</span></p>
+      <p className="mt-4 flex items-start gap-2 rounded-xl bg-surface-2 px-3 py-2.5 text-xs text-muted"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /><span>{approvalNote(isAdmin)}</span></p>
     </Modal>
   );
 }
@@ -94,7 +84,7 @@ function useInvestorIds() {
 }
 
 function DistributeModal({ investment, metrics, onClose, onSaved }) {
-  const { settings } = useSession();
+  const { settings, isAdmin } = useSession();
   const investorIds = useInvestorIds();
   const [run, busy] = useAction();
   const [amount, setAmount] = useState(null);
@@ -109,7 +99,7 @@ function DistributeModal({ investment, metrics, onClose, onSaved }) {
     e.preventDefault();
     const body = { amount, date, message, reference: reference || null };
     if (investment.currency === 'USD' && String(fx ?? '').trim()) body.fx_rate = Number(String(fx).replace(',', '.'));
-    const res = await run(() => api(`/api/investments/${investment.id}/distribute`, { method: 'POST', body }), { success: 'Retorno repartido. Cada socio o inversionista confirma su parte.' });
+    const res = await run(() => api(`/api/investments/${investment.id}/distribute`, { method: 'POST', body }), { success: isAdmin ? 'Retorno repartido y aprobado.' : 'Retorno repartido. Queda por aprobar por la administración.' });
     if (res) { onSaved(); onClose(); }
   }
 
@@ -122,7 +112,7 @@ function DistributeModal({ investment, metrics, onClose, onSaved }) {
           <Field label="Fecha">{(id) => <input id={id} type="date" className="input" max={todayKey()} value={date} onChange={(e) => setDate(e.target.value)} />}</Field>
           {investment.currency === 'USD' && <Field label="Tipo de cambio (₡ por $)">{(id) => <input id={id} className="input tabular" inputMode="decimal" value={fx} onChange={(e) => setFx(e.target.value)} />}</Field>}
           <Field label="Referencia" className={investment.currency === 'USD' ? '' : 'sm:col-span-2'}>{(id) => <input id={id} className="input" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Opcional" />}</Field>
-          <Field label="Mensaje para los socios e inversionistas" className="sm:col-span-2" hint="Cada persona recibe este mensaje con su parte y la confirma al recibir la plata (los inversionistas, desde su portal).">
+          <Field label="Mensaje para los socios e inversionistas" className="sm:col-span-2" hint={`Cada persona recibe este mensaje con su parte. ${approvalNote(isAdmin)}`}>
             {(id) => <textarea id={id} className="input" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Ej.: Retorno de octubre: 14 barberías activas." />}
           </Field>
           <div className="sm:col-span-2">
@@ -240,11 +230,11 @@ export default function InvestmentDetail({ params }) {
       </header>
 
       <section className="stagger grid grid-cols-2 gap-3 lg:grid-cols-5" aria-label="Indicadores">
-        <Stat label="Aportado" value={formatMoney(m.contributed, cur, { compact: cur === 'CRC' })} icon={ArrowDownLeft} tone="blue" hint={inv.target_amount ? `${formatPercent(m.target_progress, 0)} de la meta ${formatMoney(inv.target_amount, cur, { compact: true })}` : 'Confirmado'} />
+        <Stat label="Aportado" value={formatMoney(m.contributed, cur, { compact: cur === 'CRC' })} icon={ArrowDownLeft} tone="blue" hint={inv.target_amount ? `${formatPercent(m.target_progress, 0)} de la meta ${formatMoney(inv.target_amount, cur, { compact: true })}` : 'Aprobado'} />
         <Stat label="Retornado" value={formatMoney(m.returned, cur, { compact: cur === 'CRC' })} icon={ArrowUpRight} tone="teal" hint={`Recuperado ${formatPercent(m.payback, 0)}`} />
         <Stat label="Neto" value={formatMoney(m.net, cur, { compact: cur === 'CRC' })} icon={Scale} tone={m.net >= 0 ? 'teal' : 'amber'} hint={cur === 'USD' ? `≈ ${formatMoney(m.net_crc, 'CRC', { compact: true })}` : m.net >= 0 ? 'En ganancia' : 'Aún por recuperar'} />
         <Stat label="TIR anual" value={formatPercent(m.irr, 1)} icon={Percent} tone="slate" hint={m.irr == null ? `Se calcula con más retornos · MOIC ${formatMultiple(m.moic)}` : `${inv.expected_return_pct != null ? `Esperado ${inv.expected_return_pct} % · ` : ''}MOIC ${formatMultiple(m.moic)}`} />
-        <Stat label="En tránsito" value={m.pendingCount} icon={Hourglass} tone={m.pendingCount ? 'amber' : 'slate'} className="col-span-2 lg:col-span-1" hint={m.pendingCount ? `${formatMoney(m.pendingContributions, cur, { compact: true })} aportes · ${formatMoney(m.pendingReturns, cur, { compact: true })} retornos` : 'Todo confirmado'} />
+        <Stat label="Por aprobar" value={m.pendingCount} icon={Hourglass} tone={m.pendingCount ? 'amber' : 'slate'} className="col-span-2 lg:col-span-1" hint={m.pendingCount ? `${formatMoney(m.pendingContributions, cur, { compact: true })} aportes · ${formatMoney(m.pendingReturns, cur, { compact: true })} retornos` : 'Todo aprobado'} />
       </section>
 
       {inv.target_amount ? (
@@ -262,16 +252,16 @@ export default function InvestmentDetail({ params }) {
 
       <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
         <section aria-labelledby="ledger-title" className="min-w-0">
-          <SectionHead id="ledger-title" icon={BookOpen} tone="blue" title="Libro de movimientos" hint="Cada aporte o retorno lleva su mensaje y la confirmación de quien recibe." className="investment-ledger-heading flex-wrap"
+          <SectionHead id="ledger-title" icon={BookOpen} tone="blue" title="Libro de movimientos" hint="Cada aporte o retorno lleva su mensaje. La administración lo aprueba." className="investment-ledger-heading flex-wrap"
             action={<Tabs className="investment-ledger-tabs" value={tab} onChange={setTab} tabs={[
               { value: 'todos', label: 'Todos', count: data.movements.length },
-              { value: 'pendientes', label: 'Abiertos', count: pendingN },
+              { value: 'pendientes', label: 'Por aprobar', count: pendingN },
               { value: 'aporte', label: 'Aportes' },
               { value: 'retorno', label: 'Retornos' },
             ]} />} />
           {movements.length === 0 ? (
             <EmptyState icon={BookOpen} tone="blue" title="Sin movimientos en esta vista" action={!closed && <button type="button" className="btn btn-primary" onClick={() => setModal('aporte')}><ArrowDownLeft className="h-4 w-4" />Registrar aporte</button>}>
-              Cada aporte o retorno lleva un mensaje y lo confirma quien recibe la plata.
+              Cada aporte o retorno lleva un mensaje y lo aprueba la administración.
             </EmptyState>
           ) : (
             <>

@@ -25,7 +25,7 @@ const MOBILE_NAV = [...NAV, { to: `${HOME}/cuenta`, label: 'Cuenta', icon: UserR
 
 const isActive = (n, path) => (n.match ? n.match(path) : path === n.to || path.startsWith(`${n.to}/`));
 const countText = (n) => (n > 99 ? '99+' : String(n));
-const COUNT_HINT = { pending: 'por confirmar', unread: 'sin leer' };
+const COUNT_HINT = { pending: 'por aprobar', unread: 'sin leer' };
 
 function Count({ n, tone = 'brand', className }) {
   if (!n) return null;
@@ -37,7 +37,7 @@ function Count({ n, tone = 'brand', className }) {
   );
 }
 
-/** Contadores de la barra: movimientos que esperan tu confirmación y avisos sin leer. */
+/** Contadores de la barra: movimientos por aprobar (solo la administración aprueba) y avisos sin leer. */
 function useCounts() {
   const { pending, unread } = useSession();
   return { pending: pending ?? 0, unread: unread ?? 0 };

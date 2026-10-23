@@ -63,7 +63,7 @@ function SectionTitle({ number, title, hint, children, id }) {
 }
 
 /** All figures are confirmed ledger amounts; net is explicitly returns minus contributions. */
-function PortfolioHero({ pf, myPending }) {
+function PortfolioHero({ pf }) {
   const payback = pf.contributed_crc ? pf.returned_crc / pf.contributed_crc : 0;
   const recovery = Math.min(100, Math.max(0, payback * 100));
   return <section className="investment-overview" aria-label="Resumen del portafolio">
@@ -85,10 +85,10 @@ function PortfolioHero({ pf, myPending }) {
       </div>
     </div>
     <div className="investment-overview-side">
-      <div className="investment-return-panel"><div><span className="investment-eyebrow">LO QUE HA VUELTO</span><ArrowUpRight size={21} /></div><p>{capital(pf.returned_crc)}</p><span>Retornado al equipo, con confirmación.</span><div className="investment-return-footer"><span>Múltiplo (MOIC)</span><strong>{formatMultiple(pf.moic)}</strong></div></div>
+      <div className="investment-return-panel"><div><span className="investment-eyebrow">LO QUE HA VUELTO</span><ArrowUpRight size={21} /></div><p>{capital(pf.returned_crc)}</p><span>Retornado al equipo, ya aprobado.</span><div className="investment-return-footer"><span>Múltiplo (MOIC)</span><strong>{formatMultiple(pf.moic)}</strong></div></div>
       <div className="investment-net-panel"><div><span className="investment-eyebrow">NETO DEL PORTAFOLIO</span><CircleDot size={16} /></div><p>{capital(pf.net_crc)}</p><span>Retornos menos aportes confirmados.</span></div>
     </div>
-    <div className="investment-overview-foot"><span><ShieldCheck size={15} />Montos consolidados en colones.</span><span><i />{pf.active_count} {pf.active_count === 1 ? 'inversión activa' : 'inversiones activas'}</span><Link to="/buzon"><Hourglass size={14} />{pf.pending_count} por confirmar{myPending > 0 ? ` · ${myPending} a tu nombre` : ''}<ArrowUpRight size={14} /></Link></div>
+    <div className="investment-overview-foot"><span><ShieldCheck size={15} />Montos consolidados en colones.</span><span><i />{pf.active_count} {pf.active_count === 1 ? 'inversión activa' : 'inversiones activas'}</span><Link to="/buzon"><Hourglass size={14} />{pf.pending_count} por aprobar<ArrowUpRight size={14} /></Link></div>
   </section>;
 }
 
@@ -156,8 +156,8 @@ function InvestmentCard({ investment: i, index }) {
       <dl className="investment-card-amounts"><div><dt>Capital aportado</dt><dd>{formatMoney(m.contributed, i.currency, { compact: true })}</dd></div><div><dt>Retornado</dt><dd>{formatMoney(m.returned, i.currency, { compact: true })}</dd></div></dl>
       <div className="investment-card-recovery"><div><span>Recuperación del capital</span><strong>{formatPercent(m.payback, 0)}</strong></div><ProgressBar value={m.payback} tone={m.payback >= 1 ? 'teal' : 'brand'} label={`Recuperación del capital de ${i.name}`} /></div>
       <div className="investment-card-multiple"><span>Múltiplo <strong>{formatMultiple(m.moic)}</strong></span>{i.target_amount ? <span>Meta {formatMoney(i.target_amount, i.currency, { compact: true })} · {formatPercent(m.target_progress, 0)} aportado</span> : <span>Sin meta de capital</span>}</div>
-      {(m.pendingCount > 0 || m.objectedCount > 0) && <div className="investment-card-notices">{m.pendingCount > 0 && <Badge tone="amber"><Hourglass size={12} />{m.pendingCount} por confirmar</Badge>}{m.objectedCount > 0 && <Badge tone="red">{m.objectedCount} {m.objectedCount === 1 ? 'objetado' : 'objetados'}</Badge>}</div>}
-      <div className="investment-card-footer"><span>Solo movimientos confirmados</span><strong>Ver detalle<ArrowRight size={14} /></strong></div>
+      {(m.pendingCount > 0 || m.objectedCount > 0) && <div className="investment-card-notices">{m.pendingCount > 0 && <Badge tone="amber"><Hourglass size={12} />{m.pendingCount} por aprobar</Badge>}{m.objectedCount > 0 && <Badge tone="red">{m.objectedCount} {m.objectedCount === 1 ? 'rechazado' : 'rechazados'}</Badge>}</div>}
+      <div className="investment-card-footer"><span>Solo movimientos aprobados</span><strong>Ver detalle<ArrowRight size={14} /></strong></div>
     </div>
   </Link>;
 }
@@ -176,8 +176,8 @@ export default function Investments() {
   return <div className="investments-studio">
     <header className="investment-intro"><div><p className="investment-eyebrow"><span />SOCIOS E INVERSIONISTAS</p><h1>Inversiones<span>Lo que construimos juntos.</span></h1><p>Un lugar para ver cada aporte, cada retorno<br className="hidden sm:block" /> y las personas que hacen posible lo que sigue.</p></div><div className="investment-intro-actions"><a href="/api/investments/export.csv" download className="investment-export"><Download size={16} />Excel</a><button type="button" className="investment-create" onClick={() => setCreating(true)}><Plus size={17} />Nueva inversión<ArrowUpRight size={17} /></button></div></header>
     {error && <p className="investment-load-error" role="alert">No pudimos actualizar el portafolio. Se muestra la última información disponible.<button type="button" onClick={reload}>Reintentar</button></p>}
-    <PortfolioHero pf={pf} myPending={myPending} />
-    {myPending > 0 && <Link to="/buzon" className="investment-pending"><span><HandCoins size={22} /></span><div><strong>{myPending} {myPending === 1 ? 'movimiento espera' : 'movimientos esperan'} tu confirmación.</strong><p>Respondé con tu mensaje de vuelta desde el buzón.</p></div><ArrowUpRight size={19} /></Link>}
+    <PortfolioHero pf={pf} />
+    {myPending > 0 && <Link to="/buzon" className="investment-pending"><span><HandCoins size={22} /></span><div><strong>{myPending} {myPending === 1 ? 'movimiento espera' : 'movimientos esperan'} tu aprobación.</strong><p>Aprobalos o rechazalos desde el buzón, con un toque.</p></div><ArrowUpRight size={19} /></Link>}
     <PartnerAllocation partners={partners} portfolio={pf} userId={user.id} />
     <section className="investment-history" aria-labelledby="cf-title"><SectionTitle number="02" id="cf-title" title="Capital acumulado del portafolio" hint="Equivalente en colones con el tipo de cambio de cada movimiento."><span className="investment-section-tag"><ChartLine size={14} />Historia confirmada</span></SectionTitle><div className="investment-chart"><CashflowChart series={pf.series} currency="CRC" height={260} /></div></section>
     <section className="investment-portfolio" aria-labelledby="list-title"><SectionTitle number="03" id="list-title" title="Nuestras inversiones" hint={filter === 'vigentes' ? 'Activas y propuestas. Cada una, con su siguiente paso.' : filter === 'cerradas' ? 'Recuperadas, cerradas o en pérdida.' : `${investments.length} inversiones en el portafolio.`}><Tabs value={filter} onChange={setFilter} tabs={[{ value: 'vigentes', label: 'Vigentes', count: counts.vigentes }, { value: 'cerradas', label: 'Cerradas', count: counts.cerradas }, { value: 'todas', label: 'Todas', count: investments.length }]} /></SectionTitle>

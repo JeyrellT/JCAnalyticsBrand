@@ -2,15 +2,15 @@
 import { useId, useRef, useState } from 'react';
 import {
   ArrowDown, ArrowRight, ArrowUpRight, ChartLine, Check, ChevronLeft, ChevronRight,
-  Compass, Download, HandCoins, History, Hourglass, Layers, ReceiptText, ShieldCheck, Sparkles,
+  Compass, Download, History, Hourglass, Layers, ReceiptText, ShieldCheck, Sparkles,
 } from 'lucide-react';
-import { useSession, useResource } from '../../lib/session.jsx';
+import { useResource } from '../../lib/session.jsx';
 import { Link } from '../../lib/router.jsx';
 import { PageLoader, EmptyState, Badge, cx } from '../../components/ui.jsx';
 import CashflowChart from '../../components/CashflowChart.jsx';
 import { formatMoney, formatPercent, formatMultiple, formatDayLong, formatDate, todayKey } from '../../lib/format.js';
 import {
-  MovementItem, MovementRow, ContactCard, TrustNote, InvestmentStatusBadge,
+  MovementRow, ContactCard, TrustNote, InvestmentStatusBadge,
   greeting, firstName, plural, chartSeries, netReading, movementLabel,
 } from '../components.jsx';
 import InvestorPlaybook from '../InvestorPlaybook.jsx';
@@ -147,11 +147,9 @@ function RecentJourney({ movements }) {
 }
 
 export default function InvestorHome() {
-  const { refresh } = useSession();
   const { data, error, reload } = useResource('/api/investor/overview');
   if (!data) return <PageLoader error={error} onRetry={reload} />;
-  const { me, portfolio: pf, investments, available_investments: availableInvestments = [], to_confirm: toConfirm, recent, series, contacts } = data;
-  const changed = () => { reload(); refresh(); };
+  const { me, portfolio: pf, investments, available_investments: availableInvestments = [], recent, series, contacts } = data;
   const payback = pf.contributed_crc ? pf.returned_crc / pf.contributed_crc : 0;
   const net = netReading(pf.net_crc, pf.contributed_crc);
   const hasUsd = investments.some((investment) => investment.currency === 'USD');
@@ -161,7 +159,7 @@ export default function InvestorHome() {
     {error && <div className="ih-load-error" role="alert">No pudimos actualizar tu espacio. Mostramos la última información disponible.<button type="button" onClick={reload}>Reintentar</button></div>}
     <section className="ih-hero" aria-label="Tu espacio para explorar">
       <div className="ih-hero-copy"><span className="ih-hero-label">BIENVENIDO A TU RINCÓN</span><h2>Las buenas ideas<br />también se <em>comparten.</em></h2><p>Acá podés acercarte a tus inversiones, entender cada movimiento y seguir tu historia con JC Analytics. Sin prisa. A tu manera.</p><button type="button" className="ih-primary" onClick={() => jumpTo('investments-title')}>Explorar mis inversiones<Compass size={17} /></button><span className="ih-hero-foot"><ShieldCheck size={13} />Tu cuenta es privada. Tu curiosidad, bienvenida.</span></div>
-      <div className="ih-capital-card"><ClubSculpture /><div className="ih-capital-top"><span><Sparkles size={13} />A TU NOMBRE</span><span>JC / CLUB</span></div><div className="ih-capital-value"><span>Tu capital aportado</span><strong data-portfolio-capital>{formatMoney(pf.contributed_crc, 'CRC')}</strong><span>Confirmado por las dos partes.</span></div><div className="ih-capital-recovery"><div><span>Recibido / aportado</span><strong>{pf.contributed_crc ? formatPercent(payback, 0) : 'Sin aportes confirmados'}</strong></div><div className="ih-recovery-track" role="progressbar" aria-label="Dinero recibido respecto a lo aportado" aria-valuenow={Math.round(Math.max(0, Math.min(1, payback)) * 100)} aria-valuemin={0} aria-valuemax={100}><span style={{ width: `${Math.max(0, Math.min(1, payback)) * 100}%` }} /></div></div></div>
+      <div className="ih-capital-card"><ClubSculpture /><div className="ih-capital-top"><span><Sparkles size={13} />A TU NOMBRE</span><span>JC / CLUB</span></div><div className="ih-capital-value"><span>Tu capital aportado</span><strong data-portfolio-capital>{formatMoney(pf.contributed_crc, 'CRC')}</strong><span>Aprobado por JC Analytics.</span></div><div className="ih-capital-recovery"><div><span>Recibido / aportado</span><strong>{pf.contributed_crc ? formatPercent(payback, 0) : 'Sin aportes confirmados'}</strong></div><div className="ih-recovery-track" role="progressbar" aria-label="Dinero recibido respecto a lo aportado" aria-valuenow={Math.round(Math.max(0, Math.min(1, payback)) * 100)} aria-valuemin={0} aria-valuemax={100}><span style={{ width: `${Math.max(0, Math.min(1, payback)) * 100}%` }} /></div></div></div>
     </section>
     <dl className="ih-metrics">
       <div><dt>Retornos recibidos</dt><dd data-portfolio-returned>{formatMoney(pf.returned_crc, 'CRC')}</dd><span>{pf.returned_crc ? 'Lo que ya volvió a vos.' : 'Todavía sin retornos recibidos.'}</span></div>
@@ -171,7 +169,7 @@ export default function InvestorHome() {
     </dl>
     <ReturnBreakdown metrics={pf} portfolio />
     {hasUsd && <p className="ih-currency-note">Resumen en colones. Los dólares se convierten con el tipo de cambio guardado en cada movimiento.</p>}
-    {toConfirm.length > 0 ? <section id="por-confirmar" className="ih-confirm" aria-labelledby="confirm-title"><div className="ih-confirm-head"><span className="ih-confirm-icon"><HandCoins size={20} /></span><div><h2 id="confirm-title">Por confirmar</h2><p>Estos movimientos están a tu nombre. Revisalos y contanos si todo coincide.</p></div><span className="ih-confirm-count">{toConfirm.length}</span></div><ul className="divide-y divide-line">{toConfirm.map((movement, index) => <li key={movement.id}><MovementItem m={movement} showInvestment defaultOpen={index < 2} onChanged={changed} investmentLink /></li>)}</ul></section> : <div className="ih-account-status"><span className="ih-status-icon">{pf.pending_count ? <Hourglass size={18} /> : <Check size={18} />}</span><p>{pf.pending_count ? `${plural(pf.pending_count, 'movimiento espera', 'movimientos esperan')} la verificación de JC Analytics.` : investments.length ? 'No tenés movimientos pendientes por confirmar.' : 'Cuando se registre tu primer movimiento, te avisamos para que lo revisés.'}</p><Link to="/inversionista/movimientos">Ver movimientos<ArrowRight size={14} /></Link></div>}
+    <div className="ih-account-status"><span className="ih-status-icon">{pf.pending_count ? <Hourglass size={18} /> : <Check size={18} />}</span><p>{pf.pending_count ? `${plural(pf.pending_count, 'movimiento espera', 'movimientos esperan')} la aprobación de JC Analytics.` : investments.length ? 'Todos tus movimientos están aprobados.' : 'Cuando se registre tu primer movimiento, te avisamos.'}</p><Link to="/inversionista/movimientos">Ver movimientos<ArrowRight size={14} /></Link></div>
 
     {availableInvestments.length > 0 && <button className="ih-discover-link" type="button" onClick={() => jumpTo('available-title')}><Compass size={16} aria-hidden="true" />{plural(availableInvestments.length, 'nueva idea disponible', 'nuevas ideas disponibles')} para vos<ArrowDown size={15} aria-hidden="true" /></button>}
     <InvestorOpportunities investments={availableInvestments} />
@@ -179,7 +177,7 @@ export default function InvestorHome() {
     <InvestorPlaybook portfolio={pf} userId={me.id} />
 
     <div className="ih-history-grid">
-      <section className="ih-evolution" aria-labelledby="chart-title"><div className="ih-section-head"><div><span className="ih-section-number">02 / MIRAR EN PERSPECTIVA</span><h2 id="chart-title">Evolución de tu capital</h2><p>Lo aportado y lo retornado, a lo largo de tu historia.</p></div><ChartLine size={21} /></div><div className="ih-chart"><CashflowChart series={chartSeries(series)} currency="CRC" height={255} /></div><p className="ih-chart-note">Acumulado en colones · solo movimientos confirmados.</p></section>
+      <section className="ih-evolution" aria-labelledby="chart-title"><div className="ih-section-head"><div><span className="ih-section-number">02 / MIRAR EN PERSPECTIVA</span><h2 id="chart-title">Evolución de tu capital</h2><p>Lo aportado y lo retornado, a lo largo de tu historia.</p></div><ChartLine size={21} /></div><div className="ih-chart"><CashflowChart series={chartSeries(series)} currency="CRC" height={255} /></div><p className="ih-chart-note">Acumulado en colones · solo movimientos aprobados.</p></section>
       <RecentJourney movements={recent} />
     </div>
     <div className="ih-support-grid"><ContactCard contacts={contacts} className="ih-contact" /><section className="ih-statement" aria-labelledby="statement-title"><span className="ih-statement-icon"><ReceiptText size={25} strokeWidth={1.3} /></span><div><span className="ih-section-number">TU HISTORIA, A MANO</span><h2 id="statement-title">Estado de cuenta</h2><p>Todos tus movimientos en un archivo, cuando lo necesités.</p></div><a href="/api/investor/statement.csv" download className="ih-statement-download"><Download size={15} />Descargar (Excel)<ArrowUpRight size={15} /></a></section></div>

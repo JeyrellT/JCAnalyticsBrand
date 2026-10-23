@@ -120,16 +120,9 @@ export function createHelpers(ctx) {
   };
 }
 
-/** Movimientos que este usuario debe confirmar (regla de doble control). */
+/** Movimientos que este usuario debe aprobar: toda la plata la aprueba la administración. */
 export function pendingForUser(ctx, user) {
-  // Un inversionista confirma solo los movimientos a su nombre que registró otra persona.
-  if (user.role === 'inversionista') {
-    return ctx.db.prepare(`SELECT m.* FROM movements m WHERE m.status = 'pendiente' AND m.partner_id = ? AND m.created_by <> ?
-      ORDER BY m.created_at`).all(user.id, user.id);
-  }
   // Misma regla que canResolve() en routes/investments.mjs.
-  return ctx.db.prepare(`SELECT m.* FROM movements m JOIN users p ON p.id = m.partner_id
-    WHERE m.status = 'pendiente' AND m.created_by <> ?
-      AND (m.created_by = m.partner_id OR m.partner_id = ? OR p.active = 0 OR p.role NOT IN ('admin','socio','inversionista'))
-    ORDER BY m.created_at`).all(user.id, user.id);
+  if (user.role !== 'admin') return [];
+  return ctx.db.prepare("SELECT m.* FROM movements m WHERE m.status = 'pendiente' ORDER BY m.created_at").all();
 }

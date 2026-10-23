@@ -1,5 +1,5 @@
-// Avisos del inversionista: lo que le pide una confirmación, las respuestas de JC Analytics
-// y los mensajes sobre sus movimientos. Tocar un aviso lo marca como leído y lleva al movimiento.
+// Avisos del inversionista: los movimientos que JC Analytics registra o aprueba a su nombre
+// y los mensajes sobre ellos. Tocar un aviso lo marca como leído y lleva al movimiento.
 import { useState } from 'react';
 import { Bell, HandCoins, MessageSquare, CircleCheck, CircleAlert, TrendingUp, CheckCheck, BellOff } from 'lucide-react';
 import { useSession, useResource } from '../../lib/session.jsx';
@@ -14,10 +14,10 @@ function metaOf(n) {
   const title = n.title ?? '';
   if (n.kind === 'message') return { icon: MessageSquare, tone: 'blue', label: 'Mensaje' };
   if (n.kind === 'movement') {
-    // Al resolverse el movimiento, el servidor marca leído el pedido de confirmación.
+    // Pedidos "Confirmá…" de antes de que la administración aprobara todo; al resolverse quedan leídos.
     if (/^Confirmá/.test(title)) return n.read_at ? { icon: HandCoins, tone: 'slate', label: 'Pedido de confirmación' } : { icon: HandCoins, tone: 'amber', label: 'Por confirmar' };
-    if (/objet/i.test(title)) return { icon: CircleAlert, tone: 'red', label: 'Objeción' };
-    if (/confirm/i.test(title)) return { icon: CircleCheck, tone: 'teal', label: 'Confirmación' };
+    if (/rechaz|objet/i.test(title)) return { icon: CircleAlert, tone: 'red', label: 'Rechazo' };
+    if (/aprob|confirm/i.test(title)) return { icon: CircleCheck, tone: 'teal', label: 'Aprobación' };
     return { icon: HandCoins, tone: 'blue', label: 'Movimiento' };
   }
   if (n.kind === 'investment') return { icon: TrendingUp, tone: 'teal', label: 'Inversión' };
@@ -107,7 +107,7 @@ export default function InvestorNotifications() {
   return (
     <div className="max-w-4xl space-y-6">
       <PageHeader eyebrow="Novedades de tu inversión" title="Avisos" icon={Bell} tone="amber"
-        subtitle="Confirmaciones pendientes, respuestas de JC Analytics y mensajes sobre tus movimientos."
+        subtitle="Movimientos registrados o aprobados por JC Analytics y mensajes sobre ellos."
         actions={unread > 0 && (
           <button type="button" className="btn btn-outline tap lg:min-h-10" onClick={markAll} disabled={busy}>
             <CheckCheck className="h-4 w-4" aria-hidden="true" />Marcar todo como leído
@@ -123,7 +123,7 @@ export default function InvestorNotifications() {
 
       {notifications.length === 0 ? (
         <EmptyState icon={BellOff} tone="amber" title="Sin avisos por ahora">
-          Te avisamos aquí cuando JC Analytics registre un movimiento a tu nombre, confirme un aporte o te escriba.
+          Te avisamos aquí cuando JC Analytics registre un movimiento a tu nombre, apruebe un aporte o te escriba.
         </EmptyState>
       ) : list.length === 0 ? (
         <EmptyState icon={CheckCheck} tone="teal" title="Estás al día">No tenés avisos sin leer.</EmptyState>

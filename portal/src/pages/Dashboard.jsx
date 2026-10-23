@@ -578,7 +578,7 @@ export default function Dashboard() {
         </dl>
         <div className="capital-foot">
           <span>
-            {investments.my_pending_count ? `${investments.my_pending_count} por confirmar` : 'Sin confirmaciones pendientes'}
+            {investments.my_pending_count ? `${investments.my_pending_count} por aprobar` : 'Sin aprobaciones pendientes'}
           </span>
           <Link to={investments.my_pending_count ? '/buzon' : '/inversiones'}>
             {investments.my_pending_count ? 'Revisar' : 'Ver portafolio'}

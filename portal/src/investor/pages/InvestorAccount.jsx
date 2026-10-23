@@ -54,7 +54,7 @@ function ProfileForm() {
 
 const JC_SEES = [
   'Tus datos de contacto: nombre, correo y teléfono.',
-  'Tus aportes, retornos, mensajes y cuándo confirmaste u objetaste cada uno.',
+  'Tus aportes, retornos, mensajes y cuándo se aprobó o rechazó cada uno.',
   'Un registro de seguridad de tus ingresos y descargas del estado de cuenta.',
 ];
 const OTHERS_DONT = [

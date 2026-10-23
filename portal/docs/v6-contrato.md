@@ -50,13 +50,14 @@ La contraseña sigue la política de siempre: 10 o más caracteres, letras y nú
 - No aparece en `/api/people`.
 - No recibe el resumen "Mi día".
 
-**Doble control:**
-- Confirma u objeta **solo** los movimientos a su nombre que registró otra persona.
-- Los aportes que avisa él mismo los confirma un socio o un admin.
-- Nunca confirma dinero de otros.
+**Aprobación (actualizado):**
+- Toda la plata la aprueba la administración (rol admin). El inversionista no confirma ni objeta nada.
+- Lo que registra un admin a su nombre llega aprobado, con aviso ("Aporte registrado…", "Retorno registrado…").
+- Los aportes que avisa él mismo quedan por aprobar hasta que un admin los revise; mientras tanto puede retirarlos.
+- Si algo no coincide, lo escribe en el hilo del movimiento.
 
 **Avisos:**
-- Recibe los dirigidos a él: "Confirmá un aporte…", confirmaciones, objeciones y mensajes.
+- Recibe los dirigidos a él: movimientos registrados a su nombre, aprobaciones, rechazos y mensajes.
 - No recibe los generales de inversiones (nueva inversión, notas internas, cambios de estado).
 
 **Del lado del equipo:**

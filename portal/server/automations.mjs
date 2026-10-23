@@ -16,7 +16,7 @@
 //    escriben en el historial.
 // ============================================================================
 
-import { AUTOMATIONS, SLA_STATUSES, MOVEMENT_TYPE_LABEL, WEEKDAYS, canInvest } from '../shared/catalog.js';
+import { AUTOMATIONS, SLA_STATUSES, MOVEMENT_TYPE_LABEL, WEEKDAYS } from '../shared/catalog.js';
 import { formatMoney } from '../shared/finance.js';
 import { HttpError, invalid, has } from './http.mjs';
 import { transaction } from './schema.mjs';
@@ -187,10 +187,11 @@ export function createAutomationEngine(ctx) {
       WHERE assignee_id = ? AND status <> 'hecho' AND due_date IS NOT NULL AND due_date <= ?`).get(date, user.id, date);
     const tareas = t.total ?? 0;
     const vencidas = t.overdue ?? 0;
-    const investor = canInvest(user);
-    const pendientes = investor ? pendingForUser(ctx, user).length : 0;
+    // Solo la administración aprueba la plata: a los demás no se les cuenta lo pendiente.
+    const approver = user.role === 'admin';
+    const pendientes = approver ? pendingForUser(ctx, user).length : 0;
     const text = `Hoy: ${plural(citas, 'cita', 'citas')} · ${plural(tareas, 'tarea', 'tareas')}`
-      + `${vencidas ? ` (${plural(vencidas, 'vencida', 'vencidas')})` : ''}${investor ? ` · ${pendientes} por confirmar` : ''}`;
+      + `${vencidas ? ` (${plural(vencidas, 'vencida', 'vencidas')})` : ''}${approver ? ` · ${pendientes} por aprobar` : ''}`;
     return { total: citas + tareas + pendientes, text };
   }
 
@@ -297,9 +298,9 @@ export function createAutomationEngine(ctx) {
       }
       for (const { m, users } of byMovement.values()) {
         const investment = db.prepare('SELECT name FROM investments WHERE id = ?').get(m.investment_id);
-        t.add(emit('dinero_pendiente', `money:${m.id}:${clock.date}`, `Movimiento #${m.id} sin confirmar hace más de 24 h`, users, {
-          kind: 'movement', title: `Por confirmar: ${MOVEMENT_TYPE_LABEL[m.type] ?? 'Movimiento'} de ${formatMoney(m.amount, m.currency)}`,
-          body: `${investment?.name ?? 'Inversión'} · espera tu confirmación desde ${fmtDay(m.created_at)}`, link: `/inversiones/${m.investment_id}?mov=${m.id}`,
+        t.add(emit('dinero_pendiente', `money:${m.id}:${clock.date}`, `Movimiento #${m.id} sin aprobar hace más de 24 h`, users, {
+          kind: 'movement', title: `Por aprobar: ${MOVEMENT_TYPE_LABEL[m.type] ?? 'Movimiento'} de ${formatMoney(m.amount, m.currency)}`,
+          body: `${investment?.name ?? 'Inversión'} · espera tu aprobación desde ${fmtDay(m.created_at)}`, link: `/inversiones/${m.investment_id}?mov=${m.id}`,
         }));
       }
       return { summary: t.items ? `${plural(t.items, 'movimiento recordado', 'movimientos recordados')}.` : 'Sin movimientos atrasados.', recipients: t.recipients };

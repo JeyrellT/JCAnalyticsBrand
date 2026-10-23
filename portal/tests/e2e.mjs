@@ -193,21 +193,30 @@ try {
     await shot(page, '10-inversion-detalle');
   });
 
-  await check('buzón: confirmar un aporte con mensaje de vuelta', async () => {
+  await check('buzón: la socia ve lo suyo por aprobar y el admin aprueba un aporte con un toque', async () => {
+    // Catalina (socia) no aprueba plata: solo ve lo que registró y espera a la administración.
     await page.goto(`${base}/buzon`);
-    await page.getByRole('heading', { name: 'Por confirmar' }).waitFor();
-    const card = page.locator('article', { hasText: 'aporte de' }).filter({ hasText: 'Alex Benedict' }).first();
-    await card.getByLabel('Mensaje de vuelta').fill('Recibido en la cuenta de pauta, gracias Alex.');
-    await shot(page, '11-buzon');
-    await card.getByRole('button', { name: 'Confirmar recibido' }).click();
-    await page.getByText('Confirmado. Se envió tu mensaje de vuelta.').waitFor();
-    const pending = await (await page.request.get(`${base}/api/movements/pending`)).json();
+    await page.getByRole('heading', { name: 'Lo que registraste y sigue abierto' }).waitFor();
+    assert.equal(await page.getByRole('heading', { name: 'Por aprobar' }).count(), 0, 'una socia no aprueba plata');
+    assert.equal((await (await page.request.get(`${base}/api/movements/pending`)).json()).to_confirm.length, 0);
+    // Jeyrell (admin) aprueba desde su buzón.
+    const admin = await newPage({ width: 1440, height: 900 });
+    await login(admin, 'jeyrell');
+    await admin.goto(`${base}/buzon`);
+    await admin.getByRole('heading', { name: 'Por aprobar' }).waitFor();
+    const card = admin.locator('article', { hasText: 'aporte de' }).filter({ hasText: 'Alex Benedict' }).first();
+    await shot(admin, '11-buzon');
+    // Un toque, sin abrir la tarjeta.
+    await card.getByRole('button', { name: 'Aprobar', exact: true }).click();
+    await admin.getByText('Aprobado. Ya suma en los indicadores.').waitFor();
+    const pending = await (await admin.request.get(`${base}/api/movements/pending`)).json();
     assert.ok(!pending.to_confirm.some((m) => m.partner_name === 'Alex Benedict' && m.type === 'aporte'));
+    await admin.context().close();
   });
 
   await check('bitácora registra las acciones', async () => {
     await page.goto(`${base}/bitacora`);
-    await page.getByText(/confirmó el aporte/).first().waitFor();
+    await page.getByText(/aprobó el aporte/).first().waitFor();
     await page.getByText(/distribuyó/).first().waitFor();
     await shot(page, '12-bitacora');
   });
@@ -612,30 +621,32 @@ try {
     }
   });
 
-  await check('inversionista: su portal, confirma su aporte y no ve la operación', async () => {
+  await check('inversionista: su portal, su aviso lo aprueba el admin y no ve la operación', async () => {
     const i = await newPage({ width: 1440, height: 900 });
     await i.goto(`${base}/inversionista`);
     await i.getByLabel('Correo').fill('angel@demo.jcanalytic.local');
     await i.getByLabel('Contraseña').fill(DEMO_PASSWORD);
     await i.getByRole('button', { name: 'Entrar' }).click();
-    await i.getByRole('heading', { name: 'Por confirmar' }).waitFor();
     await i.getByText('BarberXCR · capital de crecimiento').first().waitFor();
+    await i.getByText(/esperan? la aprobación de JC Analytics/).waitFor();
     await shot(i, '45-inversionista-inicio');
     // Rutas del equipo: la API responde 403 y la pantalla vuelve a su portal.
     assert.equal((await i.request.get(`${base}/api/projects`)).status(), 403);
     assert.equal((await i.request.get(`${base}/api/investments`)).status(), 403);
     await i.goto(`${base}/proyectos`);
     await i.waitForURL(/\/inversionista$/);
-    // Confirma el aporte que JC registró a su nombre.
-    await i.getByRole('heading', { name: 'Por confirmar' }).waitFor();
-    await i.getByRole('button', { name: 'Confirmar', exact: true }).first().click();
-    // Doble verificación: el diálogo muestra el monto antes de confirmar.
-    await i.getByRole('dialog', { name: /Confirmás/ }).getByRole('button', { name: 'Sí, confirmar' }).click();
-    await i.waitForFunction(async () => {
-      const r = await fetch('/api/investor/overview');
-      return (await r.json()).to_confirm.length === 0;
-    });
-    const overview = await (await i.request.get(`${base}/api/investor/overview`)).json();
+    // Su aviso de aporte no suma hasta que el admin lo aprueba; ella no tiene nada que confirmar.
+    await i.getByText(/esperan? la aprobación de JC Analytics/).waitFor();
+    assert.equal(await i.getByRole('button', { name: 'Confirmar', exact: true }).count(), 0);
+    let overview = await (await i.request.get(`${base}/api/investor/overview`)).json();
+    assert.equal(overview.portfolio.contributed_crc, 500_000_00);
+    const notice = overview.recent.find((m) => m.status === 'pendiente' && m.type === 'aporte');
+    assert.equal(notice.awaiting, 'JC Analytics');
+    const admin = await newPage({ width: 1440, height: 900 });
+    await login(admin, 'jeyrell');
+    assert.equal((await admin.request.post(`${base}/api/movements/${notice.id}/confirm`, { headers: { 'x-portal-request': '1' }, data: {} })).status(), 200, 'el admin aprueba el aviso');
+    await admin.context().close();
+    overview = await (await i.request.get(`${base}/api/investor/overview`)).json();
     assert.equal(overview.portfolio.contributed_crc, 750_000_00);
     await shot(i, '46-inversionista-confirmado');
     await i.goto(`${base}/inversionista/movimientos`);

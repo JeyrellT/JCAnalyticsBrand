@@ -6,8 +6,8 @@
 //    · SUS movimientos (aportes y retornos) con su conversación;
 //    · los totales de cada inversión (capital, retornos, cuántos participan),
 //      nunca los nombres ni los montos de los otros socios, ni las notas internas.
-//  Confirma o objeta los movimientos a su nombre que registró otra persona y
-//  puede avisar un aporte suyo (lo confirma un socio o admin: doble control).
+//  Puede avisar un aporte suyo y escribir en el hilo de sus movimientos. No
+//  aprueba nada: toda la plata la aprueba la administración (rol admin).
 // ============================================================================
 
 import { INVESTMENT_CATEGORIES, INVESTMENT_STATUS, MOVEMENT_TYPE_LABEL, MOVEMENT_STATUS_META } from '../../shared/catalog.js';
@@ -15,7 +15,6 @@ import { investmentMetrics, cumulativeSeries, xirr, formatMoney, returnBreakdown
 import { fail, invalid, has, text, minorAmount } from '../http.mjs';
 import { transaction } from '../schema.mjs';
 import { publicUser } from '../context.mjs';
-import { pendingForUser } from './common.mjs';
 import { createMoney } from './investments.mjs';
 import { createInvestmentAccess } from '../investment-access.mjs';
 import { createBusinessFinance } from '../finance.mjs';
@@ -38,9 +37,8 @@ export function investorRoutes(route, ctx) {
     ...m,
     amount_crc: crcOf(m),
     messages: messagesOf(m.id),
-    can_resolve: money.canResolve(m, user),
     can_annul: m.status === 'pendiente' && m.created_by === user.id,
-    awaiting: m.status !== 'pendiente' ? null : m.created_by === user.id ? 'JC Analytics' : 'vos',
+    awaiting: m.status === 'pendiente' ? 'JC Analytics' : null,
   });
 
   const myMovements = (user, investmentId = null) => db.prepare(`${MOVEMENT_SELECT} WHERE m.partner_id = ?
@@ -129,7 +127,6 @@ export function investorRoutes(route, ctx) {
       irr: xirr(confirmed.map((m) => ({ date: m.date, amount: (m.type === 'aporte' ? -1 : 1) * (crcOf(m) ?? 0) }))),
       in_transit_crc: pending.reduce((a, m) => a + (m.type === 'aporte' ? -1 : 1) * (crcOf(m) ?? 0), 0),
       pending_count: pending.length,
-      to_confirm_count: pendingForUser(ctx, user).length,
     };
   }
 
@@ -151,7 +148,6 @@ export function investorRoutes(route, ctx) {
       portfolio: portfolio(user, movements),
       investments,
       available_investments: availableInvestments,
-      to_confirm: pendingForUser(ctx, user).map((m) => decorate(db.prepare(`${MOVEMENT_SELECT} WHERE m.id = ?`).get(m.id), user)),
       recent: movements.slice(0, 8).map((m) => decorate(m, user)),
       series: cumulativeSeries(movements, crcOf),
       contacts: contacts(),
@@ -175,16 +171,6 @@ export function investorRoutes(route, ctx) {
   });
 
   // ── Acciones sobre SUS movimientos ────────────────────────────────────────
-  route('POST', '/api/investor/movements/:id/confirm', 'investor', (args) => {
-    myMovement(args.user, args.params.id);
-    return money.resolve(args, 'confirmado');
-  });
-
-  route('POST', '/api/investor/movements/:id/object', 'investor', (args) => {
-    myMovement(args.user, args.params.id);
-    return money.resolve(args, 'objetado');
-  });
-
   route('POST', '/api/investor/movements/:id/messages', 'investor', ({ user, body, params }) => {
     const m = myMovement(user, params.id);
     const bodyText = text(body.body, 'body', { max: 1000, min: 1, required: true });
@@ -198,7 +184,7 @@ export function investorRoutes(route, ctx) {
     return { messages: messagesOf(m.id) };
   });
 
-  /** Aviso de un aporte propio ("envié ₡…"): queda por confirmar por un socio o admin. */
+  /** Aviso de un aporte propio ("envié ₡…"): queda por aprobar por la administración. */
   route('POST', '/api/investor/investments/:id/movements', 'investor', ({ user, body, params }) => {
     const investment = myInvestment(user, params.id);
     requireContributionAccess(investment, user);

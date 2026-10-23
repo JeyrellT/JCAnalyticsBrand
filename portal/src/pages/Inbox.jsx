@@ -1,4 +1,4 @@
-// Buzón: movimientos que esperan mi confirmación (con respuesta en el lugar) y avisos del equipo.
+// Buzón: movimientos que esperan la aprobación del admin (con respuesta en el lugar) y avisos del equipo.
 import { Inbox as InboxIcon, CheckCheck, Bell, Wallet, ListChecks, CalendarDays, FolderKanban, MessageSquare, TrendingUp, HandCoins, Hourglass, Sparkles } from 'lucide-react';
 import { useResource, useSession } from '../lib/session.jsx';
 import { useLimited } from '../components/mobile.jsx';
@@ -11,24 +11,29 @@ import { timeAgo } from '../lib/format.js';
 const ICONS = { movement: Wallet, task: ListChecks, appointment: CalendarDays, project: FolderKanban, comment: MessageSquare, message: MessageSquare, investment: TrendingUp };
 
 function PendingMovements({ onChanged }) {
+  const { isAdmin } = useSession();
   const { data, error, reload } = useResource('/api/movements/pending');
   if (!data) return <PageLoader error={error} onRetry={reload} />;
   const changed = () => { reload(); onChanged(); };
   const n = data.to_confirm.length;
+  if (!isAdmin && data.my_open.length === 0) return null;
   return (
     <div className="min-w-0 space-y-6">
-      <section aria-labelledby="confirm-title">
-        <SectionHead id="confirm-title" icon={HandCoins} tone={n ? 'violet' : 'teal'} title="Por confirmar" hint={n ? 'Esperan tu mensaje de vuelta.' : 'Nada pendiente a tu nombre.'}
-          action={n > 0 && <Badge tone="violet">{n}</Badge>} />
-        {n === 0 ? (
-          <EmptyState icon={Sparkles} tone="teal" title="No hay plata esperando tu confirmación.">Cuando un socio te envíe un aporte o un retorno, aparece aquí para confirmarlo.</EmptyState>
-        ) : (
-          <div className="stagger space-y-3">{data.to_confirm.map((m) => <MovementCard key={m.id} m={m} showInvestment onChanged={changed} />)}</div>
-        )}
-      </section>
+      {/* Solo la administración aprueba la plata: los socios ven lo suyo más abajo. */}
+      {isAdmin && (
+        <section aria-labelledby="confirm-title">
+          <SectionHead id="confirm-title" icon={HandCoins} tone={n ? 'violet' : 'teal'} title="Por aprobar" hint={n ? 'Aportes y retornos que registraron otras personas.' : 'Todo está aprobado.'}
+            action={n > 0 && <Badge tone="violet">{n}</Badge>} />
+          {n === 0 ? (
+            <EmptyState icon={Sparkles} tone="teal" title="No hay plata esperando tu aprobación.">Cuando un socio registre o un inversionista avise un aporte, aparece aquí para aprobarlo.</EmptyState>
+          ) : (
+            <div className="stagger space-y-3">{data.to_confirm.map((m) => <MovementCard key={m.id} m={m} showInvestment onChanged={changed} />)}</div>
+          )}
+        </section>
+      )}
       {data.my_open.length > 0 && (
         <section aria-labelledby="mine-title">
-          <SectionHead id="mine-title" icon={Hourglass} tone="amber" title="Lo que registraste y sigue abierto" hint="Esperando la confirmación de otra persona, o devuelto con una objeción."
+          <SectionHead id="mine-title" icon={Hourglass} tone="amber" title="Lo que registraste y sigue abierto" hint="Esperando la aprobación de la administración, o rechazado con un motivo."
             action={<Badge tone="amber">{data.my_open.length}</Badge>} />
           <div className="stagger space-y-3">{data.my_open.map((m) => <MovementCard key={m.id} m={m} showInvestment onChanged={changed} />)}</div>
         </section>
@@ -53,7 +58,7 @@ export default function InboxPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Centro de operaciones" title="Buzón" icon={InboxIcon} tone="teal" subtitle="Confirmaciones de dinero y avisos del equipo en un solo lugar."
+      <PageHeader eyebrow="Centro de operaciones" title="Buzón" icon={InboxIcon} tone="teal" subtitle="Aprobaciones de dinero y avisos del equipo en un solo lugar."
         actions={unread > 0 && <button type="button" className="btn btn-outline" onClick={readAll} disabled={busy}><CheckCheck className="h-4 w-4" />Marcar todo leído</button>} />
       <div className={cx('grid items-start gap-6', canInvest && 'xl:grid-cols-[1.2fr_1fr]')}>
         {canInvest && <PendingMovements onChanged={refresh} />}
