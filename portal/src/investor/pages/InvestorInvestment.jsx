@@ -1,6 +1,6 @@
 // Detalle de una inversión desde la mirada del inversionista: su posición completa, los
 // totales del grupo (solo agregados), sus movimientos con el hilo de mensajes y el aviso
-// de un aporte propio (queda "por confirmar" hasta que JC Analytics verifique la plata).
+// de un aporte propio (queda "por aprobar" hasta que JC Analytics verifique la plata).
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowUpRight, ArrowDownLeft, Scale, PieChart, BookOpen, Users, ChartLine, Send, Info, Target, EyeOff, SearchX, ArrowDown, ArrowRight, ShieldCheck, Clock3, Sparkles, MessageCircle, CircleCheck,
@@ -33,7 +33,7 @@ function NoticeModal({ investment, onClose, onSaved, onAccessChanged }) {
     setErrors({});
     const body = { amount: form.amount, date: form.date, message: form.message.trim(), reference: form.reference.trim() || undefined };
     const res = await run(() => api(`/api/investor/investments/${investment.id}/movements`, { method: 'POST', body }), {
-      success: 'Aviso enviado. JC Analytics lo confirma cuando verifique la plata.',
+      success: 'Aviso enviado. JC Analytics lo aprueba cuando verifique la plata.',
       onError: (err) => {
         setErrors(err?.data?.field ? { [err.data.field]: err.data.message } : { request: errorMessage(err) });
         if (err?.status === 404 || ['investment_not_allowed', 'investment_closed'].includes(err?.data?.error)) onAccessChanged();
@@ -65,7 +65,7 @@ function NoticeModal({ investment, onClose, onSaved, onAccessChanged }) {
       {errors.request && <p role="alert" className="mt-4 text-sm text-coral-ink">{errors.request}</p>}
       <p className="mt-4 flex items-start gap-2 rounded-xl bg-surface-2 px-3 py-2.5 text-xs leading-relaxed text-ink-2">
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-ink" aria-hidden="true" />
-        <span>El aviso queda <b className="font-semibold">por confirmar</b> hasta que JC Analytics verifique que recibió la plata; mientras tanto no suma en tus totales. Si te equivocaste, lo podés retirar mientras siga pendiente.</span>
+        <span>El aviso queda <b className="font-semibold">por aprobar</b> hasta que JC Analytics verifique que recibió la plata; mientras tanto no suma en tus totales. Si te equivocaste, lo podés retirar mientras siga pendiente.</span>
       </p>
     </Modal>
   );
@@ -169,13 +169,12 @@ export default function InvestorInvestment({ params }) {
   const expected = expectedPct(inv.expected_return_pct);
   const confirmed = movements.filter((m) => m.status === 'confirmado');
   const returned = confirmed.filter((m) => m.type === 'retorno');
-  const toConfirm = movements.filter((m) => m.can_resolve).length;
   const ordered = [...movements].sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id);
   const shownMovements = movements.filter((m) => ledgerFilter === 'all' || (ledgerFilter === 'pending' ? m.status === 'pendiente' : ledgerFilter === 'confirmed' ? m.status === 'confirmado' : m.type === 'retorno'));
   const ledgerFilters = [
     { key: 'all', label: 'Todos', count: movements.length },
     { key: 'pending', label: 'Pendientes', count: pendingMine },
-    { key: 'confirmed', label: 'Confirmados', count: confirmed.length },
+    { key: 'confirmed', label: 'Aprobados', count: confirmed.length },
     { key: 'returns', label: 'Retornos', count: movements.filter((m) => m.type === 'retorno').length },
   ];
   const scrollTo = (id) => {
@@ -207,11 +206,11 @@ export default function InvestorInvestment({ params }) {
 
       {!isAdvertisingInvestment(inv) && (expected || inv.expected_date) && <aside className="ii-expectations" aria-label="Expectativas del proyecto"><span className="ii-expectations-icon"><Info size={18} aria-hidden="true" /></span><div><h3>Lo previsto para el proyecto</h3><p>{expected && <span>Retorno esperado <strong>{expected}</strong></span>}{inv.expected_date && <span>Recuperación prevista <strong>{formatDate(inv.expected_date)}</strong></span>}</p><small>Son estimaciones del proyecto; tus cifras de arriba reflejan movimientos confirmados.</small></div></aside>}
 
-      <section className="ii-notice-bar" aria-label="Avisar un envío realizado"><div className="ii-notice-mark"><MessageCircle size={25} aria-hidden="true" /></div><div><h2>{canContribute ? '¿Ya hiciste un envío?' : closed ? 'Los registros siguen aquí.' : 'Tu historial sigue siendo tuyo.'}</h2><p id="contribution-access-note">{closed ? 'Esta inversión ya no recibe aportes. Podés consultar y conversar sobre tus movimientos.' : canContribute ? 'Tenés acceso para aportar. Dejá el monto, la fecha y un mensaje. JC Analytics verifica y confirma el aporte.' : 'Los nuevos aportes requieren que administración vuelva a habilitar tu acceso. Podés consultar tus movimientos y responder las confirmaciones pendientes.'}</p></div><button type="button" className="ii-notice-button" disabled={!canContribute} aria-describedby="contribution-access-note" onClick={() => setNotice(true)}><Send size={16} aria-hidden="true" />Avisar un aporte<ArrowUpRight size={15} aria-hidden="true" /></button></section>
+      <section className="ii-notice-bar" aria-label="Avisar un envío realizado"><div className="ii-notice-mark"><MessageCircle size={25} aria-hidden="true" /></div><div><h2>{canContribute ? '¿Ya hiciste un envío?' : closed ? 'Los registros siguen aquí.' : 'Tu historial sigue siendo tuyo.'}</h2><p id="contribution-access-note">{closed ? 'Esta inversión ya no recibe aportes. Podés consultar y conversar sobre tus movimientos.' : canContribute ? 'Tenés acceso para aportar. Dejá el monto, la fecha y un mensaje. JC Analytics verifica y aprueba el aporte.' : 'Los nuevos aportes requieren que administración vuelva a habilitar tu acceso. Podés consultar tus movimientos y conversar sobre ellos.'}</p></div><button type="button" className="ii-notice-button" disabled={!canContribute} aria-describedby="contribution-access-note" onClick={() => setNotice(true)}><Send size={16} aria-hidden="true" />Avisar un aporte<ArrowUpRight size={15} aria-hidden="true" /></button></section>
 
       <section id="ii-ledger" className="ii-ledger" aria-labelledby="ledger-title" tabIndex={-1}>
-        <div className="ii-section-heading"><div><p className="ii-eyebrow">02 / LA CONVERSACIÓN, CON CONTEXTO</p><h2 id="ledger-title">Libro de movimientos</h2><p>Tus aportes y retornos, con sus mensajes y confirmaciones.</p></div><span className="ii-record-count"><BookOpen size={15} aria-hidden="true" />{plural(movements.length, 'registro', 'registros')}</span></div>
-        {pendingMine > 0 && <div className="ii-pending-note"><Clock3 size={17} aria-hidden="true" /><p>{plural(pendingMine, 'movimiento pendiente', 'movimientos pendientes')}.{toConfirm > 0 ? ` ${plural(toConfirm, 'espera tu respuesta', 'esperan tu respuesta')}.` : ' JC Analytics revisa los avisos.'}<span>Mientras estén pendientes, no suman en tus totales.</span></p><button type="button" onClick={() => setLedgerFilter('pending')}>Ver pendientes<ArrowRight size={14} aria-hidden="true" /></button></div>}
+        <div className="ii-section-heading"><div><p className="ii-eyebrow">02 / LA CONVERSACIÓN, CON CONTEXTO</p><h2 id="ledger-title">Libro de movimientos</h2><p>Tus aportes y retornos, con sus mensajes y aprobaciones.</p></div><span className="ii-record-count"><BookOpen size={15} aria-hidden="true" />{plural(movements.length, 'registro', 'registros')}</span></div>
+        {pendingMine > 0 && <div className="ii-pending-note"><Clock3 size={17} aria-hidden="true" /><p>{plural(pendingMine, 'movimiento pendiente', 'movimientos pendientes')}. JC Analytics los revisa y aprueba.<span>Mientras estén pendientes, no suman en tus totales.</span></p><button type="button" onClick={() => setLedgerFilter('pending')}>Ver pendientes<ArrowRight size={14} aria-hidden="true" /></button></div>}
         <div className="ii-ledger-filters" role="group" aria-label="Filtrar movimientos">{ledgerFilters.map((filter) => <button type="button" key={filter.key} aria-label={filter.label} aria-pressed={ledgerFilter === filter.key} onClick={() => setLedgerFilter(filter.key)}>{filter.label}<span>{filter.count}</span></button>)}</div>
         {shownMovements.length === 0 ? <div className="ii-ledger-empty"><BookOpen size={30} aria-hidden="true" /><h3>{movements.length === 0 ? 'Tu historia todavía no tiene registros.' : 'No hay movimientos en esta vista.'}</h3><p>{movements.length === 0 ? 'Cuando haya un aporte o un retorno a tu nombre, aparecerá aquí con su conversación.' : 'Podés elegir otra categoría para consultar los demás registros.'}</p>{ledgerFilter !== 'all' && <button type="button" onClick={() => setLedgerFilter('all')}>Ver todos los movimientos <ArrowRight size={14} aria-hidden="true" /></button>}</div> : <ul className="ii-movement-list">{shownMovements.map((m) => <li key={m.id}><MovementItem m={m} highlight={m.id === highlight} defaultOpen={m.can_resolve} onChanged={changed} /></li>)}</ul>}
       </section>
@@ -219,7 +218,7 @@ export default function InvestorInvestment({ params }) {
       <section id="ii-history" className="ii-history" aria-labelledby="ii-history-title" tabIndex={-1}>
         <div className="ii-section-heading"><div><p className="ii-eyebrow">03 / LA HISTORIA, CON NÚMEROS</p><h2 id="ii-history-title">Cada registro cuenta una parte.</h2><p>Tu capital en esta inversión, en {cur === 'USD' ? 'dólares' : 'colones'}. Solo lo confirmado.</p></div><span className="ii-history-doodle" aria-hidden="true"><Sparkles size={27} /></span></div>
         <div className="ii-history-grid"><div className="ii-chart"><div className="ii-chart-heading"><span><ChartLine size={17} aria-hidden="true" />Tu capital, con fechas</span><span>{cur}</span></div><CashflowChart series={chartSeries(series)} currency={cur} height={250} /></div>
-          <aside className="ii-journey" aria-labelledby="ii-journey-title"><p className="ii-eyebrow">ASÍ SE LEEN TUS REGISTROS</p><h3 id="ii-journey-title">Claro de principio a fin.</h3><ol><li><span className="ii-journey-icon"><BookOpen size={18} aria-hidden="true" /></span><div><h4>Un movimiento se registra<span>{movements.length}</span></h4><p>{ordered.length ? `Tu primer movimiento: ${formatDate(ordered[0].date)}.` : 'Todavía no hay movimientos a tu nombre.'}</p></div></li><li><span className="ii-journey-icon"><ShieldCheck size={18} aria-hidden="true" /></span><div><h4>Ambas partes confirman<span>{confirmed.length}</span></h4><p>{confirmed.length ? `${plural(confirmed.length, 'registro confirmado', 'registros confirmados')} en tus cifras.` : 'Lo pendiente queda aparte hasta que se confirme.'}</p></div></li><li><span className="ii-journey-icon"><ArrowDownLeft size={18} aria-hidden="true" /></span><div><h4>Los retornos se reflejan<span>{returned.length}</span></h4><p>{returned.length ? `${formatMoney(mine.returned, cur)} en retornos confirmados.` : 'Todavía no hay retornos confirmados.'}</p></div></li></ol><p className="ii-journey-footer"><CircleCheck size={14} aria-hidden="true" />Cada estado se puede revisar en el libro.</p></aside>
+          <aside className="ii-journey" aria-labelledby="ii-journey-title"><p className="ii-eyebrow">ASÍ SE LEEN TUS REGISTROS</p><h3 id="ii-journey-title">Claro de principio a fin.</h3><ol><li><span className="ii-journey-icon"><BookOpen size={18} aria-hidden="true" /></span><div><h4>Un movimiento se registra<span>{movements.length}</span></h4><p>{ordered.length ? `Tu primer movimiento: ${formatDate(ordered[0].date)}.` : 'Todavía no hay movimientos a tu nombre.'}</p></div></li><li><span className="ii-journey-icon"><ShieldCheck size={18} aria-hidden="true" /></span><div><h4>JC Analytics lo aprueba<span>{confirmed.length}</span></h4><p>{confirmed.length ? `${plural(confirmed.length, 'registro aprobado', 'registros aprobados')} en tus cifras.` : 'Lo pendiente queda aparte hasta que se apruebe.'}</p></div></li><li><span className="ii-journey-icon"><ArrowDownLeft size={18} aria-hidden="true" /></span><div><h4>Los retornos se reflejan<span>{returned.length}</span></h4><p>{returned.length ? `${formatMoney(mine.returned, cur)} en retornos confirmados.` : 'Todavía no hay retornos confirmados.'}</p></div></li></ol><p className="ii-journey-footer"><CircleCheck size={14} aria-hidden="true" />Cada estado se puede revisar en el libro.</p></aside>
         </div>
       </section>
 

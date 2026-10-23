@@ -11,6 +11,7 @@ import { StatusBadge, SlaBadge } from '../components/common.jsx';
 import { ClientForm, ClientStatusBadge, clientWhatsapp } from '../components/clients.jsx';
 import { ClientPortalSection } from '../components/portal-admin.jsx';
 import { ProjectForm, projectMembers } from './Projects.jsx';
+import { projectValueText } from '../components/charges.jsx';
 import { CLIENT_STATUS, PROJECT_STATUS, SERVICES, UPDATE_CHANNELS, APPOINTMENT_KINDS, APPOINTMENT_STATUS } from '../../shared/catalog.js';
 import { formatMoney, formatDateTime, timeAgo } from '../lib/format.js';
 
@@ -55,7 +56,7 @@ function ProjectRow({ p }) {
         </div>
         <div className="flex items-center justify-between gap-2">
           {members.length ? <AvatarStack people={members} size={22} max={4} /> : <span className="text-xs text-muted">Sin equipo</span>}
-          {p.value_amount ? <span className="num text-sm font-semibold">{formatMoney(p.value_amount, p.currency)}</span> : null}
+          {projectValueText(p) ? <span className="num text-sm font-semibold">{projectValueText(p)}</span> : null}
         </div>
       </Link>
     </li>
@@ -117,6 +118,8 @@ export default function ClientDetail({ params }) {
   const openProjects = projects.filter((p) => !CLOSED.includes(p.status) && !p.archived);
   const otherProjects = projects.filter((p) => CLOSED.includes(p.status) || p.archived);
   const projectName = (id) => projects.find((p) => p.id === id)?.name;
+  // Lo que el cliente paga de forma recurrente, sumado en colones (solo proyectos que cobran).
+  const monthly = projects.reduce((total, p) => total + (p.billing?.counts ? p.billing.monthly_crc : 0), 0);
   const activeCount = c.projects_active ?? openProjects.length;
   const ago = c.last_contact_at ? timeAgo(c.last_contact_at) : '';
   const lastContact = !ago ? { value: '—', hint: 'Sin registrar' } : ago.startsWith('hace ') ? { value: ago.slice(5), hint: 'atrás' } : { value: ago, hint: null };
@@ -155,7 +158,9 @@ export default function ClientDetail({ params }) {
         </div>
         <dl className="card mt-5 grid grid-cols-3 divide-x divide-line overflow-hidden lg:max-w-xl">
           <Summary label="Proyectos" value={activeCount} hint={`activos de ${c.projects_total ?? projects.length}`} />
-          <Summary label="Valor" value={c.value_crc ? formatMoney(c.value_crc, 'CRC', { compact: true }) : '—'} hint="en curso" />
+          {monthly > 0
+            ? <Summary label="Paga al mes" value={`≈ ${formatMoney(monthly, 'CRC', { compact: true })}`} hint="cobro recurrente" />
+            : <Summary label="Valor" value={c.value_crc ? formatMoney(c.value_crc, 'CRC', { compact: true }) : '—'} hint="en curso" />}
           <Summary label="Contacto" value={lastContact.value} hint={lastContact.hint} />
         </dl>
       </header>

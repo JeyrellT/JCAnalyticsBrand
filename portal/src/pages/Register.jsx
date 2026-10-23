@@ -21,9 +21,9 @@ const FIELDS = ['name', 'email', 'phone', 'title', 'password'];
 /** Cómo se presenta cada tipo de alta. */
 const LOOK = {
   admin: { icon: Crown, tone: 'amber', what: 'administrador', points: ['Acceso total: equipo, clientes, inversiones y ajustes.', 'Agregás personas y creás enlaces de registro.'] },
-  socio: { icon: Handshake, tone: 'blue', what: 'socio', points: ['Proyectos, clientes, agenda y tablero del equipo.', 'Inversiones con doble confirmación de cada movimiento.'] },
+  socio: { icon: Handshake, tone: 'blue', what: 'socio', points: ['Proyectos, clientes, agenda y tablero del equipo.', 'Inversiones con cada movimiento aprobado por la administración.'] },
   colaborador: { icon: Wrench, tone: 'teal', what: 'colaborador', points: ['Tus tareas, proyectos y citas en un solo lugar.', 'Avisos en el celular cuando algo te toca.'] },
-  inversionista: { icon: Landmark, tone: 'violet', what: 'inversionista', points: ['Tu capital, tus retornos y tu participación.', 'Confirmás cada movimiento a tu nombre.'] },
+  inversionista: { icon: Landmark, tone: 'violet', what: 'inversionista', points: ['Tu capital, tus retornos y tu participación.', 'Avisás tus aportes y JC Analytics los aprueba.'] },
   client: { icon: Building2, tone: 'teal', what: 'cliente', points: ['Etapas y avances de tus proyectos, al día.', 'Entregables para revisar y documentos compartidos.'] },
 };
 const lookOf = (invite) => (invite.kind === 'client' ? LOOK.client : LOOK[invite.role] ?? LOOK.colaborador);

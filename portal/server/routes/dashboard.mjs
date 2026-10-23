@@ -8,6 +8,7 @@
 import { canInvest, PROJECT_STATUS } from '../../shared/catalog.js';
 import { toCRC, formatMoney } from '../../shared/finance.js';
 import { pendingForUser } from './core.mjs';
+import { occurrences, BILLING_PROJECT_STATUSES } from '../../shared/billing.js';
 
 export function dashboardRoutes(route, ctx) {
   const { db } = ctx;
@@ -99,10 +100,23 @@ export function dashboardRoutes(route, ctx) {
       };
       if (myPending.length) {
         const sum = myPending.reduce((a, m) => a + (toCRC(m.amount, m.currency, m.fx_rate) ?? 0), 0);
-        alerts.unshift({ tone: 'violet', kind: 'movement', title: `${myPending.length} ${myPending.length === 1 ? 'movimiento espera' : 'movimientos esperan'} tu confirmación`, detail: `Total ≈ ${formatMoney(sum, 'CRC')}. Respondé con tu mensaje de vuelta.`, link: '/buzon' });
+        alerts.unshift({ tone: 'violet', kind: 'movement', title: `${myPending.length} ${myPending.length === 1 ? 'movimiento espera' : 'movimientos esperan'} tu aprobación`, detail: `Total ≈ ${formatMoney(sum, 'CRC')}. Aprobalos o rechazalos desde el buzón.`, link: '/buzon' });
+      }
+      // Cobros que tocan hoy según el calendario de cada proyecto que cobra.
+      const dueToday = db.prepare(`SELECT ch.*, COALESCE(c.name, p.client, p.name) who, p.status project_status, p.archived project_archived
+        FROM project_charges ch JOIN projects p ON p.id = ch.project_id LEFT JOIN clients c ON c.id = p.client_id`).all()
+        .filter((ch) => !ch.project_archived && BILLING_PROJECT_STATUSES.includes(ch.project_status) && occurrences(ch, today, today).length);
+      if (dueToday.length) {
+        const total = dueToday.reduce((a, ch) => a + (toCRC(ch.amount, ch.currency, ctx.numberSetting('fx_usd_crc', 515)) ?? 0), 0);
+        alerts.unshift({
+          tone: 'violet', kind: 'billing',
+          title: dueToday.length === 1 ? `Hoy toca cobrar a ${dueToday[0].who}: ${formatMoney(dueToday[0].amount, dueToday[0].currency)}` : `Hoy tocan ${dueToday.length} cobros: ≈ ${formatMoney(total, 'CRC')}`,
+          detail: dueToday.slice(0, 3).map((ch) => `${ch.who}${ch.concept ? ` · ${ch.concept}` : ''}`).join(' · '),
+          link: '/cobros',
+        });
       }
       const objected = movements.filter((m) => m.status === 'objetado' && m.created_by === user.id);
-      if (objected.length) alerts.unshift({ tone: 'red', kind: 'movement', title: `${objected.length} ${objected.length === 1 ? 'movimiento tuyo fue objetado' : 'movimientos tuyos fueron objetados'}`, detail: 'Revisá el motivo y corregí o anulá el registro.', link: '/inversiones' });
+      if (objected.length) alerts.unshift({ tone: 'red', kind: 'movement', title: `${objected.length} ${objected.length === 1 ? 'movimiento tuyo fue rechazado' : 'movimientos tuyos fueron rechazados'}`, detail: 'Revisá el motivo y registralo de nuevo si hace falta.', link: '/inversiones' });
     }
 
     const sensitive = canInvest(user) ? '' : 'AND a.sensitive = 0';

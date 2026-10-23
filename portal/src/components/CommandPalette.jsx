@@ -4,7 +4,7 @@ import {
   ArrowDown, ArrowUp, ArrowUpRight, BellRing, Bot, Building2, CalendarDays, CalendarPlus,
   CheckCheck, ChevronRight, ClipboardList, Command, CornerDownLeft, FolderKanban,
   History, Inbox, KanbanSquare, LayoutDashboard, Layers, Link2, ListPlus, LoaderCircle,
-  Plus, Search, Settings2, Sparkles, TrendingUp, Users, X, WalletCards,
+  Plus, Receipt, Search, Settings2, Sparkles, TrendingUp, Users, X, WalletCards,
 } from 'lucide-react';
 import { navigate, useLocation } from '../lib/router.jsx';
 import { useResource, useSession } from '../lib/session.jsx';
@@ -48,7 +48,8 @@ function PaletteDialog({ onClose }) {
   const commands = useMemo(() => [
     ...COMMANDS,
     ...(canInvest ? [
-      { key: 'investments', title: 'Inversiones', detail: 'Capital, movimientos y confirmaciones.', to: '/inversiones', icon: TrendingUp, type: 'section', words: 'socios aportes retornos' },
+      { key: 'billing', title: 'Cobros', detail: 'Pagos únicos y recurrentes: qué toca cobrar cada mes.', to: '/cobros', icon: Receipt, type: 'section', words: 'cobrar mensualidad quincena quincenal recurrente facturar clientes pagos' },
+      { key: 'investments', title: 'Inversiones', detail: 'Capital, movimientos y aprobaciones.', to: '/inversiones', icon: TrendingUp, type: 'section', words: 'socios aportes retornos' },
       { key: 'finance', title: 'Finanzas y costos', detail: 'Ventas cobradas, gastos, costos y repartos.', to: '/finanzas', icon: WalletCards, type: 'section', words: 'dinero utilidad publicidad meta google ads costos costear tarifas capital ganancias' },
     ] : []),
     ...(isAdmin ? [

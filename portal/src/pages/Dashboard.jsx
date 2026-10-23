@@ -293,7 +293,7 @@ export default function Dashboard() {
   const today = data.today || todayKey();
   const sortedAlerts = [...alerts].sort((a, b) => (urgency[a.tone] ?? 4) - (urgency[b.tone] ?? 4));
   const priority = sortedAlerts[0];
-  const filteredAlerts = sortedAlerts.filter(alert => alertFilter === 'all' || (alertFilter === 'urgent' ? alert.tone === 'red' || alert.tone === 'amber' : alert.kind === 'movement'));
+  const filteredAlerts = sortedAlerts.filter(alert => alertFilter === 'all' || (alertFilter === 'urgent' ? alert.tone === 'red' || alert.tone === 'amber' : alert.kind === 'movement' || alert.kind === 'billing'));
   const visibleAlerts = showAllAlerts ? filteredAlerts : filteredAlerts.slice(0, 3);
   // The dashboard includes only the first eight team appointments. Query the
   // full week before filtering to avoid hiding a person's later meetings.
@@ -578,7 +578,7 @@ export default function Dashboard() {
         </dl>
         <div className="capital-foot">
           <span>
-            {investments.my_pending_count ? `${investments.my_pending_count} por confirmar` : 'Sin confirmaciones pendientes'}
+            {investments.my_pending_count ? `${investments.my_pending_count} por aprobar` : 'Sin aprobaciones pendientes'}
           </span>
           <Link to={investments.my_pending_count ? '/buzon' : '/inversiones'}>
             {investments.my_pending_count ? 'Revisar' : 'Ver portafolio'}

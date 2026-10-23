@@ -135,7 +135,7 @@ function TempPassword({ result, onClose }) {
           <dd className="min-w-0 break-all text-right text-ink">{result.email}</dd>
         </div>
       </dl>
-      {investor && <p className="mt-3 flex items-start gap-2 rounded-xl bg-violet-soft px-3 py-2.5 text-xs text-violet-ink"><Landmark className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />Entra solo a su portal de inversionistas: ve su capital y sus retornos, y confirma los movimientos a su nombre.</p>}
+      {investor && <p className="mt-3 flex items-start gap-2 rounded-xl bg-violet-soft px-3 py-2.5 text-xs text-violet-ink"><Landmark className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />Entra solo a su portal de inversionistas: ve su capital y sus retornos, y avisa sus aportes (los aprueba la administración).</p>}
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <a className="btn btn-outline" href={wa} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4 text-teal-ink" />Enviar por WhatsApp</a>
         <button type="button" className="btn btn-outline" onClick={() => copy(text, 'Mensaje copiado')}><Copy className="h-4 w-4" />Copiar mensaje</button>
@@ -162,7 +162,7 @@ function MemberModal({ member, presetRole, onClose, onSaved, onInvite }) {
     const first = firstName(member.name);
     const label = ROLES[form.role].label.toLowerCase();
     const message = investor
-      ? `Su acceso cambia de inmediato: deja de ver la operación (proyectos, tablero, agenda y clientes) y entra solo a su portal de inversionistas (${entryUrl('inversionista')}), donde ve su capital y confirma los movimientos a su nombre. Si tiene tareas o proyectos asignados, reasignalos.`
+      ? `Su acceso cambia de inmediato: deja de ver la operación (proyectos, tablero, agenda y clientes) y entra solo a su portal de inversionistas (${entryUrl('inversionista')}), donde ve su capital y avisa sus aportes. Si tiene tareas o proyectos asignados, reasignalos.`
       : `Su acceso cambia de inmediato: deja el portal de inversionistas y entra al portal del equipo (${entryUrl(form.role)}) como ${label}. ${form.role === 'colaborador' ? 'Como colaborador no ve inversiones; su capital y sus movimientos se conservan.' : 'Va a ver y administrar todas las inversiones del equipo.'}`;
     return confirm({ title: investor ? `${first} pasa a ser inversionista` : `${first} pasa al equipo como ${label}`, message, confirmLabel: 'Cambiar acceso' });
   }
@@ -353,7 +353,7 @@ function InvestorsSection({ investors, actions }) {
           </button>
         )} />
       {investors.length === 0 ? (
-        <p className="px-4 py-5 text-sm text-muted sm:px-5">Todavía no hay inversionistas. Agregá a cada persona que pone capital: confirma sus aportes y retornos desde su propio portal.</p>
+        <p className="px-4 py-5 text-sm text-muted sm:px-5">Todavía no hay inversionistas. Agregá a cada persona que pone capital: sigue sus aportes y retornos desde su propio portal.</p>
       ) : (
         <ul className="divide-y divide-line">
           {investors.map((m) => (

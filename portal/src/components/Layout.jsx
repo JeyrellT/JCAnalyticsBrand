@@ -6,7 +6,7 @@ import { useState } from 'react';
 import {
   LayoutDashboard, FolderKanban, KanbanSquare, CalendarDays, TrendingUp, Inbox, Users, History, LogOut, Menu, X,
   Building2, Layers, Plus, LayoutGrid, Bot, BellRing, ChevronRight,
-  ClipboardList, ArrowUpRight, Sparkles, PanelLeftClose, PanelLeftOpen, WalletCards,
+  ClipboardList, ArrowUpRight, Sparkles, PanelLeftClose, PanelLeftOpen, WalletCards, Receipt,
 } from 'lucide-react';
 import { Link, useLocation } from '../lib/router.jsx';
 import { useSession } from '../lib/session.jsx';
@@ -39,7 +39,7 @@ const GROUPS = [
       { to: '/equipo', label: 'Equipo y ajustes', short: 'Equipo', icon: Users, tone: 'teal' },
     ],
   },
-  { label: 'Socios', invest: true, items: [{ to: '/inversiones', label: 'Inversiones', short: 'Inversiones', icon: TrendingUp, tone: 'teal' }, { to: '/finanzas', label: 'Finanzas y costos', short: 'Finanzas', icon: WalletCards, tone: 'teal' }] },
+  { label: 'Socios', invest: true, items: [{ to: '/cobros', label: 'Cobros', short: 'Cobros', icon: Receipt, tone: 'teal' }, { to: '/inversiones', label: 'Inversiones', short: 'Inversiones', icon: TrendingUp, tone: 'teal' }, { to: '/finanzas', label: 'Finanzas y costos', short: 'Finanzas', icon: WalletCards, tone: 'teal' }] },
   {
     label: 'Control',
     items: [
@@ -57,7 +57,7 @@ const byPath = Object.fromEntries(ALL.map((n) => [n.to, n]));
 const TABS = ['/', '/buzon'].map((to) => byPath[to]);
 const TABS_END = [byPath['/agenda']];
 // Mosaicos de "Más", en el orden en que se piensa la empresa.
-const MORE = ['/tablero', '/proyectos', '/clientes', '/briefs' /* v5 */, '/servicios', '/equipo', '/inversiones', '/finanzas', '/automatizaciones', '/notificaciones', '/bitacora'].map((to) => byPath[to]);
+const MORE = ['/tablero', '/proyectos', '/clientes', '/briefs' /* v5 */, '/servicios', '/equipo', '/cobros', '/inversiones', '/finanzas', '/automatizaciones', '/notificaciones', '/bitacora'].map((to) => byPath[to]);
 
 function useNav() {
   const { canInvest, unread, pending } = useSession();

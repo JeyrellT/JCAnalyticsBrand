@@ -10,7 +10,7 @@ export function ReturnBreakdown({ metrics, currency = 'CRC', portfolio = false }
   const money = (key) => Number.isFinite(read(key)) ? formatMoney(read(key), currency) : 'Por conciliar';
   const unknown = read('unclassified_returned');
   return <section className="ir-breakdown" aria-label="Capital y ganancias por separado">
-    <div className="ir-breakdown-heading"><span><ArrowDownLeft size={15} aria-hidden="true" /> CADA RETORNO, CON SU NOMBRE</span><p>Solo movimientos confirmados por las dos partes.</p></div>
+    <div className="ir-breakdown-heading"><span><ArrowDownLeft size={15} aria-hidden="true" /> CADA RETORNO, CON SU NOMBRE</span><p>Solo movimientos aprobados por JC Analytics.</p></div>
     <dl className="ir-figures">
       <div><dt><Coins size={17} aria-hidden="true" />Capital devuelto</dt><dd data-return-capital>{money('capital_returned')}</dd><p>Devolución de tu aporte.</p></div>
       <div><dt><Sprout size={17} aria-hidden="true" />Ganancias recibidas</dt><dd data-return-profit>{money('profit_returned')}</dd><p>Tu utilidad pagada y confirmada.</p></div>

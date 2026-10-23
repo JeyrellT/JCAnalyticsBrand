@@ -6,11 +6,11 @@ import '../styles/investor-playbook.css';
 
 const LESSONS = [
   {
-    id: 'confirmado', title: 'La doble confirmación', subtitle: 'Cuándo un movimiento cuenta.', icon: CheckCheck,
-    question: 'Hay un aporte pendiente. ¿Ya se suma a tu capital confirmado?',
-    options: ['Sí, desde que se registra.', 'Cuando lo confirman ambas partes.', 'Solo si está en colones.'], answer: 1,
-    explanation: 'Un registro pendiente todavía espera una respuesta. Tus cifras de capital incluyen únicamente movimientos confirmados por las dos partes.',
-    takeaway: 'Pendiente y confirmado son dos momentos distintos.',
+    id: 'confirmado', title: 'La aprobación', subtitle: 'Cuándo un movimiento cuenta.', icon: CheckCheck,
+    question: 'Avisaste un aporte y está pendiente. ¿Ya se suma a tu capital?',
+    options: ['Sí, desde que lo aviso.', 'Cuando JC Analytics lo aprueba.', 'Solo si está en colones.'], answer: 1,
+    explanation: 'Un aviso pendiente espera que JC Analytics verifique la plata. Tus cifras de capital incluyen únicamente movimientos aprobados.',
+    takeaway: 'Pendiente y aprobado son dos momentos distintos.',
   },
   {
     id: 'neto', title: 'El neto, sin misterio', subtitle: 'Dos cifras. Una resta.', icon: Sprout,
@@ -98,7 +98,7 @@ function PlaybookSession({ portfolio, userId }) {
                 {lesson.id === 'neto' && <div className="ip-equation" aria-label="El neto de tu cuenta"><span><small>Retornos</small>{formatMoney(portfolio.returned_crc, 'CRC')}</span><b>−</b><span><small>Aportes</small>{formatMoney(portfolio.contributed_crc, 'CRC')}</span><b>=</b><span><small>Neto</small>{formatMoney(portfolio.net_crc, 'CRC')}</span></div>}
                 <div className="ip-takeaway"><Fingerprint size={20} /><span>{lesson.takeaway}</span></div>
                 {nextLesson && <button type="button" className="ip-next" onClick={() => { focusNextQuestion.current = true; setActive(nextLesson.id); }}>Explorar otra idea<ArrowRight size={16} /></button>}
-              </> : choice !== undefined ? <p className="ip-try-again">Todavía no. {lesson.id === 'confirmado' ? 'Buscá la respuesta que incluye a las dos partes.' : lesson.id === 'neto' ? 'Pensá en lo que volvió y restale lo que aportaste.' : 'Pensá en la proporción de tu aporte dentro del grupo.'} Probá otra vez.</p> : null}
+              </> : choice !== undefined ? <p className="ip-try-again">Todavía no. {lesson.id === 'confirmado' ? 'Pensá en quién verifica que la plata llegó.' : lesson.id === 'neto' ? 'Pensá en lo que volvió y restale lo que aportaste.' : 'Pensá en la proporción de tu aporte dentro del grupo.'} Probá otra vez.</p> : null}
             </div>
           </div>
         </div>}

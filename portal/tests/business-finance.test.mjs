@@ -45,10 +45,10 @@ async function environment(t, startAt = Date.parse('2026-10-10T15:00:00Z')) {
   const post = async (path, body) => { const res = await api.admin.post(path, body); assert.equal(res.status, 200, JSON.stringify(res.data)); return res.data; };
   const inv = (await post('/api/investments', { name: 'Campaña de prueba', category: 'meta_ads', currency: 'CRC' })).investment;
   await api.admin.call('PUT', `/api/investments/${inv.id}/access`, { allowed_investor_ids: [ids.investor] });
+  // Lo registra el admin: queda aprobado de una vez.
   const contribute = async (who, amount, date = '2026-01-01') => {
     const { movement } = await post(`/api/investments/${inv.id}/movements`, { type: 'aporte', partner_id: ids[who], amount, date, message: 'Aporte comprobado para prueba' });
-    const path = who === 'investor' ? '/api/investor/movements' : '/api/movements';
-    assert.equal((await api[who].post(`${path}/${movement.id}/confirm`, {})).status, 200);
+    assert.equal(movement.status, 'confirmado');
     return movement;
   };
   const ledger = (kind, amount, date, extra = {}) => post('/api/finance/entries', { kind, category: kind === 'revenue' ? 'sale' : 'ads', amount, currency: 'CRC', date, paid: true, description: 'Dato de prueba aislada', investment_id: inv.id, ...extra });
@@ -84,7 +84,7 @@ test('libro: permisos, asignación exacta, cuentas por pagar y correcciones audi
   assert.deepEqual(split.entry.allocations.map((row) => row.amount), [33, 67]);
 });
 
-test('reparto reserva pendientes/objetados, bloquea bypass e impide repetir principal confirmado después del corte', async (t) => {
+test('reparto reserva lo enviado, bloquea bypass e impide repetir principal confirmado después del corte', async (t) => {
   const w = await environment(t); await w.contribute('investor', 10000); await w.ledger('revenue', 100000, '2026-01-20'); await w.ledger('expense', 20000, '2026-01-21'); await w.policy();
   const before = await w.preview('2026-01', 16000, 10000);
   assert.equal(before.totals.annual_pool, 16000); assert.equal(before.blockers.length, 0);
@@ -93,10 +93,8 @@ test('reparto reserva pendientes/objetados, bloquea bypass e impide repetir prin
   const sent = await w.send(before, 16000, 10000); assert.equal(sent.status, 200, JSON.stringify(sent.data));
   assert.equal(sent.data.movements.length, 2);
   const duplicate = await w.send(before, 16000, 10000); assert.equal(duplicate.data.distribution.id, sent.data.distribution.id);
-  const profit = sent.data.movements.find((m) => m.return_kind === 'profit');
-  const capital = sent.data.movements.find((m) => m.return_kind === 'capital');
-  await w.api.investor.post(`/api/investor/movements/${profit.id}/object`, { message: 'Necesito revisar el comprobante' });
-  await w.api.investor.post(`/api/investor/movements/${capital.id}/confirm`, {});
+  // El envío lo declara el admin: sus retornos quedan aprobados al registrarlos.
+  assert.ok(sent.data.movements.every((m) => m.status === 'confirmado'));
   const again = await w.preview('2026-01', 0, 0);
   assert.equal(again.totals.profit_available, 0); assert.equal(again.totals.capital_available, 0);
   assert.equal(again.partners.find((p) => p.id === w.ids.investor).capital_reserved, 10000);
@@ -106,7 +104,7 @@ test('reparto reserva pendientes/objetados, bloquea bypass e impide repetir prin
 test('pérdida posterior y recuperación no duplican pagos; financiación tardía no obtiene utilidad anterior', async (t) => {
   const w = await environment(t); await w.contribute('partner', 10000); await w.ledger('revenue', 100000, '2026-01-20'); await w.policy();
   const jan = await w.preview('2026-01', 20000, 0); const sent = await w.send(jan, 20000); assert.equal(sent.status, 200, JSON.stringify(sent.data));
-  await w.api.partner.post(`/api/movements/${sent.data.movements[0].id}/confirm`, {});
+  assert.equal(sent.data.movements[0].status, 'confirmado');
   await w.contribute('investor', 90000, '2026-02-01'); await w.ledger('expense', 150000, '2026-02-15');
   assert.equal((await w.preview('2026-02', 0, 0)).totals.overpaid, 20000);
   await w.ledger('revenue', 100000, '2026-03-15');
@@ -114,13 +112,12 @@ test('pérdida posterior y recuperación no duplican pagos; financiación tardí
   assert.equal((await w.preview('2026-01', 0, 0)).partners.find((p) => p.id === w.ids.investor).profit_entitlement, 0);
 });
 
-test('diciembre pagado en enero reserva el año del período; cierre exige confirmar el ajuste', async (t) => {
+test('diciembre pagado en enero reserva el año del período; el ajuste aprobado permite el cierre', async (t) => {
   const w = await environment(t, Date.parse('2027-02-10T15:00:00Z')); await w.contribute('investor', 10000); await w.ledger('revenue', 10000, '2026-12-15'); await w.policy(2026, { costs_reviewed_through: '2026-12-31' });
   assert.equal((await w.api.admin.post(`/api/finance/policies/${w.inv.id}/close`, { year: 2026, reason: 'Cierre de prueba' })).data.error, 'unsettled_profit');
   const before = await w.preview('2026-12', 2000, 0); const sent = await w.send(before, 2000, 0, '2027-01-05'); assert.equal(sent.status, 200, JSON.stringify(sent.data));
   assert.equal((await w.preview('2026-12', 0, 0)).totals.profit_reserved, 2000);
-  assert.equal((await w.api.admin.post(`/api/finance/policies/${w.inv.id}/close`, { year: 2026, reason: 'Cierre de prueba' })).data.error, 'pending_settlements');
-  await w.api.investor.post(`/api/investor/movements/${sent.data.movements[0].id}/confirm`, {});
+  assert.equal(sent.data.movements[0].status, 'confirmado', 'lo declara el admin: ya está aprobado');
   assert.equal((await w.api.admin.post(`/api/finance/policies/${w.inv.id}/close`, { year: 2026, reason: 'Cierre revisado' })).status, 200);
   assert.equal((await w.api.admin.post(`/api/movements/${sent.data.movements[0].id}/annul`, { message: 'Cambio retroactivo inválido' })).data.error, 'closed_period');
 });
@@ -167,6 +164,6 @@ test('cierre bloquea también retornos históricos clasificados que sigan pendie
   await w.post(`/api/movements/${movementId}/classify`, { capital_amount: 0, profit_amount: 2000, reason: 'Clasificación según comprobante' });
   assert.equal((await w.preview('2026-12', 0, 0)).totals.profit_unsettled, 0);
   assert.equal((await w.api.admin.post(`/api/finance/policies/${w.inv.id}/close`, { year: 2026, reason: 'Cierre anual' })).data.error, 'pending_settlements');
-  assert.equal((await w.api.investor.post(`/api/investor/movements/${movementId}/confirm`, {})).status, 200);
+  assert.equal((await w.api.admin.post(`/api/movements/${movementId}/confirm`, {})).status, 200);
   assert.equal((await w.api.admin.post(`/api/finance/policies/${w.inv.id}/close`, { year: 2026, reason: 'Cierre anual confirmado' })).status, 200);
 });

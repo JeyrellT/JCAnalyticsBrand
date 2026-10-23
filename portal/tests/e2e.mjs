@@ -193,21 +193,30 @@ try {
     await shot(page, '10-inversion-detalle');
   });
 
-  await check('buzón: confirmar un aporte con mensaje de vuelta', async () => {
+  await check('buzón: la socia ve lo suyo por aprobar y el admin aprueba un aporte con un toque', async () => {
+    // Catalina (socia) no aprueba plata: solo ve lo que registró y espera a la administración.
     await page.goto(`${base}/buzon`);
-    await page.getByRole('heading', { name: 'Por confirmar' }).waitFor();
-    const card = page.locator('article', { hasText: 'aporte de' }).filter({ hasText: 'Alex Benedict' }).first();
-    await card.getByLabel('Mensaje de vuelta').fill('Recibido en la cuenta de pauta, gracias Alex.');
-    await shot(page, '11-buzon');
-    await card.getByRole('button', { name: 'Confirmar recibido' }).click();
-    await page.getByText('Confirmado. Se envió tu mensaje de vuelta.').waitFor();
-    const pending = await (await page.request.get(`${base}/api/movements/pending`)).json();
+    await page.getByRole('heading', { name: 'Lo que registraste y sigue abierto' }).waitFor();
+    assert.equal(await page.getByRole('heading', { name: 'Por aprobar' }).count(), 0, 'una socia no aprueba plata');
+    assert.equal((await (await page.request.get(`${base}/api/movements/pending`)).json()).to_confirm.length, 0);
+    // Jeyrell (admin) aprueba desde su buzón.
+    const admin = await newPage({ width: 1440, height: 900 });
+    await login(admin, 'jeyrell');
+    await admin.goto(`${base}/buzon`);
+    await admin.getByRole('heading', { name: 'Por aprobar' }).waitFor();
+    const card = admin.locator('article', { hasText: 'aporte de' }).filter({ hasText: 'Alex Benedict' }).first();
+    await shot(admin, '11-buzon');
+    // Un toque, sin abrir la tarjeta.
+    await card.getByRole('button', { name: 'Aprobar', exact: true }).click();
+    await admin.getByText('Aprobado. Ya suma en los indicadores.').waitFor();
+    const pending = await (await admin.request.get(`${base}/api/movements/pending`)).json();
     assert.ok(!pending.to_confirm.some((m) => m.partner_name === 'Alex Benedict' && m.type === 'aporte'));
+    await admin.context().close();
   });
 
   await check('bitácora registra las acciones', async () => {
     await page.goto(`${base}/bitacora`);
-    await page.getByText(/confirmó el aporte/).first().waitFor();
+    await page.getByText(/aprobó el aporte/).first().waitFor();
     await page.getByText(/distribuyó/).first().waitFor();
     await shot(page, '12-bitacora');
   });
@@ -249,6 +258,34 @@ try {
     await dialog.getByRole('button', { name: 'Crear cliente' }).click();
     await page.getByRole('heading', { name: 'Soda La Esquina', level: 1 }).waitFor();
     await shot(page, '17-cliente-detalle');
+  });
+
+  await check('cobros: un cobro quincenal en el proyecto y el calendario del mes', async () => {
+    const projectsData = await (await page.request.get(`${base}/api/projects`)).json();
+    const burrada = projectsData.projects.find((p) => p.name === 'Pedidos en línea La Burrada');
+    assert.ok(burrada.billing.monthly_crc > 0, 'la demo trae mensualidad y quincena');
+    await page.goto(`${base}/proyectos/${burrada.id}`);
+    const card = page.locator('section', { has: page.getByRole('heading', { name: 'Cobros', exact: true }) });
+    await card.getByText('Próximo cobro').waitFor();
+    await card.getByRole('button', { name: 'Agregar' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('radio', { name: 'Quincenal' }).click();
+    await dialog.getByLabel('Monto de cada cobro').fill('50000');
+    await dialog.getByLabel('Concepto (opcional)').fill('Fotos del menú');
+    await dialog.getByText(/equivale a .* al mes/).waitFor();
+    await dialog.getByRole('button', { name: 'Guardar cobro' }).click();
+    await page.getByText('Cobro agregado').waitFor();
+    await card.getByText('Fotos del menú').waitFor();
+    await card.screenshot({ path: join(shots, '17a-proyecto-cobros.png'), animations: 'disabled' });
+    const after = (await (await page.request.get(`${base}/api/projects/${burrada.id}`)).json()).project;
+    assert.equal(after.billing.monthly_crc, burrada.billing.monthly_crc + 100_000_00, 'cada quincena cuenta dos veces al mes');
+    await page.goto(`${base}/cobros`);
+    await page.getByRole('heading', { name: 'Cobros', level: 1 }).waitFor();
+    await page.getByText('Recurrente al mes').waitFor();
+    await page.getByRole('heading', { name: 'Próximos 6 meses' }).waitFor();
+    await shot(page, '17b-cobros');
+    await page.getByRole('button', { name: 'Mes siguiente' }).click();
+    await page.getByRole('button', { name: 'Hoy', exact: true }).waitFor();
   });
 
   await check('avisos y app: manifiesto, app instalable y preferencias', async () => {
@@ -309,6 +346,7 @@ try {
     await p2.getByText('Esta sección no existe').waitFor();
     const api = await p2.request.get(`${base}/api/investments`);
     assert.equal(api.status(), 403);
+    assert.equal((await p2.request.get(`${base}/api/billing`)).status(), 403, 'la vista general de cobros es de socios y admin');
     // Cerrar sesión revoca la cookie en el servidor: al recargar sigue fuera.
     await p2.getByRole('button', { name: 'Cerrar sesión' }).first().click();
     await p2.getByRole('button', { name: 'Entrar' }).waitFor();
@@ -612,30 +650,32 @@ try {
     }
   });
 
-  await check('inversionista: su portal, confirma su aporte y no ve la operación', async () => {
+  await check('inversionista: su portal, su aviso lo aprueba el admin y no ve la operación', async () => {
     const i = await newPage({ width: 1440, height: 900 });
     await i.goto(`${base}/inversionista`);
     await i.getByLabel('Correo').fill('angel@demo.jcanalytic.local');
     await i.getByLabel('Contraseña').fill(DEMO_PASSWORD);
     await i.getByRole('button', { name: 'Entrar' }).click();
-    await i.getByRole('heading', { name: 'Por confirmar' }).waitFor();
     await i.getByText('BarberXCR · capital de crecimiento').first().waitFor();
+    await i.getByText(/esperan? la aprobación de JC Analytics/).waitFor();
     await shot(i, '45-inversionista-inicio');
     // Rutas del equipo: la API responde 403 y la pantalla vuelve a su portal.
     assert.equal((await i.request.get(`${base}/api/projects`)).status(), 403);
     assert.equal((await i.request.get(`${base}/api/investments`)).status(), 403);
     await i.goto(`${base}/proyectos`);
     await i.waitForURL(/\/inversionista$/);
-    // Confirma el aporte que JC registró a su nombre.
-    await i.getByRole('heading', { name: 'Por confirmar' }).waitFor();
-    await i.getByRole('button', { name: 'Confirmar', exact: true }).first().click();
-    // Doble verificación: el diálogo muestra el monto antes de confirmar.
-    await i.getByRole('dialog', { name: /Confirmás/ }).getByRole('button', { name: 'Sí, confirmar' }).click();
-    await i.waitForFunction(async () => {
-      const r = await fetch('/api/investor/overview');
-      return (await r.json()).to_confirm.length === 0;
-    });
-    const overview = await (await i.request.get(`${base}/api/investor/overview`)).json();
+    // Su aviso de aporte no suma hasta que el admin lo aprueba; ella no tiene nada que confirmar.
+    await i.getByText(/esperan? la aprobación de JC Analytics/).waitFor();
+    assert.equal(await i.getByRole('button', { name: 'Confirmar', exact: true }).count(), 0);
+    let overview = await (await i.request.get(`${base}/api/investor/overview`)).json();
+    assert.equal(overview.portfolio.contributed_crc, 500_000_00);
+    const notice = overview.recent.find((m) => m.status === 'pendiente' && m.type === 'aporte');
+    assert.equal(notice.awaiting, 'JC Analytics');
+    const admin = await newPage({ width: 1440, height: 900 });
+    await login(admin, 'jeyrell');
+    assert.equal((await admin.request.post(`${base}/api/movements/${notice.id}/confirm`, { headers: { 'x-portal-request': '1' }, data: {} })).status(), 200, 'el admin aprueba el aviso');
+    await admin.context().close();
+    overview = await (await i.request.get(`${base}/api/investor/overview`)).json();
     assert.equal(overview.portfolio.contributed_crc, 750_000_00);
     await shot(i, '46-inversionista-confirmado');
     await i.goto(`${base}/inversionista/movimientos`);

@@ -173,7 +173,7 @@ function DemoNote() {
 // ── (b) Avisos en este dispositivo ──────────────────────────────────────────
 const STATUS = {
   on: { tone: 'teal', label: 'Activos', text: 'Este dispositivo recibe avisos aunque el portal esté cerrado. Tocá un aviso y te lleva directo a lo que pasó.' },
-  off: { tone: 'slate', label: 'Apagados', text: 'Activalos para enterarte al instante de tareas, citas y plata por confirmar.' },
+  off: { tone: 'slate', label: 'Apagados', text: 'Activalos para enterarte al instante de tareas, citas y movimientos de plata.' },
   blocked: { tone: 'red', label: 'Bloqueados por el navegador', text: 'Diste "No permitir" alguna vez. Para activarlos:' },
   'server-off': { tone: 'slate', label: 'Todavía no', text: 'El servidor todavía no tiene avisos activos. Mientras tanto, todo llega a tu buzón.' },
   'ios-install': { tone: 'amber', label: 'En iPhone primero instalá la app', text: 'En iPhone y iPad los avisos solo funcionan con el portal instalado en la pantalla de inicio. Seguí los pasos de arriba y abrilo desde el ícono.' },
@@ -325,7 +325,7 @@ function QuietSection({ prefs, commit }) {
         <TimeField label="Desde" value={prefs.quiet_start} onChange={(v) => commit({ ...prefs, quiet_start: v }, { debounce: 700 })} />
         <TimeField label="Hasta" value={prefs.quiet_end} onChange={(v) => commit({ ...prefs, quiet_end: v }, { debounce: 700 })} />
       </div>
-      <p className="mt-3 text-xs leading-relaxed text-muted">Silencio de {formatHour(prefs.quiet_start)} a {formatHour(prefs.quiet_end)}, hora de Costa Rica. Salvo plata por confirmar; igual todo queda en tu buzón.</p>
+      <p className="mt-3 text-xs leading-relaxed text-muted">Silencio de {formatHour(prefs.quiet_start)} a {formatHour(prefs.quiet_end)}, hora de Costa Rica. Salvo los movimientos de plata; igual todo queda en tu buzón.</p>
     </Section>
   );
 }

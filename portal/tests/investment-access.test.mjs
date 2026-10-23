@@ -103,8 +103,8 @@ test('acceso: revocar bloquea aportes propios y del equipo pero conserva accione
   const own = await w.api.angel.post(ownPath, ownBody);
   assert.equal(external.status, 200);
   assert.equal(own.status, 200);
-  assert.equal(own.data.movement.can_resolve, false);
-  assert.equal((await w.api.angel.post(`/api/investor/movements/${own.data.movement.id}/confirm`)).data.error, 'not_your_confirmation');
+  assert.equal(own.data.movement.status, 'pendiente', 'el aviso propio espera a la administración');
+  assert.equal(external.data.movement.status, 'confirmado', 'lo registró el admin: ya está aprobado');
   const snapshot = JSON.stringify(w.db.prepare('SELECT * FROM movements ORDER BY id').all());
   await w.grant(investment, []);
   assert.equal(JSON.stringify(w.db.prepare('SELECT * FROM movements ORDER BY id').all()), snapshot, 'revocation never edits the money ledger');
@@ -116,12 +116,11 @@ test('acceso: revocar bloquea aportes propios y del equipo pero conserva accione
   assert.equal(detail.investment.access_granted, false);
   assert.equal(detail.investment.can_contribute, false);
   assert.equal(detail.movements.length, 2);
-  assert.equal((await w.api.angel.post(`/api/investor/movements/${external.data.movement.id}/confirm`)).status, 200);
   assert.equal((await w.api.angel.post(`/api/investor/movements/${own.data.movement.id}/annul`, { message: 'Retiro el aviso pendiente.' })).status, 200);
   assert.equal((await w.api.angel.post(`/api/investor/movements/${external.data.movement.id}/messages`, { body: 'Mi historial sigue disponible.' })).status, 200);
   const returned = await w.api.socio.post(staffPath, { type: 'retorno', partner_id: w.ids.angel, amount: 2_000, message: 'Retorno del capital histórico.' });
   assert.equal(returned.status, 200, JSON.stringify(returned.data));
-  assert.equal((await w.api.angel.post(`/api/investor/movements/${returned.data.movement.id}/confirm`)).status, 200);
+  assert.equal((await w.api.admin.post(`/api/movements/${returned.data.movement.id}/confirm`)).status, 200, 'el admin aprueba aunque se haya retirado el acceso');
   let overview = (await w.api.angel.get('/api/investor/overview')).data;
   assert.equal(overview.portfolio.contributed_crc, 10_000);
   assert.equal(overview.portfolio.returned_crc, 2_000);
@@ -131,7 +130,7 @@ test('acceso: revocar bloquea aportes propios y del equipo pero conserva accione
   const distribution = await w.api.socio.post(`/api/investments/${investment.id}/distribute`, { amount: 1_000, message: 'Reparto a titulares históricos.' });
   assert.equal(distribution.status, 200);
   assert.equal(distribution.data.movements[0].partner_id, w.ids.angel);
-  assert.equal((await w.api.beatriz.post(`/api/investor/movements/${external.data.movement.id}/confirm`)).status, 404);
+  assert.equal((await w.api.beatriz.post(`/api/investor/movements/${external.data.movement.id}/messages`, { body: 'No es mío.' })).status, 404);
   const csv = await w.api.angel.get('/api/investor/statement.csv');
   assert.equal(csv.status, 200);
   assert.ok(csv.data.includes(investment.name));

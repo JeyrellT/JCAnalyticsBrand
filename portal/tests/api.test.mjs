@@ -162,35 +162,42 @@ test('agenda: valida horario y detecta choques por persona', async () => {
   assert.equal(range.data.appointments.length, 2);
 });
 
-test('inversiones: aporte, mensaje de vuelta y doble control', async () => {
+test('inversiones: aporte y aprobación de la administración', async () => {
   const ana = await as('ana@jc.test');
   const beto = await as('beto@jc.test');
   const admin = await as('jeyrell@jc.test');
   const inv = (await ana.post('/api/investments', { name: 'Pauta Meta Ads BarberXCR', category: 'marketing', currency: 'CRC', target_amount: 30_000_000 })).data.investment;
   assert.ok(inv.id);
 
-  // Ana registra su propio aporte: ella no puede confirmarlo, Beto sí.
+  // Ana (socia) registra su propio aporte: queda por aprobar y solo el admin lo aprueba.
   const mov = await ana.post(`/api/investments/${inv.id}/movements`, { type: 'aporte', partner_id: ids.ana, amount: 15_000_000, date: '2026-10-01', message: 'Transferí por SINPE para la pauta de octubre.', reference: 'SINPE 4471' });
   assert.equal(mov.status, 200, JSON.stringify(mov.data));
   const m1 = mov.data.movement;
   assert.equal(m1.status, 'pendiente');
   assert.equal((await ana.post(`/api/movements/${m1.id}/confirm`, {})).status, 403);
+  assert.equal((await beto.post(`/api/movements/${m1.id}/confirm`, {})).status, 403, 'otro socio ya no aprueba');
   const betoInbox = (await beto.get('/api/notifications')).data.notifications;
-  assert.ok(betoInbox.some((n) => n.link.includes(`mov=${m1.id}`)), 'Beto recibe el aviso para confirmar');
-  assert.ok((await beto.get('/api/me')).data.pending_confirmations >= 1);
+  assert.ok(!betoInbox.some((n) => n.link.includes(`mov=${m1.id}`)), 'a Beto no se le pide nada');
+  assert.equal((await beto.get('/api/me')).data.pending_confirmations, 0);
+  assert.ok((await admin.get('/api/me')).data.pending_confirmations >= 1);
+  const detailBefore = (await ana.get(`/api/investments/${inv.id}`)).data.movements.find((m) => m.id === m1.id);
+  assert.equal(detailBefore.awaiting, 'Jeyrell', 'espera al único admin, por su nombre');
+  assert.equal(detailBefore.can_resolve, false);
 
-  const conf = await beto.post(`/api/movements/${m1.id}/confirm`, { message: 'Recibido en la cuenta del proyecto, gracias.' });
+  const conf = await admin.post(`/api/movements/${m1.id}/confirm`, { message: 'Recibido en la cuenta del proyecto, gracias.' });
   assert.equal(conf.data.movement.status, 'confirmado');
-  const adminInbox = (await admin.get('/api/notifications')).data.notifications.filter((n) => n.link.endsWith(`mov=${m1.id}`) && n.title.startsWith('Confirmá'));
-  assert.ok(adminInbox.length && adminInbox.every((n) => n.read_at), 'el pedido de confirmación deja de estar pendiente para los demás socios');
-  assert.equal((await beto.post(`/api/movements/${m1.id}/confirm`, {})).status, 409, 'no se confirma dos veces');
+  const adminInbox = (await admin.get('/api/notifications')).data.notifications.filter((n) => n.link.endsWith(`mov=${m1.id}`) && n.title.startsWith('Aprobá'));
+  assert.ok(adminInbox.length && adminInbox.every((n) => n.read_at), 'el pedido de aprobación deja de estar pendiente');
+  assert.equal((await admin.post(`/api/movements/${m1.id}/confirm`, {})).status, 409, 'no se aprueba dos veces');
   const anaInbox = (await ana.get('/api/notifications')).data.notifications;
-  assert.ok(anaInbox.some((n) => n.title.includes('confirmó') && n.body.includes('Recibido en la cuenta')), 'Ana recibe el mensaje de vuelta');
+  assert.ok(anaInbox.some((n) => n.title.includes('aprobó') && n.body.includes('Recibido en la cuenta')), 'Ana recibe el mensaje de vuelta');
 
-  // El admin registra un aporte a nombre de Beto: solo Beto puede confirmarlo.
+  // El admin registra un aporte a nombre de Beto: queda aprobado de una vez y Beto solo recibe el aviso.
   const m2 = (await admin.post(`/api/investments/${inv.id}/movements`, { type: 'aporte', partner_id: ids.beto, amount: 10_000_000, date: '2026-10-02', message: 'Aporte de Beto recibido en efectivo.' })).data.movement;
-  assert.equal((await ana.post(`/api/movements/${m2.id}/confirm`, {})).status, 403);
-  assert.equal((await beto.post(`/api/movements/${m2.id}/confirm`, {})).data.movement.status, 'confirmado');
+  assert.equal(m2.status, 'confirmado');
+  assert.equal(m2.resolved_by, ids.admin);
+  assert.equal((await beto.post(`/api/movements/${m2.id}/confirm`, {})).status, 409);
+  assert.ok((await beto.get('/api/notifications')).data.notifications.some((n) => n.link.endsWith(`mov=${m2.id}`) && n.title.startsWith('Aporte registrado')));
 
   // Validaciones: fecha futura, monto inválido, mensaje obligatorio, socio sin rol.
   assert.equal((await ana.post(`/api/investments/${inv.id}/movements`, { type: 'aporte', partner_id: ids.ana, amount: 100, date: '2030-01-01', message: 'Futuro' })).status, 400);
@@ -198,8 +205,8 @@ test('inversiones: aporte, mensaje de vuelta y doble control', async () => {
   assert.equal((await ana.post(`/api/investments/${inv.id}/movements`, { type: 'aporte', partner_id: ids.ana, amount: 100 })).status, 400);
   assert.equal((await ana.post(`/api/investments/${inv.id}/movements`, { type: 'aporte', partner_id: ids.cata, amount: 100, message: 'Colaboradora' })).status, 400);
 
-  // Retorno repartido según el capital: 60 % Ana / 40 % Beto, la suma es exacta.
-  const dist = await admin.post(`/api/investments/${inv.id}/distribute`, { amount: 3_333_333, date: '2026-10-09', message: 'Primer retorno: 14 barberías suscritas.' });
+  // Retorno repartido (lo registra Ana, queda por aprobar) según el capital: 60 % Ana / 40 % Beto, la suma es exacta.
+  const dist = await ana.post(`/api/investments/${inv.id}/distribute`, { amount: 3_333_333, date: '2026-10-09', message: 'Primer retorno: 14 barberías suscritas.' });
   assert.equal(dist.status, 200, JSON.stringify(dist.data));
   const shares = dist.data.movements;
   assert.equal(shares.length, 2);
@@ -208,12 +215,15 @@ test('inversiones: aporte, mensaje de vuelta y doble control', async () => {
   assert.equal(anaShare.amount, 2_000_000);
   assert.match(anaShare.message, /Tu parte: 60,0 %/);
 
-  // Ana objeta su parte; el admin la anula; Beto confirma la suya.
-  assert.equal((await ana.post(`/api/movements/${anaShare.id}/object`, {})).status, 400, 'objetar exige motivo');
-  assert.equal((await ana.post(`/api/movements/${anaShare.id}/object`, { message: 'Me llegó ₡19.500, no ₡20.000.' })).data.movement.status, 'objetado');
+  // El admin rechaza la parte de Ana (con motivo) y la anula; aprueba la de Beto.
+  assert.ok(shares.every((m) => m.status === 'pendiente'));
+  assert.equal((await ana.post(`/api/movements/${anaShare.id}/object`, { message: 'No me corresponde rechazar.' })).status, 403);
+  assert.equal((await admin.post(`/api/movements/${anaShare.id}/object`, {})).status, 400, 'rechazar exige motivo');
+  assert.equal((await admin.post(`/api/movements/${anaShare.id}/object`, { message: 'Salieron ₡19.500, no ₡20.000.' })).data.movement.status, 'objetado');
+  assert.ok((await ana.get('/api/notifications')).data.notifications.some((n) => n.title.includes('rechazó')));
   assert.equal((await admin.post(`/api/movements/${anaShare.id}/annul`, { message: 'Se corrige con el monto real.' })).data.movement.status, 'anulado');
   const betoShare = shares.find((m) => m.partner_id === ids.beto);
-  assert.equal((await beto.post(`/api/movements/${betoShare.id}/confirm`, {})).data.movement.status, 'confirmado');
+  assert.equal((await admin.post(`/api/movements/${betoShare.id}/confirm`, {})).data.movement.status, 'confirmado');
 
   const detail = (await ana.get(`/api/investments/${inv.id}`)).data;
   assert.equal(detail.metrics.contributed, 25_000_000);
@@ -221,6 +231,7 @@ test('inversiones: aporte, mensaje de vuelta y doble control', async () => {
   assert.equal(detail.metrics.partners.find((p) => p.partner_id === ids.ana).share, 0.6);
   const thread = detail.movements.find((m) => m.id === m1.id).messages;
   assert.deepEqual(thread.map((x) => x.kind), ['registro', 'confirmacion']);
+  assert.deepEqual(detail.movements.find((m) => m.id === m2.id).messages.map((x) => x.kind), ['registro', 'confirmacion'], 'la aprobación al registrar queda en el hilo');
   assert.equal(detail.metrics.target_progress, 25_000_000 / 30_000_000);
 
   // Solo el admin puede anular algo confirmado.
@@ -233,7 +244,7 @@ test('inversiones en dólares guardan el tipo de cambio y exportan a Excel', asy
   const inv = (await admin.post('/api/investments', { name: 'Servidor y dominios', category: 'equipo', currency: 'USD' })).data.investment;
   const m = (await admin.post(`/api/investments/${inv.id}/movements`, { type: 'aporte', partner_id: ids.admin, amount: 12_050, fx_rate: 508.25, date: '2026-10-05', message: '=HYPERLINK("http://x")' })).data.movement;
   assert.equal(m.fx_rate, 508.25);
-  await beto.post(`/api/movements/${m.id}/confirm`, { message: 'Ok' });
+  assert.equal(m.status, 'confirmado', 'lo que registra el admin ya cuenta');
   const list = (await beto.get('/api/investments')).data;
   const row = list.investments.find((i) => i.id === inv.id);
   assert.equal(row.metrics.contributed_crc, Math.round(12_050 * 508.25));
@@ -324,17 +335,18 @@ test('repartir retorno funciona aunque un socio con capital esté inactivo', asy
   const beto = await as('beto@jc.test');
   const eliClient = await as('eli@jc.test');
   const inv = (await admin.post('/api/investments', { name: 'Fondo Eli', category: 'otro' })).data.investment;
-  const m1 = (await admin.post(`/api/investments/${inv.id}/movements`, { type: 'aporte', partner_id: ids.admin, amount: 30_000, message: 'Aporte admin' })).data.movement;
-  await beto.post(`/api/movements/${m1.id}/confirm`, {});
+  await admin.post(`/api/investments/${inv.id}/movements`, { type: 'aporte', partner_id: ids.admin, amount: 30_000, message: 'Aporte admin' });
   const m2 = (await eliClient.post(`/api/investments/${inv.id}/movements`, { type: 'aporte', partner_id: eli, amount: 10_000, message: 'Aporte Eli' })).data.movement;
   await admin.post(`/api/movements/${m2.id}/confirm`, {});
   await admin.patch(`/api/users/${eli}`, { active: false });
-  const dist = await admin.post(`/api/investments/${inv.id}/distribute`, { amount: 4_000, message: 'Retorno con socio inactivo' });
+  // Lo reparte un socio: la parte de Eli igual se registra y la aprueba el admin.
+  const dist = await beto.post(`/api/investments/${inv.id}/distribute`, { amount: 4_000, message: 'Retorno con socio inactivo' });
   assert.equal(dist.status, 200, JSON.stringify(dist.data));
   const eliShare = dist.data.movements.find((x) => x.partner_id === eli);
   assert.equal(eliShare.amount, 1_000);
-  const conf = await beto.post(`/api/movements/${eliShare.id}/confirm`, { message: 'Custodio la parte de Eli' });
-  assert.equal(conf.data.movement.status, 'confirmado', 'otro socio custodia y confirma');
+  assert.equal((await beto.post(`/api/movements/${eliShare.id}/confirm`, {})).status, 403, 'un socio no aprueba');
+  const conf = await admin.post(`/api/movements/${eliShare.id}/confirm`, { message: 'Aprobado: la parte de Eli queda registrada' });
+  assert.equal(conf.data.movement.status, 'confirmado', 'el admin aprueba la parte del socio inactivo');
 });
 
 test('editar con una persona ya asignada y luego desactivada no falla', async () => {

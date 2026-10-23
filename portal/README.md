@@ -2,7 +2,7 @@
 
 La experiencia **Punto de encuentro** incorpora un inicio visual para el equipo, foco personal con cambios de tareas, búsqueda con Ctrl/⌘ K y un estudio interactivo de automatizaciones. Ver [uso y verificación](docs/punto-de-encuentro.md).
 
-Aplicación privada (detrás de login) para el equipo de 5 personas: **portal de proyectos**, **centro de operaciones** (tablero kanban + agenda de citas) e **inversiones de socios** con confirmación de cada movimiento de dinero y su "mensaje de vuelta".
+Aplicación privada (detrás de login) para el equipo de 5 personas: **portal de proyectos**, **centro de operaciones** (tablero kanban + agenda de citas) e **inversiones de socios**, donde la administración aprueba cada movimiento de dinero.
 
 Desde la v5 incluye además el **portal de clientes** (`/cliente`). Cada cliente sigue su servicio con JC Analytics desde ahí: etapas, avances, entregables por aprobar, solicitudes, documentos y reuniones. Las solicitudes usan el **brief creativo** (el formato "CREATIVIDAD" de JC), con versiones congeladas y verificables. El cliente no ve la operación interna: ni tareas, ni montos, ni notas del equipo. Ver `docs/v5-contrato.md`.
 
@@ -13,14 +13,22 @@ Está separada del sitio público (`jcanalytics-app/`, GitHub Pages): el portal 
 **Cómo se navega.** El menú sigue el orden de la empresa:
 - **Operación:** Inicio, Tablero, Agenda y Buzón.
 - **Empresa:** Proyectos, Clientes, Servicios y Equipo.
-- **Socios:** Inversiones.
+- **Socios:** Cobros, Inversiones y Finanzas.
 - **Control:** Bitácora.
 
 En el celular, la barra inferior trae Inicio, Tablero, un botón **"+"** de acciones rápidas, Agenda y **"Más"**. El botón "+" sirve para crear una tarea, agendar una cita, registrar el avance a un cliente, crear un cliente o registrar un aporte; "Más" abre el resto de secciones en mosaicos grandes.
 
-**Centro de operaciones (`/`).** En el celular funciona como "Mi día": tus citas de hoy, tus tareas y lo que espera tu confirmación. Agrupa todo lo que requiere acción hoy: proyectos de cliente sin avance en 72 h, tareas vencidas, citas sin confirmar en las próximas 24 h, plata esperando tu confirmación, soportes de 30 días por terminar. Muestra además la agenda de la semana, tus tareas y el pulso de las inversiones.
+**Centro de operaciones (`/`).** En el celular funciona como "Mi día": tus citas de hoy, tus tareas y (al admin) la plata por aprobar. Agrupa todo lo que requiere acción hoy: proyectos de cliente sin avance en 72 h, tareas vencidas, citas sin confirmar en las próximas 24 h, plata esperando tu aprobación, soportes de 30 días por terminar. Muestra además la agenda de la semana, tus tareas y el pulso de las inversiones.
 
 **Proyectos (`/proyectos`).** Clientes (La Burrada, Uniquex…), productos propios (BarberXCR, Taller Ticos…) e internos. Cada uno tiene responsable, servicio del catálogo, valor en ₡ o $, fechas y contacto. Para proyectos de cliente en curso o en revisión aplica el **semáforo del compromiso público "avance cada 72 h"**. El reloj corre desde que el proyecto entra en curso o desde el último avance registrado. "Registrar avance" deja constancia, arma el mensaje de WhatsApp y reinicia el reloj. Al marcarlo entregado arranca el **soporte de 30 días**.
+
+**Cobros (`/cobros`, solo socios y admin).** Cada proyecto lleva sus líneas de cobro, en la tarjeta "Cobros" de su ficha:
+- **Pago único** (una fecha) o **recurrente**: semanal, quincenal, mensual, bimestral, trimestral, semestral o anual, con "hasta" opcional.
+- Un mismo proyecto puede tener varias líneas: por ejemplo, una mensualidad y una pauta que se cobra cada quincena.
+- **Quincenal** son dos cobros por mes separados 15 días (1 y 16, o 15 y 30; en febrero, el último día). **Mensual** usa el mismo día de cada mes y el 31 pasa al último día de los meses cortos.
+- El portal calcula el **equivalente mensual** (quincenal × 2, semanal × 52 ÷ 12…), el **próximo cobro**, los cobros de cada mes y la proyección de 6 meses. Los dólares se convierten con el tipo de cambio vigente.
+- Solo suman los proyectos que cobran: en curso, en revisión, entregados o en soporte, sin archivar. Prospectos, pausados y cerrados se ven, pero no suman.
+- Todo el equipo ve los cobros de un proyecto; solo socios y admin los crean o cambian. El día del cobro aparece "Hoy toca cobrar" en el centro de operaciones. "Excel (12 meses)" descarga el calendario con separador `;`.
 
 **Clientes (`/clientes`).** Ficha de cada cliente con contacto (WhatsApp y correo), quién lleva la relación, proyectos, valor abierto, último contacto, próxima cita e historial de avances. Los clientes se eligen desde proyectos y agenda, y la agenda completa el contacto sola.
 
@@ -35,14 +43,14 @@ En el celular, la barra inferior trae Inicio, Tablero, un botón **"+"** de acci
 **Inversiones (`/inversiones`, solo socios y admin).** El ciclo del dinero es el siguiente:
 
 1. Se registra un **aporte** (socio → inversión) o un **retorno** (inversión → socio) con **mensaje obligatorio** y referencia SINPE opcional.
-2. Queda **por confirmar**, con **doble control**:
-   - si lo registra el mismo socio, lo confirma otro socio (quien recibió la plata);
-   - si lo registra otra persona, lo confirma el socio del movimiento;
-   - si ese socio ya no tiene acceso (desactivado o pasado a colaborador), lo confirma otro socio, que custodia su parte.
-3. Quien confirma responde con su **mensaje de vuelta** ("Recibido ✓…") u **objeta** con el motivo.
-4. **Solo lo confirmado** suma en los indicadores. Un movimiento confirmado no se edita: si hubo un error, un admin lo **anula con motivo** y queda en la bitácora.
+2. **La administración aprueba toda la plata** (rol admin):
+   - si lo registra un administrador, queda **aprobado de una vez** y la persona del movimiento recibe el aviso;
+   - si lo registra un socio o lo avisa un inversionista, queda **por aprobar** hasta que un administrador lo revise.
+   Ni los socios ni los inversionistas aprueban movimientos, tampoco los suyos.
+3. El administrador **aprueba con un toque** (desde el buzón o la inversión; la nota es opcional) o **rechaza** con el motivo.
+4. **Solo lo aprobado** suma en los indicadores. Un movimiento aprobado no se edita: si hubo un error, un admin lo **anula con motivo** y queda en la bitácora.
 
-"Repartir retorno" divide un monto entre los socios **según su capital confirmado**, con redondeo exacto (la suma siempre da el total). Cada socio confirma su parte.
+"Repartir retorno" divide un monto entre los socios **según su capital aprobado**, con redondeo exacto (la suma siempre da el total). Si lo reparte el admin, todas las partes quedan aprobadas; si lo reparte un socio, esperan la aprobación del admin.
 
 Indicadores disponibles:
 - capital aportado, retornado y neto;
@@ -53,7 +61,7 @@ Indicadores disponibles:
 
 Los movimientos en dólares **guardan su tipo de cambio**, así el consolidado en colones no cambia con el tiempo. La exportación a Excel usa separador `;` y BOM UTF-8.
 
-**Buzón (`/buzon`).** Reúne los movimientos por confirmar, con la respuesta en el mismo lugar, y los avisos (tareas asignadas, citas, comentarios, confirmaciones).
+**Buzón (`/buzon`).** Al admin le reúne los movimientos por aprobar, con "Aprobar" y "Rechazar" en cada uno; a los socios, lo que registraron y sigue esperando. También trae los avisos (tareas asignadas, citas, comentarios, aprobaciones).
 
 **Briefs (`/briefs`).** Bandeja de los briefs creativos de todos los clientes, ordenada por lo que requiere acción: primero los enviados por revisar, después los que tienen ajustes y los que están en producción.
 - El formulario sigue el formato CREATIVIDAD: material requerido, objetivo, marca, oferta, mensaje clave, URLs de redireccionamiento, RRSS, base de datos, editable, creatividad, configuración de envío, correo de testeo, fecha de envío, disclaimer, línea gráfica y nota.
@@ -86,12 +94,12 @@ Cada aprobación, cambio pedido o brief enviado avisa al equipo, en el buzón y 
 
 | Automatización | Cuándo | A quién |
 |---|---|---|
-| Resumen "Mi día" | A la hora que elige cada persona (7:30 por defecto) | Cada persona: citas, tareas y plata por confirmar de hoy |
+| Resumen "Mi día" | A la hora que elige cada persona (7:30 por defecto) | Cada persona: citas y tareas de hoy; al admin, también la plata por aprobar |
 | Recordatorio de citas | 60 min antes (ajustable) | Participantes |
 | Cita sin confirmar | Menos de 24 h antes, si sigue "programada" | Quien agendó y participantes |
 | Avance de 72 h | A los 2/3 del plazo y al vencer | Responsable; si vence, también los admin |
 | Tareas que vencen hoy | 8:00 | Asignado |
-| Dinero sin confirmar | 9:00, si lleva más de 24 h | Quien debe confirmarlo |
+| Dinero sin aprobar | 9:00, si lleva más de 24 h | Los administradores |
 | Fin del soporte de 30 días | 7 días antes, 8:30 | Responsable |
 | Tareas recurrentes | 6:00, según cada regla (diaria, semanal o mensual) | Crea la tarea y avisa al asignado |
 | Tipo de cambio | 8:15, desde la API de Hacienda | Actualiza el valor de referencia y avisa a los admin |
@@ -102,7 +110,7 @@ El admin las pausa, ajusta su hora y las prueba con "Probar ahora". "Lo que hizo
 - instala el portal en su celular;
 - activa los avisos en ese dispositivo;
 - elige qué le avisamos: tareas, citas, proyectos, dinero (solo socios), resumen y alertas;
-- define su horario tranquilo (21:00–7:00 por defecto). De noche solo suena la plata por confirmar; todo lo demás queda en el buzón.
+- define su horario tranquilo (21:00–7:00 por defecto). De noche solo suenan los movimientos de plata; todo lo demás queda en el buzón.
 
 ### Apariencia: claro, oscuro o automático
 
@@ -128,15 +136,15 @@ node scripts/capturas.mjs capturas --tema=dark --solo=inicio,inversiones
 
 ### Roles
 
-- **Administrador.** Puede hacer todo, además de gestionar personas, permisos por inversionista, ajustes y respaldos, y anular movimientos ya confirmados.
-- **Socio.** Accede a proyectos, tablero, agenda y todas las inversiones. Solo el administrador cambia los permisos de los inversionistas.
+- **Administrador.** Puede hacer todo, además de gestionar personas, permisos por inversionista, ajustes y respaldos. Es **quien aprueba o rechaza** cada aporte y retorno, y anula movimientos ya aprobados.
+- **Socio.** Accede a proyectos, tablero, agenda y todas las inversiones. Registra aportes y retornos, que quedan por aprobar. Solo el administrador cambia los permisos de los inversionistas.
 - **Colaborador.** Accede a proyectos, tablero y agenda. **No ve inversiones** (ni en la API, el centro de operaciones, la bitácora o los avisos). Puede dar accesos al portal de clientes solo para los clientes que lleva.
 - **Cliente** (v5). Es una identidad aparte y solo entra a `/cliente`. Ve solo lo de su empresa. Puede aprobar entregables si su acceso lo permite.
 - **Inversionista** (v6). Solo entra a `/inversionista`, su portal:
   - ve su capital, sus retornos, su participación y su TIR;
-  - confirma u objeta los movimientos a su nombre;
+  - avisa sus aportes (quedan por aprobar) y escribe en el hilo de sus movimientos; no aprueba nada;
   - explora las inversiones que le habilitó el administrador, avisa aportes en ellas y descarga su estado de cuenta en Excel;
-  - conserva su historial, confirmaciones y retornos si el administrador retira el permiso para nuevos aportes.
+  - conserva su historial, aprobaciones y retornos si el administrador retira el permiso para nuevos aportes.
 
   No ve la operación, ni los nombres o montos de otros socios, ni las notas internas. Ver `docs/v6-contrato.md` y `docs/club-de-inversionistas.md`.
 
@@ -148,10 +156,10 @@ portal/
 │   ├── app.mjs        rutas, sesión, permisos por rol, CSRF, encabezados de seguridad
 │   ├── db.mjs         SQLite (node:sqlite) con migraciones versionadas
 │   ├── routes/        core (sesión/equipo/ajustes/buzón/bitácora/respaldo), work (proyectos/tablero/agenda),
-│   │                  investments (aportes/retornos/confirmaciones/CSV), dashboard
+│   │                  charges (cobros únicos y recurrentes/CSV), investments (aportes/retornos/aprobaciones/CSV), dashboard
 │   ├── cli.mjs        alta y reseteo de usuarios por consola
 │   └── seed-demo.mjs  datos de demostración (nunca en producción)
-├── shared/            lógica compartida servidor/navegador: montos, reparto pro-rata, TIR, catálogos
+├── shared/            lógica compartida servidor/navegador: montos, reparto pro-rata, TIR, calendario de cobros, catálogos
 ├── src/               React 19 + Vite + Tailwind 4 (marca JC Analytics, responsive)
 └── tests/             node:test (API + finanzas) y prueba E2E en navegador real
 ```
@@ -176,7 +184,7 @@ npm run dev              # en otra terminal: interfaz en http://localhost:5173
 
 Las cuentas demo son `jeyrell@demo.jcanalytic.local` (admin), `catalina@…`, `alex@…`, `socio5@…` (socios) y `hillary@…` (colaboradora). La contraseña de todas es `DemoPortal2026`. Para recrear la base demo: `npm run seed:demo -- --reset`.
 
-Inversionista (v6): `angel@demo.jcanalytic.local`, que tiene un aporte confirmado y otro esperando su confirmación en BarberXCR.
+Inversionista (v6): `angel@demo.jcanalytic.local`, que tiene un aporte aprobado y otro que avisó él, esperando la aprobación del admin en BarberXCR.
 
 Portal de clientes (v5): `laburrada@clientes.demo.jcanalytic.local` (aprueba entregables), `marketing.laburrada@clientes.demo.jcanalytic.local` (solo lectura de entregables) y `uniquex@clientes.demo.jcanalytic.local`, con la misma contraseña. Se ingresa en `/cliente` con la opción "Cliente" del login.
 
@@ -195,7 +203,7 @@ Es el portal completo **sin servidor**: el backend real (migraciones, rutas y pe
 
 ```sh
 npm run lint
-npm test            # API, permisos, doble control, reparto, TIR, CSV, sesiones
+npm test            # API, permisos, aprobación del admin, reparto, TIR, CSV, sesiones
 npm run build
 npm run e2e         # navegador real: escritorio 1440 px y móvil 390 px, capturas en test-results/
 ```

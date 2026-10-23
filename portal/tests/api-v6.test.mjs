@@ -79,7 +79,7 @@ test('migración 6: reconstruir users conserva datos, sesiones y claves foránea
   assert.throws(() => db.prepare("INSERT INTO users (email, name, role, password_hash, created_at) VALUES ('x@jc.test', 'X', 'jefe', 'h', ?)").run(at), /CHECK/);
 });
 
-test('inversionista: acceso solo a su portal, con doble control sobre SU dinero', async () => {
+test('inversionista: acceso solo a su portal; la administración aprueba SU dinero', async () => {
   const env = await boot();
   const ids = { admin: env.addUser('jeyrell@jc.test', 'Jeyrell', 'admin'), ana: env.addUser('ana@jc.test', 'Ana', 'socio'), beto: env.addUser('beto@jc.test', 'Beto', 'socio') };
   const as = async (mail) => { const c = env.client(); assert.equal((await c.login(mail)).status, 200); return c; };
@@ -113,18 +113,22 @@ test('inversionista: acceso solo a su portal, con doble control sobre SU dinero'
   assert.equal((await admin.call('PUT', `/api/investments/${investment.id}/access`, { allowed_investor_ids: [invId] })).status, 200);
   assert.ok(!(await inv.get('/api/investor/notifications')).data.notifications.some((n) => n.kind === 'investment'));
 
-  // Ana registra el aporte de la inversionista: lo confirma ELLA, no otro socio.
+  // Ana registra el aporte de la inversionista: no lo aprueba ni otro socio ni ella; lo aprueba el admin.
   const mov = (await ana.post(`/api/investments/${investment.id}/movements`, { type: 'aporte', partner_id: invId, amount: 1_000_000_00, message: 'Aporte inicial de Ángel por SINPE' })).data.movement;
   assert.equal((await beto.post(`/api/movements/${mov.id}/confirm`, {})).data.error, 'not_your_confirmation');
   let overview = (await inv.get('/api/investor/overview')).data;
-  assert.deepEqual(overview.to_confirm.map((m) => m.id), [mov.id]);
-  assert.ok((await inv.get('/api/investor/notifications')).data.notifications.some((n) => n.kind === 'movement'));
-  assert.equal((await inv.post(`/api/investor/movements/${mov.id}/confirm`, { message: 'Recibido ✓' })).status, 200);
+  assert.equal(overview.to_confirm, undefined, 'la inversionista ya no tiene nada que confirmar');
+  const pendingMine = overview.recent.find((m) => m.id === mov.id);
+  assert.equal(pendingMine.awaiting, 'JC Analytics');
+  assert.equal(pendingMine.can_resolve, undefined);
+  assert.equal((await inv.post(`/api/investor/movements/${mov.id}/confirm`, {})).status, 404, 'la ruta de confirmar ya no existe');
+  assert.equal((await inv.post(`/api/investor/movements/${mov.id}/object`, { message: 'No coincide' })).status, 404);
+  assert.equal((await admin.post(`/api/movements/${mov.id}/confirm`, { message: 'Recibido ✓' })).status, 200);
+  assert.ok((await inv.get('/api/investor/notifications')).data.notifications.some((n) => n.kind === 'movement' && n.title.includes('aprobó')));
 
-  // Los socios aportan también; la inversionista no ve sus movimientos ni sus nombres, y no los confirma.
+  // Los socios aportan también; la inversionista no ve sus movimientos ni sus nombres.
   const anaMov = (await ana.post(`/api/investments/${investment.id}/movements`, { type: 'aporte', partner_id: ids.ana, amount: 3_000_000_00, message: 'Aporte de Ana' })).data.movement;
-  assert.equal((await inv.post(`/api/investor/movements/${anaMov.id}/confirm`, {})).status, 404);
-  await beto.post(`/api/movements/${anaMov.id}/confirm`, {});
+  await admin.post(`/api/movements/${anaMov.id}/confirm`, {});
   overview = (await inv.get('/api/investor/overview')).data;
   assert.equal(overview.portfolio.contributed_crc, 1_000_000_00);
   const position = overview.investments.find((i) => i.id === investment.id);
@@ -136,19 +140,21 @@ test('inversionista: acceso solo a su portal, con doble control sobre SU dinero'
   assert.ok(!overview.investments.some((i) => i.id === other.id), 'solo inversiones donde participa');
   assert.equal((await inv.get(`/api/investor/investments/${other.id}`)).status, 404);
 
-  // Reparto pro-rata: le toca su 25 % y lo confirma ella.
-  const dist = (await ana.post(`/api/investments/${investment.id}/distribute`, { amount: 400_000_00, message: 'Retorno de octubre' })).data;
+  // Reparto pro-rata (lo registra el admin): le toca su 25 % y ya llega aprobado, con aviso.
+  const dist = (await admin.post(`/api/investments/${investment.id}/distribute`, { amount: 400_000_00, message: 'Retorno de octubre' })).data;
   const mine = dist.movements.find((m) => m.partner_id === invId);
   assert.equal(mine.amount, 100_000_00);
-  await inv.post(`/api/investor/movements/${mine.id}/confirm`, {});
+  assert.equal(mine.status, 'confirmado');
+  assert.ok((await inv.get('/api/investor/notifications')).data.notifications.some((n) => n.link.endsWith(`mov=${mine.id}`) && n.title.startsWith('Retorno registrado')));
   assert.equal((await inv.get('/api/investor/overview')).data.portfolio.returned_crc, 100_000_00);
 
-  // Aviso de aporte propio: queda por confirmar por un socio; ella no se lo confirma.
+  // Aviso de aporte propio: queda por aprobar; solo el admin lo ve en su bandeja.
   const own = await inv.post(`/api/investor/investments/${investment.id}/movements`, { amount: 500_000_00, message: 'Envié el segundo aporte', reference: 'SINPE 4455' });
   assert.equal(own.status, 200, JSON.stringify(own.data));
-  assert.equal(own.data.movement.can_resolve, false);
-  assert.equal((await inv.post(`/api/investor/movements/${own.data.movement.id}/confirm`, {})).data.error, 'not_your_confirmation');
-  assert.ok((await beto.get('/api/movements/pending')).data.to_confirm.some((m) => m.id === own.data.movement.id));
+  assert.equal(own.data.movement.status, 'pendiente');
+  assert.ok((await admin.get('/api/movements/pending')).data.to_confirm.some((m) => m.id === own.data.movement.id));
+  assert.equal((await beto.get('/api/movements/pending')).data.to_confirm.length, 0, 'los socios no aprueban');
+  assert.ok((await admin.get('/api/notifications')).data.notifications.some((n) => n.title.startsWith('Aprobá un aporte de Inversionista Ángel')));
   assert.equal((await inv.post(`/api/investor/investments/${investment.id}/movements`, { type: 'retorno', amount: 1, message: 'xxx' })).data.field, 'type');
   // Lo puede retirar mientras nadie lo confirme.
   assert.equal((await inv.post(`/api/investor/movements/${own.data.movement.id}/annul`, { message: 'Monto equivocado' })).data.movement.status, 'anulado');

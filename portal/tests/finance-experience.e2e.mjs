@@ -156,7 +156,7 @@ try {
     await staff.getByLabel('Capital a devolver').fill('20000');
     await staff.getByRole('button', { name: 'Registrar envío realizado', exact: true }).click();
     dialog = staff.getByRole('dialog');
-    const record = dialog.getByRole('button', { name: 'Registrar y pedir confirmación', exact: true });
+    const record = dialog.getByRole('button', { name: 'Registrar y aprobar', exact: true });
     await dialog.getByLabel('Mensaje para quienes reciben').fill('Anticipo de septiembre y capital devuelto de prueba');
     assert.equal(await record.isDisabled(), true, 'real sending acknowledgment is mandatory');
     await dialog.getByRole('checkbox', { name: /^Confirmo que envié/ }).check();
@@ -164,7 +164,7 @@ try {
     await dialog.waitFor({ state: 'hidden' });
     assert.equal(result.movements.length, 2);
     const rows = db.prepare("SELECT * FROM movements WHERE investment_id=? AND type='retorno' ORDER BY amount").all(investmentId);
-    assert.deepEqual(rows.map(row => [row.return_kind, row.amount, row.status, row.partner_id]), [['capital', 20_000_00, 'pendiente', owner.id], ['profit', 60_000_00, 'pendiente', owner.id]]);
+    assert.deepEqual(rows.map(row => [row.return_kind, row.amount, row.status, row.partner_id]), [['capital', 20_000_00, 'confirmado', owner.id], ['profit', 60_000_00, 'confirmado', owner.id]], 'lo declara el admin: queda aprobado');
     const preview = await json(staff, `/api/finance/distributions/preview?investment_id=${investmentId}&month=2026-09`);
     assert.equal(preview.totals.profit_reserved, 60_000_00);
     assert.equal(preview.totals.profit_available, 0);
@@ -191,16 +191,12 @@ try {
   });
 
   const investor = await login(owner);
-  await check('investor confirms each receipt and sees profit, principal returned and principal outstanding separately', async () => {
+  await check('investor receives approved receipts and sees profit, principal returned and principal outstanding separately', async () => {
     await open(investor, `/inversionista/inversiones/${investmentId}`);
-    const pending = (await json(investor, `/api/investor/investments/${investmentId}`)).movements.filter(row => row.status === 'pendiente');
-    assert.equal(pending.length, 2);
-    for (const movement of pending) {
-      await investor.locator(`#mov-${movement.id}`).getByRole('button', { name: 'Confirmar', exact: true }).click();
-      await submit(investor, `/api/investor/movements/${movement.id}/confirm`, investor.getByRole('dialog').getByRole('button', { name: 'Sí, confirmar', exact: true }));
-      await investor.getByRole('dialog').waitFor({ state: 'hidden' });
-    }
-    await open(investor, `/inversionista/inversiones/${investmentId}`);
+    assert.equal((await json(investor, `/api/investor/investments/${investmentId}`)).movements.filter(row => row.status === 'pendiente').length, 0, 'nothing waits on the investor');
+    assert.equal(await investor.getByRole('button', { name: 'Confirmar', exact: true }).count(), 0, 'the investor has nothing to confirm');
+    const notices = (await json(investor, '/api/investor/notifications')).notifications.filter(row => row.title.startsWith('Retorno registrado'));
+    assert.equal(notices.length, 2, 'one notice per approved receipt');
     const { investment, movements } = await json(investor, `/api/investor/investments/${investmentId}`);
     assert.equal(investment.mine.profit_returned, 60_000_00);
     assert.equal(investment.mine.capital_returned, 20_000_00);

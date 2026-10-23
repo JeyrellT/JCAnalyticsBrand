@@ -135,7 +135,7 @@ try {
     assert.ok(!('partners' in detail.investment.totals));
     for (const route of ['/api/projects', '/api/investments', '/api/users', '/api/dashboard']) assert.equal((await page.request.get(`${base}${route}`)).status(), 403, route);
     assert.equal((await page.request.get(`${base}/api/investor/investments/${hiddenId}`)).status(), 404);
-    assert.equal((await page.request.post(`${base}/api/investor/movements/${foreignMovement}/confirm`, { headers: { 'x-portal-request': '1' } })).status(), 404);
+    assert.equal((await page.request.post(`${base}/api/investor/movements/${foreignMovement}/messages`, { headers: { 'x-portal-request': '1' }, data: { body: 'No es mío.' } })).status(), 404);
     const csv = await page.request.get(`${base}/api/investor/statement.csv`);
     assert.equal(csv.status(), 200);
     assert.ok(!(await csv.text()).includes(secretMarker));
@@ -198,7 +198,7 @@ try {
     assert.ok(!(await page.locator('.ii-position').textContent()).includes(secretMarker));
     await views.getByRole('button', { name: 'Tu parte', exact: true }).click();
     const filters = page.getByRole('group', { name: 'Filtrar movimientos', exact: true });
-    for (const [label, predicate] of [['Pendientes', (row) => row.status === 'pendiente'], ['Confirmados', (row) => row.status === 'confirmado'], ['Retornos', (row) => row.type === 'retorno'], ['Todos', () => true]]) {
+    for (const [label, predicate] of [['Pendientes', (row) => row.status === 'pendiente'], ['Aprobados', (row) => row.status === 'confirmado'], ['Retornos', (row) => row.type === 'retorno'], ['Todos', () => true]]) {
       await filters.getByRole('button', { name: label, exact: true }).click();
       assert.equal(await filters.getByRole('button', { name: label, exact: true }).getAttribute('aria-pressed'), 'true');
       assert.deepEqual(await page.locator('#ii-ledger article[id^="mov-"]').evaluateAll((nodes) => nodes.map((node) => Number(node.id.slice(4)))), movements.filter(predicate).map((row) => row.id));
@@ -301,21 +301,25 @@ try {
     } finally { await empty.context().close(); currentPage = page; }
   });
 
-  await check('confirming an owned movement updates only the expected confirmed total', async () => {
+  await check('admin approval of an owned movement updates only the expected confirmed total', async () => {
     currentPage = page;
     await open(page);
     const before = await json(page, '/api/investor/overview');
-    const pending = before.to_confirm.find((row) => row.type === 'aporte');
-    assert.ok(pending, 'fixture has an own contribution awaiting confirmation');
+    const pending = (await json(page, '/api/investor/movements')).movements.find((row) => row.type === 'aporte' && row.status === 'pendiente');
+    assert.ok(pending, 'fixture has an own contribution awaiting approval');
+    assert.equal(pending.awaiting, 'JC Analytics');
     await open(page, `/inversionista/inversiones/${pending.investment_id}?mov=${pending.id}`);
-    await page.locator(`#mov-${pending.id}`).getByRole('button', { name: 'Confirmar', exact: true }).click();
-    const confirm = page.getByRole('dialog', { name: /Confirmás/ });
-    await confirm.getByRole('button', { name: 'Sí, confirmar', exact: true }).click();
-    await waitUntil(async () => !(await json(page, '/api/investor/overview')).to_confirm.some((row) => row.id === pending.id), 'confirmation removes only the resolved request');
+    await page.locator(`#mov-${pending.id}`).getByText('Esperando que JC Analytics lo apruebe', { exact: false }).waitFor();
+    assert.equal(await page.getByRole('button', { name: 'Confirmar', exact: true }).count(), 0, 'the investor no longer approves');
+    currentPage = staff;
+    await staff.goto(`${base}/inversiones/${pending.investment_id}?mov=${pending.id}`);
+    await staff.locator(`#mov-${pending.id}`).getByRole('button', { name: 'Aprobar', exact: true }).click();
+    await staff.getByText('Aprobado. Ya suma en los indicadores.').waitFor();
+    currentPage = page;
+    await waitUntil(async () => (await json(page, '/api/investor/overview')).portfolio.pending_count === before.portfolio.pending_count - 1, 'approval resolves only that movement');
     const after = await json(page, '/api/investor/overview');
     assert.equal(after.portfolio.contributed_crc, before.portfolio.contributed_crc + pending.amount_crc);
     assert.equal(after.portfolio.returned_crc, before.portfolio.returned_crc);
-    assert.equal(after.to_confirm.length, before.to_confirm.length - 1);
     assert.equal(db.prepare('SELECT status FROM movements WHERE id = ?').get(foreignMovement).status, 'confirmado');
   });
 

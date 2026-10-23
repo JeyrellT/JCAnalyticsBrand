@@ -5,13 +5,13 @@
 //    1. Alguien registra un APORTE (socio → inversión) o un RETORNO
 //       (inversión → socio) con un mensaje obligatorio y, opcionalmente, la
 //       referencia SINPE/transferencia.
-//    2. Queda "por confirmar". Doble control:
-//         · si quien registra es el mismo socio del movimiento, confirma otro
-//           socio (quien recibió la plata);
-//         · si lo registra otra persona, confirma el socio del movimiento.
-//    3. Quien confirma responde con su "mensaje de vuelta" (Recibido ✓) u
-//       objeta con el motivo. Solo lo confirmado cuenta en las métricas.
-//    4. Un movimiento confirmado no se edita. Si hubo un error, un
+//    2. La administración aprueba toda la plata (rol admin):
+//         · si lo registra un administrador, queda aprobado de una vez;
+//         · si lo registra un socio o lo avisa un inversionista, queda
+//           "por aprobar" hasta que un administrador lo revise.
+//    3. El administrador aprueba (con un mensaje de vuelta opcional) o
+//       rechaza con el motivo. Solo lo aprobado cuenta en las métricas.
+//    4. Un movimiento aprobado no se edita. Si hubo un error, un
 //       administrador lo anula con motivo y queda en la bitácora.
 // ============================================================================
 
@@ -26,8 +26,8 @@ import { createInvestmentAccess } from '../investment-access.mjs';
 
 /**
  * Reglas y lecturas de dinero compartidas por las rutas de socios (abajo) y el
- * portal de inversionistas (routes/investor.mjs): un solo lugar para la doble
- * confirmación, los avisos y las métricas.
+ * portal de inversionistas (routes/investor.mjs): un solo lugar para la
+ * aprobación, los avisos y las métricas.
  */
 export function createMoney(ctx) {
   const { db } = ctx;
@@ -40,26 +40,18 @@ export function createMoney(ctx) {
   const allMovements = () => db.prepare('SELECT * FROM movements').all();
   const crcOf = (m) => toCRC(m.amount, m.currency, m.fx_rate);
 
-  /** ¿La persona sigue activa y puede tener capital (socio, admin o inversionista)? */
-  const isActiveInvestor = (userId) => !!db.prepare("SELECT 1 FROM users WHERE id = ? AND active = 1 AND role IN ('admin','socio','inversionista')").get(userId);
-  /**
-   * Confirma "cualquier otro socio" cuando quien registró es el mismo socio, o cuando ese
-   * socio ya no tiene acceso (desactivado o colaborador): alguien debe custodiar su parte.
-   */
-  const anyInvestorConfirms = (m) => m.created_by === m.partner_id || !isActiveInvestor(m.partner_id);
-
-  /** Quién puede confirmar u objetar un movimiento pendiente. */
-  function canResolve(m, user) {
-    if (m.status !== 'pendiente' || m.created_by === user.id) return false;
-    // Un inversionista no custodia plata ajena: solo responde por los movimientos a su nombre.
-    if (user.role === 'inversionista') return m.partner_id === user.id;
-    return anyInvestorConfirms(m) || m.partner_id === user.id;
+  /** Solo la administración aprueba la plata: un admin confirma o rechaza cualquier movimiento. */
+  const isApprover = (user) => user.role === 'admin';
+  const approverIds = () => db.prepare("SELECT id FROM users WHERE active = 1 AND role = 'admin' ORDER BY id").all().map((r) => r.id);
+  /** A quién espera un pendiente: el nombre del admin si hay uno solo; si no, "la administración". */
+  function approverLabel() {
+    const admins = db.prepare("SELECT name FROM users WHERE active = 1 AND role = 'admin'").all();
+    return admins.length === 1 ? admins[0].name : 'la administración';
   }
+
+  /** Quién puede aprobar o rechazar un movimiento pendiente (también lo que registró él mismo antes de esta regla). */
+  const canResolve = (m, user) => m.status === 'pendiente' && isApprover(user);
   const canAnnul = (m, user) => m.status !== 'anulado' && (user.role === 'admin' || (m.created_by === user.id && m.status !== 'confirmado'));
-
-  function confirmersFor(m) {
-    return anyInvestorConfirms(m) ? ctx.investorIds().filter((u) => u !== m.created_by) : [m.partner_id];
-  }
 
   function partnerOrFail(partnerId) {
     const p = db.prepare("SELECT * FROM users WHERE id = ? AND active = 1 AND role IN ('admin','socio','inversionista')").get(partnerId);
@@ -106,33 +98,38 @@ export function createMoney(ctx) {
       if (amount > contributed - reserved) fail(409, 'payout_exceeds_available');
     }
     const at = ctx.nowIso();
+    // Lo que registra un administrador ya está aprobado: no se le pide a nadie más que lo confirme.
+    const approved = isApprover(user);
     const { lastInsertRowid } = db.prepare(`INSERT INTO movements (investment_id, partner_id, type, amount, currency, fx_rate, date, message, reference,
-      status, batch_id, created_by, created_at, return_kind, return_capital_amount, return_profit_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?, ?, ?, ?)`).run(
-      investment.id, partner.id, type, amount, investment.currency, fxRate, date, message, reference, batchId, user.id, at,
+      status, batch_id, created_by, created_at, resolved_by, resolved_at, return_kind, return_capital_amount, return_profit_amount)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      investment.id, partner.id, type, amount, investment.currency, fxRate, date, message, reference, approved ? 'confirmado' : 'pendiente', batchId, user.id, at,
+      approved ? user.id : null, approved ? at : null,
       type === 'retorno' ? returnKind : 'unclassified', type === 'retorno' && returnKind === 'capital' ? amount : null, type === 'retorno' && returnKind === 'profit' ? amount : null,
     );
     const movementId = Number(lastInsertRowid);
     db.prepare("INSERT INTO movement_messages (movement_id, user_id, kind, body, created_at) VALUES (?, ?, 'registro', ?, ?)").run(movementId, user.id, message, at);
+    if (approved) addMessage(movementId, user.id, 'confirmacion', 'Aprobado al registrarlo ✓');
     return db.prepare('SELECT * FROM movements WHERE id = ?').get(movementId);
   }
 
   function announce(m, investment, user) {
     const amount = formatMoney(m.amount, m.currency);
     const partnerName = ctx.userName(m.partner_id);
-    // Si confirma el propio dueño del movimiento (socio o inversionista), se le habla de vos.
-    const toPartner = !anyInvestorConfirms(m);
-    const title = toPartner
-      ? `Confirmá tu ${m.type === 'aporte' ? 'aporte' : 'retorno'}: ${amount}`
-      : m.type === 'aporte'
-        ? `Confirmá un aporte de ${partnerName}: ${amount}`
-        : `Confirmá un retorno${m.partner_id === user.id ? ` a ${partnerName}` : ''}: ${amount}`;
-    ctx.notify(confirmersFor(m), user.id, { kind: 'movement', title, body: `${investment.name} · ${user.name}: ${m.message.slice(0, 140)}`, link: `/inversiones/${investment.id}?mov=${m.id}` });
+    const notice = { kind: 'movement', body: `${investment.name} · ${user.name}: ${m.message.slice(0, 140)}`, link: `/inversiones/${investment.id}?mov=${m.id}` };
+    // Aprobado al registrarlo: solo se le cuenta a la persona del movimiento, ya suma en sus totales.
+    if (m.status === 'confirmado') {
+      ctx.notify([m.partner_id], user.id, { ...notice, title: `${m.type === 'aporte' ? 'Aporte registrado' : 'Retorno registrado'}: ${amount}` });
+      return;
+    }
+    const title = m.type === 'aporte' ? `Aprobá un aporte de ${partnerName}: ${amount}` : `Aprobá un retorno a ${partnerName}: ${amount}`;
+    ctx.notify(approverIds(), user.id, { ...notice, title });
   }
 
   const getMovement = (movementId) => db.prepare('SELECT * FROM movements WHERE id = ?').get(movementId) ?? fail(404, 'not_found');
-  /** Una vez resuelto, los avisos "Confirmá…" de ese movimiento ya no piden acción a nadie. */
-  const settleRequests = (movementId) => db.prepare("UPDATE notifications SET read_at = ? WHERE read_at IS NULL AND kind = 'movement' AND title LIKE 'Confirmá%' AND link LIKE ?")
-    .run(ctx.nowIso(), `%?mov=${movementId}`);
+  /** Una vez resuelto, los avisos "Aprobá…" (o los "Confirmá…" de antes) de ese movimiento ya no piden acción a nadie. */
+  const settleRequests = (movementId) => db.prepare(`UPDATE notifications SET read_at = ? WHERE read_at IS NULL AND kind = 'movement'
+    AND (title LIKE 'Aprobá%' OR title LIKE 'Confirmá%') AND link LIKE ?`).run(ctx.nowIso(), `%?mov=${movementId}`);
   const addMessage = (movementId, userId, kind, bodyText) => db.prepare('INSERT INTO movement_messages (movement_id, user_id, kind, body, created_at) VALUES (?, ?, ?, ?, ?)')
     .run(movementId, userId, kind, bodyText, ctx.nowIso());
 
@@ -141,7 +138,7 @@ export function createMoney(ctx) {
     if (m.status !== 'pendiente') fail(409, 'not_pending');
     if (!canResolve(m, user)) fail(403, 'not_your_confirmation');
     const reply = outcome === 'confirmado'
-      ? text(body.message, 'message', { max: 1000 }) ?? 'Recibido ✓'
+      ? text(body.message, 'message', { max: 1000 }) ?? 'Aprobado ✓'
       : text(body.message, 'message', { max: 1000, min: 3, required: true });
     const investment = getInvestment(m.investment_id);
     transaction(db, () => {
@@ -150,7 +147,7 @@ export function createMoney(ctx) {
       settleRequests(m.id);
     });
     const amount = formatMoney(m.amount, m.currency);
-    const verb = outcome === 'confirmado' ? 'confirmó' : 'objetó';
+    const verb = outcome === 'confirmado' ? 'aprobó' : 'rechazó';
     ctx.log(user.id, 'movement', m.id, outcome, `${user.name} ${verb} ${m.type === 'aporte' ? 'el aporte' : 'el retorno'} de ${amount} en ${investment.name}`, { sensitive: true });
     ctx.notify([m.created_by, m.partner_id], user.id, {
       kind: 'movement',
@@ -162,7 +159,7 @@ export function createMoney(ctx) {
   }
 
   return {
-    getInvestment, movementsOf, allMovements, crcOf, isActiveInvestor, anyInvestorConfirms, canResolve, canAnnul, confirmersFor,
+    getInvestment, movementsOf, allMovements, crcOf, isApprover, approverIds, approverLabel, canResolve, canAnnul,
     partnerOrFail, fxFor, movementDate, summarize, insertMovement, announce, getMovement, settleRequests, addMessage, resolve,
   };
 }
@@ -171,7 +168,7 @@ export function investmentRoutes(route, ctx) {
   const { db } = ctx;
   const { allowedInvestorIds, requireContributionAccess } = createInvestmentAccess(db);
   const {
-    getInvestment, movementsOf, allMovements, crcOf, anyInvestorConfirms, canResolve, canAnnul,
+    getInvestment, movementsOf, allMovements, crcOf, approverLabel, canResolve, canAnnul,
     partnerOrFail, fxFor, movementDate, summarize, insertMovement, announce, getMovement, addMessage, settleRequests, resolve,
   } = createMoney(ctx);
 
@@ -255,6 +252,7 @@ export function investmentRoutes(route, ctx) {
   route('GET', '/api/investments/:id', 'invest', ({ user, params }) => {
     const investment = getInvestment(params.id);
     const movements = movementsOf(investment.id);
+    const approver = approverLabel();
     const messages = Map.groupBy(
       db.prepare(`SELECT mm.*, u.name user_name, u.color user_color FROM movement_messages mm JOIN users u ON u.id = mm.user_id
         JOIN movements m ON m.id = mm.movement_id WHERE m.investment_id = ? ORDER BY mm.created_at, mm.id`).all(investment.id),
@@ -271,7 +269,7 @@ export function investmentRoutes(route, ctx) {
         messages: messages.get(m.id) ?? [],
         can_resolve: canResolve(m, user),
         can_annul: canAnnul(m, user),
-        awaiting: m.status === 'pendiente' ? (anyInvestorConfirms(m) ? 'otro socio' : m.partner_name) : null,
+        awaiting: m.status === 'pendiente' ? approver : null,
       })),
       notes: db.prepare(`SELECT n.*, u.name user_name, u.color user_color FROM investment_notes n JOIN users u ON u.id = n.user_id
         WHERE n.investment_id = ? ORDER BY n.created_at DESC, n.id DESC`).all(investment.id),
@@ -376,7 +374,7 @@ export function investmentRoutes(route, ctx) {
     const batchId = randomUUID();
     const created = transaction(db, () => holders.map((holder, i) => {
       if (!shares[i]) return null;
-      // El capital de un socio que ya no está activo igual le corresponde: su parte se registra y la confirma otro socio.
+      // El capital de un socio que ya no está activo igual le corresponde: su parte se registra igual.
       const partner = db.prepare('SELECT * FROM users WHERE id = ?').get(holder.partner_id);
       const detail = `${message}\nTu parte: ${formatPercent(holder.share)} de ${formatMoney(amount, investment.currency)}.`;
       return insertMovement({ investment, partner, type: 'retorno', amount: shares[i], fxRate, date, message: detail, reference, batchId, user });
@@ -387,7 +385,7 @@ export function investmentRoutes(route, ctx) {
     return { movements: created, batch_id: batchId };
   });
 
-  /** Bandeja "por confirmar" del usuario, con contexto para responder sin abrir cada inversión. */
+  /** Bandeja "por aprobar" (solo admin) y lo que registró el usuario, con contexto para responder sin abrir cada inversión. */
   route('GET', '/api/movements/pending', 'invest', ({ user }) => {
     const pending = pendingForUser(ctx, user);
     const mine = db.prepare(`SELECT m.* FROM movements m WHERE m.created_by = ? AND m.status IN ('pendiente','objetado') ORDER BY m.created_at DESC`).all(user.id);

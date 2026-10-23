@@ -652,6 +652,24 @@ export const MIGRATIONS = [
   );
   CREATE INDEX mcp_tokens_user ON mcp_tokens(user_id, revoked_at);
   `,
+  // 11 · Cobros de los proyectos: pagos únicos y recurrentes (semanal, quincenal, mensual…).
+  //      Cada línea genera su calendario con shared/billing.js; "hasta" es opcional.
+  `
+  CREATE TABLE project_charges (
+    id INTEGER PRIMARY KEY,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    concept TEXT,
+    amount INTEGER NOT NULL CHECK (amount > 0),
+    currency TEXT NOT NULL CHECK (currency IN ('CRC','USD')),
+    frequency TEXT NOT NULL CHECK (frequency IN ('unico','semanal','quincenal','mensual','bimestral','trimestral','semestral','anual')),
+    start_date TEXT NOT NULL,
+    end_date TEXT,
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  CREATE INDEX project_charges_project ON project_charges(project_id);
+  `,
 ];
 
 export const DEFAULT_SETTINGS = {
