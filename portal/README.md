@@ -13,7 +13,7 @@ Está separada del sitio público (`jcanalytics-app/`, GitHub Pages): el portal 
 **Cómo se navega.** El menú sigue el orden de la empresa:
 - **Operación:** Inicio, Tablero, Agenda y Buzón.
 - **Empresa:** Proyectos, Clientes, Servicios y Equipo.
-- **Socios:** Inversiones.
+- **Socios:** Cobros, Inversiones y Finanzas.
 - **Control:** Bitácora.
 
 En el celular, la barra inferior trae Inicio, Tablero, un botón **"+"** de acciones rápidas, Agenda y **"Más"**. El botón "+" sirve para crear una tarea, agendar una cita, registrar el avance a un cliente, crear un cliente o registrar un aporte; "Más" abre el resto de secciones en mosaicos grandes.
@@ -21,6 +21,14 @@ En el celular, la barra inferior trae Inicio, Tablero, un botón **"+"** de acci
 **Centro de operaciones (`/`).** En el celular funciona como "Mi día": tus citas de hoy, tus tareas y (al admin) la plata por aprobar. Agrupa todo lo que requiere acción hoy: proyectos de cliente sin avance en 72 h, tareas vencidas, citas sin confirmar en las próximas 24 h, plata esperando tu aprobación, soportes de 30 días por terminar. Muestra además la agenda de la semana, tus tareas y el pulso de las inversiones.
 
 **Proyectos (`/proyectos`).** Clientes (La Burrada, Uniquex…), productos propios (BarberXCR, Taller Ticos…) e internos. Cada uno tiene responsable, servicio del catálogo, valor en ₡ o $, fechas y contacto. Para proyectos de cliente en curso o en revisión aplica el **semáforo del compromiso público "avance cada 72 h"**. El reloj corre desde que el proyecto entra en curso o desde el último avance registrado. "Registrar avance" deja constancia, arma el mensaje de WhatsApp y reinicia el reloj. Al marcarlo entregado arranca el **soporte de 30 días**.
+
+**Cobros (`/cobros`, solo socios y admin).** Cada proyecto lleva sus líneas de cobro, en la tarjeta "Cobros" de su ficha:
+- **Pago único** (una fecha) o **recurrente**: semanal, quincenal, mensual, bimestral, trimestral, semestral o anual, con "hasta" opcional.
+- Un mismo proyecto puede tener varias líneas: por ejemplo, una mensualidad y una pauta que se cobra cada quincena.
+- **Quincenal** son dos cobros por mes separados 15 días (1 y 16, o 15 y 30; en febrero, el último día). **Mensual** usa el mismo día de cada mes y el 31 pasa al último día de los meses cortos.
+- El portal calcula el **equivalente mensual** (quincenal × 2, semanal × 52 ÷ 12…), el **próximo cobro**, los cobros de cada mes y la proyección de 6 meses. Los dólares se convierten con el tipo de cambio vigente.
+- Solo suman los proyectos que cobran: en curso, en revisión, entregados o en soporte, sin archivar. Prospectos, pausados y cerrados se ven, pero no suman.
+- Todo el equipo ve los cobros de un proyecto; solo socios y admin los crean o cambian. El día del cobro aparece "Hoy toca cobrar" en el centro de operaciones. "Excel (12 meses)" descarga el calendario con separador `;`.
 
 **Clientes (`/clientes`).** Ficha de cada cliente con contacto (WhatsApp y correo), quién lleva la relación, proyectos, valor abierto, último contacto, próxima cita e historial de avances. Los clientes se eligen desde proyectos y agenda, y la agenda completa el contacto sola.
 
@@ -148,10 +156,10 @@ portal/
 │   ├── app.mjs        rutas, sesión, permisos por rol, CSRF, encabezados de seguridad
 │   ├── db.mjs         SQLite (node:sqlite) con migraciones versionadas
 │   ├── routes/        core (sesión/equipo/ajustes/buzón/bitácora/respaldo), work (proyectos/tablero/agenda),
-│   │                  investments (aportes/retornos/confirmaciones/CSV), dashboard
+│   │                  charges (cobros únicos y recurrentes/CSV), investments (aportes/retornos/aprobaciones/CSV), dashboard
 │   ├── cli.mjs        alta y reseteo de usuarios por consola
 │   └── seed-demo.mjs  datos de demostración (nunca en producción)
-├── shared/            lógica compartida servidor/navegador: montos, reparto pro-rata, TIR, catálogos
+├── shared/            lógica compartida servidor/navegador: montos, reparto pro-rata, TIR, calendario de cobros, catálogos
 ├── src/               React 19 + Vite + Tailwind 4 (marca JC Analytics, responsive)
 └── tests/             node:test (API + finanzas) y prueba E2E en navegador real
 ```

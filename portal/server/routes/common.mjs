@@ -6,6 +6,7 @@
 // ============================================================================
 
 import { toCRC } from '../../shared/finance.js';
+import { billingSummary, BILLING_PROJECT_STATUSES, monthlyAmount, nextOccurrence } from '../../shared/billing.js';
 import { fail, invalid } from '../http.mjs';
 
 const SUPPORT_DAYS = 30;
@@ -41,12 +42,22 @@ export function createHelpers(ctx) {
       WHERE pm.project_id = ? ORDER BY CASE pm.role WHEN 'responsable' THEN 0 ELSE 1 END, u.name`).all(projectId);
   }
 
+  // ── Cobros ────────────────────────────────────────────────────────────────
+  /** Colones de un monto: los dólares, con el tipo de cambio vigente (el cobro aún no ocurrió). */
+  const chargeCRC = (amount, currency) => toCRC(amount, currency, ctx.numberSetting('fx_usd_crc', 515));
+  /** ¿Los cobros del proyecto suman en los totales? Prospectos, pausados, cerrados y archivados no. */
+  const billingCounts = (p) => !p.archived && BILLING_PROJECT_STATUSES.includes(p.status);
+  /** Línea de cobro con lo que la pantalla necesita: equivalente mensual y próximo cobro. */
+  const decorateCharge = (c) => ({ ...c, monthly_amount: monthlyAmount(c), next_date: nextOccurrence(c, ctx.today()) });
+  const chargesOf = (projectId) => db.prepare('SELECT * FROM project_charges WHERE project_id = ? ORDER BY start_date, id').all(projectId).map(decorateCharge);
+
   function decorateProject(p) {
     const counts = db.prepare(`SELECT COUNT(*) total,
         SUM(CASE WHEN status = 'hecho' THEN 1 ELSE 0 END) done,
         SUM(CASE WHEN status <> 'hecho' AND due_date IS NOT NULL AND due_date < ? THEN 1 ELSE 0 END) overdue
       FROM tasks WHERE project_id = ?`).get(ctx.today(), p.id);
     const supportEnds = p.delivered_at ? new Date(new Date(`${p.delivered_at}T00:00:00Z`).getTime() + SUPPORT_DAYS * DAY).toISOString().slice(0, 10) : null;
+    const charges = chargesOf(p.id);
     return {
       ...p,
       client_id: p.client_id ?? null,
@@ -57,6 +68,8 @@ export function createHelpers(ctx) {
       progress: counts.total ? (counts.done ?? 0) / counts.total : 0,
       support_ends: supportEnds,
       members: membersOf(p.id),
+      charges,
+      billing: billingSummary(charges, ctx.today(), chargeCRC, billingCounts(p)),
       ...ctx.projectSla(p),
     };
   }
@@ -115,6 +128,7 @@ export function createHelpers(ctx) {
   return {
     userExists, keepOrCheck,
     PROJECT_SELECT, getProjectFull, membersOf, decorateProject,
+    chargeCRC, billingCounts, decorateCharge, chargesOf,
     APPOINTMENT_SELECT, attendeesOf, decorateAppointment,
     listClients, getClient, clientExists,
   };

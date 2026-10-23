@@ -260,6 +260,34 @@ try {
     await shot(page, '17-cliente-detalle');
   });
 
+  await check('cobros: un cobro quincenal en el proyecto y el calendario del mes', async () => {
+    const projectsData = await (await page.request.get(`${base}/api/projects`)).json();
+    const burrada = projectsData.projects.find((p) => p.name === 'Pedidos en línea La Burrada');
+    assert.ok(burrada.billing.monthly_crc > 0, 'la demo trae mensualidad y quincena');
+    await page.goto(`${base}/proyectos/${burrada.id}`);
+    const card = page.locator('section', { has: page.getByRole('heading', { name: 'Cobros', exact: true }) });
+    await card.getByText('Próximo cobro').waitFor();
+    await card.getByRole('button', { name: 'Agregar' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('radio', { name: 'Quincenal' }).click();
+    await dialog.getByLabel('Monto de cada cobro').fill('50000');
+    await dialog.getByLabel('Concepto (opcional)').fill('Fotos del menú');
+    await dialog.getByText(/equivale a .* al mes/).waitFor();
+    await dialog.getByRole('button', { name: 'Guardar cobro' }).click();
+    await page.getByText('Cobro agregado').waitFor();
+    await card.getByText('Fotos del menú').waitFor();
+    await card.screenshot({ path: join(shots, '17a-proyecto-cobros.png'), animations: 'disabled' });
+    const after = (await (await page.request.get(`${base}/api/projects/${burrada.id}`)).json()).project;
+    assert.equal(after.billing.monthly_crc, burrada.billing.monthly_crc + 100_000_00, 'cada quincena cuenta dos veces al mes');
+    await page.goto(`${base}/cobros`);
+    await page.getByRole('heading', { name: 'Cobros', level: 1 }).waitFor();
+    await page.getByText('Recurrente al mes').waitFor();
+    await page.getByRole('heading', { name: 'Próximos 6 meses' }).waitFor();
+    await shot(page, '17b-cobros');
+    await page.getByRole('button', { name: 'Mes siguiente' }).click();
+    await page.getByRole('button', { name: 'Hoy', exact: true }).waitFor();
+  });
+
   await check('avisos y app: manifiesto, app instalable y preferencias', async () => {
     const manifestHref = await page.locator('link[rel="manifest"]').getAttribute('href');
     const manifest = await (await page.request.get(`${base}${manifestHref}`)).json();
@@ -318,6 +346,7 @@ try {
     await p2.getByText('Esta sección no existe').waitFor();
     const api = await p2.request.get(`${base}/api/investments`);
     assert.equal(api.status(), 403);
+    assert.equal((await p2.request.get(`${base}/api/billing`)).status(), 403, 'la vista general de cobros es de socios y admin');
     // Cerrar sesión revoca la cookie en el servidor: al recargar sigue fuera.
     await p2.getByRole('button', { name: 'Cerrar sesión' }).first().click();
     await p2.getByRole('button', { name: 'Entrar' }).waitFor();

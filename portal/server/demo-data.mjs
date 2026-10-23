@@ -75,6 +75,18 @@ export async function seedDemoData({ db, passwordHash, login, loginClient = null
   await project('taller', alex, { name: 'Taller Ticos · lanzamiento talleres', kind: 'producto', service: 'producto_saas', status: 'en_curso', owner_id: U.alex, start_date: day(-20), due_date: day(40), url: 'https://www.tallerticos.com/', members: team([U.jeyrell, 'datos']) });
   await project('marca', hil, { name: 'Contenido y pauta JC Analytics', kind: 'interno', service: 'community_manager', status: 'en_curso', owner_id: U.hillary, description: 'Calendario mensual, reels de casos y campañas Meta Ads.', members: team([U.catalina, 'comercial']) });
 
+  // ── Cobros: pagos únicos y recurrentes (montos ficticios) ─────────────────
+  const charge = (projectKey, body) => cata('POST', `/api/projects/${P[projectKey]}/charges`, body);
+  // La Burrada paga una mensualidad y, aparte, la pauta cada quincena.
+  await charge('burrada', { concept: 'Mantenimiento y hosting', amount: 45_000_00, frequency: 'mensual', start_date: day(-50) });
+  await charge('burrada', { concept: 'Gestión de redes y pauta', amount: 85_000_00, frequency: 'quincenal', start_date: day(-20) });
+  // Uniquex: el sitio se cobra en dos pagos únicos (anticipo y contra entrega).
+  await charge('uniquex', { concept: 'Anticipo 50 %', amount: 309_000_00, frequency: 'unico', start_date: day(-30) });
+  await charge('uniquex', { concept: 'Saldo contra entrega', amount: 309_000_00, frequency: 'unico', start_date: day(5) });
+  // VIP: soporte mensual en dólares. El Roble aún es prospecto: su cobro no suma en los totales.
+  await charge('vip', { concept: 'Soporte y mejoras', amount: 120_00, currency: 'USD', frequency: 'mensual', start_date: day(-24) });
+  await charge('roble', { concept: 'Actualización mensual del tablero', amount: 95_000_00, frequency: 'mensual', start_date: day(10) });
+
   // ── Líneas de servicio: líder y equipo (solo el admin las edita) ──────────
   const services = [
     ['software_medida', U.alex, [U.jeyrell], 'Sistemas internos, cotizadores y portales a la medida del proceso del cliente.'],

@@ -1,5 +1,5 @@
 // Detalle del proyecto: avance al cliente (72 h), etapas y entregables del portal del cliente (v5), cliente, briefs,
-// equipo, tareas, citas, historial e inversiones vinculadas.
+// cobros (únicos o recurrentes), equipo, tareas, citas, historial e inversiones vinculadas.
 import { useEffect, useState } from 'react';
 import {
   ArrowLeft, Pencil, Send, MessageCircle, Plus, ExternalLink, Archive, ArchiveRestore, CalendarPlus, Phone, User, CalendarDays, TrendingUp, Building2, Users,
@@ -13,6 +13,7 @@ import { StatusBadge, SlaBadge, PersonChip } from '../components/common.jsx';
 import { ClientStatusBadge, MembersEditor, clientWhatsapp, membersToForm, normalizeMembers } from '../components/clients.jsx';
 import { ProjectForm, projectClientName, projectMembers } from './Projects.jsx';
 import { MilestonesCard, DeliverablesCard, ProjectBriefsCard } from '../components/portal-project.jsx';
+import { ChargesCard } from '../components/charges.jsx';
 import { PROJECT_KINDS, PROJECT_STATUS, PROJECT_ROLES, SERVICES, UPDATE_CHANNELS, TASK_STATUS, TASK_STATUS_ORDER, TASK_PRIORITY, APPOINTMENT_KINDS, INVESTMENT_STATUS } from '../../shared/catalog.js';
 import { formatMoney, formatDate, formatDateTime, timeAgo, whatsappLink, dueLabel } from '../lib/format.js';
 
@@ -155,6 +156,7 @@ export default function ProjectDetail({ params }) {
   // entregables y briefs solo existen para proyectos con cliente.
   const showMilestones = !!clientId || milestones.length > 0;
   const setMilestones = (list) => setData((d) => (d ? { ...d, milestones: list } : d));
+  const setProject = (project) => setData((d) => (d ? { ...d, project } : d));
 
   return (
     <div className="space-y-6">
@@ -311,6 +313,8 @@ export default function ProjectDetail({ params }) {
               )}
             </section>
           )}
+
+          <ChargesCard project={p} onProject={setProject} />
 
           {clientId && <ProjectBriefsCard projectId={p.id} clientId={clientId} briefs={briefs} />}
 

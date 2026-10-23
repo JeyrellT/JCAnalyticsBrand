@@ -2,6 +2,7 @@
 import { coreRoutes } from './core.mjs';
 import { dashboardRoutes } from './dashboard.mjs';
 import { workRoutes } from './work.mjs';
+import { chargeRoutes } from './charges.mjs';
 import { investmentRoutes } from './investments.mjs';
 import { clientRoutes } from './clients.mjs';
 import { serviceRoutes } from './services.mjs';
@@ -27,6 +28,7 @@ export function registerRoutes(route, ctx, session) {
   coreRoutes(route, ctx, session);
   dashboardRoutes(route, ctx);
   workRoutes(route, ctx);
+  chargeRoutes(route, ctx);
   investmentRoutes(route, ctx);
   financeRoutes(route, ctx);
   clientRoutes(route, ctx);

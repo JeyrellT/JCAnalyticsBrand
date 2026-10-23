@@ -7,8 +7,9 @@ import { Link, navigate, useLocation } from '../lib/router.jsx';
 import { PageLoader, EmptyState, ProgressBar, Badge, AvatarStack, Modal, Field, Select, useAction, cx } from '../components/ui.jsx';
 import { StatusBadge, SlaBadge, PersonChip, PersonSelect, MoneyInput } from '../components/common.jsx';
 import { ClientSelect, MembersEditor, normalizeMembers, membersToForm } from '../components/clients.jsx';
+import { projectValueText } from '../components/charges.jsx';
 import { PROJECT_KINDS, PROJECT_STATUS, SERVICES } from '../../shared/catalog.js';
-import { formatMoney, dueLabel, formatDate } from '../lib/format.js';
+import { dueLabel, formatDate } from '../lib/format.js';
 import '../styles/projects-studio.css';
 
 const options = (map) => Object.entries(map).map(([value, v]) => ({ value, label: typeof v === 'string' ? v : v.label }));
@@ -174,7 +175,7 @@ export function ProjectCard({ p, view = 'gallery' }) {
           <div className="ps-card-people" title={members.map((member) => member.name).join(', ')}>
             {members.length > 1 ? <><AvatarStack people={members} size={25} max={3} /><span>{(p.owner_name ?? members[0].name).split(' ')[0]} +{members.length - 1}</span></> : <PersonChip name={p.owner_name} color={p.owner_color} />}
           </div>
-          <span className="ps-card-value">{p.value_amount != null ? formatMoney(p.value_amount, p.currency) : 'Ver proyecto'}<ArrowUpRight size={15} /></span>
+          <span className="ps-card-value">{projectValueText(p) ?? 'Ver proyecto'}<ArrowUpRight size={15} /></span>
         </div>
       </div>
     </Link>
