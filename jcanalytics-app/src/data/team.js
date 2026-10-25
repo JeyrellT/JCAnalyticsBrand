@@ -27,7 +27,7 @@ export const TEAM = [
     does: t("diseña el sistema", "designs the system"),
     avatar: pub('jeyrell-tardencilla.webp'),
     portrait: pub('team/jeyrell-tardencilla.webp'),
-    portraitBg: '#ffffff',
+    portraitBg: '#18202d',
     accent: '#d4ff3a',
     wa: t("Hola Jeyrell, quiero conversar sobre automatizar un proceso.", "Hi Jeyrell, I'd like to discuss automating a process."),
   },
