@@ -8,7 +8,7 @@
 .team-section { position: relative; z-index: 40; background: #f5f8fb; color: #071a36; padding-block: clamp(5rem, 9vw, 9rem); border-radius: 2.8rem 2.8rem 0 0; margin-top: -2rem; }
 .team-heading__intro { max-width: 22rem; padding-bottom: .35rem; }
 .team-heading__intro p { margin-top: 1rem; font-size: 1.13rem; line-height: 1.65; color: #536579; }
-.team-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.6rem; align-items: start; }
+.team-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1.25rem; align-items: start; }
 .team-member { display: flex; flex-direction: column; height: 100%; }
 .team-member__portrait { position: relative; aspect-ratio: 3/4; border-radius: .3rem .3rem 1.25rem .3rem; overflow: hidden; isolation: isolate; }
 .team-member__portrait::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, #071a363a); border: 1px solid #071a360b; border-radius: inherit; pointer-events: none; }

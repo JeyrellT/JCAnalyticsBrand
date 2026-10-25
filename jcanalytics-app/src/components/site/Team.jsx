@@ -42,7 +42,7 @@ const Team = () => (
         </div>
         <Reveal delay={0.15} className="team-heading__intro">
           <span className="closing-kicker">{t("Cercanía, de principio a fin.", "Personal, from start to finish.")}</span>
-          <p>{t("Cuatro personas, sin intermediarios. Con la que hablás es la que hace el trabajo.", "Four people, no middlemen. The person you talk to is the person doing the work.")}</p>
+          <p>{t("Cinco personas, sin intermediarios. Con la que hablás es la que hace el trabajo.", "Five people, no middlemen. The person you talk to is the person doing the work.")}</p>
         </Reveal>
       </div>
       <MobileRail className="team-grid" label={t("Personas del equipo", "Meet the team")}>
