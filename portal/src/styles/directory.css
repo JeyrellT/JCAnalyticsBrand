@@ -1,0 +1,189 @@
+/* ==========================================================================
+   Libro amarillo · directorio de prospección por teléfono.
+   Un guiño a la guía telefónica: los contactos se agrupan por letra con una
+   inicial grande en ámbar y un índice A–Z al costado (arriba en el celular).
+   Todo color sale de los tokens de src/index.css: funciona en claro y oscuro.
+   ========================================================================== */
+
+.yb-layout {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 1024px) {
+  .yb-layout { grid-template-columns: minmax(0, 1fr) 2.25rem; }
+}
+
+/* ── Índice A–Z ─────────────────────────────────────────────────────────── */
+.yb-rail {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0.125rem 0;
+}
+.yb-rail::-webkit-scrollbar { display: none; }
+@media (min-width: 1024px) {
+  .yb-rail {
+    position: sticky;
+    top: 1.25rem;
+    align-self: start;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.0625rem;
+    overflow: visible;
+    padding: 0.5rem 0;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-card);
+  }
+}
+.yb-letter {
+  display: inline-flex;
+  min-width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  transition: background-color 0.15s, color 0.15s;
+}
+@media (min-width: 1024px) {
+  .yb-letter { min-width: 1.625rem; height: 1.375rem; font-size: 0.6875rem; }
+}
+.yb-letter:hover:not(:disabled) { background: var(--amber-soft); color: var(--amber-ink); }
+.yb-letter:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+.yb-letter:disabled { color: var(--muted-2); opacity: 0.4; cursor: default; }
+.yb-letter[aria-pressed='true'] { background: var(--amber); color: #2b1a00; }
+
+/* ── Grupo por letra ────────────────────────────────────────────────────── */
+.yb-group + .yb-group { margin-top: 1.25rem; }
+.yb-group-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 0 0 0.5rem 0.25rem;
+}
+.yb-group-letter {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--amber);
+}
+.yb-group-head::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+  transform: translateY(-0.4rem);
+}
+
+/* ── Filas ──────────────────────────────────────────────────────────────── */
+.yb-list { overflow: hidden; }
+.yb-row {
+  position: relative;
+  display: grid;
+  gap: 0.25rem 1rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  text-align: left;
+  width: 100%;
+  transition: background-color 0.15s;
+}
+.yb-row + .yb-row { border-top: 1px solid var(--line); }
+.yb-row:hover { background: var(--surface-2); }
+.yb-row-open {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.yb-row-open:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.yb-row .yb-actions { position: relative; z-index: 1; }
+@media (min-width: 900px) {
+  .yb-row {
+    grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.2fr) 7.5rem minmax(0, 1.7fr) auto;
+    padding: 0.75rem 1.25rem;
+  }
+}
+.yb-note {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── "Hoy toca llamar" ──────────────────────────────────────────────────── */
+.yb-due {
+  border: 1px solid color-mix(in oklab, var(--amber) 35%, var(--line));
+  background: linear-gradient(180deg, var(--amber-soft), var(--surface) 85%);
+}
+
+/* ── Resultado de la llamada ────────────────────────────────────────────── */
+.yb-outcomes {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (min-width: 640px) { .yb-outcomes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.yb-outcome {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.875rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+}
+.yb-outcome:hover { border-color: var(--ink-2); }
+.yb-outcome:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.yb-outcome[aria-checked='true'] {
+  border-color: var(--ink);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--ink);
+  color: var(--ink);
+}
+
+/* ── Importación ────────────────────────────────────────────────────────── */
+.yb-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 1.25rem;
+  border: 1.5px dashed var(--line-strong);
+  background: var(--surface-2);
+  padding: 2rem 1.25rem;
+  text-align: center;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.yb-drop[data-over='true'] { border-color: var(--amber); background: var(--amber-soft); }
+.yb-preview { overflow-x: auto; }
+.yb-preview table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.yb-preview th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-2);
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.yb-preview th, .yb-preview td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--line); }
+.yb-preview td { white-space: nowrap; max-width: 14rem; overflow: hidden; text-overflow: ellipsis; }
+
+@media (prefers-reduced-motion: reduce) {
+  .yb-row, .yb-letter, .yb-outcome, .yb-drop { transition: none; }
+}

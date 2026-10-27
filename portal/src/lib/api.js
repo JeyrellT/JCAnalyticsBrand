@@ -119,6 +119,9 @@ const MESSAGES = {
 export function errorMessage(error) {
   if (error instanceof ApiError) {
     if (error.data?.error === 'validation') return error.data.message ?? 'Revisá los datos ingresados.';
+    // Conflictos con explicación propia (libro amarillo: duplicado, versión vieja, permiso con alternativa).
+    if (['duplicate', 'conflict', 'already_undone'].includes(error.data?.error) && error.data.message) return error.data.message;
+    if (error.data?.error === 'forbidden' && error.data.message) return error.data.message;
     return MESSAGES[error.data?.error] ?? MESSAGES[error.message] ?? 'No se pudo completar la acción.';
   }
   return 'No se pudo completar la acción.';
