@@ -9,7 +9,8 @@
 //    · Peticiones "simples" (text/plain): no hay preflight y nunca viajan cookies del
 //      portal (son SameSite=Strict), así que estas rutas no tocan ninguna sesión.
 //    · Cuerpo de 16 KB como máximo, campos con lista blanca y largos recortados.
-//    · Límite por visitante (IP + navegador, con sal diaria) y tope diario de consultas.
+//    · Límites por IP (ventana de 10 min y por día), tope diario de consultas y de eventos,
+//      y un mapa de límites acotado (barrido por minuto y tope de claves).
 //    · Trampa para bots (campo oculto) y tiempo mínimo de llenado: se responde "ok" sin guardar.
 //    · Ninguna IP ni navegador se guarda: solo un identificador diario no reversible.
 //    · El texto del visitante es dato no confiable (shared/leads.js): se limpia, se marca
@@ -27,7 +28,11 @@ const MAX_EVENTS = 40;
 const WINDOW_MS = 10 * 60_000;
 const EVENT_BATCHES_PER_WINDOW = 120;
 const LEADS_PER_WINDOW = 5;
+const LEADS_PER_IP_DAY = 12;
 const DEFAULT_DAILY_LEADS = 300;
+const DEFAULT_DAILY_EVENTS = 200_000;
+const MAX_BUCKETS = 50_000;
+const SWEEP_MS = 60_000;
 const MIN_FILL_MS = 1500;
 const DUPLICATE_MS = 10 * 60_000;
 const SESSION_RE = /^[a-z0-9]{16,40}$/i;
@@ -116,23 +121,40 @@ export function createIngestHandler({ ctx, env, clientIp, logger = console }) {
   const { db } = ctx;
   const origins = new Set((env.PORTAL_SITE_ORIGINS || DEFAULT_SITE_ORIGINS).split(',').map((o) => o.trim()).filter(Boolean));
   const dailyLeads = Number(env.PORTAL_MAX_DAILY_LEADS) > 0 ? Number(env.PORTAL_MAX_DAILY_LEADS) : DEFAULT_DAILY_LEADS;
+  const dailyEvents = Number(env.PORTAL_MAX_DAILY_EVENTS) > 0 ? Number(env.PORTAL_MAX_DAILY_EVENTS) : DEFAULT_DAILY_EVENTS;
   const buckets = new Map();
   let salt = { day: null, value: null };
   let lastPurge = 0;
+  let lastSweep = 0;
+  let eventsToday = { day: null, count: 0 };
 
-  /** Identificador del visitante del día: no se puede revertir ni cruzar entre días. */
-  function visitorKey(req) {
+  const hash = (text) => {
     const day = ctx.today();
     if (salt.day !== day) salt = { day, value: randomBytes(16).toString('hex') };
-    return createHash('sha256').update(`${salt.value}|${clientIp(req)}|${String(req.headers['user-agent'] ?? '').slice(0, 200)}`).digest('hex').slice(0, 20);
-  }
+    return createHash('sha256').update(`${salt.value}|${text}`).digest('hex').slice(0, 20);
+  };
+  /** Identificador del visitante del día (IP + navegador) para contar personas: no se puede revertir ni cruzar entre días. */
+  const visitorKey = (req) => hash(`${clientIp(req)}|${String(req.headers['user-agent'] ?? '').slice(0, 200)}`);
+  /**
+   * Clave de los límites: solo la IP. El último salto de X-Forwarded-For lo agrega el proxy y no se puede
+   * falsificar; el navegador sí, así que cambiar el User-Agent no da un cupo nuevo.
+   */
+  const limitKey = (req) => hash(`ip|${clientIp(req)}`);
 
-  function allow(key, kind, max) {
+  /** Ventana fija por clave. Barrido a lo sumo una vez por minuto y tope duro de claves (sin crecer sin límite). */
+  function allow(key, kind, max, windowMs = WINDOW_MS) {
     const t = ctx.now();
-    if (buckets.size > 5000) for (const [k, b] of buckets) if (t - b.start >= WINDOW_MS) buckets.delete(k);
+    if (t - lastSweep > SWEEP_MS) {
+      lastSweep = t;
+      for (const [k, b] of buckets) if (t - b.start >= b.window) buckets.delete(k);
+    }
     const id = `${kind}:${key}`;
     const bucket = buckets.get(id);
-    if (!bucket || t - bucket.start >= WINDOW_MS) { buckets.set(id, { start: t, count: 1 }); return true; }
+    if (!bucket || t - bucket.start >= bucket.window) {
+      if (!bucket && buckets.size >= MAX_BUCKETS) return false;
+      buckets.set(id, { start: t, count: 1, window: windowMs });
+      return true;
+    }
     bucket.count += 1;
     return bucket.count <= max;
   }
@@ -152,6 +174,10 @@ export function createIngestHandler({ ctx, env, clientIp, logger = console }) {
     if (!visit.sid || !Array.isArray(body.events) || !body.events.length) return { status: 400, error: 'invalid_batch' };
     const events = body.events.slice(0, MAX_EVENTS).map(readEvent).filter(Boolean);
     const day = ctx.today();
+    // Tope global del día: un ataque desde muchas IP no llena la base.
+    if (eventsToday.day !== day) eventsToday = { day, count: 0 };
+    if (eventsToday.count + events.length > dailyEvents) return { status: 429, error: 'daily_limit' };
+    eventsToday.count += events.length;
     const at = ctx.nowIso();
     db.exec('BEGIN');
     try {
@@ -167,7 +193,7 @@ export function createIngestHandler({ ctx, env, clientIp, logger = console }) {
     return { status: 200, accepted: events.length };
   }
 
-  function storeLead(body, visitor) {
+  function storeLead(body, visitor, ipKey) {
     // Trampas para bots: se responde como si todo saliera bien, sin guardar nada.
     if (typeof body.website === 'string' && body.website.trim()) return { status: 200, dropped: true };
     if (!(Number(body.elapsed) >= MIN_FILL_MS)) return { status: 200, dropped: true };
@@ -187,21 +213,26 @@ export function createIngestHandler({ ctx, env, clientIp, logger = console }) {
     const flags = leadFlags(lead);
     const at = ctx.nowIso();
 
-    // La misma persona que reenvía en pocos minutos completa su consulta en vez de duplicarla.
+    // La misma persona (misma pestaña y mismo contacto) que reenvía en pocos minutos completa su consulta en vez de
+    // duplicarla. Nunca se pisa lo que ya escribió: el texto nuevo va como nota y las marcas de revisión se suman.
     const since = new Date(ctx.now() - DUPLICATE_MS).toISOString();
-    const previous = db.prepare(`SELECT id FROM leads WHERE created_at >= ? AND ((phone IS NOT NULL AND phone = ?) OR (email IS NOT NULL AND email = ?))
-      ORDER BY id DESC LIMIT 1`).get(since, lead.phone, lead.email);
+    const previous = visit.sid ? db.prepare(`SELECT id, flags, message FROM leads WHERE created_at >= ? AND session_id = ?
+      AND ((phone IS NOT NULL AND phone = ?) OR (email IS NOT NULL AND email = ?)) ORDER BY id DESC LIMIT 1`).get(since, visit.sid, lead.phone, lead.email) : null;
     if (previous) {
-      db.prepare(`UPDATE leads SET name = COALESCE(?, name), need = COALESCE(?, need), message = COALESCE(?, message), package = COALESCE(?, package),
-        phone = COALESCE(phone, ?), email = COALESCE(email, ?), updated_at = ?, revision = revision + 1 WHERE id = ?`)
-        .run(lead.name, lead.need, lead.message, lead.package, lead.phone, lead.email, at, previous.id);
+      const merged = [...new Set([...(previous.flags ? previous.flags.split(',') : []), ...flags])];
+      db.prepare(`UPDATE leads SET need = COALESCE(need, ?), package = COALESCE(package, ?), phone = COALESCE(phone, ?), email = COALESCE(email, ?),
+        flags = ?, updated_at = ?, revision = revision + 1 WHERE id = ?`)
+        .run(lead.need, lead.package, lead.phone, lead.email, merged.length ? merged.join(',') : null, at, previous.id);
+      const extra = lead.message && lead.message !== previous.message ? `\n\nEscribió además: ${lead.message}` : '';
       db.prepare("INSERT INTO lead_notes (lead_id, user_id, kind, body, created_at) VALUES (?, NULL, 'sistema', ?, ?)")
-        .run(previous.id, 'La persona volvió a enviar el formulario; se actualizaron sus datos.', at);
+        .run(previous.id, `La persona volvió a enviar el formulario.${extra}`, at);
       return { status: 200, updated: true };
     }
 
     const today = ctx.today();
-    const countToday = db.prepare('SELECT COUNT(*) n FROM leads WHERE created_at >= ?').get(new Date(`${today}T00:00:00-06:00`).toISOString()).n;
+    const dayStart = new Date(`${today}T00:00:00-06:00`).toISOString();
+    if (!allow(ipKey, 'lead-day', LEADS_PER_IP_DAY, 24 * 3_600_000)) return { status: 429, error: 'too_many_requests' };
+    const countToday = db.prepare('SELECT COUNT(*) n FROM leads WHERE created_at >= ?').get(dayStart).n;
     if (countToday >= dailyLeads) return { status: 429, error: 'daily_limit' };
 
     const leadId = Number(db.prepare(`INSERT INTO leads (status, channel, name, phone, email, need, message, package, language, page, source, medium, campaign,
@@ -238,13 +269,14 @@ export function createIngestHandler({ ctx, env, clientIp, logger = console }) {
     if (type !== 'text/plain' && type !== 'application/json') return reply(res, 415, { error: 'unsupported_type' });
 
     const visitor = visitorKey(req);
+    const ipKey = limitKey(req);
     const isLead = pathname === '/ingest/lead';
-    if (!allow(visitor, isLead ? 'lead' : 'events', isLead ? LEADS_PER_WINDOW : EVENT_BATCHES_PER_WINDOW)) return reply(res, 429, { error: 'too_many_requests' });
+    if (!allow(ipKey, isLead ? 'lead' : 'events', isLead ? LEADS_PER_WINDOW : EVENT_BATCHES_PER_WINDOW)) return reply(res, 429, { error: 'too_many_requests' });
     const parsed = await readBody(req);
     if (parsed.tooLarge) return reply(res, 413, { error: 'body_too_large' });
     if (parsed.invalid) return reply(res, 400, { error: 'invalid_json' });
     try {
-      const out = isLead ? storeLead(parsed.body, visitor) : storeEvents(parsed.body, visitor);
+      const out = isLead ? storeLead(parsed.body, visitor, ipKey) : storeEvents(parsed.body, visitor);
       return reply(res, out.status, out.error ? { error: out.error } : { ok: true, ...(out.accepted != null ? { accepted: out.accepted } : {}) });
     } catch (error) {
       logger.error(`[portal] ingest ${pathname} failed: ${error?.stack ?? error}`);

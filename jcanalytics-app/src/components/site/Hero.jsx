@@ -46,8 +46,8 @@ const HeroScreens = ({ reduce, paused }) => {
     <div ref={ref} className="hero-screens" role="group" aria-label={t('Pantallas reales de proyectos', 'Real project screens')}>
       <div className="hero-screens__phone" aria-hidden="true">
         <div className="hero-screens__bars">{SCREENS.map((item, k) => <i key={item.src} className={k === index ? 'is-on' : k < index ? 'is-done' : ''} style={{ '--ms': `${SCREEN_MS}ms` }} />)}</div>
-        {/* Solo la pantalla actual y la siguiente existen en el DOM: el resto no ocupa memoria decodificada. */}
-        {SCREENS.map((item, k) => (k === index || k === (index + 1) % SCREENS.length) && (
+        {/* Solo la pantalla anterior (para el fundido), la actual y la siguiente existen en el DOM: el resto no ocupa memoria decodificada. */}
+        {SCREENS.map((item, k) => (k === index || k === (index + 1) % SCREENS.length || k === (index + SCREENS.length - 1) % SCREENS.length) && (
           <img key={item.src} src={`/projects/${item.src}-mobile.webp`} srcSet={shotSrcSet(`/projects/${item.src}-mobile.webp`)} sizes="45vw" width={640} height={1385}
             loading={k === 0 ? 'eager' : 'lazy'} decoding="async" alt="" className={k === index ? 'is-on' : ''} />
         ))}

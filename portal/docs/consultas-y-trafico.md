@@ -17,7 +17,8 @@ dos cosas:
 - También se puede cambiar el estado, elegir quién está a cargo y fijar la próxima acción.
 - Tiene notas internas y un historial completo.
 - El **recorrido** de la visita muestra qué vio y qué tocó la persona antes de escribir.
-- **Pasar a clientes** crea un prospecto en Clientes con su contacto. Si el nombre ya existe, ofrece
+- **Pasar a clientes** crea un prospecto en Clientes con su contacto. El nombre del cliente lo escribe el
+  equipo; solo se sugiere el del visitante si la consulta no tiene marcas. Si el nombre ya existe, ofrece
   vincular la consulta con esa ficha.
 - Solo el admin puede borrar una consulta (por ejemplo, si la persona lo pide).
 - Cada consulta nueva avisa a todo el equipo en el buzón y por push. La categoría es «Consultas de la web»
@@ -62,9 +63,12 @@ El formulario de contacto suma un paso opcional, **«¿Cómo te contactamos?»**
 - **Validación:** cuerpo de 16 KB como máximo, campos con lista blanca y largos recortados. Un evento con
   tipo, sección o valor raro se descarta; el evento «lead» solo lo crea el servidor.
 - **Límites:**
-  - 5 consultas y 120 lotes de eventos cada 10 minutos por visitante;
-  - tope diario de consultas (`PORTAL_MAX_DAILY_LEADS`, 300 por defecto);
-  - un reenvío de la misma persona en 10 minutos completa la consulta en vez de duplicarla.
+  - 5 consultas y 120 lotes de eventos cada 10 minutos por IP, y 12 consultas por IP al día. Cambiar de
+    navegador no da un cupo nuevo;
+  - tope diario de consultas (`PORTAL_MAX_DAILY_LEADS`, 300 por defecto) y de eventos
+    (`PORTAL_MAX_DAILY_EVENTS`, 200.000 por defecto);
+  - un reenvío desde la misma visita en 10 minutos completa la consulta en vez de duplicarla. No cambia el
+    nombre ni el mensaje original: lo nuevo queda como nota y las marcas de revisión se suman.
 - **Bots:** hay un campo oculto que funciona como trampa y un tiempo mínimo de llenado. Si se activan, el
   servidor responde «ok» sin guardar nada.
 - **Privacidad:** no se guarda IP ni navegador. Se guarda solo un identificador del día (hash con una sal
@@ -85,8 +89,8 @@ Todo lo que escribe un visitante es **dato no confiable**:
    falla si alguien las agrega. El asistente del sitio (`assistant-api`) tampoco recibe estos datos.
 4. **Se muestra como texto.** React escapa todo y no se usa HTML crudo. Los enlaces de contacto se arman
    solo con el teléfono y el correo validados, nunca con un enlace que haya escrito el visitante.
-5. **El Excel exportado neutraliza fórmulas:** una celda que empieza con `=`, `+`, `-` o `@` se guarda
-   como texto.
+5. **El Excel exportado neutraliza fórmulas.** Todas las celdas van entre comillas. Una celda que empieza
+   con `=`, `+`, `-` o `@`, aunque tenga espacios antes o vaya después de un separador, se guarda como texto.
 6. **El aviso push** lleva el nombre y la necesidad, nunca el mensaje libre.
 
 ## Configuración
@@ -95,6 +99,7 @@ Todo lo que escribe un visitante es **dato no confiable**:
   Variables opcionales:
   - `PORTAL_SITE_ORIGINS`: otros orígenes del sitio, separados por comas;
   - `PORTAL_MAX_DAILY_LEADS`: el tope diario de consultas.
+  - `PORTAL_MAX_DAILY_EVENTS`: el tope diario de eventos de navegación.
 - **Sitio (GitHub Pages):** usa `VITE_PORTAL_URL` (por defecto `https://portal.jcanalytic.com`). Para
   apuntar la medición a otra dirección existe `VITE_PORTAL_INGEST_URL`.
 

@@ -7,7 +7,8 @@ import { TEAM } from '../../data/team';
 import { sendLead } from '../../seo/site-tracker';
 
 const phoneOk = (v) => /^\+?[\d\s\-()]+$/.test(v.trim()) && v.replace(/\D/g, '').length >= 8 && v.replace(/\D/g, '').length <= 15;
-const emailOk = (v) => /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v.trim());
+// Igual a la regla del portal (shared/leads.js): solo caracteres de correo, sin ? ni & que se cuelen en un mailto.
+const emailOk = (v) => /^[a-z0-9._+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(v.trim());
 
 const NEEDS = ['Sistema / backend', 'Página web', 'Finanzas', 'Dashboard', 'Machine learning', 'Integración de IA', 'Automatización', 'Marketing digital', 'Otro'];
 const NEED_LABELS = t(NEEDS, ['System / backend', 'Website', 'Finance', 'Dashboard', 'Machine learning', 'AI integration', 'Automation', 'Digital marketing', 'Other']);
@@ -21,7 +22,7 @@ const Contact = () => {
   const [phone, setPhone] = useState('');
   const [mail, setMail] = useState('');
   const [website, setWebsite] = useState(''); // trampa para bots: invisible para personas
-  const [callback, setCallback] = useState('idle'); // idle · sending · sent · error · missing
+  const [callback, setCallback] = useState('idle'); // idle · sending · sent · error · missing · invalid
   const startedAt = useRef(0); // cuándo se mostró el formulario (contra bots que llenan al instante)
   useEffect(() => { startedAt.current = performance.now(); }, []);
   useEffect(() => {
@@ -51,6 +52,8 @@ const Contact = () => {
     channel, name: name.trim(), ...contact, need, message: objective.trim(), website, startedAt: startedAt.current,
   });
   const requestCallback = async () => {
+    // Un dato escrito pero mal formado se avisa: no se descarta en silencio.
+    if ((phone.trim() && !contact.phone) || (mail.trim() && !contact.email)) { setCallback('invalid'); return; }
     if (!contact.phone && !contact.email) { setCallback('missing'); return; }
     setCallback('sending');
     setCallback((await lead('devolucion').catch(() => false)) ? 'sent' : 'error');
@@ -69,7 +72,8 @@ const Contact = () => {
         <div className="contact-grid">
           <Reveal className="contact-form-wrap">
             <p className="contact-intro">{t("Contanos la idea. En una primera conversación de 30 minutos, sin costo, podemos entender tu objetivo y definir por dónde empezar.", "Tell us your idea. In a free 30-minute conversation, we can understand your goal and work out where to start.")}</p>
-            <form data-track="contacto" onSubmit={(event) => {
+            {/* noValidate: un correo a medio escribir no debe bloquear «Continuar en WhatsApp». */}
+            <form data-track="contacto" noValidate onSubmit={(event) => {
               event.preventDefault();
               window.open(href, '_blank', 'noopener,noreferrer');
               // Si dejó cómo contactarle, la consulta también queda en el portal del equipo.
@@ -120,6 +124,7 @@ const Contact = () => {
                 <p className="contact-callback__status" role="status">
                   {callback === 'sent' && t('¡Listo! Te escribimos en menos de 24 h.', 'Done! We’ll reach out within 24 hours.')}
                   {callback === 'missing' && t('Dejanos tu WhatsApp o tu correo en el paso 04.', 'Leave your WhatsApp or email in step 04.')}
+                  {callback === 'invalid' && t('Revisá el número (8 a 15 dígitos) o el correo del paso 04.', 'Check the number (8 to 15 digits) or the email in step 04.')}
                   {callback === 'error' && t('No pudimos enviarlo. Escribinos por WhatsApp con el botón de arriba.', 'We could not send it. Message us on WhatsApp with the button above.')}
                 </p>
               </div>

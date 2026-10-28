@@ -63,6 +63,10 @@ export function Journey({ events }) {
 /** Celda segura para CSV/Excel: comillas escapadas y fórmulas desactivadas (= + - @ al inicio). */
 export function csvCell(value) {
   let v = String(value ?? '').replace(/\r?\n/g, ' ');
-  if (/^[=+\-@\t\r]/.test(v)) v = `'${v}`;
-  return /[;"]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+  // Excel arranca una fórmula con = + - @ aunque haya espacios antes, o después de un separador
+  // (punto y coma, coma o tabulación) si la celda se vuelve a partir. El apóstrofo inicial deja toda la
+  // celda como texto.
+  if (/^\s*[=+\-@]/.test(v) || /[;,\t]\s*[=+\-@]/.test(v)) v = `'${v}`;
+  // Siempre entre comillas: el separador, las comillas o un salto nunca rompen la fila.
+  return `"${v.replace(/"/g, '""')}"`;
 }

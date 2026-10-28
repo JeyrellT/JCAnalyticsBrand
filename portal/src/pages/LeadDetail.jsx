@@ -13,14 +13,20 @@ import { formatDateTime, timeAgo } from '../lib/format.js';
 const statusOptions = Object.entries(LEAD_STATUS).map(([value, s]) => ({ value, label: s.label }));
 const NOTE_LABEL = { nota: 'Nota', estado: 'Estado', asignacion: 'Asignación', contacto: 'Contacto', conversion: 'Cliente', sistema: 'Sitio web' };
 
-function ConvertDialog({ lead, onClose, onDone }) {
+function ConvertDialog({ lead, onClose, onDone, onStale }) {
   const [run, busy] = useAction();
-  const [name, setName] = useState(lead.name ?? '');
+  // El nombre lo escribe el equipo: solo se propone el del visitante si la consulta no tiene marcas.
+  const [name, setName] = useState(lead.flags.length === 0 ? (lead.name ?? '') : '');
   const [duplicate, setDuplicate] = useState(null);
   const send = async (body) => {
     const res = await run(() => api(`/api/leads/${lead.id}/convert`, { method: 'POST', body }), {
       success: 'Consulta vinculada con la ficha del cliente',
-      onError: (error) => { if (error.status === 409 && error.data?.client_id) setDuplicate(error.data); },
+      onError: (error) => {
+        if (error.status !== 409) return;
+        // Otra persona ya la vinculó: se cierra y se recarga la ficha.
+        if (error.data?.error === 'already_linked') onStale();
+        else if (error.data?.error === 'duplicate' && error.data.client_id) setDuplicate(error.data);
+      },
     });
     if (res?.lead) onDone(res);
   };
@@ -48,6 +54,13 @@ export default function LeadDetail({ params }) {
   const confirm = useConfirm();
   const [note, setNote] = useState('');
   const [converting, setConverting] = useState(false);
+  // La fecha se edita en un borrador local y se guarda al salir del campo (o cuando ya es válida),
+  // para no mandar un PATCH por cada tecla ni bloquear el campo mientras se escribe.
+  const savedDate = data?.lead?.next_action_at ?? '';
+  const [dateDraft, setDateDraft] = useState(savedDate);
+  const [dateBase, setDateBase] = useState(savedDate);
+  // Si la fecha guardada cambia (otra persona, o la respuesta del servidor), el borrador la sigue.
+  if (dateBase !== savedDate) { setDateBase(savedDate); setDateDraft(savedDate); }
 
   const back = <Link to="/consultas" className="tap inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink"><ArrowLeft className="h-4 w-4" />Consultas</Link>;
   if (!data) return <>{back}<PageLoader error={error} onRetry={reload} /></>;
@@ -71,9 +84,14 @@ export default function LeadDetail({ params }) {
   const first = (l.name ?? '').split(' ')[0];
   const greeting = `Hola${first ? ` ${first}` : ''}, te escribe ${user.name.split(' ')[0]} de JC Analytics por tu consulta${l.package ? ` sobre ${l.package}` : l.need ? ` sobre ${l.need}` : ''}. ¿Te parece si lo conversamos?`;
   const wa = whatsappNumber(l.phone) && `https://wa.me/${whatsappNumber(l.phone)}?text=${encodeURIComponent(greeting)}`;
-  const mail = l.email && `mailto:${l.email}?subject=${encodeURIComponent('Tu consulta en JC Analytics')}&body=${encodeURIComponent(greeting)}`;
+  // El correo ya viene validado por el servidor; igual se codifica para que nada se cuele como parámetro.
+  const mail = l.email && `mailto:${encodeURIComponent(l.email).replace('%40', '@')}?subject=${encodeURIComponent('Tu consulta en JC Analytics')}&body=${encodeURIComponent(greeting)}`;
   const tel = l.phone && `tel:${l.phone.replace(/[^\d+]/g, '')}`;
   const owners = activeTeam.map((u) => ({ value: String(u.id), label: u.name }));
+  // Si quien la tenía a cargo ya no está activa, se sigue mostrando (y se puede reasignar).
+  if (l.owner_id && !owners.some((o) => o.value === String(l.owner_id))) owners.push({ value: String(l.owner_id), label: `${l.owner_name ?? 'Persona'} (inactiva)` });
+  const validDate = (v) => v === '' || (/^\d{4}-\d{2}-\d{2}$/.test(v) && Number(v.slice(0, 4)) >= 2000);
+  const saveDate = (v) => { if (v !== (l.next_action_at ?? '') && validDate(v)) patch({ next_action_at: v || null }); };
 
   return (
     <>
@@ -141,7 +159,11 @@ export default function LeadDetail({ params }) {
             <Field label="Estado">{(id) => <Select id={id} options={statusOptions} value={l.status} onChange={(v) => patch({ status: v })} disabled={busy} />}</Field>
             <Field label="A cargo">{(id) => <Select id={id} options={owners} placeholder="Sin asignar" value={l.owner_id ? String(l.owner_id) : ''} onChange={(v) => patch({ owner_id: v ? Number(v) : null })} disabled={busy} />}</Field>
             <Field label="Próxima acción" hint="Para no dejarla enfriar.">
-              {(id) => <input id={id} type="date" className="input" value={l.next_action_at ?? ''} onChange={(e) => patch({ next_action_at: e.target.value || null })} disabled={busy} />}
+              {(id) => (
+                <input id={id} type="date" className="input" value={dateDraft}
+                  onChange={(e) => { setDateDraft(e.target.value); if (e.target.value === '') saveDate(''); }}
+                  onBlur={(e) => saveDate(e.target.value)} />
+              )}
             </Field>
             {l.client_id ? (
               <Link to={`/clientes/${l.client_id}`} className="btn btn-outline w-full"><Building2 className="h-4 w-4" />Ver ficha de {l.client_name}</Link>
@@ -157,7 +179,7 @@ export default function LeadDetail({ params }) {
           </section>
         </div>
       </div>
-      {converting && <ConvertDialog lead={l} onClose={() => setConverting(false)} onDone={(res) => { setConverting(false); apply(res); }} />}
+      {converting && <ConvertDialog lead={l} onClose={() => setConverting(false)} onDone={(res) => { setConverting(false); apply(res); }} onStale={() => { setConverting(false); reload(); }} />}
     </>
   );
 }

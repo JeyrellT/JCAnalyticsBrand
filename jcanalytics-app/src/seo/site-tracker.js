@@ -45,12 +45,23 @@ function device() {
   return w < 768 ? 'mobile' : coarse && w < 1200 ? 'tablet' : 'desktop';
 }
 
-const visit = () => ({
-  sid: sid(),
-  lang: locale,
-  device: device(),
-  src: { source: ATTRIBUTION?.source ?? '', medium: ATTRIBUTION?.medium ?? '', campaign: ATTRIBUTION?.campaign ?? '', ref: document.referrer || '' },
-});
+// La fuente y el dispositivo son los del inicio de la visita: si la persona navega a otra página
+// del sitio, el referrer pasa a ser el propio sitio y no debe cambiar de dónde llegó.
+let firstTouch = null;
+function origin() {
+  if (firstTouch) return firstTouch;
+  try { firstTouch = JSON.parse(window.sessionStorage.getItem('jc_visit') ?? 'null'); } catch { firstTouch = null; }
+  if (!firstTouch || typeof firstTouch !== 'object' || typeof firstTouch.src !== 'object') {
+    firstTouch = {
+      device: device(),
+      src: { source: ATTRIBUTION?.source ?? '', medium: ATTRIBUTION?.medium ?? '', campaign: ATTRIBUTION?.campaign ?? '', ref: document.referrer || '' },
+    };
+    try { window.sessionStorage.setItem('jc_visit', JSON.stringify(firstTouch)); } catch { /* vale solo para esta página */ }
+  }
+  return firstTouch;
+}
+
+const visit = () => ({ sid: sid(), lang: locale, ...origin() });
 
 function post(path, body, { beacon = true } = {}) {
   const payload = JSON.stringify(body);
@@ -66,6 +77,7 @@ let active = false;
 const queue = [];
 const sectionMs = new Map();
 let current = null; // { id, since }
+const inBand = new Set(); // secciones que cruzan la banda central ahora mismo
 
 function push(event) {
   if (!active) return;
@@ -79,6 +91,12 @@ function settleSection(restart) {
   const now = performance.now();
   sectionMs.set(current.id, (sectionMs.get(current.id) ?? 0) + (now - current.since));
   current = restart ? { id: current.id, since: now } : null;
+}
+
+/** Vuelve a medir la sección que está en la banda (al volver a la pestaña o desde el historial). */
+function resumeSection() {
+  if (current || document.visibilityState !== 'visible' || !inBand.size) return;
+  current = { id: [...inBand].pop(), since: performance.now() };
 }
 
 function flush() {
@@ -153,9 +171,13 @@ export function startSiteTracking() {
   const observer = new IntersectionObserver((entries) => {
     for (const entry of entries) {
       if (entry.isIntersecting) {
+        inBand.add(entry.target.id);
         settleSection(false);
         if (document.visibilityState === 'visible') current = { id: entry.target.id, since: performance.now() };
-      } else if (current?.id === entry.target.id) settleSection(false);
+      } else {
+        inBand.delete(entry.target.id);
+        if (current?.id === entry.target.id) { settleSection(false); resumeSection(); }
+      }
     }
   }, { rootMargin: '-45% 0px -45% 0px' });
   const observeAll = () => document.querySelectorAll('main section[id]').forEach((s) => observer.observe(s));
@@ -164,14 +186,16 @@ export function startSiteTracking() {
   const late = window.setTimeout(observeAll, 4000);
 
   const onVisibility = () => {
-    if (document.visibilityState === 'hidden') { flush(); current = null; }
+    if (document.visibilityState === 'hidden') { flush(); current = null; } else resumeSection();
   };
+  const onPageShow = (event) => { if (event.persisted) resumeSection(); };
   const timer = window.setInterval(flush, FLUSH_MS);
   document.addEventListener('click', onClick, true);
   document.addEventListener('focusin', onFocus);
   window.addEventListener('scroll', onScroll, { passive: true });
   document.addEventListener('visibilitychange', onVisibility);
   window.addEventListener('pagehide', flush);
+  window.addEventListener('pageshow', onPageShow);
   onScroll();
   return () => {
     flush();
@@ -184,6 +208,8 @@ export function startSiteTracking() {
     window.removeEventListener('scroll', onScroll);
     document.removeEventListener('visibilitychange', onVisibility);
     window.removeEventListener('pagehide', flush);
+    window.removeEventListener('pageshow', onPageShow);
+    inBand.clear();
   };
 }
 

@@ -110,6 +110,8 @@ const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
       if (notified && !state.paused && now - lastDraw < FRAME_MS - 2) { frame = requestAnimationFrame(draw); return; }
       // Without interaction for a while the object rests on its current pose.
       if (notified && now - lastActivity > IDLE_MS) { last = 0; return; }
+      // A gap (sleep, hidden tab, offscreen) is not slowness: the fps sample starts over.
+      if (now - lastDraw > 250) sample = { start: 0, frames: 0 };
       lastDraw = now;
       if (!state.paused && quality < 2) {
         if (!sample.start) sample = { start: now, frames: 0 };
@@ -146,9 +148,11 @@ const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
     const schedule = () => {
       if (disposed) return;
       cancelAnimationFrame(frame);
+      sample = { start: 0, frames: 0 };
       frame = requestAnimationFrame(draw);
     };
-    renderRef.current = schedule;
+    // The on-screen controls (pause, mode) count as activity, so they always redraw.
+    renderRef.current = () => { lastActivity = performance.now(); schedule(); };
     const resize = () => {
       // Resizing clears the canvas: it always counts as activity so the object is redrawn.
       lastActivity = performance.now();
@@ -193,6 +197,7 @@ const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
     window.addEventListener('scroll', wake, { passive: true });
     window.addEventListener('keydown', wake);
     window.addEventListener('pointermove', wake, { passive: true });
+    window.addEventListener('pointerdown', wake, { passive: true });
     resize();
 
     return () => {
@@ -208,6 +213,7 @@ const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
       window.removeEventListener('scroll', wake);
       window.removeEventListener('keydown', wake);
       window.removeEventListener('pointermove', wake);
+      window.removeEventListener('pointerdown', wake);
       renderer.domElement.removeEventListener('webglcontextlost', lost);
       geometry.dispose(); cageGeometry.dispose(); haloGeometry.dispose(); markerGeometry.dispose();
       material.dispose(); cageMaterial.dispose(); haloMaterial.dispose(); markerMaterial.dispose();

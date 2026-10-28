@@ -82,7 +82,8 @@ export function cleanPhone(value) {
 
 export function cleanEmail(value) {
   const v = cleanVisitorText(value, LEAD_LIMITS.email)?.toLowerCase() ?? null;
-  return v && /^[^\s@<>()"',;:]+@[^\s@<>()"',;:]+\.[a-z]{2,}$/i.test(v) ? v : null;
+  // Juego de caracteres estricto: sin ? & = % ni espacios, para que nunca agregue parámetros a un mailto:.
+  return v && /^[a-z0-9._+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(v) ? v : null;
 }
 
 /** Número para wa.me: 8 dígitos de Costa Rica reciben el 506. */

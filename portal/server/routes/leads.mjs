@@ -59,8 +59,9 @@ export function leadRoutes(route, ctx) {
     const notes = db.prepare(`SELECT n.*, u.name user_name, u.color user_color FROM lead_notes n LEFT JOIN users u ON u.id = n.user_id
       WHERE n.lead_id = ? ORDER BY n.created_at DESC, n.id DESC LIMIT 200`).all(lead.id);
     // Recorrido de la visita que terminó en la consulta: páginas, secciones y clics, en orden.
-    const journey = lead.session_id ? db.prepare(`SELECT type, path, section, target, label, value, at FROM site_events
-      WHERE session_id = ? ORDER BY at, id LIMIT 200`).all(lead.session_id) : [];
+    // Los últimos 200 eventos hasta la consulta (lo que hizo justo antes de escribir), en orden.
+    const journey = lead.session_id ? db.prepare(`SELECT * FROM (SELECT id, type, path, section, target, label, value, at FROM site_events
+      WHERE session_id = ? AND at <= ? ORDER BY at DESC, id DESC LIMIT 200) ORDER BY at, id`).all(lead.session_id, lead.created_at) : [];
     return { lead, notes, journey };
   });
 
@@ -114,7 +115,8 @@ export function leadRoutes(route, ctx) {
     if (clientId) {
       if (!db.prepare('SELECT 1 FROM clients WHERE id = ?').get(clientId)) invalid('client_id', 'Cliente no encontrado.');
     } else {
-      const name = text(body.name ?? current.name, 'name', { max: 120, min: 2 }) ?? invalid('name', 'Escribí el nombre del cliente o de la empresa.');
+      // El nombre de la ficha lo escribe el equipo: el del visitante no se copia solo (las fichas de clientes las lee Claude por MCP).
+      const name = text(body.name, 'name', { max: 120, min: 2 }) ?? invalid('name', 'Escribí el nombre del cliente o de la empresa.');
       const clash = db.prepare('SELECT id, name FROM clients').all().find((r) => sameName(r.name, name));
       if (clash) fail(409, 'duplicate', { field: 'name', message: `Ya existe el cliente ${clash.name}. Podés vincular la consulta con esa ficha.`, client_id: clash.id });
       const at = ctx.nowIso();
@@ -146,6 +148,8 @@ export function leadRoutes(route, ctx) {
     const one = (sql, ...args) => db.prepare(sql).get(from, ...args);
     const all = (sql, ...args) => db.prepare(sql).all(from, ...args);
     const W = 'day >= ?';
+    // Solo cuentan las sesiones con una vista en el periodo: ningún paso del embudo supera a las visitas.
+    const IN_PERIOD = `session_id IN (SELECT session_id FROM site_events WHERE day >= '${from}' AND type = 'view')`;
 
     const totals = one(`SELECT COUNT(DISTINCT CASE WHEN type = 'view' THEN session_id END) sessions,
         COUNT(DISTINCT CASE WHEN type = 'view' THEN visitor END) visitors,
@@ -163,32 +167,38 @@ export function leadRoutes(route, ctx) {
     const daily = Array.from({ length: days }, (_, i) => {
       const day = ctx.today(-(days - 1 - i));
       const r = byDay.get(day);
-      return { day, sessions: r?.sessions ?? 0, views: r?.views ?? 0, cta_sessions: r?.cta_sessions ?? 0, leads: r?.leads ?? 0 };
+      return { day, sessions: r?.sessions ?? 0, views: r?.views ?? 0, cta_sessions: Math.min(r?.cta_sessions ?? 0, r?.sessions ?? 0), leads: r?.leads ?? 0 };
     });
 
     const sections = all(`SELECT section, SUM(value) ms, COUNT(DISTINCT session_id) sessions FROM site_events
-      WHERE ${W} AND type = 'section' AND section IS NOT NULL GROUP BY section ORDER BY sessions DESC LIMIT 30`)
+      WHERE ${W} AND type = 'section' AND section IS NOT NULL AND ${IN_PERIOD} GROUP BY section ORDER BY sessions DESC LIMIT 30`)
       .map((r) => ({ section: r.section, sessions: r.sessions, total_ms: r.ms, avg_ms: Math.round(r.ms / Math.max(1, r.sessions)), reach: sessions ? r.sessions / sessions : 0 }));
 
     const clicks = all(`SELECT target, label, section, COUNT(*) clicks, COUNT(DISTINCT session_id) sessions FROM site_events
       WHERE ${W} AND type = 'click' GROUP BY target, label, section ORDER BY clicks DESC LIMIT 30`);
 
-    const reached = (sql, ...args) => one(`SELECT COUNT(DISTINCT session_id) n FROM site_events WHERE ${W} AND ${sql}`, ...args).n;
+    const reached = (sql, ...args) => one(`SELECT COUNT(DISTINCT session_id) n FROM site_events WHERE ${W} AND ${IN_PERIOD} AND ${sql}`, ...args).n;
     const funnel = [
       { key: 'visit', label: 'Entraron al sitio', sessions },
       { key: 'pricing', label: 'Vieron los precios', sessions: reached("type = 'section' AND section = 'paquetes'") },
       { key: 'scroll', label: 'Bajaron a la mitad de la página', sessions: reached("type = 'scroll' AND value >= 50") },
-      { key: 'cta', label: 'Tocaron WhatsApp, un paquete o contacto', sessions: totals.cta_sessions || 0 },
+      { key: 'cta', label: 'Tocaron WhatsApp, un paquete o contacto', sessions: reached(`type = 'click' AND target IN (${CTA_SQL})`) },
       { key: 'form_start', label: 'Empezaron un formulario', sessions: reached("type = 'form_start'") },
       { key: 'form_submit', label: 'Enviaron un formulario', sessions: reached("type = 'form_submit'") },
       { key: 'lead', label: 'Dejaron sus datos (consulta en el portal)', sessions: reached("type = 'lead'") },
     ];
 
+    const ctaSessions = funnel.find((f) => f.key === 'cta').sessions;
     const scroll = [25, 50, 75, 100].map((pct) => ({ pct, sessions: reached("type = 'scroll' AND value >= ?", pct) }));
 
-    const groupBy = (column) => all(`SELECT COALESCE(${column}, 'sin dato') name, COUNT(DISTINCT CASE WHEN type = 'view' THEN session_id END) sessions,
-        COUNT(DISTINCT CASE WHEN type = 'click' AND target IN (${CTA_SQL}) THEN session_id END) cta_sessions, SUM(type = 'lead') leads
-      FROM site_events WHERE ${W} GROUP BY ${column} HAVING sessions > 0 OR leads > 0 ORDER BY sessions DESC LIMIT 12`);
+    // Cada sesión cuenta una sola vez, con la fuente, campaña y dispositivo de su primer evento del periodo.
+    const groupBy = (column) => all(`WITH first AS (
+        SELECT e.session_id, e.${column} attr FROM site_events e
+        JOIN (SELECT session_id, MIN(id) id FROM site_events WHERE day >= ? GROUP BY session_id) f ON f.id = e.id)
+      SELECT COALESCE(first.attr, 'sin dato') name, COUNT(DISTINCT CASE WHEN s.type = 'view' THEN s.session_id END) sessions,
+        COUNT(DISTINCT CASE WHEN s.type = 'click' AND s.target IN (${CTA_SQL}) THEN s.session_id END) cta_sessions, SUM(s.type = 'lead') leads
+      FROM site_events s JOIN first ON first.session_id = s.session_id WHERE s.day >= ?
+      GROUP BY first.attr HAVING sessions > 0 OR leads > 0 ORDER BY sessions DESC LIMIT 12`, from);
 
     const pages = all(`SELECT path, SUM(type = 'view') views, COUNT(DISTINCT session_id) sessions FROM site_events
       WHERE ${W} AND type = 'view' AND path IS NOT NULL GROUP BY path ORDER BY views DESC LIMIT 15`);
@@ -205,7 +215,7 @@ export function leadRoutes(route, ctx) {
       totals: {
         sessions, visitors: totals.visitors || 0, views: totals.views || 0, engaged_ms: totals.engaged_ms || 0,
         avg_engaged_ms: sessions ? Math.round((totals.engaged_ms || 0) / sessions) : 0,
-        cta_clicks: totals.cta_clicks || 0, cta_sessions: totals.cta_sessions || 0, cta_rate: sessions ? (totals.cta_sessions || 0) / sessions : 0,
+        cta_clicks: totals.cta_clicks || 0, cta_sessions: ctaSessions, cta_rate: sessions ? ctaSessions / sessions : 0,
         leads: leadStatus.reduce((s, r) => s + r.n, 0),
       },
       daily, sections, clicks, funnel, scroll,
