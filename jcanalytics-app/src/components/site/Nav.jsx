@@ -17,7 +17,7 @@ const CHAPTERS = [
   { icon: Sparkles, detail: t('Marcas que conectan', 'Brands that connect'), need: 'Marketing digital' },
   { icon: MessageCircle, detail: t('Tu siguiente paso', 'Your next step'), need: 'Sistema / backend' },
 ];
-const SECTION_NAMES = { top: t('El estudio', 'The studio'), empezar: t('Tu proyecto', 'Your project'), servicios: t('Servicios', 'Services'), automatizacion: t('Automatización', 'Automation'), equipo: t('El equipo', 'The team'), proceso: t('El proceso', 'Our process'), cotizar: t('Cotizador', 'Estimator'), preguntas: t('Preguntas', 'Questions') };
+const SECTION_NAMES = { top: t('El estudio', 'The studio'), servicios: t('Servicios', 'Services'), equipo: t('El equipo', 'The team'), proceso: t('El proceso', 'Our process'), cotizar: t('Cotizador', 'Estimator'), preguntas: t('Preguntas', 'Questions') };
 
 const Brand = ({ onClick, className = '' }) => (
   <a href="#top" onClick={onClick} className={`jca-brand ${className}`} aria-label={t('JC Analytics — inicio', 'JC Analytics — home')}>

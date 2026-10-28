@@ -16,7 +16,7 @@ export const content = {
       ['Custom web development', 'Brand-led websites, interfaces, backend systems and business management tools.', 'plataformas'],
       ['Financial analysis and Power BI dashboards', 'Financial models, budgets and dashboards connected to business data.', 'finanzas'],
       ['AI integration and machine learning', 'Document assistants, predictive models and AI integrated into existing workflows.', 'inteligencia'],
-      ['Business process automation', 'Excel, Python and Power Platform workflows to reduce repetitive manual tasks.', 'automatizacion'],
+      ['Business process automation', 'Excel, Python and Power Platform workflows to reduce repetitive manual tasks.', 'servicios'],
       ['Digital marketing and content', 'Social media management, creative content, video editing and advertising campaigns.', 'redes'],
     ],
     faq: [
@@ -36,7 +36,7 @@ export const content = {
       ['Desarrollo web a medida', 'Sitios con identidad de marca, interfaces, backend y herramientas de gestión del negocio.', 'plataformas'],
       ['Análisis financiero y dashboards Power BI', 'Modelos financieros, presupuestos y dashboards conectados a los datos del negocio.', 'finanzas'],
       ['Integración de IA y machine learning', 'Asistentes sobre documentos, modelos predictivos e IA integrada a procesos existentes.', 'inteligencia'],
-      ['Automatización de procesos', 'Flujos con Excel, Python y Power Platform para reducir tareas manuales repetitivas.', 'automatizacion'],
+      ['Automatización de procesos', 'Flujos con Excel, Python y Power Platform para reducir tareas manuales repetitivas.', 'servicios'],
       ['Marketing digital y contenido', 'Gestión de redes sociales, contenido creativo, edición de video y campañas publicitarias.', 'redes'],
     ],
     faq: [

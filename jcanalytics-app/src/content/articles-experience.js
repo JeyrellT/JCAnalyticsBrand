@@ -2,7 +2,7 @@ export const experienceArticles = [
   {
     "id": "useful-websites",
     "topic": "experience",
-    "image": "/images/journal/systems.webp",
+    "image": '/projects/laburrada/home-desktop.webp',
     "minutes": 5,
     "published": "2026-10-04",
     "en": {
@@ -153,7 +153,7 @@ export const experienceArticles = [
   {
     "id": "software-adoption",
     "topic": "operations",
-    "image": "/images/journal/systems.webp",
+    "image": '/projects/laburrada/cocina-desktop.webp',
     "minutes": 5,
     "published": "2026-10-04",
     "en": {

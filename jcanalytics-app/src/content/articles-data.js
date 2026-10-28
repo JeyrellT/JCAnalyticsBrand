@@ -3,7 +3,7 @@ export const dataArticles = [
   {
     "id": "data-quality",
     "topic": "data",
-    "image": "/images/journal/data.webp",
+    "image": '/projects/laburrada/analitica-desktop.webp',
     "minutes": 5,
     "published": "2026-10-04",
     "en": {
@@ -142,7 +142,7 @@ export const dataArticles = [
   {
     "id": "decision-metrics",
     "topic": "data",
-    "image": "/images/journal/data.webp",
+    "image": '/projects/caviq/reports-desktop.webp',
     "minutes": 5,
     "published": "2026-10-04",
     "en": {

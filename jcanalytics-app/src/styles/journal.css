@@ -144,3 +144,7 @@
 @media (max-width:359px) { .journal-nav { padding-inline:12px; } .journal-brand { font-size:17px; } .journal-container { width:calc(100% - 32px); } .nav-insights { display:none; } .journal-service-grid { grid-template-columns:1fr; } }
 @media (prefers-reduced-motion:reduce) { .journal-site *, .knowledge-preview * { scroll-behavior:auto !important; transition:none !important; } }
 @media (max-width:767px) { .document-practical { scroll-margin-top:160px; } }
+
+/* Las portadas son capturas reales: se encuadran desde arriba para que se vea el encabezado de cada sistema. */
+.document-cover img, .journal-feature__image img, .journal-card__image img, .studio-latest img { object-position: top; }
+.studio-latest img { filter: none; }

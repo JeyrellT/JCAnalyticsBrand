@@ -9,7 +9,7 @@ export const safeRetriesArticle = {
   id: 'safe-retries',
   topic: 'operations',
   tool: 'retry-simulator',
-  image: '/images/journal/systems.webp',
+  image: '/projects/crimson/facturas-desktop.webp',
   minutes: 8,
   published: '2026-10-04',
   en: {
