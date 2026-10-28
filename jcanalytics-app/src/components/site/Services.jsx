@@ -14,6 +14,7 @@ import { servicePages } from '../../content/services';
 import { servicePath } from '../../seo/routes';
 import { CTA, Label, MaskLines, Reveal } from './primitives';
 import { wa, EASE } from './links';
+import '../../styles/portfolio.css';
 
 // eslint (sin plugin de react) no reconoce a `motion` usado solo como <motion.x>.
 const _MOTION = motion;

@@ -1,55 +1,206 @@
-import { t, locale } from '../../i18n/locale';
-import { useState } from 'react';
+// Proyectos reales: capturas, código y anatomía de los repositorios que JC Analytics construye.
+import { useId, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowUpRight, Check } from 'lucide-react';
-import { SOLUTION_CONCEPTS } from '../../data/webProperties';
-import { journalPath } from '../../seo/routes';
+import { ArrowUpRight, Check, Code2, GitCommitHorizontal, Layers3, MonitorSmartphone } from 'lucide-react';
+import { t, locale } from '../../i18n/locale';
+import { EVIDENCE_DATE, EVIDENCE_TOTALS, FACT_LABELS, PROJECTS, PROJECT_KINDS, projectCode, projectEvidence, screenImage } from '../../data/projects';
 import { Label, MaskLines, Reveal } from './primitives';
 import ContactCTA from './ContactCTA';
-import '../../styles/portfolio.css';
+import '../../styles/projects.css';
 
 const _MOTION = motion;
+const number = (value) => new Intl.NumberFormat(locale === 'es' ? 'es-CR' : 'en-US').format(value);
+const compact = (value) => value >= 10000 ? `${Math.round(value / 1000)}k` : number(value);
+const monthYear = (iso) => new Intl.DateTimeFormat(locale === 'es' ? 'es-CR' : 'en-US', { month: 'short', year: 'numeric' }).format(new Date(`${iso}T12:00:00`));
+const VIEWS = [
+  { id: 'screen', label: t('Pantalla', 'Screen'), icon: MonitorSmartphone },
+  { id: 'code', label: t('Código', 'Code'), icon: Code2 },
+  { id: 'anatomy', label: t('Anatomía', 'Anatomy'), icon: Layers3 },
+];
+const STACK_GROUPS = [
+  ['front', t('Interfaz', 'Front end')], ['back', t('Servidor', 'Back end')], ['data', t('Datos', 'Data')],
+  ['integrations', t('Integraciones', 'Integrations')], ['infra', t('Infraestructura y calidad', 'Infrastructure and quality')],
+];
+const TOTALS = [
+  { value: String(EVIDENCE_TOTALS.projects), label: t('proyectos reales, con repositorio', 'real projects, each with a repository') },
+  { value: compact(EVIDENCE_TOTALS.lines), label: t('líneas de código escritas', 'lines of code written') },
+  { value: number(EVIDENCE_TOTALS.commits), label: t('commits en los últimos meses', 'commits over the last months') },
+  { value: number(EVIDENCE_TOTALS.tests), label: t('pruebas automatizadas', 'automated tests') },
+  { value: number(EVIDENCE_TOTALS.endpoints), label: t('endpoints de API', 'API endpoints') },
+];
+
+const Browser = ({ project, screen }) => (
+  <figure className="works-browser" style={{ '--project-color': project.accent }}>
+    <div className="works-browser__bar" aria-hidden="true"><span /><span /><span /><em>{project.url ? project.url.replace(/^https?:\/\//, '').replace(/\/$/, '') : t('entorno local · datos de demostración', 'local environment · demo data')}</em></div>
+    <div className="works-browser__viewport">
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.img key={`${project.id}-${screen.id}`} src={screenImage(project, screen.id, 'desktop')} width={1600} height={1000} loading="lazy" decoding="async"
+          alt={t(`Pantalla real de ${project.name}: ${screen.caption}`, `Real screen of ${project.name}: ${screen.caption}`)}
+          initial={{ opacity: 0.2 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} />
+      </AnimatePresence>
+    </div>
+    <figcaption>{screen.caption}</figcaption>
+  </figure>
+);
+
+const Phone = ({ project, screen }) => screen.mobile ? (
+  <figure className="works-phone">
+    <div className="works-phone__frame">
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.img key={`${project.id}-${screen.mobile}`} src={screenImage(project, screen.mobile, 'mobile')} width={640} height={1386} loading="lazy" decoding="async"
+          alt={t(`Versión móvil de ${project.name}`, `Mobile version of ${project.name}`)}
+          initial={{ opacity: 0.2 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} />
+      </AnimatePresence>
+    </div>
+    <figcaption>{screen.mobileCaption || t('La misma pantalla en el celular.', 'The same screen on a phone.')}</figcaption>
+  </figure>
+) : null;
+
+const CodeView = ({ project }) => {
+  const sample = projectCode(project.id);
+  const lines = sample.code.split('\n');
+  return (
+    <div className="works-code">
+      <div className="works-code__bar"><span className="works-code__file">{sample.file}</span><span>{sample.language}</span></div>
+      <pre className="works-code__pre" tabIndex={0}><code>{lines.map((line, index) => <span key={index} className="works-code__line"><span aria-hidden="true">{String(index + 1).padStart(2, ' ')}</span>{line}{'\n'}</span>)}</code></pre>
+      <p className="works-code__why"><strong>{t('Por qué importa', 'Why it matters')}</strong>{sample.why}</p>
+    </div>
+  );
+};
+
+const Anatomy = ({ project }) => {
+  const data = projectEvidence(project.id);
+  const facts = Object.entries(data.facts).filter(([key, value]) => FACT_LABELS[key] && value > 0);
+  return (
+    <div className="works-anatomy">
+      <div className="works-anatomy__numbers">
+        <div><strong>{compact(data.lines)}</strong><span>{t('líneas de código', 'lines of code')}</span></div>
+        <div><strong>{number(data.codeFiles)}</strong><span>{t('archivos de código', 'code files')}</span></div>
+        <div><strong>{number(data.commits)}</strong><span>{t('commits', 'commits')}</span></div>
+        {facts.slice(0, 5).map(([key, value]) => <div key={key}><strong>{number(value)}</strong><span>{FACT_LABELS[key]}</span></div>)}
+      </div>
+      <div className="works-anatomy__languages" role="img" aria-label={t('Lenguajes del repositorio', 'Repository languages')}>
+        <div className="works-anatomy__bar">{data.languages.map((language) => <i key={language.name} style={{ flexGrow: language.share }} data-language={language.name} title={`${language.name} ${language.share}%`} />)}</div>
+        <ul>{data.languages.map((language) => <li key={language.name}><i data-language={language.name} />{language.name} <span>{language.share}%</span></li>)}</ul>
+      </div>
+      <dl className="works-anatomy__stack">
+        {STACK_GROUPS.map(([key, label]) => project.stack[key]?.length ? <div key={key}><dt>{label}</dt><dd>{project.stack[key].map((item) => <span key={item}>{item}</span>)}</dd></div> : null)}
+      </dl>
+      <p className="works-anatomy__timeline"><GitCommitHorizontal size={15} aria-hidden="true" />{t('Repositorio', 'Repository')} <code>{data.repo}</code> · {t('del', 'from')} {monthYear(data.firstCommit)} {t('al', 'to')} {monthYear(data.lastCommit)} · {t('cifras calculadas el', 'figures computed on')} {EVIDENCE_DATE}</p>
+    </div>
+  );
+};
 
 const Work = () => {
   const [active, setActive] = useState(0);
+  const [view, setView] = useState('screen');
+  const [screenIndex, setScreenIndex] = useState(0);
   const reduce = useReducedMotion();
-  const concept = SOLUTION_CONCEPTS[active];
+  const descriptionId = useId();
+  const project = PROJECTS[active];
+  const screen = project.screens[screenIndex] || project.screens[0];
+  const code = projectCode(project.id);
+  const choose = (index, shot = 0) => { setActive(index); setScreenIndex(shot); };
+
   return (
-    <section id="trabajo" className="case-section" aria-labelledby="work-title">
+    <section id="trabajo" className="case-section works-section" aria-labelledby="work-title">
       <div className="case-container">
         <div className="case-heading">
           <div>
-            <Label>{t('Explorar posibilidades / Ejemplos', 'Explore possibilities / Examples')}</Label>
-            <h2 id="work-title"><MaskLines lines={[t('Imaginá lo', 'Imagine what'), <em key="next">{t('que sigue.', 'comes next.')}</em>]} /></h2>
+            <Label>{t('Proyectos reales / Lo que construimos', 'Real projects / What we build')}</Label>
+            <h2 id="work-title"><MaskLines lines={[t('Hecho,', 'Built,'), <em key="real">{t('no imaginado.', 'not imagined.')}</em>]} /></h2>
           </div>
           <Reveal className="case-heading__aside">
-            <span className="case-count">{String(SOLUTION_CONCEPTS.length).padStart(2, '0')}<span>{t('IDEAS PARA', 'IDEAS TO')}<br />{t('EXPLORAR', 'EXPLORE')}</span></span>
-            <p>{t('Ejemplos conceptuales e ilustraciones para conversar sobre tu próximo proyecto. Cada propuesta se define según tu necesidad.', 'Concept examples and illustrations to start a conversation about your next project. Each proposal is shaped around your needs.')}</p>
+            <span className="case-count">{String(PROJECTS.length).padStart(2, '0')}<span>{t('PROYECTOS CON', 'PROJECTS WITH')}<br />{t('CÓDIGO REAL', 'REAL CODE')}</span></span>
+            <p>{t('Diez sistemas y sitios construidos por JC Analytics. Capturas de pantalla reales, fragmentos de código copiados de cada repositorio y cifras calculadas por un script, no escritas a mano.', 'Ten systems and sites built by JC Analytics. Real screenshots, code excerpts copied from each repository and figures computed by a script, not typed by hand.')}</p>
           </Reveal>
         </div>
-        <Reveal className="case-feature case-feature--concept">
-          <div className="case-feature__top"><span>{t('CONTENIDO ILUSTRATIVO / EJEMPLOS CONCEPTUALES', 'ILLUSTRATIVE CONTENT / CONCEPT EXAMPLES')}</span><span>0{active + 1} — 0{SOLUTION_CONCEPTS.length}</span></div>
-          <div className="case-feature__layout">
-            <div className="case-feature__copy" id="concept-description" aria-live="polite">
-              <span className="case-feature__sector">{concept.sector}</span>
-              <h3>{concept.name}</h3><p>{concept.description}</p>
-              <ul>{concept.features.map((feature) => <li key={feature}><Check size={13} aria-hidden="true" />{feature}</li>)}</ul>
-              <a href={concept.href} className="case-feature__link">{t('Conocer el servicio', 'Explore the service')}<span><ArrowUpRight size={20} aria-hidden="true" /></span></a>
-              <ContactCTA need={concept.need} source={t(`Ejemplo conceptual: ${concept.label}`, `Concept example: ${concept.label}`)} variant="ghost" className="case-feature__inquiry">{t('Conversemos sobre mi idea', 'Let’s discuss my idea')}</ContactCTA>
-            </div>
-            <a href={concept.href} className="case-feature__visual" aria-label={t(`Conocer el servicio: ${concept.label}`, `Explore the service: ${concept.label}`)} style={{ '--project-color': concept.accent }}>
-              <span className="case-feature__halo" aria-hidden="true" />
-              <AnimatePresence mode="wait" initial={false}><motion.img key={concept.id} src={concept.image} width={1536} height={1024} loading="lazy" decoding="async" alt={concept.imageAlt} initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduce ? 0 : 0.3 }} /></AnimatePresence>
-              <span className="case-feature__url">{t('ILUSTRACIÓN CONCEPTUAL', 'CONCEPTUAL ILLUSTRATION')}<ArrowUpRight size={13} aria-hidden="true" /></span>
-            </a>
+
+        <Reveal className="works-totals" as="ul" aria-label={t('Totales de los repositorios', 'Repository totals')}>
+          {TOTALS.map((item) => <li key={item.label}><strong>{item.value}</strong><span>{item.label}</span></li>)}
+        </Reveal>
+
+        <Reveal className="case-feature works-explorer">
+          <div className="case-feature__top">
+            <span>{t('REPOSITORIOS DE JC ANALYTICS / CAPTURAS, CÓDIGO Y ANATOMÍA', 'JC ANALYTICS REPOSITORIES / SCREENS, CODE AND ANATOMY')}</span>
+            <span>{String(active + 1).padStart(2, '0')} — {String(PROJECTS.length).padStart(2, '0')}</span>
           </div>
-          <div className="case-feature__selector" role="group" aria-label={t('Elegir ejemplo conceptual', 'Choose a concept example')}>
-            {SOLUTION_CONCEPTS.map((item, index) => <button key={item.id} type="button" aria-pressed={active === index} aria-controls="concept-description" onClick={() => setActive(index)}><span>0{index + 1}</span>{item.label}<ArrowUpRight size={16} aria-hidden="true" /></button>)}
+          <div className="works-explorer__layout">
+            <nav className="works-list" aria-label={t('Elegir proyecto', 'Choose a project')}>
+              {PROJECTS.map((item, index) => (
+                <button key={item.id} type="button" aria-pressed={active === index} aria-controls={descriptionId} onClick={() => choose(index)} style={{ '--project-color': item.accent }}>
+                  <span className="works-list__number">{String(index + 1).padStart(2, '0')}</span>
+                  <span className="works-list__name">{item.name}</span>
+                  <span className="works-list__sector">{item.sector}</span>
+                </button>
+              ))}
+            </nav>
+
+            <div className="works-stage">
+              <div className="works-stage__tabs" role="tablist" aria-label={t('Qué ver del proyecto', 'What to see of the project')}>
+                {VIEWS.map((item) => <button key={item.id} type="button" role="tab" aria-selected={view === item.id} className={view === item.id ? 'is-active' : ''} onClick={() => setView(item.id)}><item.icon size={15} aria-hidden="true" />{item.label}</button>)}
+              </div>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div key={`${project.id}-${view}`} className={`works-stage__panel works-stage__panel--${view}`} initial={reduce ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduce ? 0 : 0.25 }}>
+                  {view === 'screen' && (
+                    <div className="works-screen">
+                      <div className="works-screen__devices"><Browser project={project} screen={screen} /><Phone project={project} screen={screen} /></div>
+                      {project.screens.length > 1 && (
+                        <div className="works-screen__strip" role="group" aria-label={t('Más pantallas de este proyecto', 'More screens of this project')}>
+                          {project.screens.map((item, index) => (
+                            <button key={item.id} type="button" aria-pressed={screenIndex === index} onClick={() => setScreenIndex(index)}>
+                              <img src={screenImage(project, item.id, 'desktop')} width={160} height={100} loading="lazy" decoding="async" alt="" />
+                              <span>{String(index + 1).padStart(2, '0')}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {view === 'code' && <CodeView project={project} />}
+                  {view === 'anatomy' && <Anatomy project={project} />}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+
+          <div className="works-summary" id={descriptionId} aria-live="polite">
+            <div className="works-summary__copy">
+              <span className="case-feature__sector">{PROJECT_KINDS[project.kind]} · {project.sector} · {project.status}</span>
+              <h3>{project.name}</h3>
+              <p className="works-summary__tagline">{project.tagline}</p>
+              <p><strong>{t('El reto.', 'The challenge.')}</strong> {project.problem}</p>
+              <p><strong>{t('Lo que construimos.', 'What we built.')}</strong> {project.built}</p>
+            </div>
+            <div className="works-summary__aside">
+              <ul>{project.features.map((feature) => <li key={feature}><Check size={13} aria-hidden="true" />{feature}</li>)}</ul>
+              <div className="works-summary__actions">
+                {project.url && <a href={project.url} target="_blank" rel="noreferrer" className="case-feature__link works-link">{t('Abrir el sitio', 'Open the site')}<span><ArrowUpRight size={20} aria-hidden="true" /></span></a>}
+                <ContactCTA need={project.need} source={t(`Proyecto de referencia: ${project.name}`, `Reference project: ${project.name}`)} variant="ghost" className="case-feature__inquiry">{t('Quiero algo así para mi negocio', 'I want something like this for my business')}</ContactCTA>
+              </div>
+              <p className="works-summary__note">{t('Fragmento de código:', 'Code excerpt:')} <code>{code.file}</code></p>
+            </div>
           </div>
         </Reveal>
-        <Reveal className="case-demos">
-          <div><Label>{t('Ideas para elegir mejor.', 'Ideas for better decisions.')}</Label><p>{t('Aprendé. Preguntá. Definí tu siguiente paso.', 'Learn. Ask. Define your next step.')}</p></div>
-          <div><a href={journalPath(locale)}>{t('Explorar artículos y preguntas', 'Explore articles and questions')}<ArrowUpRight size={16} aria-hidden="true" /></a></div>
+
+        <Reveal className="works-gallery-head">
+          <div><Label>{t('Más pantallas reales', 'More real screens')}</Label><p>{t('Sin ilustraciones ni fotos de archivo. Cada imagen es una pantalla de un sistema que existe.', 'No illustrations, no stock photos. Every image is a screen from a system that exists.')}</p></div>
+          <span>{t('ESCRITORIO 1440 PX · MÓVIL 390 PX', 'DESKTOP 1440 PX · MOBILE 390 PX')}</span>
+        </Reveal>
+        <ul className="works-gallery" aria-label={t('Galería de pantallas reales', 'Gallery of real screens')}>
+          {PROJECTS.flatMap((item) => item.screens.slice(1, 3).map((shot) => ({ project: item, shot }))).map(({ project: item, shot }, index) => (
+            <Reveal key={`${item.id}-${shot.id}`} as="li" delay={(index % 3) * 0.06} className="works-gallery__item">
+              <button type="button" style={{ '--project-color': item.accent }} onClick={() => { choose(PROJECTS.indexOf(item), item.screens.indexOf(shot)); setView('screen'); document.getElementById('trabajo')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); }} aria-label={t(`Ver ${item.name}: ${shot.caption}`, `View ${item.name}: ${shot.caption}`)}>
+                <img src={screenImage(item, shot.id, 'desktop')} width={1600} height={1000} loading="lazy" decoding="async" alt={t(`Pantalla real de ${item.name}: ${shot.caption}`, `Real screen of ${item.name}: ${shot.caption}`)} />
+                <span className="works-gallery__caption"><strong>{item.name}</strong><em>{shot.caption}</em></span>
+              </button>
+            </Reveal>
+          ))}
+        </ul>
+
+        <Reveal className="case-demos works-method">
+          <div><Label>{t('Cómo se tomaron estas evidencias.', 'How this evidence was gathered.')}</Label><p>{t('Cada aplicación se levantó desde su repositorio con datos de demostración y se capturó en escritorio y móvil. Las cifras las calcula un script sobre el código.', 'Each application was run from its repository with demo data and captured on desktop and mobile. A script computes the figures from the code.')}</p></div>
+          <div><ContactCTA need="Sistema / backend" source={t('Proyectos reales', 'Real projects')} variant="aqua">{t('Conversemos sobre tu sistema', 'Let’s talk about your system')}</ContactCTA></div>
         </Reveal>
       </div>
     </section>

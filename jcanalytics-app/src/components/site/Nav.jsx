@@ -185,7 +185,7 @@ const Nav = () => {
 
       <nav className={`mobile-dock ${editing ? 'mobile-dock--editing' : ''}`} aria-label={t('Accesos rápidos', 'Quick links')} aria-hidden={open || editing || undefined} inert={open || editing || undefined}>
         <button type="button" onClick={openMenu} aria-label={t('Explorar secciones', 'Explore sections')} aria-expanded={open} aria-controls="menu-movil"><Grid2X2 size={19} aria-hidden="true" /><span>{t('Explorar', 'Explore')}</span></button>
-        <a href="#trabajo" aria-current={active === '#trabajo' ? 'location' : undefined}><PanelsTopLeft size={19} aria-hidden="true" /><span>{t('Ejemplos', 'Examples')}</span></a>
+        <a href="#trabajo" aria-current={active === '#trabajo' ? 'location' : undefined}><PanelsTopLeft size={19} aria-hidden="true" /><span>{t('Proyectos', 'Projects')}</span></a>
         <a className="mobile-dock__contact" href="#contacto" onClick={() => prepareContact({ need: CHAPTERS[currentIndex]?.need ?? 'Sistema / backend', source: `${t('Navegación móvil', 'Mobile navigation')} · ${currentName}` })}><span>{t('Tu proyecto', 'Your project')}</span><ArrowUpRight size={19} aria-hidden="true" /></a>
       </nav>
 

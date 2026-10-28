@@ -79,6 +79,9 @@ async function startServer() {
   return server;
 }
 
+// Real project evidence (the data module itself needs Vite, so read the generated JSON directly).
+const PROJECTS = Object.keys(JSON.parse(await readFile(new URL('../src/data/projects.evidence.json', import.meta.url), 'utf8')).projects);
+
 const compact = (text) => text.replace(/\s+/g, ' ').trim();
 
 async function openPage(browser, origin, width, javascript = true, options = {}) {
@@ -473,8 +476,11 @@ async function checkStaticRoute(browser, origin, route, snapshots) {
       await page.click('#preguntas details:first-child summary');
       assert.equal(await details[0].evaluate((node) => node.open), true, 'Native FAQ works without JavaScript');
       assert.ok(await page.$eval('#preguntas details:first-child p', (node) => node.getBoundingClientRect().height > 0));
-      const examples = compact(await page.$eval('#trabajo', (node) => node.innerText));
-      assert.ok(examples.includes(language === 'es' ? 'Ejemplos conceptuales' : 'Concept examples'), 'Examples are explicitly conceptual');
+      const projects = compact(await page.$eval('#trabajo', (node) => node.innerText));
+      assert.ok(projects.includes('La Burrada') && projects.includes('Transporte Luz de Luna'), 'Real projects are named in the static HTML');
+      assert.ok(projects.includes(language === 'es' ? 'Fragmento de código' : 'Code excerpt'), 'Project evidence is described in the visitor’s language');
+      const projectImages = await page.$$eval('#trabajo img[src*="/projects/"]', (nodes) => nodes.length);
+      assert.ok(projectImages >= PROJECTS.length, 'Every project ships a real screenshot in the static page');
     } else if (route.type === 'journal') {
       const cards = await page.$$eval('#journal-grid [data-article]', (nodes) => nodes.map((node) => node.dataset.article));
       assert.deepEqual(cards.sort(), articles.map((article) => article.id).sort(), 'Every article is browsable without JavaScript');
@@ -596,15 +602,24 @@ async function checkPublicPrivacy() {
   console.log('[check-site] PASS public privacy: no project screenshot directory or private review artifacts in dist');
 }
 
-async function checkConcepts(page, language) {
-  const buttons = await page.$$('.case-feature__selector button');
-  assert.ok(buttons.length >= 2, 'Visitors can explore multiple clearly labeled concepts');
-  const before = await page.$eval('#concept-description h3', (node) => node.textContent);
+async function checkProjects(page, language) {
+  const buttons = await page.$$('.works-list button');
+  assert.equal(buttons.length, PROJECTS.length, 'Visitors can choose every real project');
+  const before = await page.$eval('.works-summary h3', (node) => node.textContent);
   await buttons[1].click();
-  await page.waitForFunction((previous) => document.querySelector('#concept-description h3').textContent !== previous, {}, before);
+  await page.waitForFunction((previous) => document.querySelector('.works-summary h3').textContent !== previous, {}, before);
   assert.equal(await buttons[1].evaluate((node) => node.getAttribute('aria-pressed')), 'true');
-  const conceptUrl = new URL(await page.$eval('.case-feature__link', (node) => node.href));
-  assert.ok(routes.some((route) => route.type === 'service' && route.language === language && route.path === conceptUrl.pathname), 'Concept leads to a service in the visitor’s language');
+  const shot = new URL(await page.$eval('.works-browser__viewport img', (node) => node.currentSrc || node.src));
+  assert.ok(shot.pathname.startsWith('/projects/'), 'The explorer shows a real screenshot of the chosen project');
+  await page.click('.works-stage__tabs button:nth-child(2)');
+  await page.waitForSelector('.works-code__pre');
+  assert.ok((await page.$eval('.works-code__pre', (node) => node.textContent)).trim().length > 80, 'Real code excerpt is shown');
+  await page.click('.works-stage__tabs button:nth-child(3)');
+  await page.waitForSelector('.works-anatomy__numbers');
+  assert.ok((await page.$$('.works-anatomy__numbers div')).length >= 4, 'Repository anatomy shows computed figures');
+  const links = await page.$$eval('.works-link', (nodes) => nodes.map((node) => node.href));
+  assert.ok(links.every((href) => /^https:\/\//.test(href)), 'Project links open the real site');
+  assert.ok((await page.$eval('.works-summary', (node) => node.innerText)).includes(language === 'es' ? 'Lo que construimos' : 'What we built'), 'Project summary is localized');
   await checkWidth(page);
 }
 
@@ -1021,7 +1036,7 @@ async function main() {
           await checkWidth(page);
           if (width < 600) await checkMenu(page, language);
           await checkAssets(page, origin);
-          await checkConcepts(page, language);
+          await checkProjects(page, language);
           await checkContact(page, language);
           await checkEstimator(page, language);
           // Return to contact through a real anchor, then switch using a real click.

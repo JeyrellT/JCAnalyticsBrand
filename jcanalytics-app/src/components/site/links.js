@@ -57,7 +57,7 @@ export const NAV_LINKS = [
   { label: t('Sistemas', 'Software'), href: '#plataformas' },
   { label: t('Finanzas & BI', 'Finance & BI'), href: '#finanzas' },
   { label: t('IA & ML', 'AI & ML'), href: '#inteligencia' },
-  { label: t('Ejemplos', 'Examples'), href: '#trabajo' },
+  { label: t('Proyectos', 'Projects'), href: '#trabajo' },
   { label: 'Marketing', href: '#redes' },
   { label: t('Contacto', 'Contact'), href: '#contacto' },
 ];
