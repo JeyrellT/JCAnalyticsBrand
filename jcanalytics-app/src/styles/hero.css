@@ -69,3 +69,21 @@
 }
 @media (max-width:380px) { .studio-hero { padding-inline: 19px; } .studio-hero h1 { font-size: 17vw; } .studio-hero__actions { gap: 10px; } .studio-start { font-size: 10px; padding-left: 12px; } .studio-hero__description { font-size: 12px; } }
 @media (prefers-reduced-motion:reduce) { .studio-hero * { transition: none !important; } }
+
+/* Pantallas reales del hero en celular. En escritorio no se renderizan (display:none evita la carga). */
+.hero-screens { display: none; grid-template-columns: minmax(0, 46%) minmax(0, 1fr); align-items: center; gap: 16px; }
+.hero-screens__phone { position: relative; aspect-ratio: 9 / 16.5; border-radius: 26px; padding: 7px; background: #0a0f12; box-shadow: 0 30px 60px -30px #000, inset 0 0 0 1px #ffffff1c; overflow: hidden; }
+.hero-screens__phone img { position: absolute; inset: 7px; width: calc(100% - 14px); height: calc(100% - 14px); object-fit: cover; object-position: top; border-radius: 20px; opacity: 0; transition: opacity .6s; }
+.hero-screens__phone img.is-on { opacity: 1; }
+.hero-screens__bars { position: absolute; top: 13px; left: 13px; right: 13px; z-index: 2; display: flex; gap: 4px; }
+.hero-screens__bars i { position: relative; flex: 1; height: 2px; border-radius: 2px; background: #ffffff45; overflow: hidden; }
+.hero-screens__bars i::after { content: ''; position: absolute; inset: 0; background: #fff; transform: scaleX(0); transform-origin: left; }
+.hero-screens__bars i.is-done::after { transform: scaleX(1); }
+.hero-screens__bars i.is-on::after { animation: hero-bar var(--ms, 2800ms) linear forwards; }
+@keyframes hero-bar { to { transform: scaleX(1); } }
+.hero-screens__caption { display: grid; gap: 6px; }
+.hero-screens__caption small { font: 8px var(--font-mono); letter-spacing: .14em; color: #8ea89f; }
+.hero-screens__caption strong { font: 500 19px/1.1 var(--font-display); letter-spacing: -.03em; color: #f1f5ef; }
+.hero-screens__caption span { font-size: 12px; line-height: 1.5; color: #b6c8bf; }
+.hero-screens__caption button { justify-self: start; display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; min-height: 36px; padding: 0 12px; border: 1px solid #c3f5db3a; border-radius: 999px; font: 600 11px var(--font-sans); color: #c3f5db; }
+@media (prefers-reduced-motion: reduce) { .hero-screens__phone img { transition: none; } .hero-screens__bars i.is-on::after { animation: none; transform: scaleX(1); } }

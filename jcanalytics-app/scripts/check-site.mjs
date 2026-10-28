@@ -614,8 +614,10 @@ async function checkPackages(page, language) {
   const hero = new URL(await page.$eval('.studio-wa', (node) => node.href));
   assert.equal(hero.origin, 'https://wa.me', 'The hero’s main action opens WhatsApp');
   assert.ok((await page.$eval('#paquetes', (node) => node.innerText)).includes(language === 'es' ? 'Lo quiero' : 'I want it'));
-  await page.click('#paquetes .packages-more');
+  // Phones get every package in a swipeable rail; wider screens start with the featured ones and a "see all" button.
+  if (await page.$('#paquetes .packages-more')) await page.click('#paquetes .packages-more');
   await page.waitForFunction(() => document.querySelectorAll('#paquetes .package-card').length >= 10);
+  assert.equal(await page.$$eval('.mobile-dock', (nodes) => nodes.length), 0, 'No bottom bar on phones: WhatsApp and the assistant are two corner buttons');
   await checkWidth(page);
 }
 

@@ -30,9 +30,11 @@
 .assistant-footer a { color: #254a32; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 @keyframes assistant-spin { to { transform: rotate(360deg); } }
 @media (max-width: 767px) {
-  .assistant-launcher { right: max(16px, env(safe-area-inset-right)); bottom: calc(18px + env(safe-area-inset-bottom)); min-height: 48px; padding-inline: 16px; font-size: 12px; }
-  body:has(.mobile-dock) .assistant-launcher { bottom: calc(94px + env(safe-area-inset-bottom)); }
-  body.quote-bar-visible .assistant-launcher { bottom: calc(130px + env(safe-area-inset-bottom)); }
+  /* Círculo solo con ícono, a la par del botón de WhatsApp. El texto queda para lectores de pantalla. */
+  .assistant-launcher { right: calc(max(16px, env(safe-area-inset-right)) + 66px); bottom: calc(16px + env(safe-area-inset-bottom)); width: 56px; min-height: 56px; padding: 0; justify-content: center; border-radius: 50%; }
+  .assistant-launcher > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .assistant-launcher > svg { width: 24px; height: 24px; }
+  body.quote-bar-visible .assistant-launcher { bottom: calc(96px + env(safe-area-inset-bottom)); }
   .assistant-dialog { right: 12px; bottom: calc(12px + env(safe-area-inset-bottom) + var(--assistant-keyboard-inset, 0px)); width: calc(100vw - 24px); height: min(640px, calc(var(--assistant-viewport-height, 100dvh) - 24px - env(safe-area-inset-bottom))); border-radius: 20px; }
   .assistant-header { padding-block: 14px; }
 }

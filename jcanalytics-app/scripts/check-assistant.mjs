@@ -51,9 +51,9 @@ try {
     if (width < 768) {
       assert.equal(await page.evaluate(() => {
         const fab = document.querySelector('.assistant-launcher').getBoundingClientRect();
-        const dock = document.querySelector('.mobile-dock').getBoundingClientRect();
-        return fab.bottom < dock.top;
-      }), true, 'Launcher must clear the mobile navigation');
+        const wa = document.querySelector('.mobile-wa').getBoundingClientRect();
+        return fab.right <= wa.left && wa.right <= innerWidth && wa.bottom <= innerHeight;
+      }), true, 'Launcher must sit beside the WhatsApp button, both inside the viewport');
     }
     await page.click('.assistant-launcher');
     await page.waitForSelector('.assistant-dialog[open]');

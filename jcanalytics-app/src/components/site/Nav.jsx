@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion, useScroll } from 'framer-motion';
-import { Menu, X, ArrowUpRight, ArrowRight, Grid2X2, Layers3, ChartNoAxesCombined, BrainCircuit, PanelsTopLeft, Sparkles, MessageCircle, LockKeyhole, Tag } from 'lucide-react';
+import { Menu, X, ArrowUpRight, ArrowRight, Layers3, ChartNoAxesCombined, BrainCircuit, PanelsTopLeft, Sparkles, MessageCircle, LockKeyhole, Tag } from 'lucide-react';
 import { wa, EASE, PHONE, PHONE_DISPLAY, EMAIL, NAV_LINKS, PORTAL_URL } from './links';
 import '../../styles/navigation.css';
 import { t, locale } from '../../i18n/locale';
@@ -184,11 +184,8 @@ const Nav = () => {
         </div>
       </motion.header>
 
-      <nav className={`mobile-dock ${editing ? 'mobile-dock--editing' : ''}`} aria-label={t('Accesos rápidos', 'Quick links')} aria-hidden={open || editing || undefined} inert={open || editing || undefined}>
-        <button type="button" onClick={openMenu} aria-label={t('Explorar secciones', 'Explore sections')} aria-expanded={open} aria-controls="menu-movil"><Grid2X2 size={19} aria-hidden="true" /><span>{t('Explorar', 'Explore')}</span></button>
-        <a href="#paquetes" aria-current={active === '#paquetes' ? 'location' : undefined}><Tag size={19} aria-hidden="true" /><span>{t('Precios', 'Pricing')}</span></a>
-        <a className="mobile-dock__contact mobile-dock__contact--wa" href={wa(t(`Hola JC Analytics, estoy viendo ${currentName} y quiero cotizar.`, `Hi JC Analytics, I am looking at ${currentName} and want a quote.`))} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /><span>WhatsApp</span></a>
-      </nav>
+      {/* En celular no hay barra inferior: un solo botón de WhatsApp, pequeño y pegado a la esquina. */}
+      <a className="mobile-wa" href={wa(t(`Hola JC Analytics, estoy viendo ${currentName} y quiero cotizar.`, `Hi JC Analytics, I am looking at ${currentName} and want a quote.`))} target="_blank" rel="noreferrer" aria-label={t('Escribir por WhatsApp', 'Message on WhatsApp')} aria-hidden={open || editing || undefined} inert={open || editing || undefined}><MessageCircle size={26} aria-hidden="true" /></a>
 
       <AnimatePresence>
         {open && (
