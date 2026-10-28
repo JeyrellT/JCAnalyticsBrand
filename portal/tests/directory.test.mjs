@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { startServer } from './helpers.mjs';
-import { rowsFromSheet, parseCsv, parseStatus, extractPhones, cleanPhone, headerField } from '../shared/directory.js';
+import { rowsFromSheet, parseCsv, parseStatus, extractPhones, cleanPhone, headerField, contactLinks } from '../shared/directory.js';
 import { readXlsx, SpreadsheetError } from '../src/lib/xlsx.js';
 
 let env;
@@ -35,6 +35,26 @@ test('teléfonos de Costa Rica: extrae, formatea y no repite', () => {
   assert.equal(cleanPhone('+50688005555'), '8800-5555');
   assert.equal(cleanPhone('+1 (305) 555-01'), '+1 (305) 555-01', 'un número raro se conserva');
   assert.equal(cleanPhone('   '), null);
+});
+
+test('redes y sitio web: solo hay botón cuando hay un enlace real, con su red', () => {
+  const links = (social, website) => contactLinks({ social, website }).map((l) => [l.kind, l.label, l.url]);
+  assert.deepEqual(links('facebook.com/sodaprueba · instagram.com/soda_prueba', 'sodaprueba.rest (sin verificar)'), [
+    ['site', 'Sitio web', 'https://sodaprueba.rest/'],
+    ['facebook', 'Facebook', 'https://facebook.com/sodaprueba'],
+    ['instagram', 'Instagram', 'https://instagram.com/soda_prueba'],
+  ]);
+  assert.deepEqual(links('Facebook Soda Prueba · TikTok @sodaprueba · IG @soda.prueba'), [
+    ['tiktok', 'TikTok', 'https://www.tiktok.com/@sodaprueba'],
+    ['instagram', 'Instagram', 'https://www.instagram.com/soda.prueba'],
+  ], 'una cuenta con @ se abre en su red; el nombre suelto de Facebook no da enlace');
+  assert.deepEqual(links('linktr.ee/sodaprueba, https://www.instagram.com/soda_prueba/'), [
+    ['link', 'linktr.ee', 'https://linktr.ee/sodaprueba'],
+    ['instagram', 'Instagram', 'https://www.instagram.com/soda_prueba/'],
+  ]);
+  for (const nothing of ['TikTok', 'Instagram · Facebook', 'TikTok #SodaPrueba', 'Uber Eats', '@sodaprueba', 'Menú en Google Sites', 'S.A.', null]) {
+    assert.deepEqual(links(nothing, nothing), [], `sin botón para ${nothing}`);
+  }
 });
 
 test('estados escritos a mano se reconocen sin confundir "no interesado" con "interesado"', () => {

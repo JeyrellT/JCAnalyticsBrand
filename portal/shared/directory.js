@@ -91,6 +91,50 @@ export function phoneKey(value) {
   return digits.length >= 7 ? digits : null;
 }
 
+// ── Redes y sitio web ───────────────────────────────────────────────────────
+
+const LINK_NETWORKS = [
+  ['instagram', 'Instagram', /(^|\.)instagram\.com$/],
+  ['facebook', 'Facebook', /(^|\.)(facebook\.com|fb\.com|fb\.me)$/],
+  ['tiktok', 'TikTok', /(^|\.)tiktok\.com$/],
+];
+const DOMAIN = /^(?:[a-z0-9-]+\.)+[a-z]{2,}(?:[/?#]\S*)?$/i;
+const HANDLE_BASE = { instagram: 'https://www.instagram.com/', tiktok: 'https://www.tiktok.com/@' };
+
+function linkFor(url, kind) {
+  const host = url.hostname.replace(/^www\./, '');
+  const [network, label] = LINK_NETWORKS.find(([, , re]) => re.test(host)) ?? [];
+  if (network) return { kind: network, label, url: url.toString() };
+  return kind === 'site' ? { kind, label: 'Sitio web', url: url.toString() } : { kind: 'link', label: host, url: url.toString() };
+}
+
+/**
+ * Enlaces que se pueden abrir a partir de lo anotado en "Redes sociales" y "Sitio web".
+ * Acepta URLs, dominios de cualquier terminación ("burga.rest", "linktr.ee/x") y cuentas
+ * con su red ("TikTok @keburgers24"). Lo que solo nombra la red ("Facebook El Break",
+ * "TikTok") no da enlace: sin enlace real no hay botón.
+ */
+export function contactLinks({ social, website } = {}) {
+  const out = [];
+  const add = (link) => { if (!out.some((l) => l.url === link.url)) out.push(link); };
+  for (const [value, kind] of [[website, 'site'], [social, 'link']]) {
+    let network = null;
+    for (const raw of String(value ?? '').split(/[\s·|,;]+/)) {
+      const part = raw.replace(/^[("'¿¡]+|[)"'.,:!?]+$/g, '');
+      const word = fold(part);
+      if (/^(instagram|ig)$/.test(word)) { network = 'instagram'; continue; }
+      if (/^tik ?tok$/.test(word)) { network = 'tiktok'; continue; }
+      if (/^(facebook|fb)$/.test(word)) { network = 'facebook'; continue; }
+      const handle = /^@([\w.]{2,30})$/.exec(part);
+      if (handle) { if (HANDLE_BASE[network]) add(linkFor(new URL(HANDLE_BASE[network] + handle[1]))); continue; }
+      const href = /^https?:\/\//i.test(part) ? part : DOMAIN.test(part) ? `https://${part}` : null;
+      if (!href) continue;
+      try { add(linkFor(new URL(href), kind)); } catch { /* texto que parecía enlace */ }
+    }
+  }
+  return out;
+}
+
 // ── Estados ─────────────────────────────────────────────────────────────────
 
 const STATUS_WORDS = {
