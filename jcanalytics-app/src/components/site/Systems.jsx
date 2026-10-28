@@ -1,10 +1,9 @@
 import { t } from '../../i18n/locale';
 import { useId, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowUpRight, Box, Check, ChevronRight, Globe2, Layers3, LockKeyhole, Settings2, ShieldCheck } from 'lucide-react';
+import { Box, Check, Globe2, Layers3, LockKeyhole, Settings2 } from 'lucide-react';
 import { Label, MaskLines, Reveal } from './primitives';
 import ContactCTA from './ContactCTA';
-import { ArchitectureBlueprint } from './StudioIllustrations';
 import '../../styles/systems.css';
 
 const _MOTION = motion;
@@ -13,75 +12,23 @@ const MODULES = [
     id: 'inventario', label: t("Inventario", "Inventory"), icon: Box, title: t("Cada movimiento, en su lugar.", "Every movement, in its place."),
     benefit: t("Consultá existencias y registrá entradas y salidas desde un panel conectado a tu web.", "Check stock and record incoming and outgoing items from a dashboard connected to your website."),
     detail: t("Productos, insumos y movimientos, organizados según la operación de tu negocio.", "Products, supplies and stock movements, organized around your business."),
+    shot: 'laburrada/inventario', caption: t("Bodega y recetas de La Burrada: cuánto preparar de viernes a domingo, por producto.", "La Burrada’s stock and recipes: how much to prep from Friday to Sunday, per product."),
   },
   {
     id: 'procesos', label: t("Procesos", "Processes"), icon: Layers3, title: t("Sabé qué sigue. Y quién lo hace.", "Know what comes next. And who owns it."),
     benefit: t("Seguí el trabajo desde que llega una solicitud hasta que se completa, con etapas claras para tu equipo.", "Track work from the first request to completion, with clear stages for your team."),
     detail: t("Estados, responsables y flujos de trabajo definidos para tu manera de operar.", "Statuses, owners and workflows built around the way you work."),
+    shot: 'laburrada/cocina', caption: t("La tablet de cocina: cada pedido pasa por aprobación, cola, preparación y listo, en vivo.", "The kitchen tablet: every order moves through approval, queue, preparation and ready, live."),
   },
   {
     id: 'administracion', label: t("Administración", "Administration"), icon: Settings2, title: t("El control, en tus manos.", "Control, in your hands."),
     benefit: t("Administrá contenido, usuarios y accesos desde un mismo lugar, con permisos según cada rol.", "Manage content, users and access in one place, with permissions for each role."),
     detail: t("Un panel para gestionar tu plataforma y conectar sistemas cuando el alcance lo requiere.", "A dashboard to manage your platform and connect systems when your project requires it."),
+    shot: 'laburrada/admin', caption: t("Centro operativo: estado del turno, pulso del servicio y siguiente movimiento.", "Operations centre: shift status, service pulse and next move."),
   },
 ];
 
-const InventoryExample = () => (
-  <div className="systems-inventory">
-    <div className="systems-preview-heading"><span>{t("Existencias", "Stock levels")}</span><span className="systems-example-tag">{t("Ejemplo", "Example")}</span></div>
-    <table>
-      <caption className="sr-only">{t("Datos ilustrativos de un módulo de inventario", "Illustrative inventory module data")}</caption>
-      <thead><tr><th scope="col">{t("Artículo", "Item")}</th><th scope="col">{t("Unidades", "Units")}</th><th scope="col">{t("Estado", "Status")}</th></tr></thead>
-      <tbody>
-        <tr><th scope="row"><span className="systems-item-icon"><Box size={15} aria-hidden="true" /></span>{t("Producto A", "Product A")}</th><td>42</td><td><span className="systems-status">{t("Disponible", "Available")}</span></td></tr>
-        <tr><th scope="row"><span className="systems-item-icon"><Box size={15} aria-hidden="true" /></span>{t("Insumo B", "Supply B")}</th><td>18</td><td><span className="systems-status">{t("Disponible", "Available")}</span></td></tr>
-        <tr><th scope="row"><span className="systems-item-icon"><Box size={15} aria-hidden="true" /></span>{t("Empaque C", "Packaging C")}</th><td>7</td><td><span className="systems-status systems-status--review">{t("Revisar", "Review")}</span></td></tr>
-      </tbody>
-    </table>
-    <div className="systems-preview-foot"><span>{t("Entradas / salidas", "Stock in / out")}</span><span>{t("Registro de movimientos", "Movement history")} <ChevronRight size={14} aria-hidden="true" /></span></div>
-  </div>
-);
-
-const ProcessExample = () => (
-  <div className="systems-process-preview">
-    <div className="systems-preview-heading"><span>{t("Flujo de trabajo", "Workflow")}</span><span className="systems-example-tag">{t("Ejemplo", "Example")}</span></div>
-    <div className="systems-kanban">
-      {[
-        { title: t("Recibido", "Received"), task: t("Solicitud de cliente", "Customer request"), owner: t("Por asignar", "Unassigned"), state: 'pending' },
-        { title: t("En proceso", "In progress"), task: t("Preparación de pedido", "Order preparation"), owner: t("Operaciones", "Operations"), state: 'active' },
-        { title: t("Listo", "Ready"), task: t("Revisión de entrega", "Delivery review"), owner: t("Responsable", "Owner"), state: 'done' },
-      ].map((stage) => (
-        <div key={stage.title} className={`systems-kanban__column systems-kanban__column--${stage.state}`}>
-          <span className="systems-kanban__label"><i aria-hidden="true" />{stage.title}</span>
-          <div className="systems-kanban__task"><span>{stage.task}</span><small>{stage.owner}</small></div>
-        </div>
-      ))}
-    </div>
-    <div className="systems-preview-foot"><span>{t("Etapas a medida", "Custom stages")}</span><span>{t("Visibilidad para tu equipo", "Visibility for your team")} <ChevronRight size={14} aria-hidden="true" /></span></div>
-  </div>
-);
-
-const AdministrationExample = () => (
-  <div className="systems-admin-preview">
-    <div className="systems-preview-heading"><span>{t("Roles y permisos", "Roles and permissions")}</span><span className="systems-example-tag">{t("Ejemplo", "Example")}</span></div>
-    <ul className="systems-role-list">
-      {[
-        { initial: 'A', role: t("Administración", "Administration"), access: t("Configuración y usuarios", "Settings and users"), full: true },
-        { initial: 'O', role: t("Operaciones", "Operations"), access: t("Inventario y procesos", "Inventory and processes") },
-        { initial: 'C', role: t("Comercial", "Sales"), access: t("Consulta y seguimiento", "View and follow up") },
-      ].map((person) => (
-        <li key={person.role}>
-          <span className="systems-role-avatar" aria-hidden="true">{person.initial}</span>
-          <span><strong>{person.role}</strong><small>{person.access}</small></span>
-          <span className="systems-role-access"><LockKeyhole size={13} aria-hidden="true" />{person.full ? t("Gestión", "Management") : t("Según rol", "By role")}</span>
-        </li>
-      ))}
-    </ul>
-    <div className="systems-preview-foot"><span>{t("Accesos definidos", "Defined access")}</span><span><ShieldCheck size={14} aria-hidden="true" />{t("Permisos a medida", "Custom permissions")}</span></div>
-  </div>
-);
-
-const EXAMPLES = [InventoryExample, ProcessExample, AdministrationExample];
+const shotUrl = (screen) => `${import.meta.env.BASE_URL}projects/${screen}-desktop.webp`;
 
 const DataConnections = ({ active, reduce }) => (
   <div className="systems-connections" aria-hidden="true">
@@ -114,7 +61,6 @@ const Systems = () => {
   const id = useId();
   const reduce = useReducedMotion();
   const selected = MODULES[active];
-  const Example = EXAMPLES[active];
 
   const onTabKeyDown = (event, index) => {
     let next;
@@ -145,7 +91,7 @@ const Systems = () => {
         </div>
 
         <Reveal className={`systems-scene systems-scene--${layer}`}>
-          <div className="systems-scene__label"><span className="systems-example-dot" aria-hidden="true" />{t("Ejemplo ilustrativo · módulos a medida", "Illustrative example · custom modules")}</div>
+          <div className="systems-scene__label"><span className="systems-example-dot" aria-hidden="true" />{t("Proyecto real · La Burrada Street Food · capturas con datos de demostración", "Real project · La Burrada Street Food · screenshots with demo data")}</div>
           <div className="systems-mobile-switch" role="group" aria-label={t("Las dos caras de tu sistema", "The two sides of your system")}>
             <button type="button" aria-pressed={layer === 'experience'} onClick={() => setLayer('experience')}><Globe2 size={17} aria-hidden="true" /><span>{t("La experiencia", "The experience")}<small>{t("Lo que ve tu cliente", "What your customer sees")}</small></span></button>
             <button type="button" aria-pressed={layer === 'operation'} onClick={() => setLayer('operation')}><Layers3 size={17} aria-hidden="true" /><span>{t("La operación", "The operation")}<small>{t("Lo que mueve todo", "What keeps it running")}</small></span></button>
@@ -154,22 +100,11 @@ const Systems = () => {
             <div className="systems-public-layer">
               <div className="systems-layer-heading"><span>{t("01 / EXPERIENCIA", "01 / EXPERIENCE")}</span><Globe2 size={18} aria-hidden="true" /></div>
               <h3 className="font-display">{t("Lo que ve", "What your")}<br /><span className="font-serif italic">{t("tu cliente.", "customer sees.")}</span></h3>
-              <div className="systems-website" aria-hidden="true">
-                <div className="systems-website__bar"><span><i /><i /><i /></span><span>{t("tu-negocio.com", "your-business.com")}</span><LockKeyhole size={10} /></div>
-                <div className="systems-website__content">
-                  <div className="systems-website__nav"><span>{t("Tu negocio", "Your business")}<span className="systems-website__mark">.</span></span><span>{t("Explorá", "Explore")} <ArrowUpRight size={11} /></span></div>
-                  <span className="systems-website__eyebrow">{t("Una experiencia a tu medida", "An experience built for you")}</span>
-                  <p className="font-display">{t("Encontrá lo que", "Find what")}<br /><span className="font-serif italic">{t("necesitás.", "you need.")}</span></p>
-                  <div className="systems-website__art">
-                    <img src={`${import.meta.env.BASE_URL}artwork/connected-materials-v2.webp`} alt="" width="1200" height="800" loading="lazy" decoding="async" />
-                    <span className="systems-website__art-index">{t("OBJETO 001 / CONEXIÓN", "OBJECT 001 / CONNECTION")}</span>
-                    <svg className="systems-website__reticle" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="15" stroke="currentColor" strokeWidth=".6" /><path d="M20 0V40M0 20H40" stroke="currentColor" strokeWidth=".6" /></svg>
-                    <div className="systems-website__art-caption"><span>{t("Diseñado para conectar.", "Designed to connect.")}</span><span>↗</span></div>
-                  </div>
-                  <div className="systems-website__action"><span>{t("Ver opciones", "View options")}</span><ArrowUpRight size={15} /></div>
-                </div>
-              </div>
-              <p className="systems-layer-note">{t("Catálogo, reservas o consultas. La experiencia pública se diseña para tu servicio.", "Catalogs, bookings or inquiries. The public experience is designed around your service.")}</p>
+              <figure className="systems-website systems-website--real">
+                <div className="systems-website__bar"><span><i /><i /><i /></span><span>laburradacr.com</span><LockKeyhole size={10} aria-hidden="true" /></div>
+                <img src={shotUrl('laburrada/home')} width={1600} height={1000} loading="lazy" decoding="async" alt={t("Menú en línea de La Burrada: categorías, combos y carrito.", "La Burrada’s online menu: categories, combos and cart.")} />
+              </figure>
+              <p className="systems-layer-note">{t("El cliente arma su pedido desde el celular. El precio lo calcula el servidor, no el navegador.", "Customers build their order from their phone. The server, not the browser, computes the price.")}</p>
             </div>
 
             <DataConnections active={active} reduce={reduce} />
@@ -178,8 +113,8 @@ const Systems = () => {
               <div className="systems-layer-heading"><span>{t("02 / OPERACIÓN", "02 / OPERATIONS")}</span><Layers3 size={18} aria-hidden="true" /></div>
               <h3 className="font-display">{t("Lo que mueve", "What drives")}<br /><span className="font-serif italic">{t("tu negocio.", "your business.")}</span></h3>
               <div className="systems-dashboard">
-                <div className="systems-dashboard__bar"><span><span className="systems-dashboard__mark">JC</span>{t("Panel de gestión", "Management dashboard")}</span><span><LockKeyhole size={12} aria-hidden="true" />{t("Acceso por rol", "Role-based access")}</span></div>
-                <div className="systems-tabs" role="tablist" aria-label={t("Explorar módulos de ejemplo", "Explore example modules")}>
+                <div className="systems-dashboard__bar"><span><span className="systems-dashboard__mark">LB</span>{t("Panel de La Burrada", "La Burrada dashboard")}</span><span><LockKeyhole size={12} aria-hidden="true" />{t("Acceso por rol", "Role-based access")}</span></div>
+                <div className="systems-tabs" role="tablist" aria-label={t("Explorar módulos reales", "Explore real modules")}>
                   {MODULES.map((module, index) => {
                     const Icon = module.icon;
                     return (
@@ -189,11 +124,13 @@ const Systems = () => {
                     );
                   })}
                 </div>
-                <ArchitectureBlueprint active={active} />
                 <div id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-tab-${selected.id}`} tabIndex={0} className="systems-panel">
                   <AnimatePresence mode="wait" initial={false}>
                     <motion.div key={selected.id} initial={reduce ? false : { opacity: 0, y: 8, filter: 'blur(2px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={reduce ? { opacity: 1 } : { opacity: 0, y: -5, filter: 'blur(2px)' }} transition={{ duration: reduce ? 0 : 0.22, ease: 'easeOut' }}>
-                      <Example />
+                      <figure className="systems-shot">
+                        <img src={shotUrl(selected.shot)} width={1600} height={1000} loading="lazy" decoding="async" alt={selected.caption} />
+                        <figcaption>{selected.caption}</figcaption>
+                      </figure>
                     </motion.div>
                   </AnimatePresence>
                 </div>

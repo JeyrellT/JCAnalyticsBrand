@@ -19,18 +19,23 @@ export const Reveal = ({ children, delay = 0, y = 24, className = '', as = 'div'
   );
 };
 
+// Each line slides up from behind its own clip. The in-view trigger lives on
+// the clipping wrapper, not on the moving line: a line that wraps to two rows
+// starts fully outside its clip, and an observer placed on it would never fire,
+// leaving the line hidden for good.
 export const MaskLines = ({ lines, className = '', delay = 0, lineClassName = '' }) => {
   const reduce = useReducedMotion();
   return (
     <span className={className}>
       {lines.map((line, index) => (
-        <span key={index} className="block overflow-hidden pb-[0.1em] -mb-[0.1em]">
-          <motion.span className={`block ${lineClassName}`} initial={reduce ? false : { y: '108%', opacity: 0.25 }}
-            whileInView={{ y: '0%', opacity: 1 }} viewport={{ once: true, margin: '-24px' }}
+        <motion.span key={index} className="block overflow-hidden pb-[0.1em] -mb-[0.1em]"
+          initial={reduce ? 'shown' : 'hidden'} whileInView="shown" viewport={{ once: true, margin: '-24px' }}>
+          <motion.span className={`block ${lineClassName}`}
+            variants={{ hidden: { y: '108%', opacity: 0.25 }, shown: { y: '0%', opacity: 1 } }}
             transition={reduce ? { duration: 0 } : { duration: 0.9, delay: delay + index * 0.085, ease: EASE }}>
             {line}
           </motion.span>
-        </span>
+        </motion.span>
       ))}
     </span>
   );
