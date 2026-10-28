@@ -222,3 +222,14 @@
   .social-phone { transform: none; }
   .intelligence-atlas *, .systems-website__art *, .social-art-direction * { animation: none !important; }
 }
+
+/* Piezas reales de marketing (public/marketing/). Sin degradados encima: la pieza se ve tal cual se publicó. */
+.social-reel__scene--real::before { display: none; }
+.social-reel__photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.social-reel__scene--real::after { content: ''; position: absolute; inset: auto 0 0; height: 38%; background: linear-gradient(transparent, #000c); }
+.campaign-tile--real { background: #0d1a12; }
+.campaign-tile--real > img { object-position: top; }
+.social-report__proof { margin-left: 0; margin-right: 0; }
+.social-report__proof img { display: block; width: 100%; height: auto; max-height: 260px; object-fit: cover; object-position: top; border-radius: 6px; border: 1px solid #7e9d6f55; }
+.social-report__proof figcaption { margin-top: 6px; font-size: 11px; color: #5c7453; }
+.social-shoot img { width: 100%; height: 100%; min-height: 220px; max-height: 340px; object-fit: cover; border-radius: 6px; }

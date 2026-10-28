@@ -211,3 +211,10 @@
 @media (prefers-reduced-motion: reduce) {
   .systems-section *, .systems-section *::before, .systems-section *::after { animation: none !important; transition: none !important; }
 }
+
+/* Capturas reales dentro de la escena (reemplazan los ejemplos ilustrados). */
+.systems-website--real { margin: 0; overflow: hidden; }
+.systems-website--real > img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; }
+.systems-shot { margin: 0; padding: 14px; }
+.systems-shot img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; border: 1px solid #c6d4c6; border-radius: 6px; background: #f3f6f0; }
+.systems-shot figcaption { margin-top: 10px; font-size: 12px; line-height: 1.5; color: #4c6153; }
