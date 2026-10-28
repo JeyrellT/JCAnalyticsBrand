@@ -4,6 +4,15 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 // A procedural studio object: no remote model, texture, or image request.
 // The render loop stops offscreen, in a background tab, or when motion is paused.
+// Cost controls: the slow ambient rotation is drawn at 30 fps, the canvas keeps no
+// extra copy of each frame, pixel density is capped, and the loop sleeps after a
+// while without interaction (any scroll, key or pointer movement wakes it).
+const FRAME_MS = 1000 / 30;
+const IDLE_MS = 40_000;
+// Slow devices (no GPU, software rendering): measured every 3 s. Below 18 fps the pixel
+// density drops; if it is still slow, the object stays still instead of stuttering.
+const CHECK_MS = 3000;
+const MIN_FPS = 18;
 const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
   const hostRef = useRef(null);
   const controlRef = useRef({ paused, mode });
@@ -18,12 +27,12 @@ const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
     const host = hostRef.current;
     let renderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true, powerPreference: 'low-power' });
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
     } catch {
       onFallback?.();
       return undefined;
     }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.35));
     renderer.setClearColor(0x080c10, 0);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.45;
@@ -48,7 +57,7 @@ const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
       clearcoat: 1, clearcoatRoughness: 0.13, envMapIntensity: 2.2,
       iridescence: 0.25, iridescenceIOR: 1.25,
     });
-    const geometry = new THREE.TorusKnotGeometry(1.47, 0.49, 180, 32, 2, 3);
+    const geometry = new THREE.TorusKnotGeometry(1.47, 0.49, 150, 28, 2, 3);
     const knot = new THREE.Mesh(geometry, material);
     sculpture.add(knot);
 
@@ -86,6 +95,10 @@ const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
     let last = 0;
     let elapsed = 0;
     let notified = false;
+    let lastDraw = 0;
+    let quality = 0; // 0 normal · 1 lower density · 2 still
+    let sample = { start: 0, frames: 0 };
+    let lastActivity = performance.now();
     const pointer = { x: 0, y: 0 };
     const palette = [new THREE.Color('#559ca9'), new THREE.Color('#6898fd'), new THREE.Color('#a0cbb1')];
 
@@ -93,6 +106,30 @@ const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
       frame = 0;
       if (disposed || !visible || menuOpen || document.hidden) return;
       const state = controlRef.current;
+      // 30 fps are enough for a slow rotation; the skipped frames cost nothing.
+      if (notified && !state.paused && now - lastDraw < FRAME_MS - 2) { frame = requestAnimationFrame(draw); return; }
+      // Without interaction for a while the object rests on its current pose.
+      if (notified && now - lastActivity > IDLE_MS) { last = 0; return; }
+      // A gap (sleep, hidden tab, offscreen) is not slowness: the fps sample starts over.
+      if (now - lastDraw > 250) sample = { start: 0, frames: 0 };
+      lastDraw = now;
+      if (!state.paused && quality < 2) {
+        if (!sample.start) sample = { start: now, frames: 0 };
+        sample.frames += 1;
+        if (now - sample.start > CHECK_MS) {
+          const fps = (sample.frames * 1000) / (now - sample.start);
+          sample = { start: 0, frames: 0 };
+          if (fps < MIN_FPS) {
+            quality += 1;
+            if (quality === 1) {
+              // Same size, fewer pixels (no resize(): it would schedule a second loop).
+              const { width, height } = host.getBoundingClientRect();
+              renderer.setPixelRatio(0.75);
+              renderer.setSize(width, height, false);
+            }
+          }
+        }
+      }
       const delta = last ? Math.min((now - last) / 1000, 0.05) : 0;
       last = now;
       if (!state.paused) elapsed += delta;
@@ -106,15 +143,19 @@ const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
       cageMaterial.opacity = state.mode === 2 ? 0.2 : 0;
       renderer.render(scene, camera);
       if (!notified) { notified = true; onReady?.(); }
-      if (!state.paused) frame = requestAnimationFrame(draw);
+      if (!state.paused && quality < 2) frame = requestAnimationFrame(draw);
     };
     const schedule = () => {
       if (disposed) return;
       cancelAnimationFrame(frame);
+      sample = { start: 0, frames: 0 };
       frame = requestAnimationFrame(draw);
     };
-    renderRef.current = schedule;
+    // The on-screen controls (pause, mode) count as activity, so they always redraw.
+    renderRef.current = () => { lastActivity = performance.now(); schedule(); };
     const resize = () => {
+      // Resizing clears the canvas: it always counts as activity so the object is redrawn.
+      lastActivity = performance.now();
       const { width, height } = host.getBoundingClientRect();
       renderer.setSize(width, height, false);
       camera.aspect = width / Math.max(height, 1);
@@ -122,7 +163,13 @@ const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
       camera.updateProjectionMatrix();
       schedule();
     };
+    const wake = () => {
+      const asleep = performance.now() - lastActivity > IDLE_MS;
+      lastActivity = performance.now();
+      if (asleep && !frame) schedule();
+    };
     const move = (event) => {
+      wake();
       if (event.pointerType !== 'mouse') return;
       const bounds = host.getBoundingClientRect();
       pointer.x = (event.clientX - bounds.left) / bounds.width - 0.5;
@@ -147,6 +194,10 @@ const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
     renderer.domElement.addEventListener('webglcontextlost', lost);
     document.addEventListener('visibilitychange', schedule);
     window.addEventListener('jca:menu-state', onMenuState);
+    window.addEventListener('scroll', wake, { passive: true });
+    window.addEventListener('keydown', wake);
+    window.addEventListener('pointermove', wake, { passive: true });
+    window.addEventListener('pointerdown', wake, { passive: true });
     resize();
 
     return () => {
@@ -159,6 +210,10 @@ const StudioSculpture = ({ paused = false, mode = 0, onReady, onFallback }) => {
       host.removeEventListener('pointerleave', resetPointer);
       document.removeEventListener('visibilitychange', schedule);
       window.removeEventListener('jca:menu-state', onMenuState);
+      window.removeEventListener('scroll', wake);
+      window.removeEventListener('keydown', wake);
+      window.removeEventListener('pointermove', wake);
+      window.removeEventListener('pointerdown', wake);
       renderer.domElement.removeEventListener('webglcontextlost', lost);
       geometry.dispose(); cageGeometry.dispose(); haloGeometry.dispose(); markerGeometry.dispose();
       material.dispose(); cageMaterial.dispose(); haloMaterial.dispose(); markerMaterial.dispose();

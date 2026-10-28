@@ -15,6 +15,8 @@
 //    · Encabezados CSP, anti-iframe y HSTS en producción.
 //    · /mcp (conexión con Claude, server/mcp.mjs): token personal en vez de
 //      cookie; solo herramientas que llaman rutas existentes con sus permisos.
+//    · /ingest (server/ingest.mjs): única entrada pública desde el sitio
+//      (consultas y analítica), limitada a sus orígenes y sin sesiones.
 // ============================================================================
 
 import { createServer } from 'node:http';
@@ -26,6 +28,7 @@ import { createLoginLimiter, newSessionToken, hashToken } from './auth.mjs';
 import { registerRoutes } from './routes/index.mjs';
 import { createRouter, isClientRoute } from './router.mjs';
 import { createMcpHandler } from './mcp.mjs';
+import { createIngestHandler } from './ingest.mjs';
 
 const COOKIE = 'jcp_session';
 const IDLE_MS = 12 * 3_600_000;         // la sesión expira tras 12 h sin uso
@@ -170,6 +173,7 @@ export function createPortalServer({
 
   registerRoutes(router.route, ctx, session);
   const handleMcp = createMcpHandler({ ctx, router, isSecure, originAllowed: (req) => originAllowed(req), logger });
+  const handleIngest = createIngestHandler({ ctx, env, clientIp, logger });
 
   function securityHeaders(res, req) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -253,6 +257,7 @@ export function createPortalServer({
       }
       if (pathname.startsWith('/api/')) await handleApi(req, res, pathname, parsed.searchParams);
       else if (pathname === '/mcp' || pathname.startsWith('/mcp/')) await handleMcp(req, res, pathname);
+      else if (pathname.startsWith('/ingest/')) await handleIngest(req, res, pathname);
       else await serveStatic(req, res, pathname);
     } catch (error) {
       if (error instanceof HttpError) {

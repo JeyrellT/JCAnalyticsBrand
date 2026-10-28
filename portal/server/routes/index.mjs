@@ -17,6 +17,7 @@ import { inviteRoutes } from './invites.mjs';
 import { financeRoutes } from './finance.mjs';
 import { mcpTokenRoutes } from './mcp-tokens.mjs';
 import { directoryRoutes } from './directory.mjs';
+import { leadRoutes } from './leads.mjs';
 import { installPushDispatch } from '../notify-policy.mjs';
 import { createAutomationEngine } from '../automations.mjs';
 
@@ -49,4 +50,6 @@ export function registerRoutes(route, ctx, session) {
   mcpTokenRoutes(route, ctx);
   // Libro amarillo: prospección por teléfono (docs/libro-amarillo.md).
   directoryRoutes(route, ctx);
+  // Consultas del sitio y analítica de tráfico (docs/consultas-y-trafico.md).
+  leadRoutes(route, ctx);
 }

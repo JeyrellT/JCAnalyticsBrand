@@ -24,6 +24,10 @@ const Services = lazy(() => import('./pages/Services.jsx'));
 const ServiceDetail = lazy(() => import('./pages/ServiceDetail.jsx'));
 const Clients = lazy(() => import('./pages/Clients.jsx'));
 const Directory = lazy(() => import('./pages/Directory.jsx'));
+// Consultas que llegan desde el sitio y su analítica de tráfico.
+const Leads = lazy(() => import('./pages/Leads.jsx'));
+const LeadDetail = lazy(() => import('./pages/LeadDetail.jsx'));
+const Traffic = lazy(() => import('./pages/Traffic.jsx'));
 const ClientDetail = lazy(() => import('./pages/ClientDetail.jsx'));
 const Person = lazy(() => import('./pages/Person.jsx'));
 const Automations = lazy(() => import('./pages/Automations.jsx'));
@@ -60,6 +64,9 @@ const ROUTES = [
   ['/clientes', Clients],
   ['/clientes/:id', ClientDetail],
   ['/libro-amarillo', Directory],
+  ['/consultas', Leads],
+  ['/consultas/:id', LeadDetail],
+  ['/trafico', Traffic],
   // v5: '/briefs/nuevo' va antes que '/briefs/:id'.
   ['/briefs', Briefs],
   ['/briefs/nuevo', BriefDetail],
@@ -69,7 +76,7 @@ const ROUTES = [
   ['/bitacora', Activity],
 ];
 
-const TITLES = { '/': 'Centro de operaciones', '/proyectos': 'Proyectos', '/clientes': 'Clientes', '/libro-amarillo': 'Libro amarillo', '/servicios': 'Servicios', '/tablero': 'Tablero', '/agenda': 'Agenda', '/inversiones': 'Inversiones', '/finanzas': 'Finanzas y costos', '/cobros': 'Cobros', '/buzon': 'Buzón', '/equipo': 'Equipo', '/bitacora': 'Bitácora', '/automatizaciones': 'Automatizaciones', '/notificaciones': 'Avisos y app', '/briefs': 'Briefs' /* v5 */ };
+const TITLES = { '/': 'Centro de operaciones', '/proyectos': 'Proyectos', '/clientes': 'Clientes', '/libro-amarillo': 'Libro amarillo', '/consultas': 'Consultas', '/trafico': 'Tráfico del sitio', '/servicios': 'Servicios', '/tablero': 'Tablero', '/agenda': 'Agenda', '/inversiones': 'Inversiones', '/finanzas': 'Finanzas y costos', '/cobros': 'Cobros', '/buzon': 'Buzón', '/equipo': 'Equipo', '/bitacora': 'Bitácora', '/automatizaciones': 'Automatizaciones', '/notificaciones': 'Avisos y app', '/briefs': 'Briefs' /* v5 */ };
 
 function Router() {
   const { path } = useLocation();

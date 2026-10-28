@@ -2,6 +2,7 @@ import { t } from '../../i18n/locale';
 import { useId, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Box, Check, Globe2, Layers3, LockKeyhole, Settings2 } from 'lucide-react';
+import { shotSrcSet } from '../../data/shots';
 import { Label, MaskLines, Reveal } from './primitives';
 import ContactCTA from './ContactCTA';
 import '../../styles/systems.css';
@@ -102,7 +103,7 @@ const Systems = () => {
               <h3 className="font-display">{t("Lo que ve", "What your")}<br /><span className="font-serif italic">{t("tu cliente.", "customer sees.")}</span></h3>
               <figure className="systems-website systems-website--real">
                 <div className="systems-website__bar"><span><i /><i /><i /></span><span>laburradacr.com</span><LockKeyhole size={10} aria-hidden="true" /></div>
-                <img src={shotUrl('laburrada/home')} width={1600} height={1000} loading="lazy" decoding="async" alt={t("Menú en línea de La Burrada: categorías, combos y carrito.", "La Burrada’s online menu: categories, combos and cart.")} />
+                <img src={shotUrl('laburrada/home')} srcSet={shotSrcSet(shotUrl('laburrada/home'))} sizes="(max-width: 767px) 92vw, 640px" width={1600} height={1000} loading="lazy" decoding="async" alt={t("Menú en línea de La Burrada: categorías, combos y carrito.", "La Burrada’s online menu: categories, combos and cart.")} />
               </figure>
               <p className="systems-layer-note">{t("El cliente arma su pedido desde el celular. El precio lo calcula el servidor, no el navegador.", "Customers build their order from their phone. The server, not the browser, computes the price.")}</p>
             </div>
@@ -128,7 +129,7 @@ const Systems = () => {
                   <AnimatePresence mode="wait" initial={false}>
                     <motion.div key={selected.id} initial={reduce ? false : { opacity: 0, y: 8, filter: 'blur(2px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={reduce ? { opacity: 1 } : { opacity: 0, y: -5, filter: 'blur(2px)' }} transition={{ duration: reduce ? 0 : 0.22, ease: 'easeOut' }}>
                       <figure className="systems-shot">
-                        <img src={shotUrl(selected.shot)} width={1600} height={1000} loading="lazy" decoding="async" alt={selected.caption} />
+                        <img src={shotUrl(selected.shot)} srcSet={shotSrcSet(shotUrl(selected.shot))} sizes="(max-width: 767px) 92vw, 640px" width={1600} height={1000} loading="lazy" decoding="async" alt={selected.caption} />
                         <figcaption>{selected.caption}</figcaption>
                       </figure>
                     </motion.div>

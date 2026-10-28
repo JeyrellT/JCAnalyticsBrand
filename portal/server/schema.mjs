@@ -728,6 +728,66 @@ export const MIGRATIONS = [
   );
   CREATE INDEX directory_calls_entry ON directory_calls(entry_id, created_at);
   `,
+  // Consultas del sitio público y analítica de tráfico (docs/consultas-y-trafico.md).
+  `
+  CREATE TABLE leads (
+    id INTEGER PRIMARY KEY,
+    status TEXT NOT NULL DEFAULT 'nuevo',
+    channel TEXT NOT NULL DEFAULT 'formulario',
+    name TEXT,
+    phone TEXT,
+    email TEXT,
+    need TEXT,
+    message TEXT,
+    package TEXT,
+    language TEXT,
+    page TEXT,
+    source TEXT,
+    medium TEXT,
+    campaign TEXT,
+    referrer_host TEXT,
+    device TEXT,
+    session_id TEXT,
+    flags TEXT,
+    owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    client_id INTEGER REFERENCES clients(id) ON DELETE SET NULL,
+    next_action_at TEXT,
+    contacted_at TEXT,
+    revision INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  CREATE INDEX leads_status ON leads(status, created_at);
+  CREATE INDEX leads_session ON leads(session_id);
+  CREATE TABLE lead_notes (
+    id INTEGER PRIMARY KEY,
+    lead_id INTEGER NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    kind TEXT NOT NULL,
+    body TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX lead_notes_lead ON lead_notes(lead_id, created_at);
+  CREATE TABLE site_events (
+    id INTEGER PRIMARY KEY,
+    day TEXT NOT NULL,
+    at TEXT NOT NULL,
+    session_id TEXT NOT NULL,
+    visitor TEXT,
+    type TEXT NOT NULL,
+    path TEXT,
+    section TEXT,
+    target TEXT,
+    label TEXT,
+    value INTEGER,
+    source TEXT,
+    campaign TEXT,
+    device TEXT,
+    language TEXT
+  );
+  CREATE INDEX site_events_day ON site_events(day, type);
+  CREATE INDEX site_events_session ON site_events(session_id, at);
+  `,
 ];
 
 export const DEFAULT_SETTINGS = {
