@@ -1,7 +1,7 @@
 import { SERVICE_PRICING } from '../../../portal/shared/service-pricing.js';
 export const servicePages = [
   {
-    id: 'web-development', topic: 'experience', image: '/images/journal/systems.webp', need: 'Sistema / backend',
+    id: 'web-development', topic: 'experience', image: '/projects/laburrada/home-desktop.webp', need: 'Sistema / backend',
     en: {
       slug: 'web-development-costa-rica', title: 'Web development in Costa Rica, built around your business.',
       summary: 'Custom websites and business software that connect a clear customer experience with the work behind it.',
@@ -26,7 +26,7 @@ export const servicePages = [
     },
   },
   {
-    id: 'business-intelligence', topic: 'data', image: '/images/journal/data.webp', need: 'Dashboard',
+    id: 'business-intelligence', topic: 'data', image: '/projects/laburrada/analitica-desktop.webp', need: 'Dashboard',
     en: {
       slug: 'power-bi-dashboards-costa-rica', title: 'Power BI dashboards for decisions that cannot wait.',
       summary: 'Turn scattered business information into a shared view of performance, with clear definitions and ownership.',
@@ -51,7 +51,7 @@ export const servicePages = [
     },
   },
   {
-    id: 'process-automation', topic: 'operations', image: '/images/journal/systems.webp', need: 'Automatización',
+    id: 'process-automation', topic: 'operations', image: '/projects/multiagencia/venta-desktop.webp', need: 'Automatización',
     en: {
       slug: 'business-process-automation', title: 'Automation that gives repetitive work a clear path.',
       summary: 'Connect routine tasks, handoffs and business tools with automation scoped to the way your team operates.',
@@ -76,7 +76,7 @@ export const servicePages = [
     },
   },
   {
-    id: 'ai-integration', topic: 'intelligence', image: '/images/journal/intelligence.webp', need: 'Integración de IA',
+    id: 'ai-integration', topic: 'intelligence', image: '/projects/crimson/inicio-desktop.webp', need: 'Integración de IA',
     en: {
       slug: 'ai-integration-costa-rica', title: 'AI integration with a practical purpose.',
       summary: 'Explore document assistants, information classification and decision support with clear boundaries and human review.',

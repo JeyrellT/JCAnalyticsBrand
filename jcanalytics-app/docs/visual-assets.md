@@ -4,9 +4,11 @@ La portada muestra proyectos reales con capturas de pantalla de cada sistema (`p
 
 ## Recursos públicos
 
-- `public/images/journal/data.webp`: ilustración editorial para datos y decisiones.
-- `public/images/journal/systems.webp`: ilustración editorial para sistemas y experiencia web.
-- `public/images/journal/intelligence.webp`: ilustración editorial para inteligencia artificial.
+- `public/projects/<proyecto>/<pantalla>-desktop.webp`: capturas reales de sistemas construidos por el
+  estudio (datos de demostración). Son la portada de cada artículo y servicio (`image` en
+  `src/content/*.js`); el pie de foto nombra el proyecto (`coverCredit()` en `src/JournalApp.jsx`).
+- `public/marketing/`: piezas publicadas para clientes (La Burrada, Transporte Luz de Luna, Maison Valcour)
+  y anuncios propios, usadas en la sección de marketing.
 - `public/artwork/`: ilustraciones abstractas y recursos SVG de apoyo.
 - `public/team/`: retratos del equipo propio de JC Analytics.
 - `public/projects/<id>/`: capturas reales de los diez proyectos (escritorio 1600 px y móvil 640 px, WebP), tomadas con datos de demostración.
@@ -27,10 +29,20 @@ Las tres ilustraciones editoriales se crearon con la generación de imágenes in
 
 Estas descripciones resumen los conceptos públicos; no reproducen prompts de producción ni procedimientos internos.
 
-| Recurso público | Concepto visual | Uso editorial |
-| --- | --- | --- |
-| `/images/journal/systems.webp` | Tres losas de vidrio aqua translúcido, conectadas mediante una cinta de cobre y una esfera, sobre piedra caliza y fondo verde oscuro. | Sistemas conectados y experiencia digital. |
-| `/images/journal/data.webp` | Lentes y prismas de color menta ordenan esferas de cobre dispersas en flujos paralelos sobre una base de piedra. | Organización de datos y lectura para decidir. |
-| `/images/journal/intelligence.webp` | Una esfera luminosa de color menta, con acabado escarchado y arcos de cobre abiertos, sobre un puente de piedra. | Asistencia de IA y supervisión humana como metáfora visual. |
+| Artículo o servicio | Portada real |
+| --- | --- |
+| Webs que ayudan a decidir · Desarrollo web | Menú en línea de La Burrada |
+| Calidad de datos · Business intelligence | Analítica de ventas de La Burrada |
+| Indicadores para decidir | Análisis gerencial de CAVIQ |
+| Adoptar software | Tablet de cocina de La Burrada |
+| Revisión humana en IA | Centro de análisis de Soporte 2.0 |
+| Primera automatización · Automatización de procesos | Venta de mostrador de Multiagencia Gutiérrez |
+| Comparar dos listas | Inventario de Multiagencia Gutiérrez |
+| Evitar acciones duplicadas | Factura electrónica de Crimson Consulting |
+| Mejora continua 2026 | Orquesta del taller de Maison Valcour |
+| Automatizar sin tecnología | Mi taller de Soporte 2.0 |
+| Congreso CICR | Vista general de CAVIQ |
+| Agentes de IA y acceso | Alertas por rol de Transporte Luz de Luna |
+| Integración de IA | Inicio del panel de Crimson Consulting |
 
-Son ilustraciones conceptuales: no muestran un sistema real, su arquitectura interna, información de clientes ni resultados medidos. Las formas y conexiones sirven a la narración editorial de cada tema.
+Las portadas muestran sistemas reales con datos de demostración: no contienen información de clientes ni resultados medidos.

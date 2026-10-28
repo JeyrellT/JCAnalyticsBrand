@@ -31,7 +31,8 @@
 @keyframes assistant-spin { to { transform: rotate(360deg); } }
 @media (max-width: 767px) {
   /* Círculo solo con ícono, a la par del botón de WhatsApp. El texto queda para lectores de pantalla. */
-  .assistant-launcher { right: calc(max(16px, env(safe-area-inset-right)) + 66px); bottom: calc(16px + env(safe-area-inset-bottom)); width: 56px; min-height: 56px; padding: 0; justify-content: center; border-radius: 50%; }
+  .assistant-launcher { right: max(16px, env(safe-area-inset-right)); bottom: calc(16px + env(safe-area-inset-bottom)); width: 56px; min-height: 56px; padding: 0; justify-content: center; border-radius: 50%; }
+  body:has(.mobile-wa) .assistant-launcher { right: calc(max(16px, env(safe-area-inset-right)) + 66px); }
   .assistant-launcher > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .assistant-launcher > svg { width: 24px; height: 24px; }
   body.quote-bar-visible .assistant-launcher { bottom: calc(96px + env(safe-area-inset-bottom)); }

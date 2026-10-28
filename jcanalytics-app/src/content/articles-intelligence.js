@@ -2,7 +2,7 @@ export const intelligenceArticles = [
   {
     id: 'human-review',
     topic: 'intelligence',
-    image: '/images/journal/intelligence.webp',
+    image: '/projects/soporte20/reportes-desktop.webp',
     minutes: 5,
     published: '2026-10-04',
     en: {
@@ -131,7 +131,7 @@ export const intelligenceArticles = [
   {
     id: 'first-automation',
     topic: 'operations',
-    image: '/images/journal/systems.webp',
+    image: '/projects/multiagencia/venta-desktop.webp',
     minutes: 5,
     published: '2026-10-04',
     en: {

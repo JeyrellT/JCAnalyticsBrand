@@ -8,12 +8,10 @@ import Nav from './components/site/Nav';
 import Hero from './components/site/Hero';
 import Work from './components/site/Work';
 import Packages from './components/site/Packages';
-import ProjectStart from './components/site/ProjectStart';
 import Systems from './components/site/Systems';
 import Finance from './components/site/Finance';
 import Intelligence from './components/site/Intelligence';
 import Services from './components/site/Services';
-import Automation from './components/site/Automation';
 import Social from './components/site/Social';
 import Team from './components/site/Team';
 import Process from './components/site/Process';
@@ -21,7 +19,7 @@ import Contact from './components/site/Contact';
 import Footer from './components/site/Footer';
 import FAQ from './components/site/FAQ';
 import QuoteEstimator from './components/ui/QuoteEstimator';
-import { Marquee, Reveal } from './components/site/primitives';
+import { Marquee } from './components/site/primitives';
 import KnowledgePreview from './components/site/KnowledgePreview';
 import './styles/studio.css';
 import './styles/art-direction.css';
@@ -31,17 +29,8 @@ import './styles/discovery.css';
 import { t } from './i18n/locale';
 import { trackContactClicks } from './seo/analytics';
 import { useInitialFragment } from './components/useInitialFragment';
-import { articles } from './content/catalog';
-import { EVIDENCE_TOTALS } from './data/projects';
 
 const TICKER = t(['Desarrollo de sistemas', 'Diseño de interfaces', 'Backend a medida', 'Finanzas', 'Dashboards', 'Machine learning', 'Integración de IA'], ['Software development', 'Interface design', 'Custom backend', 'Finance', 'Dashboards', 'Machine learning', 'AI integration']);
-
-const STATS = [
-  { value: String(articles.length), label: t('guías para tomar mejores decisiones', 'guides for better decisions') },
-  { value: String(EVIDENCE_TOTALS.projects), label: t('proyectos reales con código abierto al visitante', 'real projects with code open to visitors') },
-  { value: 'EN / ES', label: t('conversemos en tu idioma', 'let’s speak your language') },
-  { value: '4', label: t('personas reales, sin intermediarios', 'real people, no middlemen') },
-];
 
 const App = () => {
   useInitialFragment();
@@ -97,26 +86,7 @@ const App = () => {
         <Finance />
         <Intelligence />
 
-        {/* Cifras y proyectos: evidencia después de presentar las especialidades. */}
-        <section aria-label={t('El estudio en cifras', 'The studio in numbers')} className="studio-proof bg-paper pt-16 sm:pt-24">
-          <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
-            <Reveal className="studio-proof__intro"><span>{t('DE LA IDEA A LA IMPLEMENTACIÓN.', 'FROM IDEA TO IMPLEMENTATION.')}</span><p>{t('Un estudio para pensar y construir.', 'A studio for thinking and building.')}</p></Reveal>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
-            {STATS.map((s, i) => (
-              <Reveal key={s.label} delay={i * 0.08} className="border-t border-ink/15 pt-5">
-                <div className="font-display text-[clamp(2.6rem,6vw,4.75rem)] font-semibold tracking-[-0.05em] leading-none">
-                  {s.value}
-                </div>
-                <div className="mt-2 text-ink/55 text-[15px] leading-snug max-w-[14rem]">{s.label}</div>
-              </Reveal>
-            ))}
-          </div>
-          </div>
-        </section>
-
-        <ProjectStart />
         <Services />
-        <Automation />
         <Social />
         <Team />
         <Process />

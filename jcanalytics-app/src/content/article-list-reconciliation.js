@@ -3,7 +3,7 @@ export const reconciliationArticle = {
   id: 'list-reconciliation',
   topic: 'data',
   tool: 'list-reconciler',
-  image: '/images/journal/data.webp',
+  image: '/projects/multiagencia/inventario-desktop.webp',
   minutes: 8,
   published: '2026-10-04',
   en: {

@@ -87,3 +87,5 @@
 .hero-screens__caption span { font-size: 12px; line-height: 1.5; color: #b6c8bf; }
 .hero-screens__caption button { justify-self: start; display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; min-height: 36px; padding: 0 12px; border: 1px solid #c3f5db3a; border-radius: 999px; font: 600 11px var(--font-sans); color: #c3f5db; }
 @media (prefers-reduced-motion: reduce) { .hero-screens__phone img { transition: none; } .hero-screens__bars i.is-on::after { animation: none; transform: scaleX(1); } }
+
+.studio-latest img { object-position: top; filter: none; }

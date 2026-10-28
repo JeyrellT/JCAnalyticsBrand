@@ -3,7 +3,7 @@ export const blogArticles = [
   {
     id: 'cr-continuous-improvement',
     topic: 'operations',
-    image: '/images/journal/systems.webp',
+    image: '/projects/maison/operacion-desktop.webp',
     minutes: 5,
     published: '2026-10-20',
     en: {
@@ -110,7 +110,7 @@ export const blogArticles = [
   {
     id: 'automation-without-technology',
     topic: 'operations',
-    image: '/images/journal/systems.webp',
+    image: '/projects/soporte20/app-desktop.webp',
     minutes: 5,
     published: '2026-10-20',
     en: {
@@ -233,7 +233,7 @@ export const blogArticles = [
   {
     id: 'cicr-excellence-program',
     topic: 'operations',
-    image: '/images/journal/systems.webp',
+    image: '/projects/caviq/pulse-desktop.webp',
     minutes: 5,
     published: '2026-10-21',
     en: {
@@ -344,7 +344,7 @@ export const blogArticles = [
   {
     id: 'ai-agents-access-control',
     topic: 'intelligence',
-    image: '/images/journal/intelligence.webp',
+    image: '/projects/transportesluna/alertas-desktop.webp',
     minutes: 5,
     published: '2026-10-22',
     en: {
