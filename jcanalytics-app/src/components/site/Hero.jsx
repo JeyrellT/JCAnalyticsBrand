@@ -1,10 +1,12 @@
 import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
-import { ArrowDown, ArrowUpRight, Pause, Play } from 'lucide-react';
+import { ArrowDown, ArrowUpRight, MessageCircle, Pause, Play } from 'lucide-react';
 import { experienceArticles } from '../../content/articles-experience';
 import { articlePath } from '../../seo/routes';
 import { MaskLines, Reveal } from './primitives';
-import { prepareContact } from './links';
+import { prepareContact, wa } from './links';
+import { adPackage } from '../../data/packages';
+import '../../styles/packages.css';
 import '../../styles/hero.css';
 import { t, locale } from '../../i18n/locale';
 
@@ -48,11 +50,12 @@ const Hero = () => {
       <div className="studio-hero__topline"><span><i aria-hidden="true" /> {t('INGENIERÍA + DISEÑO DIGITAL', 'ENGINEERING + DIGITAL DESIGN')}</span><span>{t('INDEPENDIENTES. HECHOS EN COSTA RICA.', 'INDEPENDENT. MADE IN COSTA RICA.')} <ArrowUpRight size={12} aria-hidden="true" /></span></div>
       <div className="studio-hero__main">
         <div className="studio-hero__copy">
-          <Reveal className="studio-hero__lead"><p className="studio-hero__eyebrow">{t('Desarrollo web, software e IA en Costa Rica.', 'Web development, software & AI in Costa Rica.')}</p></Reveal>
-          <h1 id="hero-title"><MaskLines lines={[t('Sistemas', 'Software'), <em key="character">{t('con carácter.', 'with character.')}</em>]} delay={0.1} /></h1>
-          <Reveal delay={0.25} className="studio-hero__intro"><p className="studio-hero__description">{t('Diseño web y desarrollo de software a medida en Costa Rica. Conectamos tu web, backend, dashboards Power BI e inteligencia artificial para que tu negocio dé el siguiente paso.', 'Custom web design and software development in Costa Rica. We connect your website, backend, Power BI dashboards and AI to help your business take its next step.')}</p></Reveal>
-          <Reveal delay={0.35} className="studio-hero__actions"><a href="#contacto" className="studio-start" onClick={() => prepareContact({ need: 'Sistema / backend', source: t('Sistemas con carácter', 'Software with character') })}>{t('Conversemos sobre tu proyecto', "Let's talk about your project")} <span><ArrowUpRight size={21} aria-hidden="true" /></span></a><a href="#trabajo" className="studio-work-link">{t('Ver proyectos reales', 'See real projects')} <ArrowDown size={15} aria-hidden="true" /></a></Reveal>
-          <p className="studio-hero__invitation">{t('Primera conversación de 30 min, sin costo.', 'Your first 30-minute conversation is on us.')}</p>
+          <Reveal className="studio-hero__lead"><p className="studio-hero__eyebrow">{t('Webs, software, Power BI e IA · Costa Rica', 'Websites, software, Power BI & AI · Costa Rica')}</p></Reveal>
+          <h1 id="hero-title"><MaskLines lines={[t('Webs y sistemas', 'Websites and systems'), <em key="price">{t('con precio claro.', 'with clear pricing.')}</em>]} delay={0.1} /></h1>
+          <Reveal delay={0.25} className="studio-hero__intro"><p className="studio-hero__description">{t('Páginas web, sistemas a medida, dashboards Power BI y automatización para negocios en Costa Rica. Elegís un paquete, nos escribís por WhatsApp y arrancamos.', 'Websites, custom systems, Power BI dashboards and automation for businesses in Costa Rica. Pick a package, message us on WhatsApp and we start.')}</p></Reveal>
+          <Reveal delay={0.35} className="studio-hero__actions"><a href={wa(adPackage ? adPackage.message : t('Hola JC Analytics, quiero cotizar un proyecto para mi negocio.', 'Hi JC Analytics, I would like a quote for my business.'))} target="_blank" rel="noreferrer" className="studio-wa" {...(adPackage ? { 'data-package': adPackage.key, 'data-value': adPackage.price } : {})}><MessageCircle size={20} aria-hidden="true" />{t('Cotizar por WhatsApp', 'Get a quote on WhatsApp')}</a><a href="#paquetes" className="studio-work-link">{t('Ver paquetes y precios', 'See packages and pricing')} <ArrowDown size={15} aria-hidden="true" /></a></Reveal>
+          {adPackage && <a href="#paquetes" className="studio-hero__ad">{t(`Viste ${adPackage.name}: ${adPackage.priceLabel} · ver detalle`, `You saw ${adPackage.name}: ${adPackage.priceLabel} · see details`)} <ArrowDown size={13} aria-hidden="true" /></a>}
+          <p className="studio-hero__invitation">{t('Desde $60 · pago único · primera conversación de 30 min sin costo.', 'From $60 · one-time payment · first 30-minute call is free.')} <a href="#contacto" className="studio-start studio-start--link" onClick={() => prepareContact({ need: 'Sistema / backend', source: t('Hero · formulario', 'Hero · form') })}>{t('¿Preferís el formulario?', 'Prefer the form?')}</a></p>
           <Reveal delay={0.45} className="studio-hero__signature"><span className="studio-signature-mark" aria-hidden="true">↳</span> {t('Diseño intencional. Ingeniería a medida.', 'Intentional design. Custom engineering.')}</Reveal>
         </div>
         <motion.div className={`studio-object ${ready ? 'studio-object--ready' : ''}`} style={{ y: objectY }}>

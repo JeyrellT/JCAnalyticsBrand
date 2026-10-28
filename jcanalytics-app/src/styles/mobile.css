@@ -279,3 +279,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) { .mobile-dock, .mobile-rail__track { scroll-behavior: auto; transition: none; } }
+
+/* El botón principal del dock abre WhatsApp directo. */
+.studio-v4 .mobile-dock > .mobile-dock__contact--wa { background: #25d366; color: #06301a; gap: 8px; }

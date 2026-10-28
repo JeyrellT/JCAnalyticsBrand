@@ -4,7 +4,8 @@
 //  para que Fast Refresh funcione).
 // ============================================================================
 
-import { t } from '../../i18n/locale';
+import { t, locale } from '../../i18n/locale';
+import { attributionNote } from '../../seo/attribution';
 
 // Dos líneas de WhatsApp atienden las consultas. Cada visitante queda asignado
 // al azar (50/50) a una de ellas y la conserva en todo el sitio y en visitas
@@ -47,13 +48,19 @@ export const prepareContact = ({ need, source = '' }) => {
 };
 
 // Link de WhatsApp con mensaje precargado: el visitante solo toca "enviar".
-export const wa = (text) =>
-  `https://wa.me/${PHONE}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
+// Si llegó desde un anuncio, el mensaje termina con la plataforma y campaña,
+// así el equipo sabe qué anuncio trajo cada conversación.
+export const wa = (text) => {
+  const note = attributionNote(locale);
+  const message = [text, note].filter(Boolean).join('\n\n');
+  return `https://wa.me/${PHONE}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
+};
 
 // Curva de easing de toda la v3 (salida exponencial).
 export const EASE = [0.19, 1, 0.22, 1];
 
 export const NAV_LINKS = [
+  { label: t('Precios', 'Pricing'), href: '#paquetes' },
   { label: t('Sistemas', 'Software'), href: '#plataformas' },
   { label: t('Finanzas & BI', 'Finance & BI'), href: '#finanzas' },
   { label: t('IA & ML', 'AI & ML'), href: '#inteligencia' },

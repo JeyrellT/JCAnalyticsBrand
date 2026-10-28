@@ -1,5 +1,6 @@
 import { locale } from '../i18n/locale';
 import { WA_LINE } from '../components/site/links';
+import { ATTRIBUTION } from './attribution';
 
 // Google Ads conversion "Clic WhatsApp" (Contact, primary, one per click, $10).
 const ADS_CONVERSION = { send_to: 'AW-18237462818/5C2RCMSwvaIdEKKypvhD', value: 10, currency: 'USD' };
@@ -17,9 +18,13 @@ export function trackContactClicks() {
     const href = link?.getAttribute('href') ?? '';
     const channel = isContactForm || href.startsWith('https://wa.me/') ? 'whatsapp' : href.startsWith('mailto:') ? 'email' : href.startsWith('tel:') ? 'phone' : null;
     if (!channel) return;
+    // Paquete elegido (botones "Lo quiero"): nombre y precio para medir qué se pide.
+    const packageId = link?.dataset.package;
+    const packageValue = Number(link?.dataset.value) || undefined;
+    const trafficSource = ATTRIBUTION?.source ?? 'directo';
     // Meta Pixel: a completed contact form is a Lead; any other contact click is Contact.
     if (typeof window.fbq === 'function') {
-      window.fbq('track', isContactForm ? 'Lead' : 'Contact', { content_name: channel, content_category: locale });
+      window.fbq('track', isContactForm ? 'Lead' : 'Contact', { content_name: packageId ?? channel, content_category: locale, ...(packageValue ? { value: packageValue, currency: 'USD' } : {}) });
     }
     // OpenAI pixel: every WhatsApp click (or contact form) is the lead goal for ChatGPT Ads.
     if (channel === 'whatsapp' && typeof window.oaiq === 'function' && Date.now() - lastLead >= CONVERSION_DEDUPE_MS) {
@@ -32,6 +37,8 @@ export function trackContactClicks() {
       contact_channel: channel,
       site_language: locale,
       section_id: event.target.closest('section[id]')?.id ?? 'navigation',
+      traffic_source: trafficSource,
+      ...(packageId ? { package_id: packageId, package_value: packageValue } : {}),
       // Which of the two randomly assigned lines received the lead (a / b).
       ...(channel === 'email' ? {} : { contact_line: WA_LINE }),
     });

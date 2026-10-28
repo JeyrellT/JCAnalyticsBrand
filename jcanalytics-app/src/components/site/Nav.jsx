@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion, useScroll } from 'framer-motion';
-import { Menu, X, ArrowUpRight, ArrowRight, Grid2X2, Layers3, ChartNoAxesCombined, BrainCircuit, PanelsTopLeft, Sparkles, MessageCircle, LockKeyhole } from 'lucide-react';
-import { wa, EASE, PHONE, PHONE_DISPLAY, EMAIL, NAV_LINKS, PORTAL_URL, prepareContact } from './links';
+import { Menu, X, ArrowUpRight, ArrowRight, Grid2X2, Layers3, ChartNoAxesCombined, BrainCircuit, PanelsTopLeft, Sparkles, MessageCircle, LockKeyhole, Tag } from 'lucide-react';
+import { wa, EASE, PHONE, PHONE_DISPLAY, EMAIL, NAV_LINKS, PORTAL_URL } from './links';
 import '../../styles/navigation.css';
 import { t, locale } from '../../i18n/locale';
 import { journalPath } from '../../seo/routes';
@@ -9,6 +9,7 @@ import LanguageSwitcher from '../ui/LanguageSwitcher';
 
 const _MOTION = motion;
 const CHAPTERS = [
+  { icon: Tag, detail: t('Paquetes desde $60', 'Packages from $60'), need: 'Sistema / backend' },
   { icon: Layers3, detail: 'Web + backend', need: 'Sistema / backend' },
   { icon: ChartNoAxesCombined, detail: t('Datos que orientan', 'Data that guides you'), need: 'Dashboard' },
   { icon: BrainCircuit, detail: t('Ideas con inteligencia', 'Intelligence at work'), need: 'Integración de IA' },
@@ -185,8 +186,8 @@ const Nav = () => {
 
       <nav className={`mobile-dock ${editing ? 'mobile-dock--editing' : ''}`} aria-label={t('Accesos rápidos', 'Quick links')} aria-hidden={open || editing || undefined} inert={open || editing || undefined}>
         <button type="button" onClick={openMenu} aria-label={t('Explorar secciones', 'Explore sections')} aria-expanded={open} aria-controls="menu-movil"><Grid2X2 size={19} aria-hidden="true" /><span>{t('Explorar', 'Explore')}</span></button>
-        <a href="#trabajo" aria-current={active === '#trabajo' ? 'location' : undefined}><PanelsTopLeft size={19} aria-hidden="true" /><span>{t('Proyectos', 'Projects')}</span></a>
-        <a className="mobile-dock__contact" href="#contacto" onClick={() => prepareContact({ need: CHAPTERS[currentIndex]?.need ?? 'Sistema / backend', source: `${t('Navegación móvil', 'Mobile navigation')} · ${currentName}` })}><span>{t('Tu proyecto', 'Your project')}</span><ArrowUpRight size={19} aria-hidden="true" /></a>
+        <a href="#paquetes" aria-current={active === '#paquetes' ? 'location' : undefined}><Tag size={19} aria-hidden="true" /><span>{t('Precios', 'Pricing')}</span></a>
+        <a className="mobile-dock__contact mobile-dock__contact--wa" href={wa(t(`Hola JC Analytics, estoy viendo ${currentName} y quiero cotizar.`, `Hi JC Analytics, I am looking at ${currentName} and want a quote.`))} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /><span>WhatsApp</span></a>
       </nav>
 
       <AnimatePresence>

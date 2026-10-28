@@ -1,5 +1,5 @@
 // Proyectos reales: capturas, código y anatomía de los repositorios que JC Analytics construye.
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, Check, Code2, GitCommitHorizontal, Layers3, MessageCircle, MonitorSmartphone } from 'lucide-react';
 import { t, locale } from '../../i18n/locale';
@@ -116,6 +116,12 @@ const Work = () => {
   const screen = project.screens[screenIndex] || project.screens[0];
   const code = projectCode(project.id);
   const choose = (index, shot = 0) => { setActive(index); setScreenIndex(shot); };
+  // Los paquetes pueden pedir "ver ejemplo real" de un proyecto concreto.
+  useEffect(() => {
+    const show = (event) => { const index = PROJECTS.findIndex((item) => item.id === event.detail?.id); if (index >= 0) { setActive(index); setScreenIndex(0); setView('screen'); } };
+    window.addEventListener('jca:show-project', show);
+    return () => window.removeEventListener('jca:show-project', show);
+  }, []);
 
   return (
     <section id="trabajo" className="case-section works-section" aria-labelledby="work-title">

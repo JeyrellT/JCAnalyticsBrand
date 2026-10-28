@@ -16,7 +16,7 @@ const PRODUCTION = 'https://www.jcanalytic.com';
 const TIMEOUT = 20_000;
 const COPY = {
   en: {
-    path: '/', heading: 'Software with character.', system: 'System / backend', website: 'Website',
+    path: '/', heading: 'Websites and systems with clear pricing.', system: 'System / backend', website: 'Website',
     objective: 'What would you like to solve?', name: 'Your name', estimator: 'Your project, with clarity.',
     faqQuestion: 'What can JC Analytics build for my business?', faqAnswer: 'We design websites and custom software',
     emailPrefix: 'Inquiry:', messagePrefix: 'Hello', estimateLabel: 'Estimated investment',
@@ -26,7 +26,7 @@ const COPY = {
     journalDescription: 'Practical guides to clearer business decisions, useful websites, reliable data and responsible AI.',
   },
   es: {
-    path: '/es/', heading: 'Sistemas con carácter.', system: 'Sistema / backend', website: 'Página web',
+    path: '/es/', heading: 'Webs y sistemas con precio claro.', system: 'Sistema / backend', website: 'Página web',
     objective: '¿Qué querés resolver?', name: 'Tu nombre', estimator: 'Tu proyecto, con claridad.',
     faqQuestion: '¿Qué puede desarrollar JC Analytics para mi negocio?', faqAnswer: 'Diseñamos páginas web y software a medida',
     emailPrefix: 'Consulta:', messagePrefix: 'Hola', estimateLabel: 'Inversión estimada',
@@ -335,6 +335,7 @@ async function checkContactTelemetry(page, language, preparedBody) {
       contact_channel: channel,
       site_language: language,
       section_id: 'contacto',
+      traffic_source: 'directo',
       ...(channel === 'email' ? {} : { contact_line: 'a' }),
     }];
     const conversion = ['event', 'conversion', { send_to: 'AW-18237462818/5C2RCMSwvaIdEKKypvhD', value: 10, currency: 'USD', transport_type: 'beacon' }];
@@ -600,6 +601,22 @@ async function checkPublicPrivacy() {
     }
   }
   console.log('[check-site] PASS public privacy: no project screenshot directory or private review artifacts in dist');
+}
+
+async function checkPackages(page, language) {
+  const cards = await page.$$('#paquetes .package-card');
+  assert.ok(cards.length >= 6, 'Ad visitors see priced packages right after the hero');
+  const buy = await page.$eval('#paquetes .package-card__buy', (node) => ({ href: node.href, id: node.dataset.package, value: Number(node.dataset.value), name: node.closest('.package-card').querySelector('h3').textContent, price: node.closest('.package-card').querySelector('.package-card__price strong').textContent }));
+  const whatsapp = new URL(buy.href);
+  assert.equal(whatsapp.origin, 'https://wa.me', 'Each package is bought with one WhatsApp tap');
+  assert.ok(whatsapp.searchParams.get('text').includes(buy.name) && whatsapp.searchParams.get('text').includes(buy.price), 'The WhatsApp message names the package and its price');
+  assert.ok(buy.id && buy.value > 0, 'Package clicks carry their id and value for the ad pixels');
+  const hero = new URL(await page.$eval('.studio-wa', (node) => node.href));
+  assert.equal(hero.origin, 'https://wa.me', 'The hero’s main action opens WhatsApp');
+  assert.ok((await page.$eval('#paquetes', (node) => node.innerText)).includes(language === 'es' ? 'Lo quiero' : 'I want it'));
+  await page.click('#paquetes .packages-more');
+  await page.waitForFunction(() => document.querySelectorAll('#paquetes .package-card').length >= 10);
+  await checkWidth(page);
 }
 
 async function checkProjects(page, language) {
@@ -1038,6 +1055,7 @@ async function main() {
           await checkWidth(page);
           if (width < 600) await checkMenu(page, language);
           await checkAssets(page, origin);
+          await checkPackages(page, language);
           await checkProjects(page, language);
           await checkContact(page, language);
           await checkEstimator(page, language);

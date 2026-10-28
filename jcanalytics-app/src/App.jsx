@@ -7,6 +7,7 @@ import gsap from 'gsap';
 import Nav from './components/site/Nav';
 import Hero from './components/site/Hero';
 import Work from './components/site/Work';
+import Packages from './components/site/Packages';
 import ProjectStart from './components/site/ProjectStart';
 import Systems from './components/site/Systems';
 import Finance from './components/site/Finance';
@@ -90,6 +91,8 @@ const App = () => {
           </Marquee>
         </div>
 
+        <Packages />
+        <Work />
         <Systems />
         <Finance />
         <Intelligence />
@@ -111,7 +114,6 @@ const App = () => {
           </div>
         </section>
 
-        <Work />
         <ProjectStart />
         <Services />
         <Automation />
