@@ -32,6 +32,13 @@
       fbq('track', 'PageView');
       if (/\/(services|servicios)\//.test(location.pathname)) fbq('track', 'ViewContent', { content_category: 'service' });
     </script>
+    <!-- OpenAI (ChatGPT Ads) pixel, official snippet from Ads Manager. Contact events never include form contents.
+         debug:true is for setup verification; set it to false once events show up in Ads Manager. -->
+    <script>!function(w,d,s,u){if(w.oaiq)return;var q=function(){q.q.push(arguments)};q.q=[];w.oaiq=q;var j=d.createElement(s);j.async=1;j.src=u;var f=d.getElementsByTagName(s)[0];f.parentNode.insertBefore(j,f)}(window,document,"script","https://bzrcdn.openai.com/sdk/oaiq.min.js");oaiq("init",{pixelId:"CbYXHw9JHB8KahpH3ayu1Z",debug:true});</script>
+    <script>
+      oaiq('measure', 'page_viewed');
+      if (/\/(services|servicios)\//.test(location.pathname)) oaiq('measure', 'contents_viewed', { contents: [{ id: location.pathname, type: 'service' }] });
+    </script>
   </head>
   <body>
     <div id="root"></div>

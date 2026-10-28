@@ -20,6 +20,11 @@ export function trackContactClicks() {
     if (typeof window.fbq === 'function') {
       window.fbq('track', isContactForm ? 'Lead' : 'Contact', { content_name: channel, content_category: locale });
     }
+    // OpenAI pixel: every WhatsApp click (or contact form) is the lead goal for ChatGPT Ads.
+    if (channel === 'whatsapp' && typeof window.oaiq === 'function') {
+      const eventId = window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+      window.oaiq('measure', 'lead_created', { customer_action: { channel } }, { event_id: eventId });
+    }
     if (typeof window.gtag !== 'function') return;
     window.gtag('event', 'contact_click', {
       contact_channel: channel,
