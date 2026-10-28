@@ -2,7 +2,7 @@
 // formulario de alta/edición e importación de Excel/CSV con vista previa.
 import { useRef, useState } from 'react';
 import {
-  Phone, MessageCircle, Globe, AtSign, PhoneCall, Pencil, Trash2, FileSpreadsheet, Upload, Download,
+  Phone, MessageCircle, Globe, Instagram, Facebook, Music2, Link2, PhoneCall, Pencil, Trash2, FileSpreadsheet, Upload, Download,
   CheckCircle2, AlertTriangle, Undo2, History, MapPin, NotebookPen,
 } from 'lucide-react';
 import { api, ApiError } from '../lib/api.js';
@@ -12,7 +12,7 @@ import { readSpreadsheetFile } from '../lib/xlsx.js';
 import { Modal, Field, Select, Badge, Avatar, Spinner, useAction, useConfirm, useToast, cx } from './ui.jsx';
 import { PersonSelect, StatusBadge } from './common.jsx';
 import {
-  DIRECTORY_STATUS, PROVINCES, IMPORT_CHUNK, rowsFromSheet, extractPhones,
+  DIRECTORY_STATUS, PROVINCES, IMPORT_CHUNK, rowsFromSheet, extractPhones, contactLinks,
 } from '../../shared/directory.js';
 import '../styles/directory.css';
 
@@ -32,13 +32,7 @@ export function telLink(phone) {
   return raw ? `tel:${raw}` : null;
 }
 
-/** "fb.com/x · instagram.com/y" → enlaces abribles (solo http/https). */
-function socialLinks(value) {
-  return String(value ?? '').split(/\s*[·|,]\s*|\s+/).filter(Boolean).map((part) => {
-    const url = /^https?:\/\//i.test(part) ? part : /\.(com|net|org|cr|me|tree|app)\b/i.test(part) ? `https://${part}` : null;
-    try { return url ? new URL(url).toString() : null; } catch { return null; }
-  }).filter(Boolean);
-}
+const LINK_ICONS = { site: Globe, instagram: Instagram, facebook: Facebook, tiktok: Music2, link: Link2 };
 
 const firstName = (name) => (name ?? '').trim().split(/\s+/)[0] ?? '';
 const isOverdue = (entry, today) => entry.next_call_at && entry.next_call_at <= today && NEEDS_DATE.has(entry.status);
@@ -108,8 +102,7 @@ export function ContactSheet({ entryId, today, onClose, onChanged, onDeleted, on
 
   const canDelete = entry && (isAdmin || (entry.created_by === user.id && entry.call_count === 0));
   const wa = entry && (entry.whatsapp || entry.phone) && whatsappLink(entry.whatsapp || entry.phone, `Hola, le saluda ${firstName(user.name)} de JC Analytics.`);
-  const links = entry ? socialLinks(entry.social) : [];
-  const site = entry ? socialLinks(entry.website)[0] : null;
+  const links = entry ? contactLinks(entry).slice(0, 4) : [];
   const obsValue = obs ?? entry?.observations ?? '';
 
   return (
@@ -140,8 +133,10 @@ export function ContactSheet({ entryId, today, onClose, onChanged, onDeleted, on
                 <a key={p} href={telLink(p)} className="btn btn-primary"><Phone className="h-4 w-4" /><span className="num">{p}</span></a>
               ))}
               {wa && <a href={wa} target="_blank" rel="noreferrer" className="btn btn-outline"><MessageCircle className="h-4 w-4 text-teal-ink" />WhatsApp{entry.whatsapp && entry.whatsapp !== entry.phone ? ` ${entry.whatsapp}` : ''}</a>}
-              {links.slice(0, 2).map((l) => <a key={l} href={l} target="_blank" rel="noreferrer" className="btn btn-outline"><AtSign className="h-4 w-4" />{new URL(l).hostname.replace(/^www\./, '')}</a>)}
-              {site && <a href={site} target="_blank" rel="noreferrer" className="btn btn-outline"><Globe className="h-4 w-4" />Sitio web</a>}
+              {links.map((l) => {
+                const Icon = LINK_ICONS[l.kind];
+                return <a key={l.url} href={l.url} target="_blank" rel="noreferrer" className="btn btn-outline" title={l.url}><Icon className="h-4 w-4" />{l.label}</a>;
+              })}
             </div>
             {!entry.phone && <p className="text-sm text-amber-ink">Este contacto no tiene teléfono. Buscalo en Google Maps o en sus redes y agregalo con "Editar datos".</p>}
             {entry.opportunity && (
