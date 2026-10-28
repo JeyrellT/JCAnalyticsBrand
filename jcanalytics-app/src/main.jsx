@@ -15,4 +15,11 @@ async function mountPage() {
   )
 }
 
-mountPage().catch(error => console.error('Interactive page could not load; static content remains available.', error))
+mountPage()
+  .then(() => {
+    // Medición propia hacia el portal: cuando el navegador está libre, fuera del camino crítico.
+    const start = () => import('./seo/site-tracker.js').then(m => m.startSiteTracking()).catch(() => {})
+    if ('requestIdleCallback' in window) window.requestIdleCallback(start, { timeout: 3000 })
+    else window.setTimeout(start, 1500)
+  })
+  .catch(error => console.error('Interactive page could not load; static content remains available.', error))

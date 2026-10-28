@@ -3,7 +3,7 @@ import { useEffect, useId, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, Check, Code2, GitCommitHorizontal, Layers3, MessageCircle, MonitorSmartphone } from 'lucide-react';
 import { t, locale } from '../../i18n/locale';
-import { EVIDENCE_DATE, EVIDENCE_TOTALS, FACT_LABELS, PROJECTS, PROJECT_KINDS, projectCode, projectEvidence, screenImage } from '../../data/projects';
+import { EVIDENCE_DATE, EVIDENCE_TOTALS, FACT_LABELS, PROJECTS, PROJECT_KINDS, projectCode, projectEvidence, screenImage, shotSrcSet } from '../../data/projects';
 import { Label, MaskLines, Reveal } from './primitives';
 import { wa } from './links';
 import '../../styles/projects.css';
@@ -53,7 +53,7 @@ const Browser = ({ project, screen }) => (
     <div className="works-browser__bar" aria-hidden="true"><span /><span /><span /><em>{project.url ? project.url.replace(/^https?:\/\//, '').replace(/\/$/, '') : t('entorno local · datos de demostración', 'local environment · demo data')}</em></div>
     <div className="works-browser__viewport">
       <AnimatePresence mode="wait" initial={false}>
-        <motion.img key={`${project.id}-${screen.id}`} src={screenImage(project, screen.id, 'desktop')} width={1600} height={1000} loading="lazy" decoding="async"
+        <motion.img key={`${project.id}-${screen.id}`} src={screenImage(project, screen.id, 'desktop')} srcSet={shotSrcSet(screenImage(project, screen.id, 'desktop'))} sizes="(max-width: 767px) 92vw, 900px" width={1600} height={1000} loading="lazy" decoding="async"
           alt={t(`Pantalla real de ${project.name}: ${screen.caption}`, `Real screen of ${project.name}: ${screen.caption}`)}
           initial={{ opacity: 0.2 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} />
       </AnimatePresence>
@@ -66,7 +66,7 @@ const Phone = ({ project, screen }) => screen.mobile ? (
   <figure className="works-phone">
     <div className="works-phone__frame">
       <AnimatePresence mode="wait" initial={false}>
-        <motion.img key={`${project.id}-${screen.mobile}`} src={screenImage(project, screen.mobile, 'mobile')} width={640} height={1386} loading="lazy" decoding="async"
+        <motion.img key={`${project.id}-${screen.mobile}`} src={screenImage(project, screen.mobile, 'mobile')} srcSet={shotSrcSet(screenImage(project, screen.mobile, 'mobile'))} sizes="220px" width={640} height={1386} loading="lazy" decoding="async"
           alt={t(`Versión móvil de ${project.name}`, `Mobile version of ${project.name}`)}
           initial={{ opacity: 0.2 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} />
       </AnimatePresence>
@@ -174,7 +174,7 @@ const Work = () => {
                         <div className="works-screen__strip" role="group" aria-label={t('Más pantallas de este proyecto', 'More screens of this project')}>
                           {project.screens.map((item, index) => (
                             <button key={item.id} type="button" aria-pressed={screenIndex === index} onClick={() => setScreenIndex(index)}>
-                              <img src={screenImage(project, item.id, 'desktop')} width={160} height={100} loading="lazy" decoding="async" alt="" />
+                              <img src={screenImage(project, item.id, 'desktop')} srcSet={shotSrcSet(screenImage(project, item.id, 'desktop'))} sizes="160px" width={160} height={100} loading="lazy" decoding="async" alt="" />
                               <span>{String(index + 1).padStart(2, '0')}</span>
                             </button>
                           ))}
@@ -213,7 +213,7 @@ const Work = () => {
           {PROJECTS.flatMap((item) => item.screens.slice(1, 2).map((shot) => ({ project: item, shot }))).map(({ project: item, shot }, index) => (
             <Reveal key={`${item.id}-${shot.id}`} delay={(index % 3) * 0.06} className="works-gallery__item">
               <button type="button" style={{ '--project-color': item.accent }} onClick={() => { choose(PROJECTS.indexOf(item), item.screens.indexOf(shot)); setView('screen'); document.getElementById('trabajo')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); }} aria-label={t(`Ver ${item.name}: ${shot.caption}`, `View ${item.name}: ${shot.caption}`)}>
-                <img src={screenImage(item, shot.id, 'desktop')} width={1600} height={1000} loading="lazy" decoding="async" alt={t(`Pantalla real de ${item.name}: ${shot.caption}`, `Real screen of ${item.name}: ${shot.caption}`)} />
+                <img src={screenImage(item, shot.id, 'desktop')} srcSet={shotSrcSet(screenImage(item, shot.id, 'desktop'))} sizes="(max-width: 767px) 88vw, (max-width: 1100px) 46vw, 31vw" width={1600} height={1000} loading="lazy" decoding="async" alt={t(`Pantalla real de ${item.name}: ${shot.caption}`, `Real screen of ${item.name}: ${shot.caption}`)} />
                 <span className="works-gallery__caption"><strong>{item.name}</strong><em>{shot.caption}</em></span>
               </button>
             </Reveal>

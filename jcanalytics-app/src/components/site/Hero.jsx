@@ -6,6 +6,7 @@ import { articlePath } from '../../seo/routes';
 import { MaskLines, Reveal } from './primitives';
 import { prepareContact, wa } from './links';
 import { adPackage } from '../../data/packages';
+import { shotSrcSet } from '../../data/shots';
 import '../../styles/packages.css';
 import '../../styles/hero.css';
 import { t, locale } from '../../i18n/locale';
@@ -25,17 +26,31 @@ const SCREENS = [
 const SCREEN_MS = 2800;
 const HeroScreens = ({ reduce, paused }) => {
   const [index, setIndex] = useState(0);
+  const [onScreen, setOnScreen] = useState(true);
+  const ref = useRef(null);
+  // Solo rota mientras el hero se ve: fuera de pantalla no hay temporizador ni renders.
   useEffect(() => {
-    if (reduce || paused) return undefined;
+    const node = ref.current;
+    if (!node || !('IntersectionObserver' in window)) return undefined;
+    const observer = new IntersectionObserver(([entry]) => setOnScreen(entry.isIntersecting));
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    if (reduce || paused || !onScreen) return undefined;
     const id = window.setInterval(() => setIndex((value) => (value + 1) % SCREENS.length), SCREEN_MS);
     return () => window.clearInterval(id);
-  }, [reduce, paused]);
+  }, [reduce, paused, onScreen]);
   const current = SCREENS[index];
   return (
-    <div className="hero-screens" role="group" aria-label={t('Pantallas reales de proyectos', 'Real project screens')}>
+    <div ref={ref} className="hero-screens" role="group" aria-label={t('Pantallas reales de proyectos', 'Real project screens')}>
       <div className="hero-screens__phone" aria-hidden="true">
         <div className="hero-screens__bars">{SCREENS.map((item, k) => <i key={item.src} className={k === index ? 'is-on' : k < index ? 'is-done' : ''} style={{ '--ms': `${SCREEN_MS}ms` }} />)}</div>
-        {SCREENS.map((item, k) => <img key={item.src} src={`/projects/${item.src}-mobile.webp`} width={640} height={1385} loading={k === 0 ? 'eager' : 'lazy'} decoding="async" alt="" className={k === index ? 'is-on' : ''} />)}
+        {/* Solo la pantalla actual y la siguiente existen en el DOM: el resto no ocupa memoria decodificada. */}
+        {SCREENS.map((item, k) => (k === index || k === (index + 1) % SCREENS.length) && (
+          <img key={item.src} src={`/projects/${item.src}-mobile.webp`} srcSet={shotSrcSet(`/projects/${item.src}-mobile.webp`)} sizes="45vw" width={640} height={1385}
+            loading={k === 0 ? 'eager' : 'lazy'} decoding="async" alt="" className={k === index ? 'is-on' : ''} />
+        ))}
       </div>
       <div className="hero-screens__caption" aria-live="polite">
         <small>{t('PANTALLA REAL', 'REAL SCREEN')} · {String(index + 1).padStart(2, '0')}/{String(SCREENS.length).padStart(2, '0')}</small>
@@ -104,7 +119,7 @@ const Hero = () => {
       </div>
       <div className="studio-hero__bottom">
         <div className="studio-materials"><div role="group" aria-label={t('Explorar diseño, ingeniería e inteligencia', 'Explore design, engineering and intelligence')}>{MODES.map((item, index) => <button key={item.label} type="button" onClick={() => setMode(index)} aria-pressed={mode === index}><span>0{index + 1}</span>{item.label}<i aria-hidden="true" /></button>)}</div><p aria-live="polite">{MODES[mode].description}</p></div>
-        <a href={articlePath(EDITORIAL_ARTICLE, locale)} className="studio-latest"><img src="/projects/laburrada/home-desktop.webp" alt={t('Menú en línea de La Burrada, una web construida por JC Analytics.', 'La Burrada’s online menu, a website built by JC Analytics.')} width={1600} height={1000} decoding="async" loading="lazy" /><span><small>{t('IDEAS PARA TU PRÓXIMO PASO', 'IDEAS FOR YOUR NEXT STEP')}</small><strong>{t('Una web que orienta', 'A website that guides')} <ArrowUpRight size={15} aria-hidden="true" /></strong></span></a>
+        <a href={articlePath(EDITORIAL_ARTICLE, locale)} className="studio-latest"><img src="/projects/laburrada/home-desktop.webp" srcSet={shotSrcSet('/projects/laburrada/home-desktop.webp')} sizes="100px" alt={t('Menú en línea de La Burrada, una web construida por JC Analytics.', 'La Burrada’s online menu, a website built by JC Analytics.')} width={1600} height={1000} decoding="async" loading="lazy" /><span><small>{t('IDEAS PARA TU PRÓXIMO PASO', 'IDEAS FOR YOUR NEXT STEP')}</small><strong>{t('Una web que orienta', 'A website that guides')} <ArrowUpRight size={15} aria-hidden="true" /></strong></span></a>
       </div>
       <div className="studio-scroll-note"><span>{t('SCROLL PARA EXPLORAR', 'SCROLL TO EXPLORE')}</span><span aria-hidden="true">↓</span><span>{t('DISEÑAMOS LO QUE VIENE.', 'DESIGNING WHAT COMES NEXT.')}</span></div>
     </section>

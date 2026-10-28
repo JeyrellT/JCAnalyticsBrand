@@ -13,6 +13,7 @@ Está separada del sitio público (`jcanalytics-app/`, GitHub Pages): el portal 
 **Cómo se navega.** El menú sigue el orden de la empresa:
 - **Operación:** Inicio, Tablero, Agenda y Buzón.
 - **Empresa:** Proyectos, Clientes, Servicios y Equipo.
+- **Web:** Consultas y Tráfico del sitio.
 - **Socios:** Cobros, Inversiones y Finanzas.
 - **Control:** Bitácora.
 
@@ -87,6 +88,8 @@ Los movimientos en dólares **guardan su tipo de cambio**, así el consolidado e
 - el contacto de su ejecutivo.
 
 Cada aprobación, cambio pedido o brief enviado avisa al equipo, en el buzón y por push (categoría "Portal de clientes"). El equipo, a su vez, avisa al cliente dentro de su portal.
+
+**Consultas y tráfico del sitio (`/consultas`, `/trafico`).** Las personas que dejan su WhatsApp o correo en jcanalytic.com llegan a la bandeja "Consultas": se contactan con un toque, se asignan, llevan notas, muestran el recorrido de su visita y se pasan a clientes. "Tráfico del sitio" muestra dónde se queda la gente, qué toca y si llega al llamado a la acción y a los formularios. Medición propia sin cookies; el texto del visitante nunca llega a una IA. Ver [docs/consultas-y-trafico.md](docs/consultas-y-trafico.md).
 
 **Conectar con Claude (`/mcp`).** Cada persona del equipo genera una conexión en "Equipo → Mi perfil → Conectar con Claude". Desde una conversación con Claude (claude.ai, escritorio, celular o Claude Code) se crean y consultan proyectos, clientes, tareas y avances, con sus mismos permisos y con registro en la bitácora ("vía Claude"). Ver [docs/mcp-claude.md](docs/mcp-claude.md).
 

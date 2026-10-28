@@ -14,6 +14,8 @@ import { routes, alternatePath, articlePath, servicePath } from '../src/seo/rout
 const DIST = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'dist');
 const PRODUCTION = 'https://www.jcanalytic.com';
 const TIMEOUT = 20_000;
+// Envíos al portal del equipo: se responden aquí mismo, nunca salen a internet.
+const PORTAL_INGEST = 'https://portal.jcanalytic.com/ingest/';
 const COPY = {
   en: {
     path: '/en/', heading: 'Websites and systems with clear pricing.', system: 'System / backend', website: 'Website',
@@ -90,6 +92,7 @@ async function openPage(browser, origin, width, javascript = true, options = {})
   const badLocalRequests = [];
   const delayedModule = { requests: 0, waiting: false };
   page.setDefaultTimeout(TIMEOUT);
+  page.ingest = [];
   await page.setViewport({ width, height: width < 600 ? 844 : 1000, deviceScaleFactor: 1 });
   await page.setJavaScriptEnabled(javascript);
   await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
@@ -103,7 +106,10 @@ async function openPage(browser, origin, width, javascript = true, options = {})
       delayedModule.waiting = false;
     }
     if (url.origin === origin || ['data:', 'blob:', 'about:'].includes(url.protocol)) request.continue();
-    else request.abort('blockedbyclient');
+    else if (request.url().startsWith(PORTAL_INGEST)) {
+      if (request.method() === 'POST') page.ingest.push({ path: url.pathname, body: JSON.parse(request.postData() || '{}') });
+      request.respond({ status: request.method() === 'OPTIONS' ? 204 : 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': origin }, body: '{"ok":true}' });
+    } else request.abort('blockedbyclient');
   });
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('response', (response) => {
@@ -296,6 +302,73 @@ async function checkContact(page, language) {
   assert.ok(body.startsWith(copy.messagePrefix));
   assert.ok(body.includes(copy.website) && body.includes('Browser QA') && body.includes('Test project scope'));
   await checkContactTelemetry(page, language, body);
+  await checkCallbackLead(page, language);
+}
+
+// "Prefiero que me contacten": exige WhatsApp o correo y deja la consulta en el portal del equipo.
+async function checkCallbackLead(page, language) {
+  const status = () => page.$eval('.contact-callback__status', (node) => node.textContent.trim());
+  await page.click('.contact-callback__button');
+  assert.ok((await status()).includes(language === 'es' ? 'WhatsApp o tu correo' : 'WhatsApp or email'), 'Without a contact the request is not sent');
+  assert.equal(page.ingest.filter((r) => r.path === '/ingest/lead').length, 0);
+  await page.type('#contacto-telefono', '8888-1234');
+  await page.click('.contact-callback__button');
+  await page.waitForFunction(() => document.querySelector('.contact-callback__status').textContent.includes('24'));
+  const [lead] = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body);
+  assert.equal(lead.channel, 'devolucion');
+  assert.equal(lead.phone, '8888-1234');
+  assert.equal(lead.name, 'Browser QA');
+  assert.equal(lead.need, 'Página web', 'The portal receives the internal need value in Spanish');
+  assert.equal(lead.website, '', 'The bot trap stays empty for people');
+  assert.ok(/^[a-z0-9]{16,40}$/.test(lead.sid) && lead.lang === language && lead.elapsed >= 1500);
+  assert.ok(!(await page.$eval('#contacto-sitio', (node) => node.closest('.contact-trap').getBoundingClientRect().left >= 0)), 'The bot trap is off screen');
+}
+
+// Medición propia: secciones, scroll y clics llegan agrupados al portal, sin datos personales.
+async function checkSiteTracking(browser, origin) {
+  const { page, verifyErrors } = await openPage(browser, origin, 1440);
+  try {
+    // Chromium no expone el cuerpo de un beacon a la interceptación: se lee al enviarlo.
+    await page.evaluateOnNewDocument(() => {
+      window.__JC_TRACK_TEST = true;
+      window.__beacons = [];
+      navigator.sendBeacon = (url, data) => {
+        data.text().then((text) => window.__beacons.push({ path: new URL(url).pathname, body: JSON.parse(text) }));
+        return true;
+      };
+    });
+    await navigate(page, `${origin}/`);
+    await page.waitForFunction(() => performance.now() > 3500);
+    await page.$eval('#paquetes', (node) => node.scrollIntoView({ block: 'start' }));
+    await delay(1200);
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight * 0.3));
+    await delay(400);
+    await page.$eval('#paquetes', (node) => node.scrollIntoView({ block: 'start' }));
+    await delay(400);
+    await page.evaluate(() => {
+      document.addEventListener('click', (event) => event.preventDefault(), true);
+      document.querySelector('#paquetes .package-card__buy').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      document.querySelector('#contacto-nombre').focus();
+      document.querySelector('#contacto-nombre').value = 'Persona Privada';
+      window.dispatchEvent(new Event('pagehide'));
+    });
+    await page.waitForFunction(() => window.__beacons.length > 0);
+    const batches = (await page.evaluate(() => window.__beacons)).filter((r) => r.path === '/ingest/events').map((r) => r.body);
+    assert.ok(batches.length >= 1, 'The tracker sends its batch to the portal');
+    const events = batches.flatMap((b) => b.events);
+    const has = (fn, message) => assert.ok(events.some(fn), message);
+    has((e) => e.t === 'view' && e.p === '/', 'Page view');
+    has((e) => e.t === 'section' && e.s === 'paquetes' && e.v >= 300, 'Time spent in the pricing section');
+    has((e) => e.t === 'click' && e.k === 'package' && e.s === 'paquetes' && e.l, 'Package click with its label and section');
+    has((e) => e.t === 'scroll' && e.v >= 25, 'Scroll depth');
+    has((e) => e.t === 'form_start' && e.k === 'contacto', 'Form start');
+    assert.ok(batches.every((b) => /^[a-z0-9]{16,40}$/.test(b.sid) && b.device === 'desktop'));
+    assert.ok(!JSON.stringify(batches).includes('Persona Privada'), 'Typed values never leave the browser');
+    verifyErrors();
+    console.log('[check-site] PASS site tracking: views, section time, scroll, clicks and forms reach the portal without personal data');
+  } finally {
+    await page.close();
+  }
 }
 
 async function checkContactTelemetry(page, language, preparedBody) {
@@ -1047,6 +1120,7 @@ async function main() {
     for (const route of routes) await checkStaticRoute(browser, origin, route, snapshots);
     await checkInternalLinks(origin, snapshots);
     await checkWhatsAppLines(browser, origin);
+    await checkSiteTracking(browser, origin);
     for (const width of [1440, 390]) {
       for (const language of ['en', 'es']) {
         const { page, verifyErrors } = await openPage(browser, origin, width);

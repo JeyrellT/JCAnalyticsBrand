@@ -1,12 +1,12 @@
 // Estructura del portal, ordenada como trabaja la empresa:
-// Operación (el día a día) · Empresa (proyectos, clientes, servicios, equipo) · Socios · Control.
+// Operación (el día a día) · Empresa (proyectos, clientes, servicios, equipo) · Web (consultas y tráfico) · Socios · Control.
 // Escritorio: barra lateral "tinta" con botón "Crear", grupos y acento en la sección activa.
 // Móvil: barra superior + barra inferior de vidrio (Inicio, Tablero, Crear, Agenda, Más) con hojas.
 import { useState } from 'react';
 import {
   LayoutDashboard, FolderKanban, KanbanSquare, CalendarDays, TrendingUp, Inbox, Users, History, LogOut, Menu, X,
   Building2, Layers, Plus, LayoutGrid, Bot, BellRing, ChevronRight,
-  ClipboardList, ArrowUpRight, Sparkles, PanelLeftClose, PanelLeftOpen, WalletCards, Receipt, BookOpen,
+  ClipboardList, ArrowUpRight, Sparkles, PanelLeftClose, PanelLeftOpen, WalletCards, Receipt, BookOpen, MessagesSquare, BarChart3,
 } from 'lucide-react';
 import { Link, useLocation } from '../lib/router.jsx';
 import { useSession } from '../lib/session.jsx';
@@ -40,6 +40,14 @@ const GROUPS = [
       { to: '/equipo', label: 'Equipo y ajustes', short: 'Equipo', icon: Users, tone: 'teal' },
     ],
   },
+  // Lo que llega desde jcanalytic.com: personas que escriben y cómo se mueve el tráfico.
+  {
+    label: 'Web',
+    items: [
+      { to: '/consultas', label: 'Consultas', short: 'Consultas', icon: MessagesSquare, tone: 'blue' },
+      { to: '/trafico', label: 'Tráfico del sitio', short: 'Tráfico', icon: BarChart3, tone: 'violet' },
+    ],
+  },
   { label: 'Socios', invest: true, items: [{ to: '/cobros', label: 'Cobros', short: 'Cobros', icon: Receipt, tone: 'teal' }, { to: '/inversiones', label: 'Inversiones', short: 'Inversiones', icon: TrendingUp, tone: 'teal' }, { to: '/finanzas', label: 'Finanzas y costos', short: 'Finanzas', icon: WalletCards, tone: 'teal' }] },
   {
     label: 'Control',
@@ -58,7 +66,7 @@ const byPath = Object.fromEntries(ALL.map((n) => [n.to, n]));
 const TABS = ['/', '/buzon'].map((to) => byPath[to]);
 const TABS_END = [byPath['/agenda']];
 // Mosaicos de "Más", en el orden en que se piensa la empresa.
-const MORE = ['/tablero', '/proyectos', '/clientes', '/libro-amarillo', '/briefs' /* v5 */, '/servicios', '/equipo', '/cobros', '/inversiones', '/finanzas', '/automatizaciones', '/notificaciones', '/bitacora'].map((to) => byPath[to]);
+const MORE = ['/tablero', '/consultas', '/trafico', '/proyectos', '/clientes', '/libro-amarillo', '/briefs' /* v5 */, '/servicios', '/equipo', '/cobros', '/inversiones', '/finanzas', '/automatizaciones', '/notificaciones', '/bitacora'].map((to) => byPath[to]);
 
 function useNav() {
   const { canInvest, unread, pending } = useSession();

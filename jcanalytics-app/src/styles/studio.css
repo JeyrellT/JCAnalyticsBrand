@@ -317,3 +317,27 @@
 .case-feature--concept .case-feature__selector button { min-width: 0; overflow-wrap: anywhere; }
 .case-feature--concept .case-feature__selector button > svg { flex-shrink: 0; }
 @media (max-width: 767px) { .case-feature--concept .case-feature__top { font-size: 8px; line-height: 1.6; } .case-feature--concept .case-feature__url { font-size: 8px; } }
+
+/* Secciones lejanas: el navegador no las pinta ni las maqueta hasta que se acercan
+   (menos memoria y menos trabajo al cargar y al hacer scroll). La reserva usa la altura
+   real medida de cada sección para que la barra de scroll y los anclas no salten. */
+.studio-v4 main > :is(#finanzas, #inteligencia, #servicios, #redes, #equipo, #proceso, #ideas) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto var(--section-h, 1400px);
+}
+.studio-v4 #finanzas { --section-h: 994px; }
+.studio-v4 #inteligencia { --section-h: 1336px; }
+.studio-v4 #servicios { --section-h: 2030px; }
+.studio-v4 #redes { --section-h: 1741px; }
+.studio-v4 #equipo { --section-h: 1585px; }
+.studio-v4 #proceso { --section-h: 1076px; }
+.studio-v4 #ideas { --section-h: 866px; }
+@media (max-width: 767px) {
+  .studio-v4 #finanzas { --section-h: 1319px; }
+  .studio-v4 #inteligencia { --section-h: 1753px; }
+  .studio-v4 #servicios { --section-h: 1666px; }
+  .studio-v4 #redes { --section-h: 2247px; }
+  .studio-v4 #equipo { --section-h: 1394px; }
+  .studio-v4 #proceso { --section-h: 1294px; }
+  .studio-v4 #ideas { --section-h: 1759px; }
+}

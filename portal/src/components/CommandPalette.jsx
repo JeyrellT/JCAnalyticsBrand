@@ -4,7 +4,7 @@ import {
   ArrowDown, ArrowUp, ArrowUpRight, BellRing, Bot, Building2, CalendarDays, CalendarPlus,
   CheckCheck, ChevronRight, ClipboardList, Command, CornerDownLeft, FolderKanban,
   History, Inbox, KanbanSquare, LayoutDashboard, Layers, Link2, ListPlus, LoaderCircle,
-  Plus, Receipt, Search, Settings2, Sparkles, TrendingUp, Users, X, WalletCards, BookOpen, FileSpreadsheet,
+  Plus, Receipt, Search, Settings2, Sparkles, TrendingUp, Users, X, WalletCards, BookOpen, FileSpreadsheet, MessagesSquare, BarChart3,
 } from 'lucide-react';
 import { navigate, useLocation } from '../lib/router.jsx';
 import { useResource, useSession } from '../lib/session.jsx';
@@ -25,6 +25,8 @@ const COMMANDS = [
   { key: 'calendar', title: 'Agenda', detail: 'El calendario compartido.', to: '/agenda', icon: CalendarDays, type: 'section', words: 'citas reuniones calendario' },
   { key: 'projects', title: 'Proyectos', detail: 'Todo lo que estamos construyendo.', to: '/proyectos', icon: FolderKanban, type: 'section' },
   { key: 'directory', title: 'Libro amarillo', detail: 'Negocios para llamar y ofrecer servicios.', to: '/libro-amarillo', icon: BookOpen, type: 'section', words: 'prospectos llamadas telefonos directorio guia contactos restaurantes' },
+  { key: 'leads', title: 'Consultas de la web', detail: 'Personas que dejaron sus datos en el sitio.', to: '/consultas', icon: MessagesSquare, type: 'section', words: 'leads prospectos formulario contacto whatsapp sitio pagina' },
+  { key: 'traffic', title: 'Tráfico del sitio', detail: 'Dónde se queda la gente y qué toca.', to: '/trafico', icon: BarChart3, type: 'section', words: 'analitica visitas clics embudo conversion anuncios campañas' },
   { key: 'clients', title: 'Clientes', detail: 'Relaciones, contactos y oportunidades.', to: '/clientes', icon: Building2, type: 'section' },
   { key: 'briefs', title: 'Briefs', detail: 'Del pedido a un plan compartido.', to: '/briefs', icon: ClipboardList, type: 'section', words: 'solicitudes requerimientos' },
   { key: 'services', title: 'Servicios', detail: 'Lo que hacemos y quién lo lidera.', to: '/servicios', icon: Layers, type: 'section' },

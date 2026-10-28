@@ -442,6 +442,7 @@ export const projectEvidence = (id) => evidence.projects[id];
 export const EVIDENCE_DATE = evidence.generatedAt;
 export const projectCode = (id) => PROJECT_CODE[id];
 export const screenImage = (project, screen, device) => shot(project.id, screen, device);
+export { shotSrcSet } from './shots';
 
 // Totales reales: se suman desde el JSON para que agregar un repositorio no deje cifras viejas.
 const all = Object.values(evidence.projects);

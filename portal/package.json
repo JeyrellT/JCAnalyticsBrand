@@ -21,6 +21,7 @@
     "e2e:frontend": "node --disable-warning=ExperimentalWarning tests/frontend.e2e.mjs",
     "e2e:investor": "node --disable-warning=ExperimentalWarning tests/investor-experience.e2e.mjs",
     "e2e:finance": "node --disable-warning=ExperimentalWarning tests/finance-experience.e2e.mjs",
+    "e2e:web": "node --disable-warning=ExperimentalWarning tests/web.e2e.mjs",
     "seed:demo": "node --disable-warning=ExperimentalWarning server/seed-demo.mjs",
     "user:create": "node --disable-warning=ExperimentalWarning server/cli.mjs create",
     "user:reset": "node --disable-warning=ExperimentalWarning server/cli.mjs reset",

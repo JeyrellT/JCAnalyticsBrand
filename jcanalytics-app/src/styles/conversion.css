@@ -125,3 +125,13 @@
   .project-start h2 { font-size: 44px; }
   .studio-v4 .contact-need { font-size: 10px; padding-inline: 8px; }
 }
+
+/* Paso 04 (opcional) y "Prefiero que me contacten": la consulta llega a la bandeja del portal. */
+.contact-form__reach { display: grid; gap: 10px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.contact-form__reach input[aria-invalid="true"] { border-color: #b4542f; }
+.contact-trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.contact-callback { display: grid; gap: 6px; margin-top: -4px; }
+.contact-callback__button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 0 18px; border: 1px solid #2e58336b; border-radius: 14px; color: #234c30; font-weight: 600; font-size: 14px; background: transparent; cursor: pointer; }
+.contact-callback__button:hover { background: #2e58330f; }
+.contact-callback__button:disabled { opacity: .65; cursor: default; }
+.contact-callback__status { min-height: 1.2em; font-size: 12px; color: #31562f; }
