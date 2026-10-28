@@ -478,7 +478,7 @@ async function checkStaticRoute(browser, origin, route, snapshots) {
       assert.ok(await page.$eval('#preguntas details:first-child p', (node) => node.getBoundingClientRect().height > 0));
       const projects = compact(await page.$eval('#trabajo', (node) => node.innerText));
       assert.ok(projects.includes('La Burrada') && projects.includes('Transporte Luz de Luna'), 'Real projects are named in the static HTML');
-      assert.ok(projects.includes(language === 'es' ? 'Fragmento de código' : 'Code excerpt'), 'Project evidence is described in the visitor’s language');
+      assert.ok(projects.includes(language === 'es' ? 'Escribinos por WhatsApp' : 'Message us on WhatsApp'), 'WhatsApp call to action is present in the visitor’s language');
       const projectImages = await page.$$eval('#trabajo img[src*="/projects/"]', (nodes) => nodes.length);
       assert.ok(projectImages >= PROJECTS.length, 'Every project ships a real screenshot in the static page');
     } else if (route.type === 'journal') {
@@ -619,7 +619,9 @@ async function checkProjects(page, language) {
   assert.ok((await page.$$('.works-anatomy__numbers div')).length >= 4, 'Repository anatomy shows computed figures');
   const links = await page.$$eval('.works-link', (nodes) => nodes.map((node) => node.href));
   assert.ok(links.every((href) => /^https:\/\//.test(href)), 'Project links open the real site');
-  assert.ok((await page.$eval('.works-summary', (node) => node.innerText)).includes(language === 'es' ? 'Lo que construimos' : 'What we built'), 'Project summary is localized');
+  const whatsapp = new URL(await page.$eval('.works-summary .works-wa', (node) => node.href));
+  assert.equal(whatsapp.origin, 'https://wa.me', 'Project summary offers a direct WhatsApp message');
+  assert.ok(whatsapp.searchParams.get('text')?.includes(await page.$eval('.works-summary h3', (node) => node.textContent)), 'WhatsApp message names the chosen project');
   await checkWidth(page);
 }
 

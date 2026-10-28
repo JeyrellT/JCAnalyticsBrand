@@ -1,11 +1,11 @@
 // Proyectos reales: capturas, código y anatomía de los repositorios que JC Analytics construye.
 import { useId, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowUpRight, Check, Code2, GitCommitHorizontal, Layers3, MonitorSmartphone } from 'lucide-react';
+import { ArrowUpRight, Check, Code2, GitCommitHorizontal, Layers3, MessageCircle, MonitorSmartphone } from 'lucide-react';
 import { t, locale } from '../../i18n/locale';
 import { EVIDENCE_DATE, EVIDENCE_TOTALS, FACT_LABELS, PROJECTS, PROJECT_KINDS, projectCode, projectEvidence, screenImage } from '../../data/projects';
 import { Label, MaskLines, Reveal } from './primitives';
-import ContactCTA from './ContactCTA';
+import { wa } from './links';
 import '../../styles/projects.css';
 
 const _MOTION = motion;
@@ -27,6 +27,21 @@ const TOTALS = [
   { value: number(EVIDENCE_TOTALS.commits), label: t('commits en los últimos meses', 'commits over the last months') },
   { value: number(EVIDENCE_TOTALS.tests), label: t('pruebas automatizadas', 'automated tests') },
   { value: number(EVIDENCE_TOTALS.endpoints), label: t('endpoints de API', 'API endpoints') },
+];
+
+const whatsappFor = (project) => wa(t(
+  `Hola JC Analytics, vi el proyecto ${project.name} (${project.sector}) y quiero algo así para mi negocio.`,
+  `Hi JC Analytics, I saw the ${project.name} project (${project.sector}) and I want something like it for my business.`,
+));
+const WhatsApp = ({ href, children, className = '' }) => (
+  <a href={href} target="_blank" rel="noreferrer" className={`works-wa ${className}`}><MessageCircle size={18} aria-hidden="true" />{children}</a>
+);
+const MARKETING = [
+  { src: 'laburrada/foto-chifrijo', alt: t('Burrito chifrijo de La Burrada con guacamole y pico de gallo', 'La Burrada chifrijo burrito with guacamole and pico de gallo'), caption: t('Fotografía de producto · La Burrada', 'Product photography · La Burrada'), tall: true },
+  { src: 'laburrada/foto-fries', alt: t('Loaded fries de La Burrada con guacamole y tocino', 'La Burrada loaded fries with guacamole and bacon'), caption: t('Fotografía de producto · La Burrada', 'Product photography · La Burrada'), tall: true },
+  { src: 'laburrada/foto-pico', alt: t('Pico de gallo y guacamole de La Burrada', 'La Burrada pico de gallo and guacamole'), caption: t('Fotografía de producto · La Burrada', 'Product photography · La Burrada'), tall: true },
+  { src: 'laburrada/instagram', alt: t('Publicaciones de Instagram de La Burrada diseñadas por JC Analytics', 'La Burrada Instagram posts designed by JC Analytics'), caption: t('Contenido para redes · La Burrada', 'Social media content · La Burrada') },
+  { src: 'caviq/instagram', alt: t('Perfil de Instagram de CAVIQ con 3.617 seguidores', 'CAVIQ Instagram profile with 3,617 followers'), caption: t('Perfil y publicaciones · CAVIQ (3.617 seguidores)', 'Profile and posts · CAVIQ (3,617 followers)') },
 ];
 
 const Browser = ({ project, screen }) => (
@@ -112,7 +127,7 @@ const Work = () => {
           </div>
           <Reveal className="case-heading__aside">
             <span className="case-count">{String(PROJECTS.length).padStart(2, '0')}<span>{t('PROYECTOS CON', 'PROJECTS WITH')}<br />{t('CÓDIGO REAL', 'REAL CODE')}</span></span>
-            <p>{t('Diez sistemas y sitios construidos por JC Analytics. Capturas de pantalla reales, fragmentos de código copiados de cada repositorio y cifras calculadas por un script, no escritas a mano.', 'Ten systems and sites built by JC Analytics. Real screenshots, code excerpts copied from each repository and figures computed by a script, not typed by hand.')}</p>
+            <p>{t('Capturas reales, código real y cifras calculadas desde cada repositorio. Nada ilustrado.', 'Real screenshots, real code and figures computed from each repository. Nothing illustrated.')}</p>
           </Reveal>
         </div>
 
@@ -169,26 +184,23 @@ const Work = () => {
               <span className="case-feature__sector">{PROJECT_KINDS[project.kind]} · {project.sector} · {project.status}</span>
               <h3>{project.name}</h3>
               <p className="works-summary__tagline">{project.tagline}</p>
-              <p><strong>{t('El reto.', 'The challenge.')}</strong> {project.problem}</p>
-              <p><strong>{t('Lo que construimos.', 'What we built.')}</strong> {project.built}</p>
+              <ul>{project.features.slice(0, 3).map((feature) => <li key={feature}><Check size={13} aria-hidden="true" />{feature}</li>)}</ul>
             </div>
             <div className="works-summary__aside">
-              <ul>{project.features.map((feature) => <li key={feature}><Check size={13} aria-hidden="true" />{feature}</li>)}</ul>
-              <div className="works-summary__actions">
-                {project.url && <a href={project.url} target="_blank" rel="noreferrer" className="case-feature__link works-link">{t('Abrir el sitio', 'Open the site')}<span><ArrowUpRight size={20} aria-hidden="true" /></span></a>}
-                <ContactCTA need={project.need} source={t(`Proyecto de referencia: ${project.name}`, `Reference project: ${project.name}`)} variant="ghost" className="case-feature__inquiry">{t('Quiero algo así para mi negocio', 'I want something like this for my business')}</ContactCTA>
-              </div>
-              <p className="works-summary__note">{t('Fragmento de código:', 'Code excerpt:')} <code>{code.file}</code></p>
+              <p className="works-summary__hook">{t('¿Querés algo así para tu negocio? Escribinos y te respondemos por WhatsApp.', 'Want something like this for your business? Message us and we reply on WhatsApp.')}</p>
+              <WhatsApp href={whatsappFor(project)}>{t('Quiero algo así · WhatsApp', 'I want this · WhatsApp')}</WhatsApp>
+              {project.url && <a href={project.url} target="_blank" rel="noreferrer" className="case-feature__link works-link">{t('Abrir el sitio', 'Open the site')}<span><ArrowUpRight size={20} aria-hidden="true" /></span></a>}
+              <p className="works-summary__note">{t('Código:', 'Code:')} <code>{code.file}</code></p>
             </div>
           </div>
         </Reveal>
 
         <Reveal className="works-gallery-head">
-          <div><Label>{t('Más pantallas reales', 'More real screens')}</Label><p>{t('Sin ilustraciones ni fotos de archivo. Cada imagen es una pantalla de un sistema que existe.', 'No illustrations, no stock photos. Every image is a screen from a system that exists.')}</p></div>
+          <div><Label>{t('Más pantallas reales', 'More real screens')}</Label><p>{t('Cada imagen es una pantalla de un sistema que existe.', 'Every image is a screen from a system that exists.')}</p></div>
           <span>{t('ESCRITORIO 1440 PX · MÓVIL 390 PX', 'DESKTOP 1440 PX · MOBILE 390 PX')}</span>
         </Reveal>
         <ul className="works-gallery" aria-label={t('Galería de pantallas reales', 'Gallery of real screens')}>
-          {PROJECTS.flatMap((item) => item.screens.slice(1, 3).map((shot) => ({ project: item, shot }))).map(({ project: item, shot }, index) => (
+          {PROJECTS.flatMap((item) => item.screens.slice(1, 2).map((shot) => ({ project: item, shot }))).map(({ project: item, shot }, index) => (
             <Reveal key={`${item.id}-${shot.id}`} as="li" delay={(index % 3) * 0.06} className="works-gallery__item">
               <button type="button" style={{ '--project-color': item.accent }} onClick={() => { choose(PROJECTS.indexOf(item), item.screens.indexOf(shot)); setView('screen'); document.getElementById('trabajo')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); }} aria-label={t(`Ver ${item.name}: ${shot.caption}`, `View ${item.name}: ${shot.caption}`)}>
                 <img src={screenImage(item, shot.id, 'desktop')} width={1600} height={1000} loading="lazy" decoding="async" alt={t(`Pantalla real de ${item.name}: ${shot.caption}`, `Real screen of ${item.name}: ${shot.caption}`)} />
@@ -198,9 +210,23 @@ const Work = () => {
           ))}
         </ul>
 
-        <Reveal className="case-demos works-method">
-          <div><Label>{t('Cómo se tomaron estas evidencias.', 'How this evidence was gathered.')}</Label><p>{t('Cada aplicación se levantó desde su repositorio con datos de demostración y se capturó en escritorio y móvil. Las cifras las calcula un script sobre el código.', 'Each application was run from its repository with demo data and captured on desktop and mobile. A script computes the figures from the code.')}</p></div>
-          <div><ContactCTA need="Sistema / backend" source={t('Proyectos reales', 'Real projects')} variant="aqua">{t('Conversemos sobre tu sistema', 'Let’s talk about your system')}</ContactCTA></div>
+        <Reveal className="works-gallery-head works-marketing-head">
+          <div><Label>{t('También el contenido', 'The content, too')}</Label><p>{t('Fotos de producto y redes sociales de los mismos proyectos.', 'Product photos and social media for the same projects.')}</p></div>
+          <span>{t('FOTOGRAFÍA · INSTAGRAM · CAMPAÑAS', 'PHOTOGRAPHY · INSTAGRAM · CAMPAIGNS')}</span>
+        </Reveal>
+        <ul className="works-marketing" aria-label={t('Fotografía y redes sociales reales', 'Real photography and social media')}>
+          {MARKETING.map((item, index) => (
+            <Reveal key={item.src} as="li" delay={(index % 3) * 0.06} className={item.tall ? 'works-marketing__item works-marketing__item--tall' : 'works-marketing__item'}>
+              <img src={`${import.meta.env.BASE_URL}projects/${item.src}.webp`} width={item.tall ? 900 : 1000} height={item.tall ? 1125 : 760} loading="lazy" decoding="async" alt={item.alt} />
+              <span>{item.caption}</span>
+            </Reveal>
+          ))}
+        </ul>
+
+        <Reveal className="works-close">
+          <p>{t('Contanos qué necesitás. Un mensaje y seguimos por WhatsApp.', 'Tell us what you need. One message and we continue on WhatsApp.')}</p>
+          <WhatsApp href={wa(t('Hola JC Analytics, vi sus proyectos y quiero conversar sobre uno para mi negocio.', 'Hi JC Analytics, I saw your projects and want to talk about one for my business.'))} className="works-wa--lg">{t('Escribinos por WhatsApp', 'Message us on WhatsApp')}</WhatsApp>
+          <small>{t(`Cifras calculadas desde los repositorios el ${EVIDENCE_DATE}. Capturas con datos de demostración.`, `Figures computed from the repositories on ${EVIDENCE_DATE}. Screenshots use demo data.`)}</small>
         </Reveal>
       </div>
     </section>
