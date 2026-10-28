@@ -63,6 +63,8 @@ Los movimientos en dólares **guardan su tipo de cambio**, así el consolidado e
 
 **Buzón (`/buzon`).** Al admin le reúne los movimientos por aprobar, con "Aprobar" y "Rechazar" en cada uno; a los socios, lo que registraron y sigue esperando. También trae los avisos (tareas asignadas, citas, comentarios, aprobaciones).
 
+**Libro amarillo (`/libro-amarillo`).** Directorio de prospección por teléfono para todo el equipo: búsqueda, filtros por estado, provincia y cantón, índice A–Z, "Hoy toca llamar", llamada con un toque, registro de cada llamada con resultado y próxima fecha, observaciones y responsable. Se alimenta a mano o **importando Excel/CSV**: la lista crece sola sin duplicar teléfonos y cada importación se puede deshacer. Ver [docs/libro-amarillo.md](docs/libro-amarillo.md).
+
 **Briefs (`/briefs`).** Bandeja de los briefs creativos de todos los clientes, ordenada por lo que requiere acción: primero los enviados por revisar, después los que tienen ajustes y los que están en producción.
 - El formulario sigue el formato CREATIVIDAD: material requerido, objetivo, marca, oferta, mensaje clave, URLs de redireccionamiento, RRSS, base de datos, editable, creatividad, configuración de envío, correo de testeo, fecha de envío, disclaimer, línea gráfica y nota.
 - Valida lo que hace falta para enviar:

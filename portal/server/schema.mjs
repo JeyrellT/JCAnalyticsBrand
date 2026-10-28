@@ -670,6 +670,64 @@ export const MIGRATIONS = [
   );
   CREATE INDEX project_charges_project ON project_charges(project_id);
   `,
+  // 12 · Libro amarillo: directorio de prospección por teléfono (docs/libro-amarillo.md).
+  //      Cada llamada queda en directory_calls; cada archivo importado, en directory_imports
+  //      (para poder deshacerlo). phone_key = 8 dígitos del teléfono principal, para no duplicar.
+  `
+  CREATE TABLE directory_imports (
+    id INTEGER PRIMARY KEY,
+    file_name TEXT NOT NULL,
+    rows_total INTEGER NOT NULL DEFAULT 0,
+    inserted INTEGER NOT NULL DEFAULT 0,
+    merged INTEGER NOT NULL DEFAULT 0,
+    skipped INTEGER NOT NULL DEFAULT 0,
+    user_id INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    undone_at TEXT
+  );
+  CREATE TABLE directory_entries (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    category TEXT,
+    province TEXT,
+    canton TEXT,
+    district TEXT,
+    address TEXT,
+    phone TEXT,
+    phone_alt TEXT,
+    whatsapp TEXT,
+    phone_key TEXT,
+    social TEXT,
+    website TEXT,
+    source TEXT,
+    opportunity TEXT,
+    status TEXT NOT NULL DEFAULT 'pendiente'
+      CHECK (status IN ('pendiente','no_contesta','volver_a_llamar','interesado','cliente','no_interesado','numero_malo')),
+    observations TEXT,
+    last_note TEXT,
+    assigned_to INTEGER REFERENCES users(id),
+    next_call_at TEXT,
+    last_call_at TEXT,
+    call_count INTEGER NOT NULL DEFAULT 0,
+    revision INTEGER NOT NULL DEFAULT 0,
+    import_id INTEGER REFERENCES directory_imports(id) ON DELETE SET NULL,
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  CREATE INDEX directory_entries_phone ON directory_entries(phone_key);
+  CREATE INDEX directory_entries_status ON directory_entries(status, next_call_at);
+  CREATE INDEX directory_entries_import ON directory_entries(import_id);
+  CREATE TABLE directory_calls (
+    id INTEGER PRIMARY KEY,
+    entry_id INTEGER NOT NULL REFERENCES directory_entries(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id),
+    outcome TEXT NOT NULL,
+    note TEXT,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX directory_calls_entry ON directory_calls(entry_id, created_at);
+  `,
 ];
 
 export const DEFAULT_SETTINGS = {

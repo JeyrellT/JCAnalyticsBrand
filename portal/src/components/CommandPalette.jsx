@@ -4,7 +4,7 @@ import {
   ArrowDown, ArrowUp, ArrowUpRight, BellRing, Bot, Building2, CalendarDays, CalendarPlus,
   CheckCheck, ChevronRight, ClipboardList, Command, CornerDownLeft, FolderKanban,
   History, Inbox, KanbanSquare, LayoutDashboard, Layers, Link2, ListPlus, LoaderCircle,
-  Plus, Receipt, Search, Settings2, Sparkles, TrendingUp, Users, X, WalletCards,
+  Plus, Receipt, Search, Settings2, Sparkles, TrendingUp, Users, X, WalletCards, BookOpen, FileSpreadsheet,
 } from 'lucide-react';
 import { navigate, useLocation } from '../lib/router.jsx';
 import { useResource, useSession } from '../lib/session.jsx';
@@ -18,11 +18,13 @@ const COMMANDS = [
   { key: 'new-meeting', title: 'Agendar una cita', detail: 'Conectá al equipo alrededor de una fecha.', to: '/agenda?nueva=1', icon: CalendarPlus, type: 'action', words: 'nueva reunion evento calendario' },
   { key: 'new-project', title: 'Crear un proyecto', detail: 'El próximo gran avance empieza acá.', to: '/proyectos?nuevo=1', icon: Plus, type: 'action', words: 'nuevo iniciar' },
   { key: 'new-client', title: 'Agregar un cliente', detail: 'Una nueva relación para el equipo.', to: '/clientes?nuevo=1', icon: Building2, type: 'action', words: 'nuevo contacto prospecto' },
+  { key: 'import-directory', title: 'Importar contactos al libro amarillo', detail: 'Subí un Excel y la lista crece sola.', to: '/libro-amarillo?importar=1', icon: FileSpreadsheet, type: 'action', words: 'excel csv subir prospectos telefonos' },
   { key: 'home', title: 'Centro de operaciones', detail: 'Tu panorama de hoy.', to: '/', icon: LayoutDashboard, type: 'section', words: 'inicio dashboard resumen' },
   { key: 'inbox', title: 'Buzón', detail: 'Lo que necesita tu atención.', to: '/buzon', icon: Inbox, type: 'section', words: 'pendientes avisos confirmar notificaciones' },
   { key: 'board', title: 'Tablero', detail: 'Ideas, tareas y entregas en movimiento.', to: '/tablero', icon: KanbanSquare, type: 'section', words: 'kanban tareas trabajo' },
   { key: 'calendar', title: 'Agenda', detail: 'El calendario compartido.', to: '/agenda', icon: CalendarDays, type: 'section', words: 'citas reuniones calendario' },
   { key: 'projects', title: 'Proyectos', detail: 'Todo lo que estamos construyendo.', to: '/proyectos', icon: FolderKanban, type: 'section' },
+  { key: 'directory', title: 'Libro amarillo', detail: 'Negocios para llamar y ofrecer servicios.', to: '/libro-amarillo', icon: BookOpen, type: 'section', words: 'prospectos llamadas telefonos directorio guia contactos restaurantes' },
   { key: 'clients', title: 'Clientes', detail: 'Relaciones, contactos y oportunidades.', to: '/clientes', icon: Building2, type: 'section' },
   { key: 'briefs', title: 'Briefs', detail: 'Del pedido a un plan compartido.', to: '/briefs', icon: ClipboardList, type: 'section', words: 'solicitudes requerimientos' },
   { key: 'services', title: 'Servicios', detail: 'Lo que hacemos y quién lo lidera.', to: '/servicios', icon: Layers, type: 'section' },

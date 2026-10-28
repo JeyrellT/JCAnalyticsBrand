@@ -227,6 +227,24 @@ export async function seedDemoData({ db, passwordHash, login, loginClient = null
   }
   db.prepare('UPDATE invites SET uses = 2 WHERE id = ?').run(openInvite.id);
 
+  // Libro amarillo: un archivo importado por Hillary (datos ficticios) con algunas llamadas ya hechas.
+  await hil('POST', '/api/directory/import', {
+    file_name: 'prospectos-demo.xlsx',
+    rows: [
+      { name: 'Soda La Esquina (demo)', category: 'Soda', province: 'Heredia', canton: 'Barva', phone: '2260-0101', opportunity: 'Sin web; pedidos solo por WhatsApp.' },
+      { name: 'Hamburguesas El Volcán (demo)', category: 'Hamburguesas', province: 'Alajuela', canton: 'Alajuela', phone: '2440-0202', social: 'facebook.com/ejemplo', opportunity: 'Vende por Uber Eats con comisión: ofrecer pedidos directos.' },
+      { name: 'Pizzería Don Leño (demo)', category: 'Pizzería', province: 'Heredia', canton: 'San Pablo', phone: '2260-0303', whatsapp: '8800-0303' },
+      { name: 'Taquería Norte (demo)', category: 'Taquería', province: 'Heredia', canton: 'Santo Domingo', phone: '2244-0404' },
+      { name: 'Pollo Dorado (demo)', category: 'Pollo frito', province: 'Alajuela', canton: 'Grecia', phone: '2494-0505' },
+      { name: 'Café del Parque (demo)', category: 'Cafetería', province: 'Alajuela', canton: 'Atenas', phone: '2446-0606' },
+    ],
+  });
+  const ybList = (await hil('GET', '/api/directory')).entries;
+  const ybId = (name) => ybList.find((e) => e.name.startsWith(name)).id;
+  await hil('POST', `/api/directory/${ybId('Hamburguesas El Volcán')}/calls`, { outcome: 'interesado', note: 'Habló el dueño: quiere ver precios de la web con pedidos.', next_call_at: day(0) });
+  await hil('POST', `/api/directory/${ybId('Pizzería Don Leño')}/calls`, { outcome: 'no_contesta', next_call_at: day(1) });
+  await hil('POST', `/api/directory/${ybId('Pollo Dorado')}/calls`, { outcome: 'no_interesado', note: 'Ya tienen proveedor.' });
+
   const clients = loginClient ? await seedClientPortal({ db, hash, iso, day, U, C, P, cata, alex, loginClient }) : [];
   return { users: people.map(([email, name, role]) => ({ email, name, role })), clients };
 }

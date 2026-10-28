@@ -23,6 +23,7 @@ const Activity = lazy(() => import('./pages/Activity.jsx'));
 const Services = lazy(() => import('./pages/Services.jsx'));
 const ServiceDetail = lazy(() => import('./pages/ServiceDetail.jsx'));
 const Clients = lazy(() => import('./pages/Clients.jsx'));
+const Directory = lazy(() => import('./pages/Directory.jsx'));
 const ClientDetail = lazy(() => import('./pages/ClientDetail.jsx'));
 const Person = lazy(() => import('./pages/Person.jsx'));
 const Automations = lazy(() => import('./pages/Automations.jsx'));
@@ -58,6 +59,7 @@ const ROUTES = [
   ['/servicios/:key', ServiceDetail],
   ['/clientes', Clients],
   ['/clientes/:id', ClientDetail],
+  ['/libro-amarillo', Directory],
   // v5: '/briefs/nuevo' va antes que '/briefs/:id'.
   ['/briefs', Briefs],
   ['/briefs/nuevo', BriefDetail],
@@ -67,7 +69,7 @@ const ROUTES = [
   ['/bitacora', Activity],
 ];
 
-const TITLES = { '/': 'Centro de operaciones', '/proyectos': 'Proyectos', '/clientes': 'Clientes', '/servicios': 'Servicios', '/tablero': 'Tablero', '/agenda': 'Agenda', '/inversiones': 'Inversiones', '/finanzas': 'Finanzas y costos', '/cobros': 'Cobros', '/buzon': 'Buzón', '/equipo': 'Equipo', '/bitacora': 'Bitácora', '/automatizaciones': 'Automatizaciones', '/notificaciones': 'Avisos y app', '/briefs': 'Briefs' /* v5 */ };
+const TITLES = { '/': 'Centro de operaciones', '/proyectos': 'Proyectos', '/clientes': 'Clientes', '/libro-amarillo': 'Libro amarillo', '/servicios': 'Servicios', '/tablero': 'Tablero', '/agenda': 'Agenda', '/inversiones': 'Inversiones', '/finanzas': 'Finanzas y costos', '/cobros': 'Cobros', '/buzon': 'Buzón', '/equipo': 'Equipo', '/bitacora': 'Bitácora', '/automatizaciones': 'Automatizaciones', '/notificaciones': 'Avisos y app', '/briefs': 'Briefs' /* v5 */ };
 
 function Router() {
   const { path } = useLocation();

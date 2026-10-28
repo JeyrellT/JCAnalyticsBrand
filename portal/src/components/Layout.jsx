@@ -6,7 +6,7 @@ import { useState } from 'react';
 import {
   LayoutDashboard, FolderKanban, KanbanSquare, CalendarDays, TrendingUp, Inbox, Users, History, LogOut, Menu, X,
   Building2, Layers, Plus, LayoutGrid, Bot, BellRing, ChevronRight,
-  ClipboardList, ArrowUpRight, Sparkles, PanelLeftClose, PanelLeftOpen, WalletCards, Receipt,
+  ClipboardList, ArrowUpRight, Sparkles, PanelLeftClose, PanelLeftOpen, WalletCards, Receipt, BookOpen,
 } from 'lucide-react';
 import { Link, useLocation } from '../lib/router.jsx';
 import { useSession } from '../lib/session.jsx';
@@ -34,6 +34,7 @@ const GROUPS = [
     items: [
       { to: '/proyectos', label: 'Proyectos', short: 'Proyectos', icon: FolderKanban, tone: 'blue' },
       { to: '/clientes', label: 'Clientes', short: 'Clientes', icon: Building2, tone: 'amber' },
+      { to: '/libro-amarillo', label: 'Libro amarillo', short: 'Libro', icon: BookOpen, tone: 'amber' },
       { to: '/briefs', label: 'Briefs', short: 'Briefs', icon: ClipboardList, tone: 'violet' }, // v5
       { to: '/servicios', label: 'Servicios', short: 'Servicios', icon: Layers, tone: 'violet' },
       { to: '/equipo', label: 'Equipo y ajustes', short: 'Equipo', icon: Users, tone: 'teal' },
@@ -57,7 +58,7 @@ const byPath = Object.fromEntries(ALL.map((n) => [n.to, n]));
 const TABS = ['/', '/buzon'].map((to) => byPath[to]);
 const TABS_END = [byPath['/agenda']];
 // Mosaicos de "Más", en el orden en que se piensa la empresa.
-const MORE = ['/tablero', '/proyectos', '/clientes', '/briefs' /* v5 */, '/servicios', '/equipo', '/cobros', '/inversiones', '/finanzas', '/automatizaciones', '/notificaciones', '/bitacora'].map((to) => byPath[to]);
+const MORE = ['/tablero', '/proyectos', '/clientes', '/libro-amarillo', '/briefs' /* v5 */, '/servicios', '/equipo', '/cobros', '/inversiones', '/finanzas', '/automatizaciones', '/notificaciones', '/bitacora'].map((to) => byPath[to]);
 
 function useNav() {
   const { canInvest, unread, pending } = useSession();

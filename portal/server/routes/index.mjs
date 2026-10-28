@@ -16,6 +16,7 @@ import { investorRoutes } from './investor.mjs';
 import { inviteRoutes } from './invites.mjs';
 import { financeRoutes } from './finance.mjs';
 import { mcpTokenRoutes } from './mcp-tokens.mjs';
+import { directoryRoutes } from './directory.mjs';
 import { installPushDispatch } from '../notify-policy.mjs';
 import { createAutomationEngine } from '../automations.mjs';
 
@@ -46,4 +47,6 @@ export function registerRoutes(route, ctx, session) {
   inviteRoutes(route, ctx, session);
   // Conexión con Claude por MCP (docs/mcp-claude.md).
   mcpTokenRoutes(route, ctx);
+  // Libro amarillo: prospección por teléfono (docs/libro-amarillo.md).
+  directoryRoutes(route, ctx);
 }
