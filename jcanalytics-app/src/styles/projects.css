@@ -155,3 +155,5 @@
 @media (prefers-reduced-motion: reduce) {
   .works-list button, .works-stage__tabs button, .works-screen__strip button, .works-gallery__item img { transition: none; }
 }
+
+.works-marketing__item--square img { aspect-ratio: 1; object-fit: cover; }

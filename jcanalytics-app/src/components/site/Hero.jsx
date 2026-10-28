@@ -12,6 +12,40 @@ import { t, locale } from '../../i18n/locale';
 
 const _MOTION = motion;
 const Sculpture = lazy(() => import('./StudioSculpture'));
+
+// En celular no hay WebGL: el objeto 3D se cambia por pantallas reales de sistemas
+// que existen, rotando como historias. Todas son capturas a 390 px de proyectos del estudio.
+const SCREENS = [
+  { src: 'laburrada/home', name: 'La Burrada Street Food', caption: t('Menú y pedidos en línea', 'Online menu and orders') },
+  { src: 'transportesluna/admin', name: 'Transporte Luz de Luna', caption: t('Resumen del transportista: unidades y facturación', 'Carrier summary: units and billing') },
+  { src: 'barberxcr/reserva', name: 'BarberXCR', caption: t('Reservas con la marca de cada barbería', 'Bookings under each barbershop’s brand') },
+  { src: 'multiagencia/tienda', name: 'Multiagencia Gutiérrez', caption: t('Tienda en línea con precios en colones', 'Online store with prices in colones') },
+  { src: 'crimson/facturas', name: 'Crimson Consulting', caption: t('Factura electrónica v4.4 en tiempo real', 'Real-time e-invoicing v4.4') },
+];
+const SCREEN_MS = 2800;
+const HeroScreens = ({ reduce, paused }) => {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    if (reduce || paused) return undefined;
+    const id = window.setInterval(() => setIndex((value) => (value + 1) % SCREENS.length), SCREEN_MS);
+    return () => window.clearInterval(id);
+  }, [reduce, paused]);
+  const current = SCREENS[index];
+  return (
+    <div className="hero-screens" role="group" aria-label={t('Pantallas reales de proyectos', 'Real project screens')}>
+      <div className="hero-screens__phone" aria-hidden="true">
+        <div className="hero-screens__bars">{SCREENS.map((item, k) => <i key={item.src} className={k === index ? 'is-on' : k < index ? 'is-done' : ''} style={{ '--ms': `${SCREEN_MS}ms` }} />)}</div>
+        {SCREENS.map((item, k) => <img key={item.src} src={`/projects/${item.src}-mobile.webp`} width={640} height={1385} loading={k === 0 ? 'eager' : 'lazy'} decoding="async" alt="" className={k === index ? 'is-on' : ''} />)}
+      </div>
+      <div className="hero-screens__caption" aria-live="polite">
+        <small>{t('PANTALLA REAL', 'REAL SCREEN')} · {String(index + 1).padStart(2, '0')}/{String(SCREENS.length).padStart(2, '0')}</small>
+        <strong>{current.name}</strong>
+        <span>{current.caption}</span>
+        <button type="button" onClick={() => setIndex((value) => (value + 1) % SCREENS.length)} aria-label={t('Siguiente pantalla', 'Next screen')}>{t('Siguiente', 'Next')} <ArrowUpRight size={13} aria-hidden="true" /></button>
+      </div>
+    </div>
+  );
+};
 const EDITORIAL_ARTICLE = experienceArticles.find((article) => article.id === 'useful-websites');
 const MODES = [
   { label: t('Diseño', 'Design'), description: t('Experiencias que se sienten distintas desde el primer clic.', 'Experiences that feel different from the very first click.') },
@@ -62,6 +96,7 @@ const Hero = () => {
           <div className="studio-object__halo" aria-hidden="true" />
           <div className="studio-object__fallback" aria-hidden="true"><svg viewBox="0 0 600 600" fill="none"><defs><linearGradient id="object-fallback" x1="50" y1="90" x2="500" y2="510" gradientUnits="userSpaceOnUse"><stop stopColor="#d9ffe8" /><stop offset=".3" stopColor="#426fb0" /><stop offset=".5" stopColor="#d1f9ef" /><stop offset=".72" stopColor="#30526a" /><stop offset="1" stopColor="#8cdecf" /></linearGradient></defs><g stroke="url(#object-fallback)" strokeWidth="58"><ellipse cx="300" cy="300" rx="173" ry="91" transform="rotate(-50 300 300)" /><ellipse cx="300" cy="300" rx="173" ry="91" transform="rotate(50 300 300)" /><ellipse cx="300" cy="300" rx="173" ry="91" transform="rotate(90 300 300)" /></g></svg></div>
           {renderSculpture && <SculptureBoundary onFallback={onFallback}><Suspense fallback={null}><Sculpture mode={mode} paused={paused || Boolean(reduce)} onReady={onReady} onFallback={onFallback} /></Suspense></SculptureBoundary>}
+          <HeroScreens reduce={reduce} paused={paused} />
           <span className="studio-object__coordinate" aria-hidden="true">JC—001<br />{t('FORMA / FUNCIÓN', 'FORM / FUNCTION')}</span>
           <div className="studio-object__badge" aria-hidden="true"><span>{t('DISEÑO', 'DESIGN')}</span><svg viewBox="0 0 70 70" fill="none"><path d="M35 3V67M3 35H67M12 12L58 58M12 58L58 12" stroke="currentColor" strokeWidth="2" /></svg><span>{t('EN MOVIMIENTO', 'IN MOTION')}</span></div>
           {!reduce && ready && <button type="button" className="studio-motion-control" onClick={() => setPaused((value) => !value)} aria-pressed={paused} aria-label={paused ? t('Reanudar animación 3D', 'Resume 3D animation') : t('Pausar animación 3D', 'Pause 3D animation')}>{paused ? <Play size={13} aria-hidden="true" /> : <Pause size={13} aria-hidden="true" />}<span>{paused ? t('Reanudar', 'Resume') : t('Pausar', 'Pause')}</span></button>}

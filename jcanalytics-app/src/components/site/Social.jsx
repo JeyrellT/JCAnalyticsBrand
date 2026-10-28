@@ -2,11 +2,11 @@ import { t } from '../../i18n/locale';
 // ============================================================================
 //  src/components/site/Social.jsx
 //  Community manager y contenido, con piezas reales publicadas para clientes:
-//    · un teléfono que recorre posts reales (La Burrada, Maison Valcour)
-//      con la línea de tiempo del editor sincronizada;
+//    · un teléfono que recorre posts reales (La Burrada, Transporte Luz de Luna,
+//      Maison Valcour y un anuncio de JC Analytics) con la línea de tiempo sincronizada;
 //    · el calendario de una semana con las piezas de verdad;
 //    · las estadísticas reales de Instagram de La Burrada (30 días);
-//    · fotos de producción tomadas para la marca.
+//    · piezas de cuatro marcas: diseño, foto propia y anuncio.
 //  Las imágenes viven en public/marketing/. La cara del servicio es Hillary.
 // ============================================================================
 import { useEffect, useRef, useState } from 'react';
@@ -25,11 +25,13 @@ const asset = (file) => `${import.meta.env.BASE_URL}marketing/${file}.webp`;
 
 // Escenas del reel: piezas reales, publicadas en las cuentas de los clientes.
 const SCENES = [
-  { ms: 2200, file: 'lb-post-papas-frente', account: 'laburradacr', caption: t("Post de menú · papas cargadas", "Menu post · loaded fries") },
-  { ms: 2000, file: 'lb-foto-burritos', account: 'laburradacr', caption: t("Foto de producto tomada en el local", "Product photo shot on site") },
-  { ms: 2000, file: 'lb-post-chifrijo', account: 'laburradacr', caption: t("Post de menú · chifrijo", "Menu post · chifrijo") },
-  { ms: 2000, file: 'valcour-post', account: 'maisonvalcour', caption: t("Pieza para taller automotriz", "Post for an auto shop") },
-  { ms: 2200, file: 'lb-post-papas-arriba', account: 'laburradacr', caption: t("Post con llamado a pedir en línea", "Post that drives online orders") },
+  { ms: 2200, file: 'lb-post-papas-frente', brand: 'La Burrada', caption: t("Post de menú · papas cargadas", "Menu post · loaded fries") },
+  { ms: 2200, file: 'luna-post-029', brand: 'Luz de Luna', caption: t("Viajes especiales · buseta al atardecer", "Special trips · van at sunset") },
+  { ms: 2400, file: 'jc-anuncio-tfg-1', brand: 'JC Analytics', fit: 'contain', caption: t("Anuncio propio · análisis de datos para TFG", "Our own ad · data analysis for thesis projects") },
+  { ms: 2000, file: 'lb-foto-burritos', brand: 'La Burrada', caption: t("Foto de producto tomada en el local", "Product photo shot on site") },
+  { ms: 2200, file: 'luna-post-192', brand: 'Luz de Luna', caption: t("El equipo real, en el post", "The real team, in the post") },
+  { ms: 2000, file: 'valcour-post', brand: 'Maison Valcour', caption: t("Pieza para taller automotriz", "Post for an auto shop") },
+  { ms: 2000, file: 'lb-post-chifrijo', brand: 'La Burrada', caption: t("Post de menú · chifrijo", "Menu post · chifrijo") },
 ];
 const TOTAL_MS = SCENES.reduce((n, s) => n + s.ms, 0);
 
@@ -42,11 +44,11 @@ const TRACKS = [
 
 const WEEK = [
   { d: t('L', 'M'), file: 'lb-post-papas-frente', items: [{ t: 'Post', c: 'bg-lime text-ink' }] },
-  { d: t('M', 'T'), file: 'lb-foto-caja', items: [{ t: t("Historia", "Story"), c: 'bg-paper/15' }, { t: t("Anuncio", "Ad"), c: 'bg-orange-400 text-ink' }] },
+  { d: t('M', 'T'), file: 'luna-historia-038', items: [{ t: t("Historia", "Story"), c: 'bg-paper/15' }, { t: t("Anuncio", "Ad"), c: 'bg-orange-400 text-ink' }] },
   { d: t('M', 'W'), file: 'lb-post-chifrijo', items: [{ t: 'Post', c: 'bg-paper/15' }] },
   { d: t('J', 'T'), file: 'lb-foto-burritos', items: [{ t: 'Reel', c: 'bg-lime text-ink' }, { t: t("Historia", "Story"), c: 'bg-paper/15' }] },
-  { d: t('V', 'F'), file: 'lb-post-papas-diagonal', items: [{ t: 'Post', c: 'bg-paper/15' }] },
-  { d: 'S', file: 'lb-post-papas-arriba', items: [{ t: t("Historia", "Story"), c: 'bg-paper/15' }] },
+  { d: t('V', 'F'), file: 'luna-post-011', items: [{ t: 'Post', c: 'bg-paper/15' }] },
+  { d: 'S', file: 'jc-anuncio-tfg-2', items: [{ t: t("Anuncio", "Ad"), c: 'bg-orange-400 text-ink' }] },
   { d: t('D', 'S'), file: 'lb-metricas-visualizaciones', items: [{ t: t("Reporte", "Report"), c: 'bg-white text-ink' }] },
 ];
 
@@ -105,7 +107,7 @@ const Phone = ({ reduce, playing }) => {
               transition={{ duration: 0.25 }}
               className="social-reel__scene social-reel__scene--real absolute inset-0 bg-black"
             >
-              <img className="social-reel__photo" src={asset(scene.file)} alt={scene.caption} width={720} height={900} loading="lazy" decoding="async" />
+              <img className={`social-reel__photo ${scene.fit === 'contain' ? 'social-reel__photo--contain' : ''}`} src={asset(scene.file)} alt={scene.caption} width={720} height={900} loading="lazy" decoding="async" />
             </motion.div>
           </AnimatePresence>
 
@@ -126,8 +128,8 @@ const Phone = ({ reduce, playing }) => {
           {/* Overlay estilo reel: cuenta + acciones */}
           <div className="absolute left-4 bottom-4 right-14 text-white drop-shadow">
             <div className="flex items-center gap-2">
-              <span className="grid place-items-center w-5 h-5 rounded-full bg-white text-ink text-[9px] font-bold uppercase">{scene.account[0]}</span>
-              <span className="text-[12px] font-semibold">{scene.account}</span>
+              <span className="grid place-items-center w-5 h-5 rounded-full bg-white text-ink text-[9px] font-bold uppercase">{scene.brand[0]}</span>
+              <span className="text-[12px] font-semibold">{scene.brand}</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/50">{t("Seguir", "Follow")}</span>
             </div>
             <p className="mt-1.5 text-[11px] leading-snug opacity-90">{scene.caption}</p>
@@ -201,7 +203,7 @@ const Social = () => {
             <p className="text-paper/55 text-lg leading-snug">
              {t("Tu sistema ya tiene una base. Ahora, hagamos que más personas lo conozcan: contenido, community manager, diseño publicitario, video y Meta Ads.", "Your system has a foundation. Now let's help more people discover it: content, community management, ad design, video and Meta Ads.")}
             </p>
-            <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.18em] text-paper/35">{t("Trabajo real · La Burrada Street Food y Maison Valcour", "Real work · La Burrada Street Food and Maison Valcour")}</p>
+            <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.18em] text-paper/35">{t("Trabajo real · La Burrada, Luz de Luna, Maison Valcour y JC Analytics", "Real work · La Burrada, Luz de Luna, Maison Valcour and JC Analytics")}</p>
             {!reduce && <button type="button" onClick={() => setPaused((value) => !value)} aria-pressed={paused} className="demo-pause demo-pause--dark">{paused ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}{paused ? t("Reanudar", "Resume") : t("Pausar", "Pause")}</button>}
           </Reveal>
         </div>
@@ -218,7 +220,7 @@ const Social = () => {
             {/* Calendario */}
             <Reveal delay={0.05} className="social-calendar md:col-span-2 rounded-[1.5rem] bg-white/5 ring-1 ring-white/10 p-5 sm:p-6">
               <div className="flex items-center justify-between gap-3 mb-4">
-                <Label className="text-paper/50">{t("Calendario · una semana de La Burrada", "Calendar · one week at La Burrada")}</Label>
+                <Label className="text-paper/50">{t("Calendario · una semana con piezas reales", "Calendar · one week of real pieces")}</Label>
                 <span className="font-mono text-[11px] text-lime">{t("12 piezas / mes", "12 pieces / month")}</span>
               </div>
               <div className="social-calendar__week grid grid-cols-7 gap-1.5 sm:gap-2">
@@ -261,12 +263,14 @@ const Social = () => {
             {/* Producción de contenido */}
             <Reveal delay={0.15} className="social-community rounded-[1.5rem] bg-white/5 ring-1 ring-white/10 p-5 sm:p-6 flex flex-col">
               <div className="flex items-center justify-between gap-3 mb-4">
-                <Label className="text-paper/50">{t("Sesión de fotos en el local", "On-site photo session")}</Label>
-                <span className="font-mono text-[11px] text-lime">{t("sin banco de imágenes", "no stock photos")}</span>
+                <Label className="text-paper/50">{t("Piezas publicadas · 4 marcas", "Published pieces · 4 brands")}</Label>
+                <span className="font-mono text-[11px] text-lime">{t("foto propia, sin banco de imágenes", "our own photos, no stock")}</span>
               </div>
               <div className="social-shoot grid grid-cols-2 gap-2.5 flex-1">
+                <img src={asset('luna-post-153')} width={720} height={900} loading="lazy" decoding="async" alt={t("Post de Transporte Luz de Luna: “Primero, las ganas”, con una buseta al atardecer.", "Transporte Luz de Luna post: “First, the will”, with a van at sunset.")} />
+                <img src={asset('jc-anuncio-tfg-2')} width={720} height={720} loading="lazy" decoding="async" alt={t("Anuncio de JC Analytics: “¿Tus datos no te están diciendo nada?”, apoyo en análisis para TFG.", "JC Analytics ad: “Is your data telling you nothing?”, analysis support for thesis projects.")} />
                 <img src={asset('lb-foto-burritos')} width={640} height={1138} loading="lazy" decoding="async" alt={t("Burritos de La Burrada fotografiados en mano para redes.", "La Burrada burritos photographed in hand for social media.")} />
-                <img src={asset('lb-foto-caja')} width={640} height={1138} loading="lazy" decoding="async" alt={t("Caja de papas de La Burrada vista desde arriba.", "La Burrada fries box seen from above.")} />
+                <img src={asset('luna-historia-197')} width={640} height={1138} loading="lazy" decoding="async" alt={t("Historia de Transporte Luz de Luna: “Ya hay grupo. ¿Y el destino?”", "Transporte Luz de Luna story: “The group is ready. Where to?”")} />
               </div>
               <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-3">
                 <img src={hillary.avatar} alt={hillary.name} width={400} height={400} loading="lazy" decoding="async" className="w-10 h-10 rounded-full object-cover ring-2 ring-lime" />

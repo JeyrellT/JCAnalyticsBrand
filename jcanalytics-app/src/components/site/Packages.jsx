@@ -1,12 +1,13 @@
 // Paquetes y precios: elegí, escribí por WhatsApp y arrancamos. Pensado para la
 // visita que llega de un anuncio: precio a la vista y un solo botón por tarjeta.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowDown, ArrowUpRight, Check, Clock3, MessageCircle } from 'lucide-react';
 import { t } from '../../i18n/locale';
 import { FEATURED_COUNT, PACKAGES, adPackage } from '../../data/packages';
 import { PROJECTS } from '../../data/projects';
 import { Label, MaskLines, Reveal } from './primitives';
 import { wa } from './links';
+import MobileRail from './MobileRail';
 import '../../styles/packages.css';
 
 const ORDERED = adPackage ? [adPackage, ...PACKAGES.filter((item) => item !== adPackage)] : PACKAGES;
@@ -19,7 +20,16 @@ const showProject = (id) => window.dispatchEvent(new CustomEvent('jca:show-proje
 
 const Packages = () => {
   const [all, setAll] = useState(false);
-  const visible = all ? ORDERED : ORDERED.slice(0, FEATURED_COUNT);
+  // En celular el listado es un carrusel: se muestran todos y se deslizan, sin botón de "ver más".
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 767px)');
+    const sync = () => setMobile(query.matches);
+    sync();
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
+  }, []);
+  const visible = all || mobile ? ORDERED : ORDERED.slice(0, FEATURED_COUNT);
   return (
     <section id="paquetes" className="packages-section" aria-labelledby="packages-title">
       <div className="packages-container">
@@ -31,12 +41,12 @@ const Packages = () => {
           <ol className="packages-steps">{STEPS.map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}</ol>
         </div>
 
-        <ul className="packages-grid" aria-label={t('Paquetes con precio', 'Packages with pricing')}>
+        <MobileRail className="packages-grid" label={t('Paquetes con precio', 'Packages with pricing')}>
           {visible.map((item) => {
             const fromAd = item === adPackage;
             const example = item.example && PROJECTS.find((project) => project.id === item.example);
             return (
-              <Reveal as="li" key={item.key} className={`package-card ${fromAd ? 'package-card--ad' : ''}`}>
+              <Reveal key={item.key} className={`package-card ${fromAd ? 'package-card--ad' : ''}`}>
                 <div className="package-card__top">
                   <h3>{item.name}</h3>
                   {(fromAd || item.badge) && <span className="package-card__badge">{fromAd ? t('El que viste en el anuncio', 'The one from the ad') : item.badge}</span>}
@@ -53,10 +63,10 @@ const Packages = () => {
               </Reveal>
             );
           })}
-        </ul>
+        </MobileRail>
 
         <div className="packages-foot">
-          {!all && <button type="button" className="packages-more" onClick={() => setAll(true)}>{t(`Ver los ${PACKAGES.length} paquetes`, `See all ${PACKAGES.length} packages`)}<ArrowDown size={16} aria-hidden="true" /></button>}
+          {!all && !mobile && <button type="button" className="packages-more" onClick={() => setAll(true)}>{t(`Ver los ${PACKAGES.length} paquetes`, `See all ${PACKAGES.length} packages`)}<ArrowDown size={16} aria-hidden="true" /></button>}
           <p>{t('¿No ves tu caso?', 'Don’t see your case?')} <a href={wa(t('Hola JC Analytics, mi caso no está en los paquetes. Les cuento:', 'Hi JC Analytics, my case is not in the packages. Here it is:'))} target="_blank" rel="noreferrer">{t('Contanos por WhatsApp y te armamos uno', 'Tell us on WhatsApp and we’ll put one together')}</a>{t(' · Precios en USD, IVA aparte, colones de referencia.', ' · Prices in USD, tax excluded, colones for reference.')}</p>
         </div>
       </div>
