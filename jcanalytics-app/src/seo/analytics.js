@@ -9,6 +9,7 @@ const CONVERSION_DEDUPE_MS = 3000;
 // free text or WhatsApp message contents to the existing Google tag.
 export function trackContactClicks() {
   let lastConversion = 0;
+  let lastLead = 0; // OpenAI lead dedupe, same window as Google Ads
   const track = (event) => {
     const link = event.target.closest?.('a[href]');
     const isContactForm = event.type === 'submit' && event.target.closest?.('#contacto');
@@ -21,9 +22,10 @@ export function trackContactClicks() {
       window.fbq('track', isContactForm ? 'Lead' : 'Contact', { content_name: channel, content_category: locale });
     }
     // OpenAI pixel: every WhatsApp click (or contact form) is the lead goal for ChatGPT Ads.
-    if (channel === 'whatsapp' && typeof window.oaiq === 'function') {
-      const eventId = window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
-      window.oaiq('measure', 'lead_created', { customer_action: { channel } }, { event_id: eventId });
+    if (channel === 'whatsapp' && typeof window.oaiq === 'function' && Date.now() - lastLead >= CONVERSION_DEDUPE_MS) {
+      lastLead = Date.now();
+      const eventId = window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      window.oaiq('measure', 'lead_created', { type: 'customer_action' }, { event_id: `wa_${eventId}` });
     }
     if (typeof window.gtag !== 'function') return;
     window.gtag('event', 'contact_click', {

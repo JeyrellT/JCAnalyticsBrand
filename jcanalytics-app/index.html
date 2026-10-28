@@ -36,8 +36,8 @@
          debug:true is for setup verification; set it to false once events show up in Ads Manager. -->
     <script>!function(w,d,s,u){if(w.oaiq)return;var q=function(){q.q.push(arguments)};q.q=[];w.oaiq=q;var j=d.createElement(s);j.async=1;j.src=u;var f=d.getElementsByTagName(s)[0];f.parentNode.insertBefore(j,f)}(window,document,"script","https://bzrcdn.openai.com/sdk/oaiq.min.js");oaiq("init",{pixelId:"CbYXHw9JHB8KahpH3ayu1Z",debug:true});</script>
     <script>
-      oaiq('measure', 'page_viewed');
-      if (/\/(services|servicios)\//.test(location.pathname)) oaiq('measure', 'contents_viewed', { contents: [{ id: location.pathname, type: 'service' }] });
+      oaiq('measure', 'page_viewed', { type: 'contents', contents: [{ id: location.pathname, name: document.title || location.pathname, content_type: 'page' }] });
+      if (/\/(services|servicios)\//.test(location.pathname)) oaiq('measure', 'contents_viewed', { type: 'contents', contents: [{ id: location.pathname, name: document.title || location.pathname, content_type: 'service' }] });
     </script>
   </head>
   <body>
