@@ -45,7 +45,7 @@ try {
       } else if (request.url().startsWith(origin) || request.url().startsWith('data:')) request.continue();
       else request.abort();
     });
-    await page.goto(origin + (language === 'es' ? '/es/' : '/'), { waitUntil: 'networkidle0' });
+    await page.goto(origin + (language === 'es' ? '/' : '/en/'), { waitUntil: 'networkidle0' });
     await page.waitForSelector('.assistant-launcher');
     assert.equal(await page.$eval('.assistant-launcher', node => !node.inert && node.getBoundingClientRect().bottom <= innerHeight), true);
     if (width < 768) {
@@ -93,7 +93,7 @@ try {
     console.log(`[assistant-ui] PASS ${language} ${width}px: answers, unknown question, provider failure, WhatsApp context, focus and preserved chat`);
     await page.close();
   }
-  for (const path of ['/es/ideas/', '/services/ai-integration-costa-rica/']) {
+  for (const path of ['/ideas/', '/en/services/ai-integration-costa-rica/']) {
     const page = await browser.newPage();
     await page.goto(origin + path, { waitUntil: 'networkidle0' });
     await page.waitForSelector('.assistant-launcher');

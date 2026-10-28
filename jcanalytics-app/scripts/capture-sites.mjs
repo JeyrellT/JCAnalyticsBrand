@@ -21,7 +21,7 @@ try {
         await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
         await page.setRequestInterception(true);
         page.on('request', request => /google-analytics\.com|googletagmanager\.com/.test(request.url()) ? request.abort() : request.continue());
-        await page.goto(new URL(language === 'es' ? '/es/' : '/', origin).href, { waitUntil: 'networkidle2' });
+        await page.goto(new URL(language === 'es' ? '/' : '/en/', origin).href, { waitUntil: 'networkidle2' });
         await page.waitForSelector('#contacto');
         await page.screenshot({ path: join(output, `${language}-${device}.webp`), type: 'webp', quality: 80 });
         console.log(`Saved local ${language} ${device} preview.`);
