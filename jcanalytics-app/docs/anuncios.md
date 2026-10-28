@@ -35,7 +35,7 @@ Los precios salen de `portal/shared/service-pricing.js`; si cambian ahí, cambia
 utm_source=google&utm_medium=cpc&utm_campaign={_campaign}
 ```
 
-Con el seguimiento automático activo, Google agrega `gclid` solo; el sitio lo reconoce aunque falte `utm_source`. Definí el parámetro personalizado `{_campaign}` en cada campaña (por ejemplo `web-oct`), y en la URL final del anuncio poné `https://www.jcanalytic.com/es/?p=web`.
+Con el seguimiento automático activo, Google agrega `gclid` solo; el sitio lo reconoce aunque falte `utm_source`. Definí el parámetro personalizado `{_campaign}` en cada campaña (por ejemplo `web-oct`), y en la URL final del anuncio poné `https://www.jcanalytic.com/?p=web`.
 
 **Meta Ads** (parámetros de URL del anuncio):
 
@@ -43,7 +43,7 @@ Con el seguimiento automático activo, Google agrega `gclid` solo; el sitio lo r
 utm_source=meta&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}
 ```
 
-URL del sitio web: `https://www.jcanalytic.com/es/?p=web`. Meta agrega `fbclid` solo.
+URL del sitio web: `https://www.jcanalytic.com/?p=web` (español; el inglés está en `/en/?p=web`). Meta agrega `fbclid` solo.
 
 **ChatGPT Ads**: ChatGPT agrega `utm_source=chatgpt.com`. Usá la URL con `?p=` y, si la plataforma lo permite, `&utm_campaign=nombre`.
 

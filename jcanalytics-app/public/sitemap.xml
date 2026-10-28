@@ -1,243 +1,243 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
+    <loc>https://www.jcanalytic.com/en/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/en/insights/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/en/insights/compare-two-lists-without-false-matches/</loc>
+    <lastmod>2026-10-04</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/compare-two-lists-without-false-matches/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/comparar-dos-listas-sin-falsas-coincidencias/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/comparar-dos-listas-sin-falsas-coincidencias/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/en/insights/stop-duplicate-actions-on-retry/</loc>
+    <lastmod>2026-10-04</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/stop-duplicate-actions-on-retry/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/evitar-acciones-duplicadas-al-reintentar/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/evitar-acciones-duplicadas-al-reintentar/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/en/insights/data-quality-before-dashboards/</loc>
+    <lastmod>2026-10-04</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/data-quality-before-dashboards/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/calidad-de-datos-antes-del-dashboard/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/calidad-de-datos-antes-del-dashboard/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/en/insights/metrics-that-lead-to-decisions/</loc>
+    <lastmod>2026-10-04</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/metrics-that-lead-to-decisions/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/indicadores-para-decidir/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/indicadores-para-decidir/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/en/insights/websites-that-help-people-decide/</loc>
+    <lastmod>2026-10-04</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/websites-that-help-people-decide/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/webs-que-ayudan-a-decidir/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/webs-que-ayudan-a-decidir/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/en/insights/software-adoption-beyond-launch/</loc>
+    <lastmod>2026-10-04</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/software-adoption-beyond-launch/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/adoptar-software-despues-del-lanzamiento/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/adoptar-software-despues-del-lanzamiento/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/en/insights/human-review-in-ai/</loc>
+    <lastmod>2026-10-04</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/human-review-in-ai/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/revision-humana-en-ia/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/revision-humana-en-ia/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/en/insights/choosing-your-first-automation/</loc>
+    <lastmod>2026-10-04</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/choosing-your-first-automation/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/elegir-la-primera-automatizacion/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/elegir-la-primera-automatizacion/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/en/insights/continuous-improvement-costa-rica-2026/</loc>
+    <lastmod>2026-10-20</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/continuous-improvement-costa-rica-2026/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/mejora-continua-costa-rica-2026/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/mejora-continua-costa-rica-2026/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/en/insights/automate-without-technology/</loc>
+    <lastmod>2026-10-20</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/automate-without-technology/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/automatizar-sin-tecnologia/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/automatizar-sin-tecnologia/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/en/insights/cicr-excellence-congress-what-to-expect/</loc>
+    <lastmod>2026-10-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/cicr-excellence-congress-what-to-expect/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/congreso-excelencia-cicr-que-esperar/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/congreso-excelencia-cicr-que-esperar/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/en/insights/ai-agents-need-access-rules/</loc>
+    <lastmod>2026-10-22</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/ai-agents-need-access-rules/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/agentes-ia-necesitan-reglas-de-acceso/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/agentes-ia-necesitan-reglas-de-acceso/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/en/services/web-development-costa-rica/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/services/web-development-costa-rica/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/servicios/desarrollo-web-costa-rica/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/servicios/desarrollo-web-costa-rica/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/en/services/power-bi-dashboards-costa-rica/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/services/power-bi-dashboards-costa-rica/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/servicios/dashboards-power-bi-costa-rica/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/servicios/dashboards-power-bi-costa-rica/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/en/services/business-process-automation/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/services/business-process-automation/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/servicios/automatizacion-de-procesos/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/servicios/automatizacion-de-procesos/" />
+  </url>
+  <url>
+    <loc>https://www.jcanalytic.com/en/services/ai-integration-costa-rica/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/services/ai-integration-costa-rica/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/servicios/integracion-ia-costa-rica/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/servicios/integracion-ia-costa-rica/" />
+  </url>
+  <url>
     <loc>https://www.jcanalytic.com/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/" />
   </url>
   <url>
-    <loc>https://www.jcanalytic.com/insights/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/" />
+    <loc>https://www.jcanalytic.com/ideas/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/" />
   </url>
   <url>
-    <loc>https://www.jcanalytic.com/insights/compare-two-lists-without-false-matches/</loc>
+    <loc>https://www.jcanalytic.com/ideas/comparar-dos-listas-sin-falsas-coincidencias/</loc>
     <lastmod>2026-10-04</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/compare-two-lists-without-false-matches/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/comparar-dos-listas-sin-falsas-coincidencias/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/compare-two-lists-without-false-matches/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/compare-two-lists-without-false-matches/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/comparar-dos-listas-sin-falsas-coincidencias/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/comparar-dos-listas-sin-falsas-coincidencias/" />
   </url>
   <url>
-    <loc>https://www.jcanalytic.com/insights/stop-duplicate-actions-on-retry/</loc>
+    <loc>https://www.jcanalytic.com/ideas/evitar-acciones-duplicadas-al-reintentar/</loc>
     <lastmod>2026-10-04</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/stop-duplicate-actions-on-retry/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/evitar-acciones-duplicadas-al-reintentar/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/stop-duplicate-actions-on-retry/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/stop-duplicate-actions-on-retry/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/evitar-acciones-duplicadas-al-reintentar/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/evitar-acciones-duplicadas-al-reintentar/" />
   </url>
   <url>
-    <loc>https://www.jcanalytic.com/insights/data-quality-before-dashboards/</loc>
+    <loc>https://www.jcanalytic.com/ideas/calidad-de-datos-antes-del-dashboard/</loc>
     <lastmod>2026-10-04</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/data-quality-before-dashboards/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/calidad-de-datos-antes-del-dashboard/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/data-quality-before-dashboards/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/data-quality-before-dashboards/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/calidad-de-datos-antes-del-dashboard/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/calidad-de-datos-antes-del-dashboard/" />
   </url>
   <url>
-    <loc>https://www.jcanalytic.com/insights/metrics-that-lead-to-decisions/</loc>
+    <loc>https://www.jcanalytic.com/ideas/indicadores-para-decidir/</loc>
     <lastmod>2026-10-04</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/metrics-that-lead-to-decisions/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/indicadores-para-decidir/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/metrics-that-lead-to-decisions/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/metrics-that-lead-to-decisions/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/indicadores-para-decidir/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/indicadores-para-decidir/" />
   </url>
   <url>
-    <loc>https://www.jcanalytic.com/insights/websites-that-help-people-decide/</loc>
+    <loc>https://www.jcanalytic.com/ideas/webs-que-ayudan-a-decidir/</loc>
     <lastmod>2026-10-04</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/websites-that-help-people-decide/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/webs-que-ayudan-a-decidir/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/websites-that-help-people-decide/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/websites-that-help-people-decide/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/webs-que-ayudan-a-decidir/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/webs-que-ayudan-a-decidir/" />
   </url>
   <url>
-    <loc>https://www.jcanalytic.com/insights/software-adoption-beyond-launch/</loc>
+    <loc>https://www.jcanalytic.com/ideas/adoptar-software-despues-del-lanzamiento/</loc>
     <lastmod>2026-10-04</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/software-adoption-beyond-launch/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/adoptar-software-despues-del-lanzamiento/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/software-adoption-beyond-launch/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/software-adoption-beyond-launch/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/adoptar-software-despues-del-lanzamiento/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/adoptar-software-despues-del-lanzamiento/" />
   </url>
   <url>
-    <loc>https://www.jcanalytic.com/insights/human-review-in-ai/</loc>
+    <loc>https://www.jcanalytic.com/ideas/revision-humana-en-ia/</loc>
     <lastmod>2026-10-04</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/human-review-in-ai/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/revision-humana-en-ia/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/human-review-in-ai/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/human-review-in-ai/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/revision-humana-en-ia/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/revision-humana-en-ia/" />
   </url>
   <url>
-    <loc>https://www.jcanalytic.com/insights/choosing-your-first-automation/</loc>
+    <loc>https://www.jcanalytic.com/ideas/elegir-la-primera-automatizacion/</loc>
     <lastmod>2026-10-04</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/choosing-your-first-automation/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/elegir-la-primera-automatizacion/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/choosing-your-first-automation/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/choosing-your-first-automation/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/elegir-la-primera-automatizacion/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/elegir-la-primera-automatizacion/" />
   </url>
   <url>
-    <loc>https://www.jcanalytic.com/insights/continuous-improvement-costa-rica-2026/</loc>
+    <loc>https://www.jcanalytic.com/ideas/mejora-continua-costa-rica-2026/</loc>
     <lastmod>2026-10-20</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/continuous-improvement-costa-rica-2026/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/mejora-continua-costa-rica-2026/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/continuous-improvement-costa-rica-2026/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/continuous-improvement-costa-rica-2026/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/mejora-continua-costa-rica-2026/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/mejora-continua-costa-rica-2026/" />
   </url>
   <url>
-    <loc>https://www.jcanalytic.com/insights/automate-without-technology/</loc>
+    <loc>https://www.jcanalytic.com/ideas/automatizar-sin-tecnologia/</loc>
     <lastmod>2026-10-20</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/automate-without-technology/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/automatizar-sin-tecnologia/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/automate-without-technology/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/automate-without-technology/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/automatizar-sin-tecnologia/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/automatizar-sin-tecnologia/" />
   </url>
   <url>
-    <loc>https://www.jcanalytic.com/insights/cicr-excellence-congress-what-to-expect/</loc>
+    <loc>https://www.jcanalytic.com/ideas/congreso-excelencia-cicr-que-esperar/</loc>
     <lastmod>2026-10-21</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/cicr-excellence-congress-what-to-expect/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/congreso-excelencia-cicr-que-esperar/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/cicr-excellence-congress-what-to-expect/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/cicr-excellence-congress-what-to-expect/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/congreso-excelencia-cicr-que-esperar/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/congreso-excelencia-cicr-que-esperar/" />
   </url>
   <url>
-    <loc>https://www.jcanalytic.com/insights/ai-agents-need-access-rules/</loc>
+    <loc>https://www.jcanalytic.com/ideas/agentes-ia-necesitan-reglas-de-acceso/</loc>
     <lastmod>2026-10-22</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/ai-agents-need-access-rules/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/agentes-ia-necesitan-reglas-de-acceso/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/ai-agents-need-access-rules/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/insights/ai-agents-need-access-rules/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/ideas/agentes-ia-necesitan-reglas-de-acceso/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/ideas/agentes-ia-necesitan-reglas-de-acceso/" />
   </url>
   <url>
-    <loc>https://www.jcanalytic.com/services/web-development-costa-rica/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/services/web-development-costa-rica/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/servicios/desarrollo-web-costa-rica/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/services/web-development-costa-rica/" />
+    <loc>https://www.jcanalytic.com/servicios/desarrollo-web-costa-rica/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/services/web-development-costa-rica/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/servicios/desarrollo-web-costa-rica/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/servicios/desarrollo-web-costa-rica/" />
   </url>
   <url>
-    <loc>https://www.jcanalytic.com/services/power-bi-dashboards-costa-rica/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/services/power-bi-dashboards-costa-rica/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/servicios/dashboards-power-bi-costa-rica/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/services/power-bi-dashboards-costa-rica/" />
+    <loc>https://www.jcanalytic.com/servicios/dashboards-power-bi-costa-rica/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/services/power-bi-dashboards-costa-rica/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/servicios/dashboards-power-bi-costa-rica/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/servicios/dashboards-power-bi-costa-rica/" />
   </url>
   <url>
-    <loc>https://www.jcanalytic.com/services/business-process-automation/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/services/business-process-automation/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/servicios/automatizacion-de-procesos/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/services/business-process-automation/" />
+    <loc>https://www.jcanalytic.com/servicios/automatizacion-de-procesos/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/services/business-process-automation/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/servicios/automatizacion-de-procesos/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/servicios/automatizacion-de-procesos/" />
   </url>
   <url>
-    <loc>https://www.jcanalytic.com/services/ai-integration-costa-rica/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/services/ai-integration-costa-rica/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/servicios/integracion-ia-costa-rica/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/services/ai-integration-costa-rica/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/ideas/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/ideas/comparar-dos-listas-sin-falsas-coincidencias/</loc>
-    <lastmod>2026-10-04</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/compare-two-lists-without-false-matches/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/comparar-dos-listas-sin-falsas-coincidencias/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/compare-two-lists-without-false-matches/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/ideas/evitar-acciones-duplicadas-al-reintentar/</loc>
-    <lastmod>2026-10-04</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/stop-duplicate-actions-on-retry/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/evitar-acciones-duplicadas-al-reintentar/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/stop-duplicate-actions-on-retry/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/ideas/calidad-de-datos-antes-del-dashboard/</loc>
-    <lastmod>2026-10-04</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/data-quality-before-dashboards/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/calidad-de-datos-antes-del-dashboard/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/data-quality-before-dashboards/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/ideas/indicadores-para-decidir/</loc>
-    <lastmod>2026-10-04</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/metrics-that-lead-to-decisions/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/indicadores-para-decidir/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/metrics-that-lead-to-decisions/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/ideas/webs-que-ayudan-a-decidir/</loc>
-    <lastmod>2026-10-04</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/websites-that-help-people-decide/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/webs-que-ayudan-a-decidir/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/websites-that-help-people-decide/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/ideas/adoptar-software-despues-del-lanzamiento/</loc>
-    <lastmod>2026-10-04</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/software-adoption-beyond-launch/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/adoptar-software-despues-del-lanzamiento/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/software-adoption-beyond-launch/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/ideas/revision-humana-en-ia/</loc>
-    <lastmod>2026-10-04</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/human-review-in-ai/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/revision-humana-en-ia/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/human-review-in-ai/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/ideas/elegir-la-primera-automatizacion/</loc>
-    <lastmod>2026-10-04</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/choosing-your-first-automation/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/elegir-la-primera-automatizacion/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/choosing-your-first-automation/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/ideas/mejora-continua-costa-rica-2026/</loc>
-    <lastmod>2026-10-20</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/continuous-improvement-costa-rica-2026/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/mejora-continua-costa-rica-2026/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/continuous-improvement-costa-rica-2026/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/ideas/automatizar-sin-tecnologia/</loc>
-    <lastmod>2026-10-20</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/automate-without-technology/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/automatizar-sin-tecnologia/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/automate-without-technology/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/ideas/congreso-excelencia-cicr-que-esperar/</loc>
-    <lastmod>2026-10-21</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/cicr-excellence-congress-what-to-expect/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/congreso-excelencia-cicr-que-esperar/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/cicr-excellence-congress-what-to-expect/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/ideas/agentes-ia-necesitan-reglas-de-acceso/</loc>
-    <lastmod>2026-10-22</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/insights/ai-agents-need-access-rules/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/ideas/agentes-ia-necesitan-reglas-de-acceso/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/insights/ai-agents-need-access-rules/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/servicios/desarrollo-web-costa-rica/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/services/web-development-costa-rica/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/servicios/desarrollo-web-costa-rica/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/services/web-development-costa-rica/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/servicios/dashboards-power-bi-costa-rica/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/services/power-bi-dashboards-costa-rica/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/servicios/dashboards-power-bi-costa-rica/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/services/power-bi-dashboards-costa-rica/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/servicios/automatizacion-de-procesos/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/services/business-process-automation/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/servicios/automatizacion-de-procesos/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/services/business-process-automation/" />
-  </url>
-  <url>
-    <loc>https://www.jcanalytic.com/es/servicios/integracion-ia-costa-rica/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/services/ai-integration-costa-rica/" />
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/es/servicios/integracion-ia-costa-rica/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/services/ai-integration-costa-rica/" />
+    <loc>https://www.jcanalytic.com/servicios/integracion-ia-costa-rica/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jcanalytic.com/en/services/ai-integration-costa-rica/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jcanalytic.com/servicios/integracion-ia-costa-rica/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.jcanalytic.com/servicios/integracion-ia-costa-rica/" />
   </url>
 </urlset>

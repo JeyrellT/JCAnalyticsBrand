@@ -164,7 +164,7 @@ export function renderSeoHead(language, route) {
     '<title>' + escape(copy.title) + '</title>', meta('description', copy.description),
     '<link rel="canonical" href="' + copy.url + '" />',
     ...locales.map(lang => '<link rel="alternate" hreflang="' + lang + '" href="' + pageUrl(lang, page) + '" />'),
-    '<link rel="alternate" hreflang="x-default" href="' + pageUrl('en', page) + '" />',
+    '<link rel="alternate" hreflang="x-default" href="' + pageUrl('es', page) + '" />',
     meta('robots', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'),
     meta('og:type', copy.type, true), meta('og:site_name', 'JC Analytics', true),
     meta('og:title', copy.title, true), meta('og:description', copy.description, true), meta('og:url', copy.url, true),
@@ -184,7 +184,7 @@ export function renderSitemap() {
     '    <loc>' + escape(SITE_URL + route.path) + '</loc>',
     ...(route.type === 'article' ? ['    <lastmod>' + escape(route.data.modified ?? route.data.published) + '</lastmod>'] : []),
     ...locales.map(language => '    <xhtml:link rel="alternate" hreflang="' + language + '" href="' + escape(pageUrl(language, route)) + '" />'),
-    '    <xhtml:link rel="alternate" hreflang="x-default" href="' + escape(pageUrl('en', route)) + '" />',
+    '    <xhtml:link rel="alternate" hreflang="x-default" href="' + escape(pageUrl('es', route)) + '" />',
     '  </url>',
   ].join('\n'));
   return '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n' + rows.join('\n') + '\n</urlset>\n';

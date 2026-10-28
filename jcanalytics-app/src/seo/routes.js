@@ -1,9 +1,10 @@
 import { articles, servicePages } from '../content/catalog.js';
 
-export const homePath = (language) => language === 'es' ? '/es/' : '/';
-export const journalPath = (language) => language === 'es' ? '/es/ideas/' : '/insights/';
+// Spanish is the default language at the root; English lives under /en/.
+export const homePath = (language) => language === 'es' ? '/' : '/en/';
+export const journalPath = (language) => language === 'es' ? '/ideas/' : '/en/insights/';
 export const articlePath = (article, language) => `${journalPath(language)}${article[language].slug}/`;
-export const servicePath = (service, language) => `${language === 'es' ? '/es/servicios/' : '/services/'}${service[language].slug}/`;
+export const servicePath = (service, language) => `${language === 'es' ? '/servicios/' : '/en/services/'}${service[language].slug}/`;
 export const routes = ['en', 'es'].flatMap(language => [
   { type: 'home', language, path: homePath(language) },
   { type: 'journal', language, path: journalPath(language) },

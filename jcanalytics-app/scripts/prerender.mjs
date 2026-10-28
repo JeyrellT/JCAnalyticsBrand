@@ -100,6 +100,17 @@ try {
     }
   }
   await writeFile(join(dist, 'sitemap.xml'), renderSitemap(), 'utf8');
+  // Spanish moved from /es/ to the root and English to /en/: keep old shared links working.
+  // The old English home (/) is now the Spanish home, so it has no redirect.
+  const legacy = routes.map(route => [route.language === 'es' ? `/es${route.path}` : route.path.replace(/^\/en\//, '/'), route.path])
+    .filter(([from]) => from !== '/');
+  for (const [from, to] of legacy) {
+    const filename = documentPath({ path: from });
+    const url = `https://www.jcanalytic.com${to}`;
+    await mkdir(dirname(filename), { recursive: true });
+    await writeFile(filename, `<!doctype html><html><head><meta charset="utf-8"><meta name="robots" content="noindex"><link rel="canonical" href="${url}"><meta http-equiv="refresh" content="0;url=${to}"><script>location.replace(${JSON.stringify(to)}+location.search+location.hash)</script></head><body><a href="${to}">${url}</a></body></html>`, 'utf8');
+  }
+  console.log(`[prerender] ${legacy.length} legacy redirects generated.`);
   console.log(`[prerender] ${routes.length} pages and sitemap generated.`);
 } finally {
   await browser?.close();
