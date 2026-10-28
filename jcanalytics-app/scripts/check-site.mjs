@@ -16,7 +16,7 @@ const PRODUCTION = 'https://www.jcanalytic.com';
 const TIMEOUT = 20_000;
 const COPY = {
   en: {
-    path: '/', heading: 'Software with character.', system: 'System / backend', website: 'Website',
+    path: '/en/', heading: 'Software with character.', system: 'System / backend', website: 'Website',
     objective: 'What would you like to solve?', name: 'Your name', estimator: 'Your project, with clarity.',
     faqQuestion: 'What can JC Analytics build for my business?', faqAnswer: 'We design websites and custom software',
     emailPrefix: 'Inquiry:', messagePrefix: 'Hello', estimateLabel: 'Estimated investment',
@@ -26,7 +26,7 @@ const COPY = {
     journalDescription: 'Practical guides to clearer business decisions, useful websites, reliable data and responsible AI.',
   },
   es: {
-    path: '/es/', heading: 'Sistemas con carácter.', system: 'Sistema / backend', website: 'Página web',
+    path: '/', heading: 'Sistemas con carácter.', system: 'Sistema / backend', website: 'Página web',
     objective: '¿Qué querés resolver?', name: 'Tu nombre', estimator: 'Tu proyecto, con claridad.',
     faqQuestion: '¿Qué puede desarrollar JC Analytics para mi negocio?', faqAnswer: 'Diseñamos páginas web y software a medida',
     emailPrefix: 'Consulta:', messagePrefix: 'Hola', estimateLabel: 'Inversión estimada',
@@ -148,7 +148,7 @@ async function checkMetadata(page, language, route = homeRoute(language)) {
   assert.deepEqual(metadata.alternates.sort(), [
     ['en', `${PRODUCTION}${alternatePath(route, 'en')}`],
     ['es', `${PRODUCTION}${alternatePath(route, 'es')}`],
-    ['x-default', `${PRODUCTION}${alternatePath(route, 'en')}`],
+    ['x-default', `${PRODUCTION}${alternatePath(route, 'es')}`],
   ].sort(), 'Reciprocal, absolute language alternates');
   assert.equal(metadata.headings.length, 1, 'One primary heading');
   const copy = route.data?.[language];
@@ -562,7 +562,7 @@ async function checkSitemap(browser, origin) {
       assert.deepEqual(entry.alternates.sort(), [
         ['en', `${PRODUCTION}${alternatePath(route, 'en')}`],
         ['es', `${PRODUCTION}${alternatePath(route, 'es')}`],
-        ['x-default', `${PRODUCTION}${alternatePath(route, 'en')}`],
+        ['x-default', `${PRODUCTION}${alternatePath(route, 'es')}`],
       ].sort(), `Sitemap alternates for ${route.path}`);
     }
   } finally {
