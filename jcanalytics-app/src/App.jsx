@@ -7,6 +7,7 @@ import gsap from 'gsap';
 import Nav from './components/site/Nav';
 import Hero from './components/site/Hero';
 import Work from './components/site/Work';
+import Packages from './components/site/Packages';
 import ProjectStart from './components/site/ProjectStart';
 import Systems from './components/site/Systems';
 import Finance from './components/site/Finance';
@@ -31,12 +32,13 @@ import { t } from './i18n/locale';
 import { trackContactClicks } from './seo/analytics';
 import { useInitialFragment } from './components/useInitialFragment';
 import { articles } from './content/catalog';
+import { EVIDENCE_TOTALS } from './data/projects';
 
 const TICKER = t(['Desarrollo de sistemas', 'Diseño de interfaces', 'Backend a medida', 'Finanzas', 'Dashboards', 'Machine learning', 'Integración de IA'], ['Software development', 'Interface design', 'Custom backend', 'Finance', 'Dashboards', 'Machine learning', 'AI integration']);
 
 const STATS = [
   { value: String(articles.length), label: t('guías para tomar mejores decisiones', 'guides for better decisions') },
-  { value: '4', label: t('especialidades conectadas a tu negocio', 'specialties connected to your business') },
+  { value: String(EVIDENCE_TOTALS.projects), label: t('proyectos reales con código abierto al visitante', 'real projects with code open to visitors') },
   { value: 'EN / ES', label: t('conversemos en tu idioma', 'let’s speak your language') },
   { value: '4', label: t('personas reales, sin intermediarios', 'real people, no middlemen') },
 ];
@@ -89,6 +91,8 @@ const App = () => {
           </Marquee>
         </div>
 
+        <Packages />
+        <Work />
         <Systems />
         <Finance />
         <Intelligence />
@@ -110,7 +114,6 @@ const App = () => {
           </div>
         </section>
 
-        <Work />
         <ProjectStart />
         <Services />
         <Automation />

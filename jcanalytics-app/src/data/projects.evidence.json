@@ -1,0 +1,330 @@
+{
+  "generatedAt": "2026-10-28",
+  "projects": {
+    "laburrada": {
+      "repo": "Laburrada",
+      "commits": 87,
+      "firstCommit": "2026-08-16",
+      "lastCommit": "2026-10-05",
+      "codeFiles": 393,
+      "lines": 98519,
+      "languages": [
+        {
+          "name": "TypeScript",
+          "share": 93
+        },
+        {
+          "name": "SQL",
+          "share": 2
+        },
+        {
+          "name": "Prisma",
+          "share": 2
+        },
+        {
+          "name": "CSS",
+          "share": 2
+        }
+      ],
+      "facts": {
+        "pages": 44,
+        "endpoints": 200,
+        "models": 56,
+        "migrations": 33,
+        "tests": 272
+      }
+    },
+    "transportesluna": {
+      "repo": "TransportesLuna",
+      "commits": 103,
+      "firstCommit": "2026-09-22",
+      "lastCommit": "2026-10-18",
+      "codeFiles": 595,
+      "lines": 76536,
+      "languages": [
+        {
+          "name": "TypeScript",
+          "share": 87
+        },
+        {
+          "name": "Python",
+          "share": 4
+        },
+        {
+          "name": "CSS",
+          "share": 4
+        },
+        {
+          "name": "JavaScript",
+          "share": 2
+        }
+      ],
+      "facts": {
+        "pages": 58,
+        "serverActions": 31,
+        "models": 46,
+        "migrations": 42,
+        "tests": 46
+      }
+    },
+    "barberxcr": {
+      "repo": "BarberCR",
+      "commits": 101,
+      "firstCommit": "2026-07-15",
+      "lastCommit": "2026-10-04",
+      "codeFiles": 303,
+      "lines": 110405,
+      "languages": [
+        {
+          "name": "Python",
+          "share": 61
+        },
+        {
+          "name": "JavaScript",
+          "share": 37
+        },
+        {
+          "name": "HTML",
+          "share": 1
+        },
+        {
+          "name": "CSS",
+          "share": 1
+        }
+      ],
+      "facts": {
+        "routes": 16,
+        "endpoints": 208,
+        "tables": 45,
+        "tests": 786,
+        "leads": 610
+      }
+    },
+    "caviq": {
+      "repo": "Caviq",
+      "commits": 24,
+      "firstCommit": "2026-09-15",
+      "lastCommit": "2026-10-27",
+      "codeFiles": 89,
+      "lines": 10963,
+      "languages": [
+        {
+          "name": "JavaScript",
+          "share": 41
+        },
+        {
+          "name": "TypeScript",
+          "share": 28
+        },
+        {
+          "name": "Python",
+          "share": 18
+        },
+        {
+          "name": "CSS",
+          "share": 13
+        }
+      ],
+      "facts": {
+        "routes": 9,
+        "endpoints": 76,
+        "tables": 19,
+        "tests": 106
+      }
+    },
+    "multiagencia": {
+      "repo": "MultiagenciaGutierres",
+      "commits": 8,
+      "firstCommit": "2026-09-24",
+      "lastCommit": "2026-10-06",
+      "codeFiles": 281,
+      "lines": 26493,
+      "languages": [
+        {
+          "name": "TypeScript",
+          "share": 75
+        },
+        {
+          "name": "CSS",
+          "share": 20
+        },
+        {
+          "name": "SQL",
+          "share": 2
+        },
+        {
+          "name": "JavaScript",
+          "share": 1
+        }
+      ],
+      "facts": {
+        "pages": 34,
+        "endpoints": 51,
+        "models": 14,
+        "schemas": 39,
+        "tests": 92,
+        "productPhotos": 1210
+      }
+    },
+    "crimson": {
+      "repo": "crimson-web",
+      "commits": 53,
+      "firstCommit": "2026-10-22",
+      "lastCommit": "2026-10-26",
+      "codeFiles": 842,
+      "lines": 192798,
+      "languages": [
+        {
+          "name": "Python",
+          "share": 66
+        },
+        {
+          "name": "TypeScript",
+          "share": 25
+        },
+        {
+          "name": "CSS",
+          "share": 4
+        },
+        {
+          "name": "JavaScript",
+          "share": 3
+        }
+      ],
+      "facts": {
+        "endpoints": 669,
+        "tables": 111,
+        "migrations": 57,
+        "tests": 1333,
+        "jobs": 33,
+        "portalModules": 26
+      }
+    },
+    "placeres": {
+      "repo": "placeres-culposos-web",
+      "commits": 30,
+      "firstCommit": "2026-09-24",
+      "lastCommit": "2026-09-29",
+      "codeFiles": 14,
+      "lines": 5402,
+      "languages": [
+        {
+          "name": "CSS",
+          "share": 47
+        },
+        {
+          "name": "Python",
+          "share": 24
+        },
+        {
+          "name": "JavaScript",
+          "share": 20
+        },
+        {
+          "name": "HTML",
+          "share": 9
+        }
+      ],
+      "facts": {
+        "frames": 162,
+        "menuItems": 26,
+        "sections": 7,
+        "blenderLines": 1085
+      }
+    },
+    "silglobal": {
+      "repo": "sil-global-web",
+      "commits": 50,
+      "firstCommit": "2026-09-17",
+      "lastCommit": "2026-09-24",
+      "codeFiles": 6,
+      "lines": 1685,
+      "languages": [
+        {
+          "name": "CSS",
+          "share": 52
+        },
+        {
+          "name": "JavaScript",
+          "share": 28
+        },
+        {
+          "name": "HTML",
+          "share": 21
+        }
+      ],
+      "facts": {
+        "products": 39,
+        "photos": 45,
+        "icons": 21,
+        "sections": 6
+      }
+    },
+    "soporte20": {
+      "repo": "Soluciones20",
+      "commits": 18,
+      "firstCommit": "2026-09-15",
+      "lastCommit": "2026-10-03",
+      "codeFiles": 124,
+      "lines": 44993,
+      "languages": [
+        {
+          "name": "TypeScript",
+          "share": 41
+        },
+        {
+          "name": "CSS",
+          "share": 40
+        },
+        {
+          "name": "JavaScript",
+          "share": 19
+        },
+        {
+          "name": "Python",
+          "share": 0
+        }
+      ],
+      "facts": {
+        "modules": 9,
+        "endpoints": 34,
+        "tests": 112,
+        "cinemaFrames": 389
+      }
+    },
+    "maison": {
+      "repo": "TallerMaison",
+      "commits": 92,
+      "firstCommit": "2026-08-05",
+      "lastCommit": "2026-10-22",
+      "codeFiles": 485,
+      "lines": 129548,
+      "languages": [
+        {
+          "name": "TypeScript",
+          "share": 70
+        },
+        {
+          "name": "JavaScript",
+          "share": 14
+        },
+        {
+          "name": "CSS",
+          "share": 12
+        },
+        {
+          "name": "Python",
+          "share": 2
+        }
+      ],
+      "facts": {
+        "pages": 8,
+        "spaces": 20,
+        "endpoints": 169,
+        "models": 45,
+        "migrations": 19,
+        "tests": 233
+      }
+    }
+  }
+}

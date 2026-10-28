@@ -1,6 +1,6 @@
 # Recursos visuales de JC Analytics
 
-La web utiliza ilustraciones conceptuales originales. Las imágenes editoriales y los ejemplos de interfaz son ilustrativos: no representan clientes, instalaciones ni resultados de proyectos.
+La portada muestra proyectos reales con capturas de pantalla de cada sistema (`public/projects/`, ver [proyectos-reales.md](proyectos-reales.md)). Las ilustraciones conceptuales se reservan a los artículos y a las páginas de servicio.
 
 ## Recursos públicos
 
@@ -9,14 +9,15 @@ La web utiliza ilustraciones conceptuales originales. Las imágenes editoriales 
 - `public/images/journal/intelligence.webp`: ilustración editorial para inteligencia artificial.
 - `public/artwork/`: ilustraciones abstractas y recursos SVG de apoyo.
 - `public/team/`: retratos del equipo propio de JC Analytics.
+- `public/projects/<id>/`: capturas reales de los diez proyectos (escritorio 1600 px y móvil 640 px, WebP), tomadas con datos de demostración.
 
 Los textos alternativos explican las ilustraciones informativas. Las imágenes decorativas no repiten el contenido del texto cercano. El movimiento respeta la preferencia de movimiento reducido.
 
 ## Publicación y privacidad
 
-Los ejemplos conceptuales enlazan a servicios y contenido editorial de JC Analytics. No se publican nombres, dominios, capturas ni datos de clientes, ni se presentan ilustraciones como evidencia de resultados.
+Las capturas de proyectos se toman de cada aplicación corriendo con datos de demostración o de semilla: nunca muestran clientes finales, pedidos, montos ni personas reales. Los nombres comerciales y dominios que aparecen son los de proyectos construidos por JC Analytics. No se presentan como evidencia de resultados de negocio; las cifras publicadas son del código (líneas, pruebas, endpoints), calculadas por `scripts/project-evidence.mjs`.
 
-Las capturas anteriores se conservaron fuera de `public/`, en el archivo local ignorado `_scripts/archive-public-assets/` de la raíz del repositorio. Ese archivo no forma parte del sitio ni debe incorporarse a la compilación. La herramienta `scripts/capture-sites.mjs` genera únicamente vistas previas del servidor local y las guarda en ese archivo privado.
+La herramienta `scripts/capture-sites.mjs` genera únicamente vistas previas de este sitio desde el servidor local y las guarda en el archivo privado `_scripts/archive-public-assets/`, que no forma parte de la compilación.
 
 La documentación pública describe el uso y la procedencia conceptual de los recursos. Los prompts de producción y otros detalles internos quedan fuera del material publicable.
 

@@ -28,8 +28,12 @@ The React Compiler is not enabled on this template because of its impact on dev 
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
 
-## Ejemplos y recursos públicos
+## Proyectos reales (sección `#trabajo`)
 
-La sección de ejemplos utiliza conceptos e ilustraciones originales. No muestra proyectos, capturas, dominios ni resultados identificables de clientes. Los enlaces conducen a servicios y artículos propios.
+La sección de proyectos muestra los diez repositorios que JC Analytics construye y opera, con tres evidencias por proyecto:
 
-Las capturas históricas se conservan fuera de `public/`, en el archivo local ignorado `_scripts/archive-public-assets/` de la raíz del repositorio. No deben copiarse a los recursos de publicación. La documentación visual pública omite prompts y detalles internos de producción.
+- **Capturas reales** en `public/projects/<id>/<pantalla>-{desktop,mobile}.webp`, tomadas de cada aplicación corriendo desde su repositorio con datos de demostración (escritorio 1440 px, móvil 390 px). El procedimiento está en [docs/proyectos-reales.md](docs/proyectos-reales.md).
+- **Fragmentos de código** copiados textualmente de cada repositorio (`src/data/projectCode.js`), con la ruta del archivo.
+- **Cifras calculadas** por `node scripts/project-evidence.mjs`, que recorre los repositorios hermanos y escribe `src/data/projects.evidence.json` (líneas, archivos, commits, páginas, endpoints, modelos, migraciones y pruebas). Volver a ejecutarlo cuando cambien los repositorios; el JSON se versiona para que el build no dependa de ellos.
+
+Los textos de cada proyecto viven en `src/data/projects.js`. Describen lo que cada sistema hace hoy; no se afirman resultados de negocio que el cliente no haya publicado. Las ilustraciones conceptuales de `public/images/journal/` siguen reservadas a los artículos y servicios.
