@@ -92,6 +92,26 @@ El centro de operaciones (`GET /api/dashboard`) devuelve `web_leads: { new, unat
 alerta roja cuando hay consultas con más de 24 h sin respuesta, o una azul cuando solo hay nuevas. Los
 inversionistas no acceden ni al inicio del equipo ni a la analítica.
 
+### Resumen semanal de tráfico
+
+La automatización `resumen_semanal_trafico` (`server/automations.mjs`, categoría «Resumen») manda cada lunes a
+las 8:00 de Costa Rica (hora ajustable en `/automatizaciones`) un aviso a la administración y a los socios
+activos, en el buzón y por push, con:
+
+- las visitas de los últimos 7 días y su variación frente a los 7 anteriores (lo mismo que muestra «7 días» en
+  Tráfico del sitio al abrirlo ese lunes);
+- las consultas nuevas de esos 7 días y cuántas siguen «nuevas» sin que nadie las contacte, lleguen cuando
+  lleguen;
+- la mejor y la peor página según su veredicto (engancha > normal > mucho tráfico, poca acción > rebote;
+  «pocos datos» no compite);
+- la primera recomendación de `buildInsights` («Qué hacer»).
+
+Las cifras salen de `computeAnalytics` (`server/analytics.mjs`), la misma función que responde
+`GET /api/analytics`. No se envía si no hubo visitas ni consultas en esos 7 días, y sale una sola vez por
+semana (deduplicación `traffic-week:<lunes>`): «Probar ahora» después del envío responde que ya salió. Si el
+portal estuvo apagado todo el lunes, esa semana no se envía. Los colaboradores y los inversionistas no lo
+reciben.
+
 ## Cómo mide el sitio
 
 `jcanalytics-app/src/seo/site-tracker.js`:
@@ -165,7 +185,9 @@ Todo lo que escribe un visitante es **dato no confiable**:
 - `npm test` → `tests/leads.test.mjs`: limpieza, trampas, límites, CORS, bandeja, permisos, analítica y que
   nada de esto pase por MCP; `tests/analytics.test.mjs`: periodo anterior y variaciones, veredictos por página,
   mapa de horas en hora de Costa Rica, CTA por sección, embudo de consultas, reglas de recomendaciones,
-  detalle por página y la alerta de consultas en el inicio.
+  detalle por página y la alerta de consultas en el inicio; `tests/api-v3.test.mjs`: el resumen semanal de
+  tráfico sale el lunes a la hora, una sola vez por semana, con las cifras, no sale sin datos y no llega a
+  colaboradores ni inversionistas.
 - `npm run e2e:web`: en un navegador real, llega una consulta hostil por `/ingest` y el equipo la trabaja
   (contacto, nota, estado, cliente). Además revisa el tablero de tráfico en escritorio y celular:
   recomendaciones, variación, páginas con veredicto y su detalle, mapa de horas, CTA por sección y embudo de

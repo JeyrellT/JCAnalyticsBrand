@@ -201,7 +201,7 @@ export const NOTIFICATION_CATEGORIES = {
   clientes: { label: 'Portal de clientes', hint: 'Briefs enviados, comentarios y decisiones de clientes sobre entregables.', kinds: ['brief', 'deliverable'] },
   consultas: { label: 'Consultas de la web', hint: 'Cuando alguien deja sus datos en jcanalytic.com o te asignan una consulta.', kinds: ['lead'] },
   registros: { label: 'Registros con enlace', hint: 'Cuando alguien se da de alta con un enlace de registro que creaste.', kinds: ['registro'] },
-  resumen: { label: 'Resumen "Mi día"', hint: 'Un aviso por la mañana con tus citas, tareas y confirmaciones.', kinds: ['digest'] },
+  resumen: { label: 'Resumen "Mi día"', hint: 'Un aviso por la mañana con tus citas, tareas y confirmaciones; los lunes, el resumen semanal de tráfico (administración y socios).', kinds: ['digest'] },
   automatizaciones: { label: 'Alertas automáticas', hint: 'Avance de 72 h, fin de soporte y tipo de cambio.', kinds: ['automation'] },
 };
 
@@ -211,9 +211,10 @@ export function notificationCategory(kind) {
   return 'proyectos';
 }
 
-/** Las 9 automatizaciones incluidas (etiquetas compartidas con la interfaz). */
+/** Las 10 automatizaciones incluidas (etiquetas compartidas con la interfaz). */
 export const AUTOMATIONS = {
   resumen_diario: { name: 'Resumen "Mi día"', description: 'Cada mañana, a la hora de cada persona, un aviso con sus citas, tareas y (a la administración) la plata por aprobar. No se envía si todo está en cero.', category: 'resumen' },
+  resumen_semanal_trafico: { name: 'Resumen semanal de tráfico', description: 'Cada lunes, a la administración y a los socios: visitas de la semana contra la anterior, consultas nuevas y sin atender, la mejor y la peor página y qué hacer primero. No se envía si no hubo visitas ni consultas.', category: 'resumen' },
   recordatorio_citas: { name: 'Recordatorio de citas', description: 'Avisa a los participantes un rato antes de cada cita no cancelada.', category: 'agenda' },
   cita_sin_confirmar: { name: 'Cita sin confirmar', description: 'Citas con clientes aún "programadas" que empiezan en menos de 24 h: recuerda confirmar con el cliente.', category: 'agenda' },
   avance_72h: { name: 'Avance de 72 h', description: 'Proyectos de cliente: avisa al responsable a los 2/3 del plazo y, si vence, también a los admin.', category: 'automatizaciones' },

@@ -5,7 +5,7 @@ import { useId, useMemo, useState } from 'react';
 import {
   Sunrise, AlarmClock, PhoneCall, Timer, CalendarCheck, Wallet, LifeBuoy, Repeat, Banknote, Bot,
   Clock3, Play, Loader2, Save, Radar, UsersRound, Smartphone, History, ArrowRight, Pencil, Trash2,
-  FolderKanban, BellRing, ChevronDown, CalendarClock, Sparkles,
+  FolderKanban, BellRing, ChevronDown, CalendarClock, Sparkles, BarChart3,
 } from 'lucide-react';
 import { Link } from '../lib/router.jsx';
 import { useResource } from '../lib/session.jsx';
@@ -17,6 +17,7 @@ import { dayKey, todayKey, addDays, formatDate, timeAgo } from '../lib/format.js
 // ── Catálogo visual ───────────────────────────────────────────────────────
 export const AUTOMATION_ICONS = {
   resumen_diario: Sunrise,
+  resumen_semanal_trafico: BarChart3,
   recordatorio_citas: AlarmClock,
   cita_sin_confirmar: PhoneCall,
   avance_72h: Timer,
@@ -39,7 +40,7 @@ const KEY_GROUP = {
   resumen_diario: 'dia', recordatorio_citas: 'dia', tareas_vencen: 'dia',
   cita_sin_confirmar: 'clientes', avance_72h: 'clientes', fin_soporte: 'clientes',
   dinero_pendiente: 'dinero',
-  tareas_recurrentes: 'operacion', tipo_cambio: 'operacion',
+  tareas_recurrentes: 'operacion', tipo_cambio: 'operacion', resumen_semanal_trafico: 'operacion',
 };
 const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 export function groupOf(a) {
