@@ -95,11 +95,12 @@ Cada aprobación, cambio pedido o brief enviado avisa al equipo, en el buzón y 
 
 **Bitácora (`/bitacora`).** Registro de quién hizo qué y cuándo. Los colaboradores no ven las entradas de dinero.
 
-**Automatizaciones (`/automatizaciones`).** El portal revisa la operación cada minuto y avisa a la persona correcta, en el buzón y en el celular. Cada aviso sale una sola vez. Hay 9 automatizaciones:
+**Automatizaciones (`/automatizaciones`).** El portal revisa la operación cada minuto y avisa a la persona correcta, en el buzón y en el celular. Cada aviso sale una sola vez. Hay 10 automatizaciones:
 
 | Automatización | Cuándo | A quién |
 |---|---|---|
 | Resumen "Mi día" | A la hora que elige cada persona (7:30 por defecto) | Cada persona: citas y tareas de hoy; al admin, también la plata por aprobar |
+| Resumen semanal de tráfico | Lunes 8:00 (ajustable): los últimos 7 días contra los 7 anteriores | Admin y socios: visitas y su variación, consultas nuevas y sin atender, mejor y peor página, qué hacer primero. No sale sin visitas ni consultas |
 | Recordatorio de citas | 60 min antes (ajustable) | Participantes |
 | Cita sin confirmar | Menos de 24 h antes, si sigue "programada" | Quien agendó y participantes |
 | Avance de 72 h | A los 2/3 del plazo y al vencer | Responsable; si vence, también los admin |

@@ -152,6 +152,10 @@ Las 9 automatizaciones incluidas, con la clave en snake_case:
    - Si cambia `fx_usd_crc`, lo actualiza, lo registra en la bitácora y avisa a los admins (`kind: 'automation'`).
    - Si falla, deja el valor anterior y registra el error en `last_result`.
    - Deduplicación: `fx:<fecha>`.
+10. **`resumen_semanal_trafico`**: los lunes a las `config.time` (por defecto 08:00), a la administración y a los socios activos (`kind: 'digest'`, enlace `/trafico`), con los agregados de `computeAnalytics(ctx, 7)` (`server/analytics.mjs`, los mismos de `GET /api/analytics?days=7`).
+   - Contenido: "N visitas (▲/▼ X % frente a la semana anterior) · M consultas nuevas, K sin atender · Mejor página: “…” (veredicto) · Peor: “…” (veredicto) · Qué hacer: <primera recomendación>".
+   - No se envía si no hubo visitas ni consultas en los últimos 7 días.
+   - Deduplicación: `traffic-week:<lunes de la semana>` (un aviso por semana; "Probar ahora" después del envío no repite).
 
 Cada ejecución actualiza `automations.last_run_at`, `last_result` y `runs`, y escribe una línea en `automation_log`. Solo ejecuta las automatizaciones `enabled`.
 
@@ -228,6 +232,7 @@ Cada ejecución actualiza `automations.last_run_at`, `last_result` y `runs`, y e
   - "Tareas" cuenta las abiertas asignadas que vencen hoy o antes.
   - "(K vencidas)" se omite si K = 0.
   - El enlace es `/`.
+- **`resumen_semanal_trafico`:** solo corre los lunes desde su hora, hasta que envía; si el portal estuvo apagado todo el lunes, esa semana no sale. «Sin atender» cuenta las consultas en estado `nuevo` de cualquier fecha, como la alerta del inicio.
 - **`recordatorio_citas`:** además de las canceladas, ignora las `realizada` y `no_asistio`. Va a los participantes, incluido quien la creó.
 - **`fin_soporte`:**
   - Se agregó `config.time`, por defecto 08:30, para que el aviso no se cree a medianoche, cuando el horario tranquilo lo dejaría sin push.

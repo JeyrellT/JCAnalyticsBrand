@@ -8,7 +8,7 @@ import { inQuietHours, pushBlockReason, isAllowedPushEndpoint, readPrefs, DEFAUL
 import { parseExchangeRate, ruleDueOn, recurringSummary } from '../server/automations.mjs';
 import { NOTIFICATION_CATEGORIES, AUTOMATIONS, notificationCategory } from '../shared/catalog.js';
 
-const KEYS = ['resumen_diario', 'recordatorio_citas', 'cita_sin_confirmar', 'avance_72h', 'tareas_vencen', 'dinero_pendiente', 'fin_soporte', 'tareas_recurrentes', 'tipo_cambio'];
+const KEYS = ['resumen_diario', 'resumen_semanal_trafico', 'recordatorio_citas', 'cita_sin_confirmar', 'avance_72h', 'tareas_vencen', 'dinero_pendiente', 'fin_soporte', 'tareas_recurrentes', 'tipo_cambio'];
 /** Hora de Costa Rica (UTC−6) → ms. */
 const cr = (date, hhmm) => Date.parse(`${date}T${hhmm}:00-06:00`);
 const HOUR = 3_600_000;
@@ -458,6 +458,81 @@ test('resumen_diario: a las 07:30 CR, una sola vez, sin ceros y con dinero solo 
     w.at(cr('2026-10-13', '12:00'));
     await w.engine.run('resumen_diario');
     assert.equal((await digests('beto')).length, 1, 'a las 12:00 ya pasó la ventana del resumen de las 09:00');
+  } finally { await w.close(); }
+});
+
+test('resumen_semanal_trafico: el lunes a la hora, una vez por semana, solo a administración y socios, y nada sin datos', async () => {
+  // Domingo 18 de octubre de 2026 por la noche; el lunes 19 toca el resumen con los últimos 7 días (13 al 19).
+  const w = await world({ startAt: cr('2026-10-18', '20:00') });
+  try {
+    const investor = w.env.addUser('ines@jc.test', 'Inés Inversionista', 'inversionista');
+    const insert = w.env.db.prepare(`INSERT INTO site_events (day, at, session_id, visitor, type, path, section, target, label, value, source, campaign, device, language)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'directo', NULL, 'mobile', 'es')`);
+    /** Una visita a `path` el día `day`: vista, `ms` leyendo los paquetes y, si `cta`, un toque a WhatsApp. */
+    const visit = (sid, day, path, { ms = 0, cta = false } = {}) => {
+      const at = new Date(cr(day, '10:00')).toISOString();
+      const row = (type, section = null, target = null, label = null, value = null) => insert.run(day, at, sid, sid, type, path, section, target, label, value);
+      row('view');
+      if (ms) row('section', 'paquetes', null, null, ms);
+      if (cta) row('click', 'paquetes', 'whatsapp', 'WhatsApp');
+    };
+    // Semana actual: 15 visitas a la portada que leen y tocan WhatsApp (engancha) y 12 a un servicio que nadie
+    // toca (mucho tráfico, poca acción). Semana anterior: 10 visitas.
+    for (let i = 0; i < 15; i += 1) visit(`home${i}`, i % 2 ? '2026-10-14' : '2026-10-16', '/', { ms: 70_000, cta: i < 3 });
+    for (let i = 0; i < 12; i += 1) visit(`serv${i}`, '2026-10-17', '/servicios/automatizacion-de-procesos/', { ms: 20_000 });
+    for (let i = 0; i < 10; i += 1) visit(`prev${i}`, '2026-10-08', '/');
+    const lead = w.env.db.prepare(`INSERT INTO leads (status, channel, name, phone, need, page, source, contacted_at, created_at, updated_at)
+      VALUES (?, 'formulario', ?, '8800-0000', 'Página web', '/', 'directo', ?, ?, ?)`);
+    const hoursAgo = (h) => new Date(w.env.clock.t - h * HOUR).toISOString();
+    lead.run('nuevo', 'Sin atender', null, hoursAgo(30), hoursAgo(30)); // el lunes lleva más de 24 h sin respuesta
+    lead.run('nuevo', 'Recién llegada', null, hoursAgo(2), hoursAgo(2));
+    lead.run('contactado', 'Atendida', hoursAgo(40), hoursAgo(48), hoursAgo(40));
+    lead.run('ganado', 'De la semana pasada', hoursAgo(230), hoursAgo(240), hoursAgo(230));
+
+    const digests = async (who) => (await w.inbox(who)).filter((n) => n.kind === 'digest');
+    const described = async () => (await w.api.admin.get('/api/automations')).data.automations.find((a) => a.key === 'resumen_semanal_trafico');
+    assert.equal((await described()).config.time, '08:00');
+    assert.equal((await described()).next_run_hint, 'Mañana a las 08:00');
+    assert.equal(await w.engine.run('resumen_semanal_trafico'), null, 'domingo: no toca');
+    w.at(cr('2026-10-19', '07:59'));
+    assert.equal((await described()).next_run_hint, 'Hoy a las 08:00');
+    assert.equal(await w.engine.run('resumen_semanal_trafico'), null, 'antes de la hora: no toca');
+
+    w.at(cr('2026-10-19', '08:00'));
+    const res = await w.engine.run('resumen_semanal_trafico');
+    assert.equal(res.recipients, 3, 'admin y dos socios');
+    assert.equal(res.summary, 'Resumen enviado a 3 personas: 27 visitas y 3 consultas.');
+    const [ana] = await digests('ana');
+    assert.ok(ana, 'la socia lo recibe en el buzón');
+    assert.equal(ana.link, '/trafico');
+    assert.match(ana.title, /^Tráfico de la semana · 13 oct.* – 19 oct.*$/);
+    for (const piece of [
+      '27 visitas (▲ 170 % frente a la semana anterior)', '3 consultas nuevas, 2 sin atender', 'Mejor página: “Portada” (Engancha)',
+      'Peor: “Servicio · automatizacion de procesos” (Mucho tráfico, poca acción)', 'Qué hacer: 1 consulta lleva más de 24 h sin respuesta',
+    ]) assert.ok(ana.body.includes(piece), `falta «${piece}» en: ${ana.body}`);
+    assert.equal((await digests('admin')).length, 1);
+    assert.equal((await digests('beto')).length, 1);
+    assert.equal((await digests('cata')).length, 0, 'los colaboradores no lo reciben');
+    assert.equal(w.env.db.prepare('SELECT COUNT(*) n FROM notifications WHERE user_id = ?').get(investor).n, 0, 'los inversionistas tampoco');
+    assert.ok(w.log().some((l) => l.dedupe_key === 'traffic-week:2026-10-19' && l.recipients === 3));
+    assert.equal((await described()).next_run_hint, 'El lunes a las 08:00');
+
+    // No se repite: ni el programador en el minuto siguiente ni "Probar ahora" el miércoles.
+    w.at(cr('2026-10-19', '08:01'));
+    assert.equal(await w.engine.run('resumen_semanal_trafico'), null);
+    w.at(cr('2026-10-21', '10:00'));
+    const again = await w.engine.run('resumen_semanal_trafico', { force: true });
+    assert.equal(again.recipients, 0);
+    assert.match(again.summary, /ya se envió/);
+    assert.equal((await digests('ana')).length, 1);
+
+    // La semana siguiente no hubo visitas ni consultas nuevas: no se envía aunque sigan consultas sin atender.
+    w.at(cr('2026-10-26', '08:00'));
+    const empty = await w.engine.run('resumen_semanal_trafico');
+    assert.equal(empty.recipients, 0);
+    assert.match(empty.summary, /Sin visitas ni consultas/);
+    assert.equal((await digests('ana')).length, 1);
+    assert.ok(!w.log().some((l) => l.dedupe_key === 'traffic-week:2026-10-26'));
   } finally { await w.close(); }
 });
 
