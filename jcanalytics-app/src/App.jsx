@@ -47,12 +47,14 @@ const App = () => {
     const menuState = (event) => event.detail.open ? lenis.stop() : lenis.start();
     window.addEventListener('jca:menu-state', menuState);
     window.addEventListener('jca:assistant-state', menuState);
+    window.addEventListener('jca:lead-dialog-state', menuState);
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
     return () => {
       gsap.ticker.remove(tick);
       window.removeEventListener('jca:menu-state', menuState);
       window.removeEventListener('jca:assistant-state', menuState);
+      window.removeEventListener('jca:lead-dialog-state', menuState);
       lenis.destroy();
     };
   }, [reduce]);

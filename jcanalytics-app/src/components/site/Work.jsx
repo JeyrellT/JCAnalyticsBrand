@@ -6,6 +6,7 @@ import { t, locale } from '../../i18n/locale';
 import { EVIDENCE_DATE, EVIDENCE_TOTALS, FACT_LABELS, PROJECTS, PROJECT_KINDS, projectCode, projectEvidence, screenImage, shotSrcSet } from '../../data/projects';
 import { Label, MaskLines, Reveal } from './primitives';
 import { wa } from './links';
+import { useDesktop } from '../../hooks/useDesktop';
 import '../../styles/projects.css';
 import MobileRail from './MobileRail';
 
@@ -118,6 +119,8 @@ const projectFromQuery = () => {
 };
 
 const Work = () => {
+  // En computadora el botón abre el formulario corto, no WhatsApp Web: el texto lo dice.
+  const desktop = useDesktop();
   const [active, setActive] = useState(projectFromQuery);
   const [view, setView] = useState('screen');
   const [screenIndex, setScreenIndex] = useState(0);
@@ -241,8 +244,10 @@ const Work = () => {
         </MobileRail>
 
         <Reveal className="works-close">
-          <p>{t('Contanos qué necesitás. Un mensaje y seguimos por WhatsApp.', 'Tell us what you need. One message and we continue on WhatsApp.')}</p>
-          <WhatsApp href={wa(t('Hola JC Analytics, vi sus proyectos y quiero conversar sobre uno para mi negocio.', 'Hi JC Analytics, I saw your projects and want to talk about one for my business.'))} className="works-wa--lg">{t('Escribinos por WhatsApp', 'Message us on WhatsApp')}</WhatsApp>
+          <p>{desktop
+            ? t('Contanos qué necesitás. Dejanos tu contacto y seguimos.', 'Tell us what you need. Leave your contact and we take it from there.')
+            : t('Contanos qué necesitás. Un mensaje y seguimos por WhatsApp.', 'Tell us what you need. One message and we continue on WhatsApp.')}</p>
+          <WhatsApp href={wa(t('Hola JC Analytics, vi sus proyectos y quiero conversar sobre uno para mi negocio.', 'Hi JC Analytics, I saw your projects and want to talk about one for my business.'))} className="works-wa--lg">{desktop ? t('Escribinos', 'Message us') : t('Escribinos por WhatsApp', 'Message us on WhatsApp')}</WhatsApp>
           <small>{t(`Cifras calculadas desde los repositorios el ${EVIDENCE_DATE}. Capturas con datos de demostración.`, `Figures computed from the repositories on ${EVIDENCE_DATE}. Screenshots use demo data.`)}</small>
         </Reveal>
       </div>
