@@ -27,7 +27,8 @@ const Footer = () => (
         <div className="footer-contact">
           <p className="footer-label">{t('Contacto', 'Contact')}</p>
           <ul>
-            <li><a href={wa()} target="_blank" rel="noreferrer">WhatsApp <span aria-hidden="true">↗</span></a></li>
+            {/* Dice "WhatsApp" a secas: abre WhatsApp también en computadora (sin formulario corto). */}
+            <li><a href={wa()} target="_blank" rel="noreferrer" data-wa-direct="">WhatsApp <span aria-hidden="true">↗</span></a></li>
             <li><a href={`mailto:${EMAIL}`}>{EMAIL}</a></li>
             <li><a href={`tel:+${PHONE}`}>{PHONE_DISPLAY}</a></li>
             <li><a href={`${PORTAL_URL}/cliente`} target="_blank" rel="noreferrer">{t('Portal de clientes', 'Client portal')} <span aria-hidden="true">↗</span></a></li>

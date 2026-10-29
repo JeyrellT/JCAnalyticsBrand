@@ -49,17 +49,43 @@ URL del sitio web: `https://www.jcanalytic.com/?p=web` (español; el inglés est
 
 ## 2. Qué mide cada píxel
 
+El sitio distingue dos cosas: la **intención** (tocar WhatsApp, correo o teléfono) y la **consulta captada**
+(la persona dejó WhatsApp o correo y el portal del equipo la aceptó). En celular los botones abren WhatsApp;
+en computadora abren un formulario corto, porque WhatsApp Web exige sesión iniciada y ahí se perdían las
+consultas. Detalle y criterios en [estrategia de conversión](estrategia-conversion.md).
+
 | Acción en el sitio | Google Ads | Meta | ChatGPT |
 | --- | --- | --- | --- |
 | Visita | (gtag config) | `PageView` | `page_viewed` |
 | Página de servicio | | `ViewContent` | `contents_viewed` |
-| Cualquier clic a WhatsApp | conversión "Clic WhatsApp" ($10) + evento `contact_click` | `Contact` | `lead_created` |
-| "Lo quiero" de un paquete | lo mismo + `package_id`, `package_value`, `traffic_source` | `Contact` con `content_name` = paquete, `value` = precio | `lead_created` |
-| Formulario enviado | conversión | `Lead` | `lead_created` |
+| Clic a WhatsApp en celular (o enlace directo en computadora) | conversión "Clic WhatsApp" ($10) + evento `contact_click` | `Contact` | `lead_created` |
+| "Lo quiero" de un paquete en celular | lo mismo + `package_id`, `package_value`, `traffic_source` | `Contact` con `content_name` = paquete, `value` = precio | `lead_created` |
+| Clic a WhatsApp en computadora (abre el formulario corto) | solo `contact_click` con `cta_mode: form` | `Contact` | — |
+| Consulta aceptada por el portal (formulario corto, "Prefiero que me contacten", formulario de contacto en computadora, formulario de la página de servicio) | conversión "Envío de formulario" con el precio del paquete (o $10) + evento `lead_submit` | `Lead` con `content_name` = paquete o formulario, `value` = precio | `lead_created` |
+| Formulario de contacto en celular con WhatsApp o correo escrito | "Clic WhatsApp" (abre WhatsApp); la consulta también queda en el portal | `Contact` + `Lead` | `lead_created` (una sola) |
+
+Nunca viajan nombres, teléfonos, correos ni texto libre: solo canal, sección, paquete, idioma y fuente.
+
+### Conversión "Envío de formulario" en Google Ads
+
+Mientras no exista una acción propia, los envíos de formulario cuentan en "Clic WhatsApp" (la etiqueta de
+respaldo). Para separarlos:
+
+1. Objetivos → Conversiones → Nueva acción → Sitio web → "Enviar formulario de clientes potenciales" → objetivo
+   **Contactos**, acción **principal**, contar **una por clic**, valor $10 o "usar valores diferentes" (el sitio
+   envía el precio del paquete).
+2. Copiá la **etiqueta**: lo que sigue a `AW-18237462818/` en el `send_to` de la acción.
+3. GitHub → Settings → Secrets and variables → Actions → Variables → `ADS_FORM_LABEL` = esa etiqueta. El
+   siguiente deploy la compila como `VITE_ADS_FORM_LABEL` (`deploy.yml`). En local va en `.env`.
+4. Verificá con Tag Assistant entrando al sitio directo (sin pasar por el anuncio): en computadora, "Lo quiero"
+   → formulario → "Enviar consulta" debe disparar el hit con la etiqueta nueva; con emulación de celular, el
+   mismo botón abre WhatsApp y dispara "Clic WhatsApp".
 
 ## 3. Pendientes de configuración (en cada plataforma, no en el código)
 
-- **ChatGPT Ads:** el píxel sigue en `debug:true` (`index.html`). Cuando confirmes en Ads Manager que llegan `page_viewed` y `lead_created`, cambialo a `false`.
+- **Google Ads:** crear la acción "Envío de formulario" y definir `ADS_FORM_LABEL` (arriba). La acción
+  "Enviar formulario de clientes potenciales" que figura **Inactiva** se puede reutilizar para esto.
 - **Google Ads:** la conversión "Clic WhatsApp" usa un valor fijo de $10. Si querés que Google puje por los paquetes más caros, cambiá la acción a "usar valores diferentes" y enviá `package_value` como valor; hacelo entre campañas para no reiniciar el aprendizaje a mitad de una.
-- **Meta:** optimizá las campañas de conversión por el evento `Contact`.
-- Un clic a WhatsApp es intención, no venta. Para medir ventas reales, anotá en el CRM la línea "(Vi el anuncio en …)" de cada chat que se convierte en cliente.
+- **ChatGPT Ads:** el píxel sigue en `debug:true` (`index.html`). Cuando confirmes en Ads Manager que llegan `page_viewed` y `lead_created`, cambialo a `false`.
+- **Meta:** optimizá las campañas de conversión por `Lead` (consulta real) cuando haya al menos 10 por semana; mientras, por `Contact`.
+- Un clic a WhatsApp es intención, no venta. Para medir ventas reales, anotá en el CRM la línea "(Vi el anuncio en …)" de cada chat que se convierte en cliente. Las consultas que entran por formulario ya traen fuente, campaña y dispositivo en el portal.

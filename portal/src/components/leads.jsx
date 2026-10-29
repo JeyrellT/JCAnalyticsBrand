@@ -21,7 +21,7 @@ export const SITE_SECTIONS = {
   fit: 'Cuándo tiene sentido', scope: 'Qué podemos definir', prepare: 'Qué traer a la conversación', discussion: 'Para conversar', measure: 'Medir',
 };
 export const sectionName = (id) => SITE_SECTIONS[id] ?? (id ? id.replace(/-/g, ' ') : 'Sin sección');
-export const FORM_NAMES = { contacto: 'Formulario de contacto', devolucion: 'Que me contacten', cotizar: 'Cotizador', 'contacto-servicio': 'Formulario de la página de servicio' };
+export const FORM_NAMES = { contacto: 'Formulario de contacto', devolucion: 'Que me contacten', cotizar: 'Cotizador', 'contacto-servicio': 'Formulario de la página de servicio', 'contacto-rapido': 'Consulta rápida (botón de WhatsApp en computadora)' };
 /** Nombre de una página del sitio: Portada, Servicio · …, Idea · …, EN · … */
 export const pageName = pageLabel;
 /** Veredicto de una página (shared/leads.js) como etiqueta con tono. */

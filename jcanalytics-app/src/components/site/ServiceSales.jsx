@@ -23,7 +23,10 @@ import { PROJECTS, PROJECT_KINDS, screenImage, shotSrcSet } from '../../data/pro
 import { CURRENCIES } from '../../data/currencies';
 import { homePath } from '../../seo/routes';
 import { PORTAL_URL, wa } from './links';
+import { emailOk, phoneOk } from './contact-rules';
 import { sendLead } from '../../seo/site-tracker';
+import { trackLeadCaptured } from '../../seo/analytics';
+import { useDesktop } from '../../hooks/useDesktop';
 import '../../styles/service-offer.css';
 
 const numberLocale = locale === 'es' ? 'es-CR' : 'en-US';
@@ -35,8 +38,6 @@ const timeLabel = (p) => (p.days_min
   ? t(`${p.days_min}–${p.days_max} días hábiles`, `${p.days_min}–${p.days_max} business days`)
   : t(`${p.weeks_min}–${p.weeks_max} semanas`, `${p.weeks_min}–${p.weeks_max} weeks`));
 const label = (p) => (locale === 'es' ? p.label : p.label_en);
-const phoneOk = (v) => /^\+?[\d\s\-()]+$/.test(v.trim()) && v.replace(/\D/g, '').length >= 8 && v.replace(/\D/g, '').length <= 15;
-const emailOk = (v) => /^[a-z0-9._+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(v.trim());
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const SalesContext = createContext(null);
@@ -81,15 +82,21 @@ export function ServiceSalesProvider({ item, children }) {
   return <SalesContext.Provider value={value}>{children}</SalesContext.Provider>;
 }
 
-const WhatsAppLink = ({ href, pkg, children, className = '', trackLabel }) => (
-  <a className={`so-wa ${className}`} href={href} target="_blank" rel="noreferrer" data-package={pkg.label} data-value={pkg.base_usd} data-track-label={trackLabel}>
-    <MessageCircle size={18} aria-hidden="true" />{children}
-  </a>
-);
+// En computadora este enlace abre el formulario corto (ui/LeadDialog.jsx): data-need y data-package-label
+// le dicen con qué necesidad y paquete llega la consulta al portal. `direct` lo deja abrir WhatsApp Web.
+const WhatsAppLink = ({ href, pkg, children, className = '', trackLabel, direct = false }) => {
+  const { item } = useSales();
+  return (
+    <a className={`so-wa ${className}`} href={href} target="_blank" rel="noreferrer" data-package={pkg.label} data-value={pkg.base_usd} data-package-label={label(pkg)} data-need={item.need} data-track-label={trackLabel} {...(direct ? { 'data-wa-direct': '' } : {})}>
+      <MessageCircle size={18} aria-hidden="true" />{children}
+    </a>
+  );
+};
 
 // ── Oferta ──────────────────────────────────────────────────────────────────
 export function OfferStrip() {
   const { main, alt, whatsapp } = useSales();
+  const desktop = useDesktop();
   return (
     <section id="oferta" className="so-offer" aria-labelledby="so-offer-title">
       <div className="so-offer__main">
@@ -102,10 +109,12 @@ export function OfferStrip() {
           {!main.ai_included && main.with_ai_usd > main.base_usd && <li><Plus size={15} aria-hidden="true" />{t(`Con IA: ${money(main.with_ai_usd)} en total`, `With AI: ${money(main.with_ai_usd)} total`)}</li>}
         </ul>
         <div className="so-offer__actions">
-          <WhatsAppLink href={whatsapp()} pkg={main} trackLabel={`Oferta · WhatsApp · ${main.label}`}>{t('Lo quiero · WhatsApp', 'I want it · WhatsApp')}</WhatsAppLink>
+          <WhatsAppLink href={whatsapp()} pkg={main} trackLabel={`Oferta · WhatsApp · ${main.label}`}>{desktop ? t('Lo quiero', 'I want it') : t('Lo quiero · WhatsApp', 'I want it · WhatsApp')}</WhatsAppLink>
           <a className="so-ghost" href="#incluye">{t('Ver qué incluye', 'See what is included')} <ArrowRight size={15} aria-hidden="true" /></a>
         </div>
-        <p className="so-offer__note">{t('El mensaje sale listo con el paquete. Si marcás señales o usás la calculadora, también van en el mensaje.', 'The message is ready with the package. If you tick signals or use the calculator, they go in the message too.')}</p>
+        <p className="so-offer__note">{desktop
+          ? t('Tu consulta sale lista con el paquete; solo dejás tu WhatsApp o correo. Si marcás señales o usás la calculadora, también van.', 'Your inquiry is ready with the package; you only leave your WhatsApp or email. If you tick signals or use the calculator, they go too.')
+          : t('El mensaje sale listo con el paquete. Si marcás señales o usás la calculadora, también van en el mensaje.', 'The message is ready with the package. If you tick signals or use the calculator, they go in the message too.')}</p>
       </div>
       {alt && (
         <aside className="so-offer__alt">
@@ -289,6 +298,8 @@ export function ServiceFaq() {
 // ── Formulario corto ────────────────────────────────────────────────────────
 export function ServiceLeadForm() {
   const { item, main, summary, whatsapp } = useSales();
+  // Computadora: «Enviar consulta» es el botón principal y WhatsApp Web queda como alternativa.
+  const desktop = useDesktop();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [mail, setMail] = useState('');
@@ -306,7 +317,10 @@ export function ServiceLeadForm() {
     if ((phone.trim() && !contact.phone) || (mail.trim() && !contact.email)) { setStatus('invalid'); return; }
     if (!contact.phone && !contact.email) { setStatus('missing'); return; }
     setStatus('sending');
-    setStatus((await lead('devolucion').catch(() => false)) ? 'sent' : 'error');
+    const ok = await lead('devolucion').catch(() => false);
+    // La consulta llegó al portal: cuenta como consulta captada en Google Ads, Meta y ChatGPT.
+    if (ok) trackLeadCaptured({ form: 'contacto-servicio', section: 'contacto-servicio', packageId: main.label, packageValue: main.base_usd });
+    setStatus(ok ? 'sent' : 'error');
   };
   const href = whatsapp([
     name.trim() ? t(`Soy ${name.trim()}.`, `I am ${name.trim()}.`) : '',
@@ -317,7 +331,9 @@ export function ServiceLeadForm() {
       <div className="so-form__intro">
         <span className="journal-eyebrow">{t('EL SIGUIENTE PASO', 'THE NEXT STEP')}</span>
         <h2 id="so-form-title">{t('Contanos tu caso.', 'Tell us about your case.')}<br /><em>{t('Te respondemos en menos de 24 h.', 'We reply within 24 hours.')}</em></h2>
-        <p>{t('Podés seguir por WhatsApp con el mensaje ya armado, o dejarnos tu contacto y te escribimos nosotros. Las dos opciones llegan al mismo equipo.', 'You can continue on WhatsApp with the message ready, or leave your contact and we write to you. Both options reach the same team.')}</p>
+        <p>{desktop
+          ? t('Dejanos tu WhatsApp o correo y te escribimos nosotros. Si preferís, seguí por WhatsApp Web con el mensaje ya armado. Las dos opciones llegan al mismo equipo.', 'Leave your WhatsApp or email and we write to you. If you prefer, continue on WhatsApp Web with the message ready. Both options reach the same team.')
+          : t('Podés seguir por WhatsApp con el mensaje ya armado, o dejarnos tu contacto y te escribimos nosotros. Las dos opciones llegan al mismo equipo.', 'You can continue on WhatsApp with the message ready, or leave your contact and we write to you. Both options reach the same team.')}</p>
         {summary.length > 0 && <p className="so-form__summary"><Check size={14} aria-hidden="true" />{t('Tu mensaje incluye lo que marcaste y calculaste arriba.', 'Your message includes what you ticked and calculated above.')}</p>}
       </div>
       <form data-track="contacto-servicio" noValidate onSubmit={(event) => { event.preventDefault(); requestCallback(); }}>
@@ -341,17 +357,30 @@ export function ServiceLeadForm() {
           <label htmlFor="servicio-sitio">Sitio web</label>
           <input id="servicio-sitio" type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(event) => setWebsite(event.target.value)} />
         </div>
-        <div className="so-form__actions">
-          <WhatsAppLink href={href} pkg={main} trackLabel={`Formulario · WhatsApp · ${main.label}`}>{t('Continuar en WhatsApp', 'Continue on WhatsApp')}</WhatsAppLink>
-          <button type="submit" className="so-callback" disabled={status === 'sending' || status === 'sent'} data-track="contact" data-track-label="Formulario · Que me contacten">
-            <PhoneCall size={17} aria-hidden="true" />{status === 'sending' ? t('Enviando…', 'Sending…') : t('Prefiero que me contacten', 'I’d rather you contact me')}
-          </button>
+        <div className="so-form__actions" data-mode={desktop ? 'form' : 'whatsapp'}>
+          {desktop ? (
+            <>
+              <button type="submit" className="so-callback so-callback--primary" disabled={status === 'sending' || status === 'sent'} data-track="contact" data-track-label="Formulario · Enviar consulta">
+                <PhoneCall size={17} aria-hidden="true" />{status === 'sending' ? t('Enviando…', 'Sending…') : t('Enviar consulta', 'Send inquiry')}
+              </button>
+              <WhatsAppLink href={href} pkg={main} className="so-wa--quiet" direct trackLabel={`Formulario · WhatsApp Web · ${main.label}`}>{t('Seguir en WhatsApp Web', 'Continue on WhatsApp Web')}</WhatsAppLink>
+            </>
+          ) : (
+            <>
+              <WhatsAppLink href={href} pkg={main} trackLabel={`Formulario · WhatsApp · ${main.label}`}>{t('Continuar en WhatsApp', 'Continue on WhatsApp')}</WhatsAppLink>
+              <button type="submit" className="so-callback" disabled={status === 'sending' || status === 'sent'} data-track="contact" data-track-label="Formulario · Que me contacten">
+                <PhoneCall size={17} aria-hidden="true" />{status === 'sending' ? t('Enviando…', 'Sending…') : t('Prefiero que me contacten', 'I’d rather you contact me')}
+              </button>
+            </>
+          )}
         </div>
         <p className="so-form__status" role="status">
           {status === 'sent' && t('¡Listo! Tu consulta quedó en nuestro portal. Te escribimos en menos de 24 h.', 'Done! Your inquiry is in our portal. We’ll reach out within 24 hours.')}
           {status === 'missing' && t('Dejanos tu WhatsApp o tu correo para poder contactarte.', 'Leave your WhatsApp or email so we can contact you.')}
           {status === 'invalid' && t('Revisá el número (8 a 15 dígitos) o el correo.', 'Check the number (8 to 15 digits) or the email.')}
-          {status === 'error' && t('No pudimos enviarlo. Seguí por WhatsApp con el botón verde.', 'We could not send it. Continue on WhatsApp with the green button.')}
+          {status === 'error' && (desktop
+            ? t('No pudimos enviarlo. Probá de nuevo o seguí por WhatsApp Web.', 'We could not send it. Try again or continue on WhatsApp Web.')
+            : t('No pudimos enviarlo. Seguí por WhatsApp con el botón verde.', 'We could not send it. Continue on WhatsApp with the green button.'))}
           {status === 'idle' && t('Sin bots: te responde el mismo equipo que va a trabajar con vos.', 'No bots: the same team that will work with you replies.')}
         </p>
       </form>
@@ -385,12 +414,13 @@ export function ServiceBar() {
 
 export function TocOffer() {
   const { main, whatsapp } = useSales();
+  const desktop = useDesktop();
   return (
     <div className="so-toc-card" data-track-section="indice-cta">
       <span className="journal-eyebrow">{label(main)}</span>
       <strong>{money(main.base_usd)}</strong>
       <small>{t('pago único + IVA', 'one-time + tax')} · {timeLabel(main)}</small>
-      <WhatsAppLink href={whatsapp()} pkg={main} className="so-wa--sm" trackLabel={`Índice · WhatsApp · ${main.label}`}>{t('Cotizar por WhatsApp', 'Quote on WhatsApp')}</WhatsAppLink>
+      <WhatsAppLink href={whatsapp()} pkg={main} className="so-wa--sm" trackLabel={`Índice · WhatsApp · ${main.label}`}>{desktop ? t('Pedir cotización', 'Request a quote') : t('Cotizar por WhatsApp', 'Quote on WhatsApp')}</WhatsAppLink>
       <a className="so-text-link" href="#contacto-servicio" data-track="contact" data-track-label="Índice · Que me contacten">{t('Prefiero que me contacten', 'I’d rather you contact me')} <ArrowRight size={14} aria-hidden="true" /></a>
     </div>
   );

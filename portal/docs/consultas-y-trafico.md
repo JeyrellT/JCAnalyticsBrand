@@ -4,6 +4,9 @@ El sitio público (`jcanalytic.com`) se conecta con el portal por una sola puert
 dos cosas:
 
 - **Consultas:** personas que dejaron su WhatsApp o correo. Aparecen en **Web → Consultas** (`/consultas`).
+  Llegan por tres canales: «Formulario de contacto», «Paquete con precio» (en computadora los botones de
+  WhatsApp abren un formulario corto con el paquete; el sitio lo mide como `contacto-rapido`) y «Pidió que lo
+  contacten». Cada consulta trae el dispositivo (celular, tableta o escritorio).
 - **Medición de navegación:** qué secciones se leen, qué se toca y si se llega a los formularios. Se ve en
   **Web → Tráfico del sitio** (`/trafico`).
 

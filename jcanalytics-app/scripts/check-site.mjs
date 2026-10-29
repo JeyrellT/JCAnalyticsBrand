@@ -307,13 +307,46 @@ async function checkContact(page, language) {
   await checkCallbackLead(page, language);
 }
 
-// "Prefiero que me contacten": exige WhatsApp o correo y deja la consulta en el portal del equipo.
+// Reemplaza gtag, fbq, oaiq y window.open por registros en memoria: nada sale a las plataformas de anuncios
+// y la prueba puede leer exactamente qué se les habría enviado.
+async function stubAdPixels(page) {
+  await page.evaluate(() => {
+    window.__ads = { gtag: [], fbq: [], oaiq: [], opens: [] };
+    window.gtag = (...args) => window.__ads.gtag.push(args);
+    window.fbq = (...args) => window.__ads.fbq.push(args);
+    window.oaiq = (...args) => window.__ads.oaiq.push(args);
+    window.open = (...args) => { window.__ads.opens.push(args); return null; };
+  });
+}
+const readAdPixels = (page) => page.evaluate(() => window.__ads);
+const ADS_ACCOUNT = 'AW-18237462818';
+const ADS_WHATSAPP = `${ADS_ACCOUNT}/5C2RCMSwvaIdEKKypvhD`;
+// Las conversiones de Google Ads se deduplican 3 s: entre dos acciones distintas de una prueba hay que esperar.
+const CONVERSION_GAP_MS = 3200;
+
+// Una consulta aceptada por el portal llega a las tres plataformas como consulta captada, sin datos personales.
+function assertLeadCaptured(ads, { form, section, packageId, value, conversions = 1 }) {
+  assert.ok(ads.gtag.some(([, name, p]) => name === 'lead_submit' && p.form_id === form && p.section_id === (section ?? form) && (packageId ? p.package_id === packageId : !p.package_id)), `Google tag records lead_submit for ${form}`);
+  const sent = ads.gtag.filter(([, name]) => name === 'conversion');
+  assert.equal(sent.length, conversions, `One Google Ads conversion per accepted inquiry (${form})`);
+  const last = sent.at(-1)[2];
+  assert.ok(last.send_to.startsWith(`${ADS_ACCOUNT}/`) && last.value === value && last.currency === 'USD' && last.transport_type === 'beacon', 'The form conversion carries the account, the value and beacon transport');
+  assert.ok(ads.fbq.some(([, name, p]) => name === 'Lead' && p.content_name === (packageId ?? form)), 'Meta receives Lead when the person leaves a contact');
+  assert.ok(ads.oaiq.some(([, name, , extra]) => name === 'lead_created' && /^form_/.test(extra?.event_id)), 'ChatGPT Ads receives lead_created with a form event id');
+  const serialized = JSON.stringify(ads);
+  for (const privateValue of ['8888-1234', 'Browser QA', 'qa@example.com']) assert.ok(!serialized.includes(privateValue), 'Ad platforms never receive personal data');
+}
+
+// "Prefiero que me contacten": exige WhatsApp o correo, deja la consulta en el portal del equipo y,
+// cuando el portal la acepta, cuenta como consulta captada en las plataformas de anuncios.
 async function checkCallbackLead(page, language) {
   const status = () => page.$eval('.contact-callback__status', (node) => node.textContent.trim());
   await page.click('.contact-callback__button');
   assert.ok((await status()).includes(language === 'es' ? 'WhatsApp o tu correo' : 'WhatsApp or email'), 'Without a contact the request is not sent');
   assert.equal(page.ingest.filter((r) => r.path === '/ingest/lead').length, 0);
   await page.type('#contacto-telefono', '8888-1234');
+  await stubAdPixels(page);
+  await delay(CONVERSION_GAP_MS); // la conversión del clic a WhatsApp (checkContactTelemetry) fue hace instantes
   await page.click('.contact-callback__button');
   await page.waitForFunction(() => document.querySelector('.contact-callback__status').textContent.includes('24'));
   const [lead] = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body);
@@ -324,6 +357,133 @@ async function checkCallbackLead(page, language) {
   assert.equal(lead.website, '', 'The bot trap stays empty for people');
   assert.ok(/^[a-z0-9]{16,40}$/.test(lead.sid) && lead.lang === language && lead.elapsed >= 1500);
   assert.ok(!(await page.$eval('#contacto-sitio', (node) => node.closest('.contact-trap').getBoundingClientRect().left >= 0)), 'The bot trap is off screen');
+  assertLeadCaptured(await readAdPixels(page), { form: 'contacto', value: 10 });
+}
+
+// Computadora con mouse (sin automatización): los botones de WhatsApp abren el formulario corto, la consulta
+// llega al portal y las plataformas de anuncios reciben la conversión al aceptarla, no al hacer clic. WhatsApp
+// Web queda como enlace directo (data-wa-direct). Se fuerza navigator.webdriver=false porque el sitio trata a
+// los navegadores automatizados como celular para que el HTML estático no cambie.
+async function checkDesktopLeadFlow(browser, origin, language) {
+  const copy = COPY[language];
+  const pricing = SERVICE_PRICING.pagina_web;
+  const packageName = language === 'es' ? pricing.label : pricing.label_en;
+  const route = routes.find((item) => item.type === 'service' && item.data.id === 'process-automation' && item.language === language);
+  const offer = SERVICE_OFFERS[route.data.id];
+  const servicePricing = SERVICE_PRICING[offer.packages[0]];
+  const servicePackage = language === 'es' ? servicePricing.label : servicePricing.label_en;
+  const sendLabel = language === 'es' ? 'Enviar consulta' : 'Send inquiry';
+  const { page, verifyErrors } = await openPage(browser, origin, 1440);
+  try {
+    await page.evaluateOnNewDocument(() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); });
+    await navigate(page, `${origin}${copy.path}?wa_line=a`);
+    await page.waitForFunction((text) => document.querySelector('.studio-wa')?.textContent.includes(text), {}, language === 'es' ? 'Pedir cotización' : 'Request a quote');
+    assert.ok(!(await page.$eval('#paquetes .package-card__buy', (node) => node.textContent)).includes('WhatsApp'), 'On a computer the package button no longer promises WhatsApp');
+    assert.equal(await page.$eval('#contacto form', (node) => node.dataset.mode), 'form');
+    assert.ok(compact(await page.$eval('#contacto .contact-submit', (node) => node.textContent)).includes(sendLabel), 'The contact form sends the inquiry instead of opening WhatsApp Web');
+    const alternative = await page.$eval('#contacto .contact-callback__button', (node) => ({ tag: node.tagName, origin: new URL(node.href).origin, direct: node.hasAttribute('data-wa-direct') }));
+    assert.deepEqual(alternative, { tag: 'A', origin: 'https://wa.me', direct: true }, 'WhatsApp Web stays available as a direct link');
+    await stubAdPixels(page);
+
+    // 1. «Lo quiero» en un paquete abre el formulario corto con el mensaje ya armado.
+    assert.equal(await page.$eval('#paquetes .package-card__buy', (node) => node.dataset.package), 'pagina_web');
+    await page.click('#paquetes .package-card__buy');
+    await page.waitForSelector('dialog.lead-dialog[open] form[data-track="contacto-rapido"]');
+    assert.equal(page.url(), `${origin}${copy.path}?wa_line=a`, 'The click stays on the page');
+    const message = await page.$eval('#rapido-mensaje', (node) => node.value);
+    assert.ok(message.includes(packageName) && message.includes(`$${pricing.base_usd}`), 'The drafted WhatsApp message becomes the inquiry text');
+    assert.ok((await page.$eval('.lead-dialog__package', (node) => node.textContent)).includes(packageName), 'The dialog names the package being requested');
+    let ads = await readAdPixels(page);
+    assert.equal(ads.opens.length, 0, 'No WhatsApp Web window on a computer');
+    assert.deepEqual(ads.gtag.filter(([, name]) => name === 'conversion'), [], 'A click that opens the form is not a conversion yet');
+    assert.ok(ads.gtag.some(([, name, p]) => name === 'contact_click' && p.contact_channel === 'whatsapp' && p.cta_mode === 'form' && p.package_id === 'pagina_web' && p.section_id === 'paquetes'), 'The click is recorded as intent with cta_mode=form');
+    assert.ok(ads.fbq.some(([, name]) => name === 'Contact'), 'Meta still receives the Contact intent');
+    await page.click('.lead-dialog__submit');
+    await page.waitForFunction(() => document.querySelector('.lead-dialog__status')?.dataset.tone === 'bad');
+    assert.equal(page.ingest.filter((r) => r.path === '/ingest/lead').length, 0, 'Without a contact nothing is sent');
+    await page.type('#rapido-nombre', 'Browser QA');
+    await page.type('#rapido-telefono', '8888-1234');
+    await delay(1600); // el portal descarta envíos llenados en menos de 1,5 s (bots)
+    await page.click('.lead-dialog__submit');
+    await page.waitForSelector('.lead-dialog__panel[data-status="sent"]');
+    assert.ok((await page.$eval('#lead-dialog-title', (node) => node.textContent)).includes('24'));
+    const [lead] = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body);
+    assert.equal(lead.channel, 'paquete');
+    assert.equal(lead.package, packageName);
+    assert.equal(lead.need, 'Página web', 'The portal receives the internal need value in Spanish');
+    assert.equal(lead.page, copy.path);
+    assert.equal(lead.phone, '8888-1234');
+    assert.equal(lead.name, 'Browser QA');
+    assert.equal(lead.website, '', 'The bot trap stays empty for people');
+    assert.ok(lead.message.includes(packageName), 'The inquiry keeps the drafted message');
+    assert.ok(/^[a-z0-9]{16,40}$/.test(lead.sid) && lead.lang === language && lead.elapsed >= 1500);
+    assertLeadCaptured(await readAdPixels(page), { form: 'contacto-rapido', section: 'paquetes', packageId: 'pagina_web', value: pricing.base_usd });
+    const webLink = await page.$eval('.lead-dialog__wa', (node) => ({ origin: new URL(node.href).origin, direct: node.hasAttribute('data-wa-direct'), pkg: node.dataset.package }));
+    assert.deepEqual(webLink, { origin: 'https://wa.me', direct: true, pkg: 'pagina_web' }, 'After sending, WhatsApp Web is still one click away');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('dialog.lead-dialog').open);
+
+    // 2. El formulario de contacto envía la consulta al portal en vez de abrir WhatsApp Web.
+    await page.type('#contacto-nombre', 'Browser QA');
+    await page.type('#contacto-telefono', '8888-1234');
+    await delay(CONVERSION_GAP_MS);
+    await page.$eval('#contacto form', (form) => form.requestSubmit());
+    await page.waitForFunction(() => document.querySelector('.contact-callback__status').textContent.includes('24'));
+    const contactLead = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body)[1];
+    assert.equal(contactLead.channel, 'formulario');
+    assert.equal(contactLead.need, 'Sistema / backend');
+    assert.equal(contactLead.phone, '8888-1234');
+    ads = await readAdPixels(page);
+    assert.equal(ads.opens.length, 0, 'Submitting the contact form on a computer never opens WhatsApp Web');
+    assertLeadCaptured(ads, { form: 'contacto', value: 10, conversions: 2 });
+
+    // 3. Un enlace directo (data-wa-direct) no abre el formulario: sigue a WhatsApp Web y cuenta como clic a WhatsApp.
+    await delay(CONVERSION_GAP_MS);
+    await page.evaluate(() => document.addEventListener('click', (event) => { if (event.target.closest?.('[data-wa-direct]')) event.preventDefault(); }));
+    await page.click('#contacto .contact-callback__button');
+    await delay(300);
+    assert.ok(!(await page.$eval('dialog.lead-dialog', (node) => node.open)), 'Direct links do not open the form');
+    ads = await readAdPixels(page);
+    const direct = ads.gtag.filter(([, name]) => name === 'conversion');
+    assert.equal(direct.length, 3, 'The direct WhatsApp link converts as a WhatsApp click');
+    assert.equal(direct[2][2].send_to, ADS_WHATSAPP);
+    assert.ok(ads.gtag.some(([, name, p]) => name === 'contact_click' && p.contact_channel === 'whatsapp' && !p.cta_mode && p.section_id === 'contacto'));
+
+    // 4. Página de servicio: «Lo quiero» abre el formulario con la necesidad, el paquete y lo marcado.
+    await navigate(page, `${origin}${route.path}?wa_line=a`);
+    await page.waitForFunction(() => { const link = document.querySelector('#oferta .so-wa'); return link && !link.textContent.includes('WhatsApp'); });
+    await stubAdPixels(page);
+    await page.click('#senales li:first-child label');
+    const signal = offer[language].signals[0];
+    await page.click('#oferta .so-wa');
+    await page.waitForSelector('dialog.lead-dialog[open]');
+    const serviceMessage = await page.$eval('#rapido-mensaje', (node) => node.value);
+    assert.ok(serviceMessage.includes(signal) && serviceMessage.includes(servicePackage), 'Ticked signals and the package travel into the inquiry');
+    await page.type('#rapido-correo', 'qa@example.com');
+    await delay(1600);
+    await page.click('.lead-dialog__submit');
+    await page.waitForSelector('.lead-dialog__panel[data-status="sent"]');
+    const serviceLead = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body).at(-1);
+    assert.equal(serviceLead.channel, 'paquete');
+    assert.equal(serviceLead.need, route.data.need, 'The portal receives the service need in Spanish');
+    assert.equal(serviceLead.package, servicePackage);
+    assert.equal(serviceLead.page, route.path);
+    assert.equal(serviceLead.email, 'qa@example.com');
+    assert.ok(serviceLead.message.includes(signal));
+    assertLeadCaptured(await readAdPixels(page), { form: 'contacto-rapido', section: 'oferta', packageId: servicePricing.label, value: servicePricing.base_usd });
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('dialog.lead-dialog').open);
+    // El formulario de la página: «Enviar consulta» manda y WhatsApp Web es la alternativa directa.
+    assert.equal(await page.$eval('.so-form__actions', (node) => node.dataset.mode), 'form');
+    assert.ok(compact(await page.$eval('.so-form__actions .so-callback--primary', (node) => node.textContent)).includes(sendLabel));
+    assert.ok(await page.$('.so-form__actions .so-wa[data-wa-direct]'), 'The service form keeps WhatsApp Web as a direct link');
+    assert.ok(await page.$eval('.so-toc-card .so-wa', (node) => !node.textContent.includes('WhatsApp')), 'The contents card asks for a quote without promising WhatsApp');
+    await checkWidth(page);
+    verifyErrors();
+    console.log(`[check-site] PASS desktop lead flow ${language}: WhatsApp buttons open the short form, inquiries reach the portal, conversions fire on acceptance and WhatsApp Web stays one click away`);
+  } finally {
+    await page.close();
+  }
 }
 
 // Medición propia: secciones, scroll y clics llegan agrupados al portal, sin datos personales.
@@ -660,10 +820,12 @@ async function checkServiceSales(browser, origin, language, width) {
     await page.type('#servicio-telefono', '8888-1234');
     // El portal descarta envíos llenados en menos de 1,5 s (bots); una persona tarda más que esta prueba.
     await page.waitForFunction(() => performance.now() > 3500);
+    await stubAdPixels(page);
     await page.click('.so-callback');
     await page.waitForFunction(() => document.querySelector('.so-form__status').textContent.includes('24'));
     const [lead] = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body);
     assert.equal(lead.channel, 'devolucion');
+    assertLeadCaptured(await readAdPixels(page), { form: 'contacto-servicio', packageId: pricing.label, value: pricing.base_usd });
     assert.equal(lead.need, route.data.need, 'The portal receives the service need in Spanish');
     assert.equal(lead.package, pricing.label, 'The portal receives the Spanish package name');
     assert.equal(lead.page, route.path, 'The portal knows which service page the inquiry came from');
@@ -1206,7 +1368,14 @@ async function main() {
     assert.equal((await fetch(`${origin}/__missing_asset__.js`)).status, 404, 'Static server must not use SPA fallback');
     browser = await puppeteer.launch({
       headless: true,
-      args: ['--disable-background-networking', ...(process.env.CI ? ['--no-sandbox', '--disable-setuid-sandbox'] : [])],
+      args: [
+        '--disable-background-networking',
+        // Headless Chromium no declara ningún dispositivo apuntador (`pointer: none`). Se emula un mouse para que
+        // la regla «computadora = puntero fino con hover» (useDesktop) sea comprobable; el modo computadora sigue
+        // exigiendo navigator.webdriver=false, así que el resto de las pruebas se comporta como celular.
+        '--blink-settings=primaryPointerType=4,availablePointerTypes=4,primaryHoverType=2,availableHoverTypes=2',
+        ...(process.env.CI ? ['--no-sandbox', '--disable-setuid-sandbox'] : []),
+      ],
     });
     await checkSitemap(browser, origin);
     await checkDelayedArticleModule(browser, origin);
@@ -1215,6 +1384,7 @@ async function main() {
     await checkInternalLinks(origin, snapshots);
     await checkWhatsAppLines(browser, origin);
     await checkSiteTracking(browser, origin);
+    for (const language of ['es', 'en']) await checkDesktopLeadFlow(browser, origin, language);
     for (const width of [1440, 390]) {
       for (const language of ['en', 'es']) {
         const { page, verifyErrors } = await openPage(browser, origin, width);

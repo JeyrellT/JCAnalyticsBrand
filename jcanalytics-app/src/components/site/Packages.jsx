@@ -7,18 +7,23 @@ import { FEATURED_COUNT, PACKAGES, adPackage } from '../../data/packages';
 import { PROJECTS } from '../../data/projects';
 import { Label, MaskLines, Reveal } from './primitives';
 import { wa } from './links';
+import { useDesktop } from '../../hooks/useDesktop';
 import MobileRail from './MobileRail';
 import '../../styles/packages.css';
 
 const ORDERED = adPackage ? [adPackage, ...PACKAGES.filter((item) => item !== adPackage)] : PACKAGES;
-const STEPS = [
+// Paso 2 según el dispositivo: en celular el botón abre WhatsApp; en computadora, el formulario corto.
+const STEPS = (desktop) => [
   t('Elegís el paquete', 'Pick a package'),
-  t('Nos escribís por WhatsApp (el mensaje ya va listo)', 'Message us on WhatsApp (the text is ready)'),
+  desktop
+    ? t('Nos dejás tu WhatsApp o correo (o seguís por WhatsApp Web)', 'Leave your WhatsApp or email (or continue on WhatsApp Web)')
+    : t('Nos escribís por WhatsApp (el mensaje ya va listo)', 'Message us on WhatsApp (the text is ready)'),
   t('Confirmamos alcance y fecha de inicio', 'We confirm scope and start date'),
 ];
 const showProject = (id) => window.dispatchEvent(new CustomEvent('jca:show-project', { detail: { id } }));
 
 const Packages = () => {
+  const desktop = useDesktop();
   const [all, setAll] = useState(false);
   // En celular el listado es un carrusel: se muestran todos y se deslizan, sin botón de "ver más".
   const [mobile, setMobile] = useState(false);
@@ -38,7 +43,7 @@ const Packages = () => {
             <Label>{t('Paquetes y precios / Pago único', 'Packages and pricing / One-time payment')}</Label>
             <h2 id="packages-title"><MaskLines lines={[t('Elegí. Escribinos.', 'Choose. Message us.'), <em key="start">{t('Arrancamos.', 'We start.')}</em>]} /></h2>
           </div>
-          <ol className="packages-steps">{STEPS.map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}</ol>
+          <ol className="packages-steps">{STEPS(desktop).map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}</ol>
         </div>
 
         <MobileRail className="packages-grid" label={t('Paquetes con precio', 'Packages with pricing')}>
@@ -56,8 +61,8 @@ const Packages = () => {
                 <p className="package-card__time"><Clock3 size={14} aria-hidden="true" />{t('Entrega:', 'Delivery:')} {item.time}</p>
                 <p className="package-card__scope"><Check size={14} aria-hidden="true" />{item.scope}</p>
                 {(item.withAi || item.support) && <p className="package-card__extras">{[item.withAi, item.support].filter(Boolean).join(' · ')}</p>}
-                <a className="package-card__buy" href={wa(item.message)} target="_blank" rel="noreferrer" data-package={item.key} data-value={item.price}>
-                  <MessageCircle size={18} aria-hidden="true" />{t('Lo quiero · WhatsApp', 'I want it · WhatsApp')}
+                <a className="package-card__buy" href={wa(item.message)} target="_blank" rel="noreferrer" data-package={item.key} data-value={item.price} data-package-label={item.name} data-need={item.need}>
+                  <MessageCircle size={18} aria-hidden="true" />{desktop ? t('Lo quiero', 'I want it') : t('Lo quiero · WhatsApp', 'I want it · WhatsApp')}
                 </a>
                 {example && <a className="package-card__example" href="#trabajo" onClick={() => showProject(example.id)}>{t('Ver ejemplo real:', 'See a real example:')} {example.name}<ArrowUpRight size={14} aria-hidden="true" /></a>}
               </Reveal>
@@ -67,7 +72,7 @@ const Packages = () => {
 
         <div className="packages-foot">
           {!all && !mobile && <button type="button" className="packages-more" onClick={() => setAll(true)}>{t(`Ver los ${PACKAGES.length} paquetes`, `See all ${PACKAGES.length} packages`)}<ArrowDown size={16} aria-hidden="true" /></button>}
-          <p>{t('¿No ves tu caso?', 'Don’t see your case?')} <a href={wa(t('Hola JC Analytics, mi caso no está en los paquetes. Les cuento:', 'Hi JC Analytics, my case is not in the packages. Here it is:'))} target="_blank" rel="noreferrer">{t('Contanos por WhatsApp y te armamos uno', 'Tell us on WhatsApp and we’ll put one together')}</a>{t(' · Precios en USD, IVA aparte, colones de referencia.', ' · Prices in USD, tax excluded, colones for reference.')}</p>
+          <p>{t('¿No ves tu caso?', 'Don’t see your case?')} <a href={wa(t('Hola JC Analytics, mi caso no está en los paquetes. Les cuento:', 'Hi JC Analytics, my case is not in the packages. Here it is:'))} target="_blank" rel="noreferrer" data-need="Otro">{desktop ? t('Contanos y te armamos uno', 'Tell us and we’ll put one together') : t('Contanos por WhatsApp y te armamos uno', 'Tell us on WhatsApp and we’ll put one together')}</a>{t(' · Precios en USD, IVA aparte, colones de referencia.', ' · Prices in USD, tax excluded, colones for reference.')}</p>
         </div>
       </div>
     </section>
