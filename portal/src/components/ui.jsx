@@ -134,8 +134,23 @@ const STAT_TONE = {
   slate: { text: 'text-ink', bar: 'bg-slate' },
 };
 
-/** Indicador: mosaico de ícono, valor grande y una barra de tono al pie. */
-export function Stat({ label, value, hint, tone, icon: Icon, className, to }) {
+/**
+ * Variación frente al periodo anterior: `value` en % (o en puntos con unit="pts"); null = sin base de comparación.
+ * `invert` cuando bajar es bueno (p. ej. tiempo de respuesta).
+ */
+export function Trend({ value, unit = '%', invert = false, className }) {
+  if (value == null) return <p className={cx('mt-1 truncate text-xs text-muted-2', className)}>Sin periodo anterior para comparar</p>;
+  if (value === 0) return <p className={cx('mt-1 truncate text-xs text-muted', className)}>= igual que el periodo anterior</p>;
+  const good = invert ? value < 0 : value > 0;
+  return (
+    <p className={cx('mt-1 truncate text-xs font-semibold tabular-nums', good ? 'text-teal-ink' : 'text-coral-ink', className)}>
+      {value > 0 ? '▲' : '▼'} {Math.abs(value)} {unit} <span className="font-normal text-muted">vs. periodo anterior</span>
+    </p>
+  );
+}
+
+/** Indicador: mosaico de ícono, valor grande, una barra de tono al pie y, si se pasa `trend`, la variación. */
+export function Stat({ label, value, hint, tone, icon: Icon, className, to, trend }) {
   const t = STAT_TONE[tone] ?? { text: 'text-ink', bar: 'bg-line-strong' };
   const Tag = to ? 'a' : 'div';
   return (
@@ -146,6 +161,7 @@ export function Stat({ label, value, hint, tone, icon: Icon, className, to }) {
       </div>
       <p className={cx('kpi-value mt-2 truncate', t.text)}>{value}</p>
       {hint && <p className="mt-1 truncate text-xs text-muted">{hint}</p>}
+      {trend !== undefined && <Trend {...trend} />}
       <span className={cx('absolute inset-x-0 bottom-0 h-[3px] opacity-70', t.bar)} aria-hidden="true" />
     </Tag>
   );

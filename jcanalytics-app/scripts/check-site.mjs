@@ -10,6 +10,8 @@ import { setTimeout as delay } from 'node:timers/promises';
 import puppeteer from 'puppeteer';
 import { articles } from '../src/content/catalog.js';
 import { routes, alternatePath, articlePath, servicePath } from '../src/seo/routes.js';
+import { SERVICE_OFFERS } from '../src/content/service-offers.js';
+import { SERVICE_PRICING } from '../../portal/shared/service-pricing.js';
 
 const DIST = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'dist');
 const PRODUCTION = 'https://www.jcanalytic.com';
@@ -569,6 +571,7 @@ async function checkStaticRoute(browser, origin, route, snapshots) {
         }
       }
       await checkDiscussion(page, route);
+      if (route.type === 'service' && SERVICE_OFFERS[route.data.id]) await checkStaticServiceSales(page, route);
       if (route.data.tool) {
         assert.ok(await page.$('#practical-tool'), 'Practical resource is included in static article HTML');
         assert.ok(await page.$('.document-toc a[href="#practical-tool"]'), 'Practical resource is linked from the article contents');
@@ -588,6 +591,97 @@ async function checkStaticRoute(browser, origin, route, snapshots) {
     if (route.data?.tool) await checkStaticToolStyles(page, route.data.tool, 390);
     verifyErrors();
     console.log(`[check-site] PASS static ${route.path}: localized SEO, complete content, native details and 1440/390px`);
+  } finally {
+    await page.close();
+  }
+}
+
+// Página de servicio sin JavaScript: precio real, señales, calculadora, alcance, portal de clientes,
+// ejemplo real, preguntas y formulario propio quedan en el HTML estático.
+async function checkStaticServiceSales(page, route) {
+  const { language } = route;
+  const offer = SERVICE_OFFERS[route.data.id];
+  const pricing = SERVICE_PRICING[offer.packages[0]];
+  const label = language === 'es' ? pricing.label : pricing.label_en;
+  const offerText = compact(await page.$eval('#oferta', (node) => node.innerText));
+  assert.ok(offerText.includes(label) && offerText.includes(`$${pricing.base_usd.toLocaleString(language === 'es' ? 'es-CR' : 'en-US')}`), 'The static offer shows the real package and its published price');
+  const buy = await page.$eval('#oferta .so-wa', (node) => ({ href: node.href, pkg: node.dataset.package, value: Number(node.dataset.value) }));
+  const whatsapp = new URL(buy.href);
+  assert.equal(whatsapp.origin, 'https://wa.me', 'The offer is requested with one WhatsApp tap');
+  assert.ok(whatsapp.searchParams.get('text').includes(label), 'The WhatsApp message names the package');
+  assert.equal(buy.pkg, pricing.label, 'Package clicks carry the Spanish package id for the ad pixels');
+  assert.equal(buy.value, pricing.base_usd);
+  assert.equal((await page.$$('#senales input[type="checkbox"]')).length, offer[language].signals.length, 'Every signal is in the static HTML');
+  assert.ok(/\d\s?h/.test(await page.$eval('#calculadora .so-calc__result', (node) => node.innerText)), 'The calculator shows a default result without JavaScript');
+  const includes = compact(await page.$eval('#incluye', (node) => node.innerText));
+  assert.ok(includes.includes(compact(language === 'es' ? pricing.scope : pricing.scope_en)), 'Scope comes from the shared pricing sheet');
+  assert.ok(includes.includes(compact(language === 'es' ? pricing.exclusions : pricing.exclusions_en)), 'Exclusions come from the shared pricing sheet');
+  assert.ok((await page.$eval('#como-trabajamos .so-portal', (node) => node.href)).endsWith('/cliente'), 'The client portal entrance is linked');
+  assert.ok((await page.$eval('#ejemplo img', (node) => node.getAttribute('src'))).startsWith('/projects/'), 'The example is a real project screenshot');
+  const faq = await page.$$('#preguntas-servicio details');
+  assert.ok(faq.length >= 3, 'Service FAQ is in the static HTML');
+  // Centrar antes de tocar: si el resumen queda bajo la barra fija del encabezado, el clic no le llega.
+  await page.$eval('#preguntas-servicio details:first-of-type summary', (node) => node.scrollIntoView({ block: 'center', behavior: 'instant' }));
+  await page.click('#preguntas-servicio details:first-of-type summary');
+  assert.equal(await faq[0].evaluate((node) => node.open), true, 'Native service FAQ works without JavaScript');
+  assert.ok(await page.$('#contacto-servicio form[data-track="contacto-servicio"]'), 'The service page has its own measured form');
+  const toc = await page.$$eval('.document-toc a', (nodes) => nodes.map((node) => new URL(node.href).hash));
+  for (const id of ['#oferta', '#senales', '#calculadora', '#incluye', '#como-trabajamos', '#ejemplo', '#preguntas-servicio']) assert.ok(toc.includes(id), `Contents link ${id}`);
+}
+
+// Página de servicio con JavaScript: señales y calculadora alimentan el WhatsApp; el formulario corto deja la
+// consulta en el portal con la página de origen; la barra fija aparece en pantallas sin índice lateral.
+async function checkServiceSales(browser, origin, language, width) {
+  const route = routes.find((item) => item.type === 'service' && item.data.id === 'process-automation' && item.language === language);
+  const offer = SERVICE_OFFERS[route.data.id];
+  const pricing = SERVICE_PRICING[offer.packages[0]];
+  const { page, verifyErrors } = await openPage(browser, origin, width);
+  try {
+    await navigate(page, `${origin}${route.path}`);
+    await page.waitForSelector('#senales input[type="checkbox"]');
+    assert.equal(await page.$eval('.so-signals__verdict', (node) => node.dataset.count), '0');
+    await page.click('#senales li:first-child label');
+    await page.waitForFunction(() => document.querySelector('.so-signals__verdict').dataset.count === '1');
+    const signal = offer[language].signals[0];
+    const offerMessage = () => page.$eval('#oferta .so-wa', (node) => decodeURIComponent(new URL(node.href).searchParams.get('text')));
+    assert.ok((await offerMessage()).includes(signal), 'Ticked signals travel in the WhatsApp message');
+    const hours = () => page.$eval('.so-calc__result', (node) => Number(node.dataset.hours));
+    const before = await hours();
+    await page.click('#calc-times', { clickCount: 3 });
+    await page.type('#calc-times', '60');
+    await page.waitForFunction((previous) => Number(document.querySelector('.so-calc__result').dataset.hours) !== previous, {}, before);
+    assert.ok((await hours()) > before, 'More repetitions mean more hours a month');
+    assert.ok((await offerMessage()).includes(language === 'es' ? 'Calculé' : 'I estimated'), 'The calculation travels in the WhatsApp message');
+    // «Prefiero que me contacten» exige WhatsApp o correo y deja la consulta en el portal.
+    await page.click('.so-callback');
+    await page.waitForFunction(() => /WhatsApp/.test(document.querySelector('.so-form__status').textContent));
+    assert.equal(page.ingest.filter((r) => r.path === '/ingest/lead').length, 0, 'Without a contact nothing is sent');
+    await page.type('#servicio-nombre', 'Browser QA');
+    await page.type('#servicio-telefono', '8888-1234');
+    // El portal descarta envíos llenados en menos de 1,5 s (bots); una persona tarda más que esta prueba.
+    await page.waitForFunction(() => performance.now() > 3500);
+    await page.click('.so-callback');
+    await page.waitForFunction(() => document.querySelector('.so-form__status').textContent.includes('24'));
+    const [lead] = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body);
+    assert.equal(lead.channel, 'devolucion');
+    assert.equal(lead.need, route.data.need, 'The portal receives the service need in Spanish');
+    assert.equal(lead.package, pricing.label, 'The portal receives the Spanish package name');
+    assert.equal(lead.page, route.path, 'The portal knows which service page the inquiry came from');
+    assert.equal(lead.phone, '8888-1234');
+    assert.equal(lead.name, 'Browser QA');
+    assert.equal(lead.website, '', 'The bot trap stays empty for people');
+    assert.ok(lead.message.includes(signal), 'The inquiry includes what the person ticked');
+    assert.ok(/^[a-z0-9]{16,40}$/.test(lead.sid) && lead.lang === language && lead.elapsed >= 1500);
+    if (width < 1024) {
+      await page.$eval('#incluye', (node) => node.scrollIntoView({ block: 'start' }));
+      await page.waitForFunction(() => document.querySelector('.so-bar').classList.contains('is-on'));
+      assert.equal(await page.$eval('.so-bar .so-wa', (node) => new URL(node.href).origin), 'https://wa.me', 'The sticky bar offers WhatsApp');
+    } else {
+      assert.ok(await page.$('.so-toc-card .so-wa'), 'Desktop keeps the offer card beside the contents');
+    }
+    await checkWidth(page);
+    verifyErrors();
+    console.log(`[check-site] PASS service page ${language} ${width}px: signals, calculator, WhatsApp message, callback lead to the portal and sticky CTA`);
   } finally {
     await page.close();
   }
@@ -1153,6 +1247,7 @@ async function main() {
         }
         await checkJournalInteractions(browser, origin, language, width);
         await checkArticleNavigation(browser, origin, language, width);
+        await checkServiceSales(browser, origin, language, width);
         await checkListReconciler(browser, origin, language, width);
         await checkRetrySimulator(browser, origin, language, width);
       }

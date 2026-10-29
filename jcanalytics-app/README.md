@@ -1,13 +1,13 @@
 # JC Analytics
 
-Sitio bilingüe: inglés en `/`, español en `/es/`. El selector de idioma vive en la barra de navegación y ambas versiones se generan como HTML estático para buscadores.
+Sitio bilingüe: español en `/`, inglés en `/en/`. El selector de idioma vive en la barra de navegación y ambas versiones se generan como HTML estático para buscadores.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Antes de publicar: `npm run lint`, `npm run build`, `npm run check:tools` y `npm run check:site`. El build necesita el Chromium de Puppeteer y debe generar 28 rutas de inicio, servicios e ideas en ambos idiomas. El catálogo contiene ocho artículos, dos de ellos con recursos prácticos locales. Ver [SEO, idiomas y publicación](docs/seo-and-languages.md) para mantenimiento, pruebas y pasos de Search Console.
+Antes de publicar: `npm run lint`, `npm run build`, `npm run check:tools` y `npm run check:site`. El build necesita el Chromium de Puppeteer y debe generar 28 rutas de inicio, servicios e ideas en ambos idiomas. El catálogo contiene ocho artículos, dos de ellos con recursos prácticos locales. Ver [SEO, idiomas y publicación](docs/seo-and-languages.md) para mantenimiento, pruebas y pasos de Search Console, y [páginas de servicio](docs/paginas-de-servicio.md) para la oferta, la calculadora y el formulario que deja consultas en el portal.
 
 El botón flotante de la asistente está disponible en todas las páginas. Consulta DeepSeek mediante una API privada en Railway y deriva al WhatsApp +506 7033-0596 cuando falta información o se solicita al equipo. Ejecutar también `npm run check:assistant` después del build. La configuración y el mantenimiento están en [la documentación de la API](../assistant-api/README.md). Al actualizar servicios o preguntas frecuentes, ejecutar `npm run sync:assistant` y publicar el backend actualizado.
 

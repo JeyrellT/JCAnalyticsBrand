@@ -47,3 +47,12 @@ Las capturas anteriores se preservan en un archivo local ignorado fuera del dire
 ## Cómo evaluar el cambio
 
 El objetivo es facilitar consultas más claras; todavía no se ha medido un aumento de ventas o conversiones. Al publicar, conviene comparar visitas al contacto, aperturas del borrador y conversaciones efectivamente recibidas. Una apertura de WhatsApp no equivale a un mensaje enviado ni a una venta. No se incorporó seguimiento nuevo de datos personales.
+
+## Páginas de servicio con oferta (28 de octubre de 2026)
+
+Las páginas de servicio concentran el tráfico que no entra por la portada. Cada una muestra ahora el paquete con
+su precio publicado, un checklist «¿es para vos?», una calculadora con los números de la persona, qué incluye y
+qué no, cómo trabajamos (con el portal de clientes), un ejemplo real, preguntas frecuentes y un formulario corto
+que deja la consulta en el portal. La barra fija de celular y la tarjeta del índice repiten la acción principal.
+Todo queda medido por bloque para revisar en el portal dónde se queda la gente y qué botón convierte. Detalle en
+[páginas de servicio](paginas-de-servicio.md).

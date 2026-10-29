@@ -12,6 +12,11 @@ import RetrySimulator from './components/tools/RetrySimulator';
 import './styles/discovery.css';
 import './styles/journal.css';
 import { shotSrcSet } from './data/shots';
+import { PORTAL_URL } from './components/site/links';
+import {
+  ServiceSalesProvider, OfferStrip, Signals, ImpactCalculator, Includes, HowWeWork, RealExample, ServiceFaq, ServiceLeadForm, ServiceBar, TocOffer,
+} from './components/site/ServiceSales';
+import { serviceOutline, hasServiceOffer } from './components/site/service-outline';
 
 // Las portadas son pantallas reales de sistemas construidos por el estudio (con datos de demostración).
 const COVER_PROJECTS = { laburrada: 'La Burrada Street Food', caviq: 'CAVIQ', multiagencia: 'Multiagencia Gutiérrez', crimson: 'Crimson Consulting', maison: 'Taller Maison Valcour', soporte20: 'Soporte 2.0', transportesluna: 'Transporte Luz de Luna' };
@@ -82,24 +87,35 @@ function JournalHome() {
   </>;
 }
 
+const renderSection = (section) => <section key={section.id} id={section.id}><h2>{section.heading}</h2>{section.paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}{section.bullets && <ul>{section.bullets.map(bullet => <li key={bullet}>{bullet}</li>)}</ul>}</section>;
+const MaybeSales = ({ enabled, item, children }) => (enabled ? <ServiceSalesProvider item={item}>{children}</ServiceSalesProvider> : children);
+// Página de servicio: los bloques de venta se intercalan con el contenido editorial (mismo orden que serviceOutline).
+function ServiceBody({ sections }) {
+  const [first, second, ...rest] = sections;
+  return <>{renderSection(first)}<Signals />{renderSection(second)}<ImpactCalculator /><Includes />{rest.map(renderSection)}<HowWeWork /><RealExample /><ServiceFaq /></>;
+}
+
 function DocumentPage({ route }) {
   const item = route.data;
   const copy = text(item);
   const isArticle = route.type === 'article';
+  const sales = !isArticle && hasServiceOffer(item);
+  const outline = sales ? serviceOutline(copy) : copy.sections;
   const related = articles.filter(article => article.id !== item.id).sort((a, b) => Number(b.topic === item.topic) - Number(a.topic === item.topic)).slice(0, 3);
   return <div className="journal-container"><nav className="journal-breadcrumb" aria-label={t('Ruta de navegación', 'Breadcrumb')}><a href={homePath(locale)}>{t('Inicio', 'Home')}</a><span>/</span><a href={journalPath(locale)}>{t('Ideas', 'Insights')}</a><span>/</span><span>{topics[item.topic][locale]}</span></nav>
-    <article className="journal-document"><header className="document-heading"><span className="journal-eyebrow">{isArticle ? t('CUADERNO DE IDEAS', 'FIELD NOTES') : t('SERVICIOS / COSTA RICA', 'SERVICES / COSTA RICA')} · {topics[item.topic][locale]}</span><h1>{copy.title}</h1><p className="document-summary">{copy.summary}</p>{isArticle && <div className="document-byline"><span>JC Analytics</span><span>{item.minutes} min {t('de lectura', 'read')}</span><time dateTime={item.published}>{new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(`${item.published}T12:00:00Z`))}</time></div>}{item.tool && <a className="journal-button document-tool-link" href="#practical-tool">{t('Probar la herramienta', 'Try the tool')}<ArrowRight size={18} /></a>}</header>
+    <MaybeSales enabled={sales} item={item}><article className="journal-document"><header className="document-heading"><span className="journal-eyebrow">{isArticle ? t('CUADERNO DE IDEAS', 'FIELD NOTES') : t('SERVICIOS / COSTA RICA', 'SERVICES / COSTA RICA')} · {topics[item.topic][locale]}</span><h1>{copy.title}</h1><p className="document-summary">{copy.summary}</p>{isArticle && <div className="document-byline"><span>JC Analytics</span><span>{item.minutes} min {t('de lectura', 'read')}</span><time dateTime={item.published}>{new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(`${item.published}T12:00:00Z`))}</time></div>}{item.tool && <a className="journal-button document-tool-link" href="#practical-tool">{t('Probar la herramienta', 'Try the tool')}<ArrowRight size={18} /></a>}</header>
+      {sales && <OfferStrip />}
       <figure className="document-cover"><img src={item.image} srcSet={shotSrcSet(item.image)} sizes="(max-width: 1000px) 92vw, 900px" alt="" width="1600" height="1000" fetchPriority="high" /><figcaption>{coverCredit(item.image)}</figcaption></figure>
-      <div className="document-layout"><aside className="document-toc"><span className="journal-eyebrow">{t('EN ESTA LECTURA', 'ON THIS PAGE')}</span><nav aria-label={t('Índice del contenido', 'Table of contents')}>{item.tool && <a className="document-toc__tool" href="#practical-tool"><span>↗</span>{t('Probar la herramienta', 'Try the tool')}</a>}{copy.sections.map((section, index) => <a href={`#${section.id}`} key={section.id}><span>0{index + 1}</span>{section.heading}</a>)}<a href="#discussion"><span>↗</span>{t('Para conversar', 'Let’s discuss')}</a></nav></aside>
+      <div className="document-layout"><aside className="document-toc"><span className="journal-eyebrow">{t('EN ESTA LECTURA', 'ON THIS PAGE')}</span><nav aria-label={t('Índice del contenido', 'Table of contents')}>{item.tool && <a className="document-toc__tool" href="#practical-tool"><span>↗</span>{t('Probar la herramienta', 'Try the tool')}</a>}{outline.map((section, index) => <a href={`#${section.id}`} key={section.id} className={section.sales ? 'document-toc__sales' : undefined}><span>{String(index + 1).padStart(2, '0')}</span>{section.heading}</a>)}<a href="#discussion"><span>↗</span>{t('Para conversar', 'Let’s discuss')}</a></nav>{sales && <TocOffer />}</aside>
         <div className="document-body"><div className="document-takeaway"><span className="journal-eyebrow">{t('LA IDEA CLAVE', 'THE KEY IDEA')}</span><p>{copy.takeaway}</p></div>
           {item.tool && <PracticalTool tool={item.tool} />}
-          {copy.sections.map(section => <section key={section.id} id={section.id}><h2>{section.heading}</h2>{section.paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}{section.bullets && <ul>{section.bullets.map(bullet => <li key={bullet}>{bullet}</li>)}</ul>}</section>)}
+          {sales ? <ServiceBody sections={copy.sections} /> : copy.sections.map(renderSection)}
           <section className="document-discussion" id="discussion"><span className="journal-eyebrow">{t('LAS BUENAS IDEAS SE CONVERSAN', 'GOOD IDEAS START CONVERSATIONS')}</span><h2>{t('Llevá la pregunta a tu equipo.', 'Bring the question to your team.')}</h2><p>{t('Tres preguntas para explorar juntos. Abrí una y usala como punto de partida.', 'Three questions to explore together. Open one and use it to start a conversation.')}</p>{copy.discussion.map((question, index) => <details key={question}><summary><span>0{index + 1}</span>{question}<Plus size={18} /></summary><p>{t('Anotá una situación concreta, escuchá otra perspectiva y acordá un pequeño próximo paso. Si querés una mirada externa, podemos conversarlo.', 'Write down a specific situation, listen to another perspective and agree on a small next step. If you would like an outside perspective, we can talk it through.')}</p><a href={wa(t(`Hola, me gustaría conversar sobre «${copy.title}». Mi pregunta: ${question}`, `Hi, I would like to discuss “${copy.title}”. My question: ${question}`))} target="_blank" rel="noreferrer">{t('Conversar con el estudio', 'Discuss with the studio')}<ArrowUpRight size={16} /></a></details>)}</section>
           {copy.sources.length > 0 && <section className="document-sources"><h2>{t('Para seguir explorando', 'Further reading')}</h2><p>{t('Referencias públicas que amplían estas ideas.', 'Public references that explore these ideas further.')}</p><ul>{copy.sources.map(source => <li key={source.url}><a href={source.url} target="_blank" rel="noreferrer">{source.title}<ArrowUpRight size={14} /></a></li>)}</ul></section>}
-          <div className="document-cta"><h2>{t('¿Cómo se ve esto en tu negocio?', 'What could this look like in your business?')}</h2><p>{t('Empecemos con una conversación de 30 minutos, sin costo, sobre tu objetivo y tus prioridades.', 'Start with a free 30-minute conversation about your goals and priorities.')}</p><a className="journal-button" href={`${homePath(locale)}#contacto`}>{t('Contanos tu idea', 'Tell us your idea')}<ArrowUpRight size={18} /></a></div>
+          {sales ? <><ServiceLeadForm /><ServiceBar /></> : <div className="document-cta"><h2>{t('¿Cómo se ve esto en tu negocio?', 'What could this look like in your business?')}</h2><p>{t('Empecemos con una conversación de 30 minutos, sin costo, sobre tu objetivo y tus prioridades.', 'Start with a free 30-minute conversation about your goals and priorities.')}</p><a className="journal-button" href={`${homePath(locale)}#contacto`}>{t('Contanos tu idea', 'Tell us your idea')}<ArrowUpRight size={18} /></a></div>}
         </div>
       </div>
-    </article>
+    </article></MaybeSales>
     <section className="journal-related"><div className="journal-section-heading"><h2>{t('Seguí el hilo.', 'Keep exploring.')}</h2><a className="journal-text-link" href={journalPath(locale)}>{t('Todas las ideas', 'All insights')}<ArrowRight size={18} /></a></div><div className="journal-cards">{related.map(article => <ArticleCard key={article.id} article={article} />)}</div></section>
     {!isArticle && <ServicesDirectory />}
   </div>;
@@ -109,8 +125,10 @@ export default function JournalApp({ route }) {
   useInitialFragment();
   useEffect(trackContactClicks, []);
   useEffect(() => { if (!route) { document.title = '404 | JC Analytics'; document.querySelector('meta[name="robots"]')?.setAttribute('content', 'noindex, follow'); } }, [route]);
-  return <div className="journal-site"><a className="journal-skip" href="#main-content">{t('Saltar al contenido', 'Skip to content')}</a><header className="journal-nav"><a className="journal-brand" href={homePath(locale)}><img src="/LogoMark.webp" alt="" width="162" height="200" /><span>JC Analytics<small>{t('EL ESTUDIO / LAS IDEAS', 'THE STUDIO / THE IDEAS')}</small></span></a><nav aria-label={t('Navegación principal', 'Main navigation')}><a href={homePath(locale)}>{t('Estudio', 'Studio')}</a><a href={journalPath(locale)} aria-current={route?.type === 'journal' ? 'page' : undefined}>{t('Ideas', 'Insights')}</a><a className="journal-nav-contact" href={`${homePath(locale)}#contacto`}>{t('Hablemos', 'Let’s talk')}<ArrowUpRight size={16} /></a></nav><LanguageSwitcher /></header>
+  // En una página de servicio, "Hablemos" lleva al formulario de esa misma página (no al de la portada).
+  const contactHref = route?.type === 'service' && hasServiceOffer(route.data) ? '#contacto-servicio' : `${homePath(locale)}#contacto`;
+  return <div className="journal-site"><a className="journal-skip" href="#main-content">{t('Saltar al contenido', 'Skip to content')}</a><header className="journal-nav"><a className="journal-brand" href={homePath(locale)}><img src="/LogoMark.webp" alt="" width="162" height="200" /><span>JC Analytics<small>{t('EL ESTUDIO / LAS IDEAS', 'THE STUDIO / THE IDEAS')}</small></span></a><nav aria-label={t('Navegación principal', 'Main navigation')}><a href={homePath(locale)}>{t('Estudio', 'Studio')}</a><a href={journalPath(locale)} aria-current={route?.type === 'journal' ? 'page' : undefined}>{t('Ideas', 'Insights')}</a><a className="journal-nav-contact" href={contactHref} data-track="contact">{t('Hablemos', 'Let’s talk')}<ArrowUpRight size={16} /></a></nav><LanguageSwitcher /></header>
     <main id="main-content" tabIndex={-1}>{!route ? <section className="journal-not-found"><span className="journal-eyebrow">404</span><h1>{t('Esta página no existe.', 'This page could not be found.')}</h1><a className="journal-button" href={journalPath(locale)}><ArrowLeft size={18} />{t('Explorar ideas', 'Explore insights')}</a></section> : route.type === 'journal' ? <JournalHome /> : <DocumentPage route={route} />}</main>
-    <footer className="journal-footer"><div><a className="journal-footer-brand" href={homePath(locale)}>JC Analytics<span>↗</span></a><p>{t('Software, datos e inteligencia. Ideas desde Costa Rica.', 'Software, data and intelligence. Ideas from Costa Rica.')}</p></div><div><a href={`mailto:${EMAIL}`}>{EMAIL}</a><a href={journalPath(locale)}>{t('Explorar el cuaderno', 'Explore the field notes')}</a><span>© {new Date().getFullYear()} JC Analytics</span></div></footer>
+    <footer className="journal-footer"><div><a className="journal-footer-brand" href={homePath(locale)}>JC Analytics<span>↗</span></a><p>{t('Software, datos e inteligencia. Ideas desde Costa Rica.', 'Software, data and intelligence. Ideas from Costa Rica.')}</p></div><div><a href={`mailto:${EMAIL}`}>{EMAIL}</a><a href={journalPath(locale)}>{t('Explorar el cuaderno', 'Explore the field notes')}</a><a href={`${PORTAL_URL}/cliente`} target="_blank" rel="noreferrer">{t('Portal de clientes', 'Client portal')} ↗</a><span>© {new Date().getFullYear()} JC Analytics</span></div></footer>
   </div>;
 }
