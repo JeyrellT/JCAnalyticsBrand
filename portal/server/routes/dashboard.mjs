@@ -79,6 +79,20 @@ export function dashboardRoutes(route, ctx) {
       alerts.push({ tone: 'amber', kind: 'deliverable', title: `${d.client_name} pidió cambios: ${d.title}`, detail: 'Subí una versión nueva del entregable.', link: d.project_id ? `/proyectos/${d.project_id}` : `/clientes/${d.client_id}` });
     }
 
+    // Consultas de la web (jcanalytic.com): sin respuesta en 24 h es una excepción roja; nuevas, un aviso.
+    const dayAgo = new Date(ctx.now() - 86_400_000).toISOString();
+    const webLeads = {
+      new: db.prepare("SELECT COUNT(*) n FROM leads WHERE status = 'nuevo'").get().n,
+      unattended_24h: db.prepare("SELECT COUNT(*) n FROM leads WHERE status = 'nuevo' AND created_at < ?").get(dayAgo).n,
+    };
+    if (webLeads.unattended_24h) {
+      const n = webLeads.unattended_24h;
+      alerts.unshift({ tone: 'red', kind: 'lead', title: `${n} ${n === 1 ? 'consulta de la web lleva' : 'consultas de la web llevan'} más de 24 h sin respuesta`, detail: 'Respondé o asigná un responsable desde Consultas. Prometemos contestar en menos de 24 h.', link: '/consultas' });
+    } else if (webLeads.new) {
+      const n = webLeads.new;
+      alerts.push({ tone: 'blue', kind: 'lead', title: `${n} ${n === 1 ? 'consulta nueva' : 'consultas nuevas'} de la web`, detail: 'Personas que dejaron su contacto en jcanalytic.com.', link: '/consultas' });
+    }
+
     let investments = null;
     if (canInvest(user)) {
       const movements = db.prepare('SELECT * FROM movements').all();
@@ -131,6 +145,7 @@ export function dashboardRoutes(route, ctx) {
         week_appointments: upcoming.length,
       },
       client_portal: { briefs_to_review: briefsToReview.length, changes_requested: changesRequested.length, waiting_client: waitingClient },
+      web_leads: webLeads,
       alerts,
       agenda: upcoming.slice(0, 8),
       my_tasks: myTasks,

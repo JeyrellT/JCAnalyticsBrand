@@ -358,10 +358,15 @@ function seedSiteActivity({ db, U, day, iso }) {
   const pick = (list) => list[Math.floor(rand() * list.length)];
   const insert = db.prepare(`INSERT INTO site_events (day, at, session_id, visitor, type, path, section, target, label, value, source, campaign, device, language)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  // Portada: una visita baja por estas secciones en orden. Páginas de servicio: oferta, checklist, calculadora y formulario propio.
   const ORDER = ['top', 'paquetes', 'trabajo', 'plataformas', 'finanzas', 'inteligencia', 'servicios', 'redes', 'equipo', 'proceso', 'ideas', 'cotizar', 'preguntas', 'contacto'];
+  const SERVICE_ORDER = ['oferta', 'fit', 'senales', 'calculadora', 'scope', 'incluye', 'como-trabajamos', 'prepare', 'ejemplo', 'preguntas-servicio', 'contacto-servicio'];
+  const SERVICE_PATHS = ['/servicios/automatizacion-de-procesos/', '/servicios/desarrollo-web-costa-rica/', '/servicios/integracion-ia-costa-rica/', '/servicios/dashboards-power-bi-costa-rica/'];
   const SOURCES = [['meta', 'web-60'], ['meta', 'dashboards'], ['google', 'marca'], ['google', null], ['directo', null], ['chatgpt', null], ['otros buscadores', null]];
   const CLICKS = [['package', 'Lo quiero · Web con reservas', 'paquetes'], ['package', 'Lo quiero · Dashboard inicial', 'paquetes'], ['whatsapp', 'Cotizar por WhatsApp', 'top'],
     ['whatsapp', 'Quiero algo así · WhatsApp', 'trabajo'], ['nav', 'Precios', null], ['project', 'La Burrada Street Food', 'trabajo'], ['link', 'Ver paquetes y precios', 'top']];
+  const SERVICE_CLICKS = [['whatsapp', 'Lo quiero · WhatsApp', 'oferta'], ['whatsapp', 'Cotizar por WhatsApp · barra', 'barra-cta'], ['contact', 'Que me contacten', 'contacto-servicio'],
+    ['button', 'Calcular mi ahorro', 'calculadora'], ['link', 'Ver ejemplo real', 'ejemplo']];
   const leadSessions = [];
   for (let d = 29; d >= 0; d -= 1) {
     const visits = 6 + Math.floor(rand() * 10) + (d < 10 ? 4 : 0);
@@ -369,16 +374,23 @@ function seedSiteActivity({ db, U, day, iso }) {
       const sid = `demo${d}x${v}${Math.floor(rand() * 1e9).toString(36)}`.padEnd(18, '0').slice(0, 30);
       const [source, campaign] = pick(SOURCES);
       const device = rand() < 0.72 ? 'mobile' : rand() < 0.9 ? 'desktop' : 'tablet';
-      const at = iso(-24 * d - rand() * 20);
-      const ev = (type, o = {}) => insert.run(day(-d), at, sid, `v${d}-${v}`, type, o.path ?? '/', o.section ?? null, o.target ?? null, o.label ?? null, o.value ?? null, source, campaign, device, 'es');
+      // Hora del día variada, con más entradas al final de la tarde y la noche (para el mapa de horas).
+      const hourBack = rand() < 0.45 ? 1 + rand() * 6 : rand() * 22;
+      const at = iso(-24 * d - hourBack);
+      // Casi un tercio de las visitas cae directo en una página de servicio (anuncios y buscadores).
+      const servicePath = rand() < 0.3 ? pick(SERVICE_PATHS) : null;
+      const path = servicePath ?? '/';
+      const order = servicePath ? SERVICE_ORDER : ORDER;
+      const ev = (type, o = {}) => insert.run(day(-d), at, sid, `v${d}-${v}`, type, o.path ?? path, o.section ?? null, o.target ?? null, o.label ?? null, o.value ?? null, source, campaign, device, 'es');
       ev('view');
-      const depth = 2 + Math.floor(rand() * (ORDER.length - 2));
-      for (const section of ORDER.slice(0, depth)) ev('section', { section, value: Math.round(1500 + rand() * (section === 'paquetes' ? 40_000 : section === 'trabajo' ? 32_000 : 14_000)) });
-      for (const pct of [25, 50, 75, 100]) if (depth / ORDER.length >= pct / 100 - 0.1) ev('scroll', { value: pct });
-      if (rand() < 0.45) { const [target, label, section] = pick(CLICKS); ev('click', { target, label, section }); }
-      if (depth >= ORDER.length - 1 && rand() < 0.5) {
-        ev('form_start', { target: 'contacto', section: 'contacto' });
-        if (rand() < 0.6) { ev('form_submit', { target: 'contacto', section: 'contacto' }); if (leadSessions.length < 6) leadSessions.push({ sid, d, source, campaign, device }); }
+      const depth = 2 + Math.floor(rand() * (order.length - 2));
+      for (const section of order.slice(0, depth)) ev('section', { section, value: Math.round(1500 + rand() * (section === 'paquetes' || section === 'oferta' ? 40_000 : section === 'trabajo' || section === 'calculadora' ? 32_000 : 14_000)) });
+      for (const pct of [25, 50, 75, 100]) if (depth / order.length >= pct / 100 - 0.1) ev('scroll', { value: pct });
+      if (rand() < 0.45) { const [target, label, section] = pick(servicePath ? SERVICE_CLICKS : CLICKS); ev('click', { target, label, section }); }
+      const formId = servicePath ? 'contacto-servicio' : 'contacto';
+      if (depth >= order.length - 1 && rand() < 0.5) {
+        ev('form_start', { target: formId, section: formId });
+        if (rand() < 0.6) { ev('form_submit', { target: formId, section: formId }); if (leadSessions.length < 6) leadSessions.push({ sid, d, source, campaign, device, path, at }); }
       }
     }
   }
@@ -391,16 +403,18 @@ function seedSiteActivity({ db, U, day, iso }) {
     ['Laura Jiménez', '8899-0011', null, 'Sistema / backend', 'Software a medida', 'Llevamos el inventario de 3 bodegas en cuadernos.', 'nuevo', null],
   ];
   const insertLead = db.prepare(`INSERT INTO leads (status, channel, name, phone, email, need, message, package, language, page, source, campaign, device, session_id, flags,
-    owner_id, contacted_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'es', '/', ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    owner_id, contacted_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'es', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
   const note = db.prepare('INSERT INTO lead_notes (lead_id, user_id, kind, body, created_at) VALUES (?, ?, ?, ?, ?)');
   LEADS.forEach(([name, phone, email, need, pkg, message, status, owner], i) => {
-    const s = leadSessions[i] ?? { sid: null, d: i, source: 'directo', campaign: null, device: 'mobile' };
-    const created = iso(-24 * s.d - 2);
+    const s = leadSessions[i] ?? { sid: null, d: i, source: 'directo', campaign: null, device: 'mobile', path: '/', at: null };
+    const created = s.at ?? iso(-24 * s.d - 2);
     const flags = status === 'spam' ? 'instrucciones,enlace' : null;
-    const leadId = Number(insertLead.run(status, pkg ? 'paquete' : i % 2 ? 'devolucion' : 'formulario', name, phone, email, need, message, pkg, s.source, s.campaign, s.device, s.sid,
-      flags, owner ? U[owner] : null, status === 'nuevo' || status === 'spam' ? null : created, created, created).lastInsertRowid);
-    if (s.sid) insert.run(day(-s.d), created, s.sid, null, 'lead', '/', null, 'formulario', null, null, s.source, s.campaign, s.device, 'es');
-    if (owner) note.run(leadId, U[owner], 'contacto', `${owner === 'alex' ? 'Alex' : owner === 'catalina' ? 'Catalina' : 'Hillary'} la contactó por WhatsApp.`, created);
+    // Las contactadas se respondieron entre 40 min y 5 h después de llegar (mediana realista en el tablero).
+    const contacted = status === 'nuevo' || status === 'spam' ? null : new Date(new Date(created).getTime() + (40 + i * 60) * 60_000).toISOString();
+    const leadId = Number(insertLead.run(status, pkg ? 'paquete' : i % 2 ? 'devolucion' : 'formulario', name, phone, email, need, message, pkg, s.path, s.source, s.campaign, s.device, s.sid,
+      flags, owner ? U[owner] : null, contacted, created, created).lastInsertRowid);
+    if (s.sid) insert.run(day(-s.d), created, s.sid, null, 'lead', s.path, null, 'formulario', null, null, s.source, s.campaign, s.device, 'es');
+    if (owner) note.run(leadId, U[owner], 'contacto', `${owner === 'alex' ? 'Alex' : owner === 'catalina' ? 'Catalina' : 'Hillary'} la contactó por WhatsApp.`, contacted ?? created);
     if (status === 'cotizado') note.run(leadId, U[owner], 'nota', 'Le enviamos la propuesta del plan mensual de redes. Responde el viernes.', created);
   });
 }

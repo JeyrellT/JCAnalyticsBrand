@@ -118,7 +118,8 @@ function classify(el) {
   if (href.startsWith('https://wa.me/')) return 'whatsapp';
   if (href.startsWith('tel:')) return 'phone';
   if (href.startsWith('mailto:')) return 'email';
-  if (el.closest('#contacto form') || el.dataset.track === 'contact') return 'contact';
+  // Cualquier formulario medido (portada o página de servicio) y los botones marcados como contacto.
+  if (el.closest('form[data-track]') || el.dataset.track === 'contact') return 'contact';
   if (el.closest('header, nav, #menu-movil')) return 'nav';
   if (el.closest('.works-list, .works-gallery, .package-card__example')) return 'project';
   return el.tagName === 'A' ? 'link' : 'button';
@@ -132,7 +133,9 @@ function label(el) {
 function onClick(event) {
   const el = event.target.closest?.('a[href], button');
   if (!el || el.closest('.assistant-dialog')) return;
-  push({ t: 'click', p: window.location.pathname, k: classify(el), l: label(el), s: el.closest('section[id]')?.id });
+  // Un elemento fijo (la barra de CTA) no está dentro de ninguna sección: declara la suya con data-track-section.
+  const section = el.closest('[data-track-section]')?.dataset.trackSection ?? el.closest('section[id]')?.id;
+  push({ t: 'click', p: window.location.pathname, k: classify(el), l: label(el), s: section });
 }
 
 const startedForms = new Set();
@@ -217,8 +220,9 @@ export function startSiteTracking() {
  * Envía una consulta al portal (bandeja "Consultas"). Devuelve true si llegó.
  * `startedAt` (performance.now() al mostrar el formulario) sirve contra bots que llenan al instante.
  */
-export async function sendLead({ channel, name, phone, email, need, message, packageName, website, startedAt }) {
-  trackEvent('form_submit', { k: channel === 'devolucion' ? 'devolucion' : 'contacto', s: 'contacto' });
+export async function sendLead({ channel, name, phone, email, need, message, packageName, website, startedAt, form, section }) {
+  // `form` identifica el formulario en el tablero del portal (contacto · devolucion · contacto-servicio).
+  trackEvent('form_submit', { k: form ?? (channel === 'devolucion' ? 'devolucion' : 'contacto'), s: section ?? 'contacto' });
   flush();
   return post('lead', {
     ...visit(), channel, name, phone, email, need, message, package: packageName, website,

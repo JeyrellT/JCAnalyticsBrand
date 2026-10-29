@@ -2,7 +2,7 @@
 // sitio y el recorrido de una visita. Todo texto del visitante se pinta como texto.
 import { Eye, MousePointerClick, ArrowDownToLine, Timer, PenLine, Send, Inbox } from 'lucide-react';
 import { Badge, cx } from './ui.jsx';
-import { LEAD_STATUS, CLICK_KINDS, DEVICES } from '../../shared/leads.js';
+import { LEAD_STATUS, CLICK_KINDS, DEVICES, PAGE_VERDICTS, pageLabel } from '../../shared/leads.js';
 
 export function LeadStatusBadge({ status }) {
   const s = LEAD_STATUS[status] ?? { label: status, tone: 'slate' };
@@ -14,9 +14,21 @@ export const SITE_SECTIONS = {
   top: 'Portada', paquetes: 'Paquetes y precios', trabajo: 'Proyectos reales', plataformas: 'Sistemas', finanzas: 'Finanzas y BI',
   inteligencia: 'IA y machine learning', servicios: 'Servicios', redes: 'Marketing', equipo: 'Equipo', proceso: 'Proceso',
   ideas: 'Ideas (blog)', cotizar: 'Cotizador', preguntas: 'Preguntas frecuentes', contacto: 'Contacto', 'practical-tool': 'Herramienta del artículo',
+  // Páginas de servicio (/servicios/…): oferta, checklist, calculadora y su formulario propio.
+  oferta: 'Oferta y precio', senales: '¿Es para vos? (checklist)', calculadora: 'Calculadora de impacto', incluye: 'Qué incluye',
+  'como-trabajamos': 'Cómo trabajamos', ejemplo: 'Ejemplo real', 'preguntas-servicio': 'Preguntas del servicio',
+  'contacto-servicio': 'Formulario de la página de servicio', 'barra-cta': 'Barra fija de CTA',
+  fit: 'Cuándo tiene sentido', scope: 'Qué podemos definir', prepare: 'Qué traer a la conversación', discussion: 'Para conversar', measure: 'Medir',
 };
 export const sectionName = (id) => SITE_SECTIONS[id] ?? (id ? id.replace(/-/g, ' ') : 'Sin sección');
-export const FORM_NAMES = { contacto: 'Formulario de contacto', devolucion: 'Que me contacten', cotizar: 'Cotizador' };
+export const FORM_NAMES = { contacto: 'Formulario de contacto', devolucion: 'Que me contacten', cotizar: 'Cotizador', 'contacto-servicio': 'Formulario de la página de servicio' };
+/** Nombre de una página del sitio: Portada, Servicio · …, Idea · …, EN · … */
+export const pageName = pageLabel;
+/** Veredicto de una página (shared/leads.js) como etiqueta con tono. */
+export function PageVerdictBadge({ verdict }) {
+  const v = PAGE_VERDICTS[verdict] ?? PAGE_VERDICTS.ok;
+  return <span title={v.hint}><Badge tone={v.tone} dot>{v.label}</Badge></span>;
+}
 export const formName = (id) => FORM_NAMES[id] ?? id;
 export const clickKind = (k) => CLICK_KINDS[k]?.label ?? 'Botón';
 export const deviceName = (d) => DEVICES[d] ?? 'Sin dato';

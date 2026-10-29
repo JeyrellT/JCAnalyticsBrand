@@ -19,7 +19,7 @@
 
 import { createHash, randomBytes } from 'node:crypto';
 import {
-  SITE_EVENT_TYPES, CLICK_KINDS, DEVICES, LEAD_CHANNELS, LEAD_NEEDS, LEAD_LIMITS, ANALYTICS_RETENTION_DAYS,
+  SITE_EVENT_TYPES, CLICK_KINDS, DEVICES, LEAD_CHANNELS, LEAD_NEEDS, LEAD_LIMITS, ANALYTICS_RETENTION_DAYS, SITE_PATH_RE,
   cleanVisitorText, cleanPhone, cleanEmail, leadFlags, trafficSource,
 } from '../shared/leads.js';
 
@@ -37,7 +37,7 @@ const MIN_FILL_MS = 1500;
 const DUPLICATE_MS = 10 * 60_000;
 const SESSION_RE = /^[a-z0-9]{16,40}$/i;
 const SLUG_RE = /^[a-z0-9-]{1,40}$/;
-const PATH_RE = /^\/[\w\-./~%]*$/;
+const PATH_RE = SITE_PATH_RE; // misma regla que /api/analytics/page
 
 export const DEFAULT_SITE_ORIGINS = 'https://www.jcanalytic.com,https://jcanalytic.com';
 

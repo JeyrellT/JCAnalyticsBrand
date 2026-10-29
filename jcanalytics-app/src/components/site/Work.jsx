@@ -110,8 +110,15 @@ const Anatomy = ({ project }) => {
   );
 };
 
+// Las páginas de servicio llegan con ?proyecto=<id>#trabajo y el explorador abre ese proyecto.
+const projectFromQuery = () => {
+  if (typeof window === 'undefined') return 0;
+  const wanted = new URLSearchParams(window.location.search).get('proyecto');
+  return Math.max(0, PROJECTS.findIndex((item) => item.id === wanted));
+};
+
 const Work = () => {
-  const [active, setActive] = useState(0);
+  const [active, setActive] = useState(projectFromQuery);
   const [view, setView] = useState('screen');
   const [screenIndex, setScreenIndex] = useState(0);
   const reduce = useReducedMotion();

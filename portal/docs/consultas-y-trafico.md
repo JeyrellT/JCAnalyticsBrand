@@ -25,15 +25,72 @@ dos cosas:
   y se puede apagar en Avisos.
 - Los inversionistas no ven esta sección.
 
-**Tráfico del sitio (`/trafico`)**, en periodos de 7, 30 o 90 días, muestra:
-- visitas, personas aproximadas, tiempo promedio leyendo, porcentaje que tocó un CTA y consultas;
+**Tráfico del sitio (`/trafico`)**, en periodos de 7, 30 o 90 días, está pensado para decidir. Muestra:
+- visitas, personas aproximadas, tiempo promedio leyendo, porcentaje que tocó un CTA y consultas, cada una
+  **comparada con el periodo anterior** de igual largo (▲ / ▼ en %; la tasa de CTA, en puntos);
+- **Qué hacer esta semana**: recomendaciones calculadas con reglas (ver abajo);
 - visitas por día;
-- **¿Llegan al llamado a la acción?**: embudo de entraron → vieron precios → bajaron a la mitad → tocaron
-  WhatsApp, un paquete o contacto → empezaron un formulario → lo enviaron → dejaron sus datos;
+- **¿Llegan al llamado a la acción?**: embudo de entraron → vieron precios (sección `paquetes` u `oferta`) →
+  bajaron a la mitad → tocaron WhatsApp, un paquete o contacto → empezaron un formulario → lo enviaron →
+  dejaron sus datos;
+- **Consultas: del clic a la venta**: las consultas del periodo por estado (llegaron → contactadas → en
+  conversación → cotizadas → ganadas; perdidas y spam al pie), tasa de contacto, mediana de minutos hasta el
+  primer contacto, tasa de cierre (ganadas ÷ ganadas + perdidas) y cuántas llevan más de 24 h sin atender,
+  con listas por necesidad y por fuente (con las ganadas);
+- **Páginas: dónde vale la pena trabajar**: cada página con visitas, tiempo leyendo, scroll al 50 %, tasa de
+  CTA, consultas y un **veredicto**; tocar una fila abre su detalle (secciones, scroll, clics, fuentes y
+  dispositivos de esa ruta) y «Excel (CSV)» exporta la tabla;
 - **¿Dónde se queda la gente?**: tiempo promedio por sección y qué porcentaje de visitas la vio;
+- **¿Qué CTA convierte?**: clics a CTA por sección, cuántas de esas visitas dejaron sus datos y la tasa;
 - **¿Qué tocan?**: los botones y enlaces más usados, con la sección donde estaban;
-- hasta dónde bajan, formularios (empezados contra enviados), fuentes (Google, Meta, ChatGPT, directo…),
-  dispositivos, campañas (`utm_campaign`) y páginas más vistas.
+- **¿Cuándo entran?**: mapa de calor de día de la semana × hora de Costa Rica, con el pico;
+- hasta dónde bajan, formularios (empezados contra enviados), fuentes, dispositivos e idioma (cada uno con su
+  tasa de CTA), campañas (`utm_campaign`).
+
+### Veredicto por página
+
+Los umbrales viven en `shared/leads.js` (`PAGE_THRESHOLDS`, `PAGE_VERDICTS`) y los usa también la interfaz:
+
+| Veredicto | Cuándo |
+|---|---|
+| Pocos datos | menos de 10 visitas en el periodo: no se opina |
+| Engancha | tiempo leyendo ≥ 60 s y tasa de CTA ≥ 8 % |
+| Mucho tráfico, poca acción | al menos el 15 % de las visitas del sitio (y no menos de 10) con tasa de CTA < 3 % |
+| Rebote | tiempo leyendo < 10 s y menos del 25 % baja a la mitad |
+| Normal | el resto |
+
+El tiempo leyendo de una página es la suma de sus secciones medidas dividida entre sus visitas. Las cifras de
+cada página nunca superan sus propias visitas.
+
+### Recomendaciones («Qué hacer esta semana»)
+
+`buildInsights` (`shared/leads.js`) es una función pura sobre los agregados de la ruta; cada regla exige una
+muestra mínima y, sin ella, no aparece. Se muestran como máximo ocho, primero las rojas:
+
+| Regla | Mínimo | Tono |
+|---|---|---|
+| Consultas con más de 24 h sin respuesta | 1 | rojo, enlaza a Consultas |
+| Visitas suben o bajan ≥ 20 % frente al periodo anterior | 20 visitas en el periodo anterior | verde si suben, ámbar si bajan |
+| Página con veredicto «mucho tráfico, poca acción» | el veredicto | ámbar |
+| Celular convierte menos de la mitad que escritorio (o al revés) | 30 visitas en cada dispositivo | ámbar / azul |
+| Fuente con visitas y ninguna consulta | 25 visitas de esa fuente | ámbar |
+| Sección que retiene ≥ 45 s pero la ve ≤ 30 % | 10 visitas en la sección | azul |
+| Formulario que se abandona (enviados ÷ empezados < 40 %) | 10 inicios | ámbar |
+| Ventana de 3 horas con ≥ 25 % de las visitas | 50 visitas | azul |
+| Tasa de cierre | 5 consultas ganadas o perdidas | verde si ≥ 30 %, ámbar si no |
+
+### Detalle por página
+
+`GET /api/analytics/page?path=<ruta>&days=<7|30|90>` devuelve, para una sola ruta: visitas, vistas,
+tiempo leyendo, secciones (con alcance relativo a las visitas de esa página), scroll, clics, fuentes,
+dispositivos, consultas y visitas por día. La ruta se valida con la misma regla que la ingesta
+(`SITE_PATH_RE`): otra cosa responde 400.
+
+### Alerta en Inicio
+
+El centro de operaciones (`GET /api/dashboard`) devuelve `web_leads: { new, unattended_24h }` y agrega una
+alerta roja cuando hay consultas con más de 24 h sin respuesta, o una azul cuando solo hay nuevas. Los
+inversionistas no acceden ni al inicio del equipo ni a la analítica.
 
 ## Cómo mide el sitio
 
@@ -106,9 +163,13 @@ Todo lo que escribe un visitante es **dato no confiable**:
 ## Pruebas
 
 - `npm test` → `tests/leads.test.mjs`: limpieza, trampas, límites, CORS, bandeja, permisos, analítica y que
-  nada de esto pase por MCP.
+  nada de esto pase por MCP; `tests/analytics.test.mjs`: periodo anterior y variaciones, veredictos por página,
+  mapa de horas en hora de Costa Rica, CTA por sección, embudo de consultas, reglas de recomendaciones,
+  detalle por página y la alerta de consultas en el inicio.
 - `npm run e2e:web`: en un navegador real, llega una consulta hostil por `/ingest` y el equipo la trabaja
-  (contacto, nota, estado, cliente). Además revisa el tablero de tráfico en escritorio y celular.
+  (contacto, nota, estado, cliente). Además revisa el tablero de tráfico en escritorio y celular:
+  recomendaciones, variación, páginas con veredicto y su detalle, mapa de horas, CTA por sección y embudo de
+  consultas, sin desbordes horizontales.
 - En el sitio, `npm run check:site` verifica dos cosas:
   - que la medición mande secciones, scroll, clics y formularios sin datos personales;
   - que «Prefiero que me contacten» llegue con los datos correctos.

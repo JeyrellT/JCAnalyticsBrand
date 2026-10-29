@@ -135,6 +135,30 @@ try {
     await hillary.screenshot({ path: join(shots, 'trafico-1440.png'), fullPage: true });
   });
 
+  await check('tráfico para decidir: recomendaciones, variación, páginas con veredicto, horas, CTA por sección y embudo de consultas', async () => {
+    await hillary.getByRole('tab', { name: '30 días' }).click();
+    for (const title of ['Qué hacer esta semana', 'Páginas: dónde vale la pena trabajar', '¿Cuándo entran?', '¿Qué CTA convierte?', 'Consultas: del clic a la venta', 'Idioma']) {
+      await hillary.getByRole('heading', { name: title }).waitFor();
+    }
+    await hillary.getByText(/vs\. periodo anterior|Sin periodo anterior/).first().waitFor();
+    await hillary.getByText(/^Pico: /).waitFor();
+    await hillary.getByText('Oferta y precio').first().waitFor();
+    // Las páginas de servicio del demo aparecen con su veredicto y abren su detalle.
+    const row = hillary.getByRole('button', { name: /Servicio · automatizacion de procesos/ });
+    await row.waitFor();
+    await row.click();
+    await hillary.getByRole('heading', { name: /Detalle de la página: Servicio · automatizacion de procesos/ }).waitFor();
+    await hillary.getByText('Qué se lee en esta página').waitFor();
+    await hillary.getByText('Calculadora de impacto').first().waitFor();
+    assert.equal(await row.getAttribute('aria-expanded'), 'true');
+    await hillary.getByRole('button', { name: 'Cerrar detalle' }).click();
+    assert.equal(await hillary.getByRole('heading', { name: /Detalle de la página/ }).count(), 0);
+    // Veredictos: al menos una etiqueta de la lista compartida.
+    const verdicts = await hillary.locator('table .chip').allTextContents();
+    assert.ok(verdicts.some((v) => ['Engancha', 'Mucho tráfico, poca acción', 'Rebote', 'Pocos datos', 'Normal'].includes(v.trim())), `veredictos: ${verdicts.join(', ')}`);
+    await hillary.screenshot({ path: join(shots, 'trafico-decidir-1440.png'), fullPage: true });
+  });
+
   const phone = await open({ width: 390, height: 844 }, 'catalina');
   await check('celular: consultas y tráfico sin desbordes horizontales', async () => {
     await phone.goto(`${base}/consultas`);
@@ -143,7 +167,17 @@ try {
     await phone.screenshot({ path: join(shots, 'consultas-390.png'), fullPage: true });
     await phone.goto(`${base}/trafico`);
     await phone.getByRole('heading', { name: '¿Qué tocan?' }).waitFor();
+    for (const title of ['Qué hacer esta semana', '¿Cuándo entran?', '¿Qué CTA convierte?', 'Consultas: del clic a la venta']) {
+      await phone.getByRole('heading', { name: title }).waitFor();
+    }
     assert.ok(await noOverflow(phone), 'tráfico sin scroll horizontal');
+    // El detalle de una página también cabe en el celular.
+    const row = phone.getByRole('button', { name: /Portada/ }).first();
+    await row.scrollIntoViewIfNeeded();
+    await row.click();
+    await phone.getByRole('heading', { name: /Detalle de la página: Portada/ }).waitFor();
+    await phone.getByText('Qué se lee en esta página').waitFor();
+    assert.ok(await noOverflow(phone), 'detalle sin scroll horizontal');
     await phone.screenshot({ path: join(shots, 'trafico-390.png'), fullPage: true });
   });
 
