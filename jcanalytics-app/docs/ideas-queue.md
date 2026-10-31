@@ -77,3 +77,9 @@ Temas pendientes por falta de fuentes primarias verificadas (2026-10-20). Public
 - **Lean Six Sigma Costa Rica (nuevo):** la Cámara de Industrias de Costa Rica (CICR) realizó el XIII Foro Nacional Lean & Six Sigma, según una nota de delfino.cr de abril 2026 (foro de intercambio sobre excelencia operacional, con talleres y visitas de benchmarking). Es un evento pasado; leer la nota para fecha y detalles y usarlo como contexto del congreso del 18 nov. Los listados de CITEC/CFIA muestran Yellow Belt solo en agosto 2026; no hay fechas de octubre confirmadas. Learnersink es un proveedor comercial (sus cifras de salario no están verificadas).
 - **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001).
 - **Agentes de IA, Costa Rica y automatización, técnicas sin tecnología:** sin cambios; siguen pendientes los anuncios oficiales de OpenAI, Salesforce, UiPath y Microsoft, y la nota de Infobae/La República. Revisar tras el congreso CICR del 18 nov.
+
+## Actualización 2026-10-31
+
+- **Sin entrada nueva hoy:** pmc.ncbi.nlm.nih.gov, justice.gov y openai.com siguen sin resolverse desde este entorno (hay que permitir esos dominios en la red de la sesión), así que no hay lectura directa de las fuentes primarias; se acumula para mañana.
+- **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001). Citar el artículo como fuente principal y ICITAP como contexto autodeclarado.
+- **Agentes de IA, Costa Rica y automatización, técnicas sin tecnología:** sin cambios; siguen pendientes los anuncios oficiales de OpenAI, Salesforce, UiPath y Microsoft, y la nota de Infobae/La República. Revisar tras el congreso CICR del 18 nov.
