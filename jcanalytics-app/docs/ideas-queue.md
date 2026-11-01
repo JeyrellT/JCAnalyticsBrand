@@ -83,3 +83,10 @@ Temas pendientes por falta de fuentes primarias verificadas (2026-10-20). Public
 - **Sin entrada nueva hoy:** pmc.ncbi.nlm.nih.gov, justice.gov y openai.com siguen sin resolverse desde este entorno (hay que permitir esos dominios en la red de la sesión), así que no hay lectura directa de las fuentes primarias; se acumula para mañana.
 - **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001). Citar el artículo como fuente principal y ICITAP como contexto autodeclarado.
 - **Agentes de IA, Costa Rica y automatización, técnicas sin tecnología:** sin cambios; siguen pendientes los anuncios oficiales de OpenAI, Salesforce, UiPath y Microsoft, y la nota de Infobae/La República. Revisar tras el congreso CICR del 18 nov.
+
+## Actualización 2026-11-01
+
+- **Sin entrada nueva hoy:** pmc.ncbi.nlm.nih.gov sigue sin resolverse desde este entorno (WebFetch: ENOTFOUND; hay que permitir ese dominio, además de justice.gov y openai.com, en la red de la sesión), así que no hay lectura directa del artículo del OIJ; se acumula para mañana.
+- **Lean Six Sigma Costa Rica:** una búsqueda no encuentra eventos de noviembre 2026 distintos del congreso CICR del 18 nov. El XIII Foro Nacional Lean & Six Sigma (CICR) es de abril 2026 (delfino.cr). CITEC/CFIA: Yellow Belt del 29 jun al 2 sep 2026; Invensis y Learnersink ofrecen cursos comerciales sin fechas de noviembre. Un Consejo Nacional de Vialidad licitó un Green Belt virtual (plazo 4 jun 2026, vencido): dato de contexto, sin verificar.
+- **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001).
+- **Agentes de IA, Costa Rica y automatización, técnicas sin tecnología:** sin cambios; siguen pendientes los anuncios oficiales de OpenAI, Salesforce, UiPath y Microsoft, y la nota de Infobae/La República. Revisar tras el congreso CICR del 18 nov.
