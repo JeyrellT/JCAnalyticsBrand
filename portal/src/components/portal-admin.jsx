@@ -1,9 +1,10 @@
-// Portal del cliente desde la ficha del cliente (v5): accesos, solicitudes (briefs),
-// entregables y documentos. Quién da accesos lo decide el servidor (can_manage):
-// admin, socios y quien lleva la cuenta.
+// Portal del cliente desde la ficha del cliente: actualizaciones (monto que pone JC),
+// pagos, accesos, entregables, documentos y briefs. Quién da accesos lo decide el
+// servidor (can_manage: admin, socios y quien lleva la cuenta); quién maneja montos
+// y pagos, también (can_bill: socios y admin).
 import { useRef, useState } from 'react';
 import {
-  KeyRound, ClipboardList, PackageCheck, FolderOpen, UserPlus, Pencil, Power, Lock, Copy, MessageCircle, AlertTriangle, Globe, Plus,
+  KeyRound, ClipboardList, PackageCheck, FolderOpen, Sparkles, Wallet, UserPlus, Pencil, Power, Lock, Copy, MessageCircle, AlertTriangle, Globe, Plus,
   FileText, Receipt, ChartColumn, BookOpen, Palette, File, ExternalLink, Trash2, FilePlus2, FolderKanban, ShieldCheck, Mail, Phone, Link2, ChevronDown,
 } from 'lucide-react';
 import { api, isDemo } from '../lib/api.js';
@@ -15,6 +16,7 @@ import { BriefRow, DeliverableItem, Callout, SwitchRow, Layer, isWebLink } from 
 import { DOCUMENT_CATEGORIES } from '../../shared/client-portal.js';
 import { initials, formatDate, dayKey, timeAgo, whatsappLink } from '../lib/format.js';
 import { InvitesPanel } from './invites.jsx';
+import { RequestsPanel, PaymentsPanel } from './client-billing.jsx';
 
 const clean = (v) => (typeof v === 'string' ? v.trim() || null : v ?? null);
 const firstName = (name) => String(name ?? '').trim().split(/\s+/)[0] ?? '';
@@ -65,7 +67,7 @@ function useCopy() {
 function accessMessage({ name, email, password, reset }, senderName) {
   const lead = reset
     ? 'te restablecimos el acceso al portal de clientes de JC Analytics.'
-    : 'ya tenés acceso al portal de clientes de JC Analytics. Ahí ves el avance de tus proyectos, tus solicitudes, los entregables por aprobar y tus documentos.';
+    : 'ya tenés acceso al portal de clientes de JC Analytics. Ahí ves el avance de tus proyectos, pedís actualizaciones (te damos el monto antes de empezar) y consultás tus pagos.';
   return [
     `Hola ${firstName(name) || ''}, ${lead}`.replace('Hola ,', 'Hola,'),
     '',
@@ -434,7 +436,7 @@ function DocumentsPanel({ clientId, documents, projects, hasPortal, onReload }) 
 }
 
 // ── Sección completa con pestañas ───────────────────────────────────────────
-const TAB_KEYS = ['accesos', 'solicitudes', 'entregables', 'documentos'];
+const TAB_KEYS = ['actualizaciones', 'pagos', 'accesos', 'entregables', 'documentos', 'solicitudes'];
 
 /**
  * "Portal del cliente" en la ficha del cliente.
@@ -443,10 +445,23 @@ const TAB_KEYS = ['accesos', 'solicitudes', 'entregables', 'documentos'];
 export function ClientPortalSection({ client, portal, projects, onReload }) {
   const { query } = useLocation();
   const requested = query.get('portal');
-  const [tab, setTab] = useState(TAB_KEYS.includes(requested) ? requested : 'accesos');
-  const tabRefs = useRef({});
-  const { accounts = [], can_manage: canManage = false, briefs = [], deliverables = [], documents = [] } = portal ?? {};
+  const {
+    accounts = [], can_manage: canManage = false, briefs = [], deliverables = [], documents = [], requests = [], billing = null, can_bill: canBill = false,
+  } = portal ?? {};
   const activeAccounts = accounts.filter((a) => a.active).length;
+  // Sin accesos todavía, lo primero es darlos; si no, lo del día a día: actualizaciones.
+  const [tab, setTab] = useState(TAB_KEYS.includes(requested) ? requested : activeAccounts ? 'actualizaciones' : 'accesos');
+  const [seenRequested, setSeenRequested] = useState(requested);
+  // Un aviso o alerta con ?portal=pagos abre esa pestaña aunque la ficha ya esté abierta.
+  if (seenRequested !== requested) {
+    setSeenRequested(requested);
+    if (TAB_KEYS.includes(requested)) setTab(requested);
+  }
+  const tabRefs = useRef({});
+  const toQuote = requests.filter((r) => r.status === 'pendiente').length;
+  const openRequests = requests.filter((r) => ['pendiente', 'cotizada', 'en_proceso'].includes(r.status)).length;
+  const overdue = billing?.summary?.overdue_count ?? 0;
+  const pendingPayments = billing?.summary?.pending_count ?? 0;
   const toReview = briefs.filter((b) => b.status === 'enviado').length;
   const changes = deliverables.filter((d) => d.status === 'cambios').length;
   const waiting = deliverables.filter((d) => d.status === 'en_revision').length;
@@ -454,10 +469,12 @@ export function ClientPortalSection({ client, portal, projects, onReload }) {
   const clientProjects = projects.filter((p) => p.status !== 'prospecto');
 
   const tabs = [
+    { value: 'actualizaciones', label: 'Actualizaciones', icon: Sparkles, count: openRequests, flag: toQuote ? 'amber' : null, flagLabel: `${toQuote} por poner monto` },
+    { value: 'pagos', label: 'Pagos', icon: Wallet, count: pendingPayments, flag: overdue ? 'red' : null, flagLabel: `${overdue} vencidos` },
     { value: 'accesos', label: 'Accesos', icon: KeyRound, count: activeAccounts },
-    { value: 'solicitudes', label: 'Solicitudes', icon: ClipboardList, count: briefs.length, flag: toReview ? 'amber' : null, flagLabel: `${toReview} por revisar` },
     { value: 'entregables', label: 'Entregables', icon: PackageCheck, count: deliverables.length, flag: changes ? 'red' : null, flagLabel: `${changes} con cambios pedidos` },
     { value: 'documentos', label: 'Documentos', icon: FolderOpen, count: documents.length },
+    { value: 'solicitudes', label: 'Briefs', icon: ClipboardList, count: briefs.length, flag: toReview ? 'amber' : null, flagLabel: `${toReview} por revisar` },
   ];
 
   function onKeyDown(e) {
@@ -471,7 +488,7 @@ export function ClientPortalSection({ client, portal, projects, onReload }) {
   }
 
   const hint = activeAccounts
-    ? `${plural(activeAccounts, 'persona entra', 'personas entran')} · ve etapas, avances, entregables y documentos`
+    ? `${plural(activeAccounts, 'persona entra', 'personas entran')} · ve sus proyectos, avances, actualizaciones y pagos`
     : 'Sin accesos activos: el cliente todavía no ve su portal';
 
   return (
@@ -479,20 +496,22 @@ export function ClientPortalSection({ client, portal, projects, onReload }) {
       <SectionHead flush id="portal-title" icon={Globe} tone="teal" title="Portal del cliente" hint={hint}
         action={activeAccounts ? <Badge tone="teal" dot>Activo</Badge> : <Badge tone="slate" dot>Sin acceso</Badge>} />
 
-      <div role="tablist" aria-label="Portal del cliente" className="grid grid-cols-4 border-b border-line" onKeyDown={onKeyDown}>
+      <div role="tablist" aria-label="Portal del cliente" className="grid grid-cols-3 border-b border-line sm:grid-cols-6" onKeyDown={onKeyDown}>
         {tabs.map((t) => {
           const on = tab === t.value;
           return (
             <button key={t.value} ref={(el) => { tabRefs.current[t.value] = el; }} type="button" role="tab" id={`portal-tab-${t.value}`}
               aria-selected={on} aria-controls={`portal-panel-${t.value}`} tabIndex={on ? 0 : -1} onClick={() => setTab(t.value)}
-              className={cx('relative flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-xs font-semibold transition sm:min-h-12 sm:flex-row sm:gap-2 sm:text-sm',
+              className={cx('relative flex min-h-[60px] min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-xs font-semibold transition sm:text-[12.5px]',
                 on ? 'text-ink' : 'text-muted hover:bg-surface-2 hover:text-ink')}>
               <span className="relative">
-                <t.icon className={cx('h-[18px] w-[18px] sm:h-4 sm:w-4', on && 'text-brand-ink')} aria-hidden="true" />
+                <t.icon className={cx('h-[18px] w-[18px]', on && 'text-brand-ink')} aria-hidden="true" />
                 {t.flag && <span className={cx('absolute -right-1 -top-1 h-2 w-2 rounded-full ring-2 ring-surface', `dot-${t.flag}`)} aria-hidden="true" />}
               </span>
-              <span className="max-w-full truncate">{t.label}</span>
-              <span className={cx('num hidden rounded-full px-1.5 text-[11px] leading-5 sm:inline', on ? 'bg-brand-soft text-brand-ink' : 'bg-surface-3 text-muted')} aria-hidden="true">{t.count}</span>
+              <span className="flex max-w-full items-center gap-1.5">
+                <span className="min-w-0 truncate">{t.label}</span>
+                {t.count > 0 && <span className={cx('num hidden rounded-full px-1.5 text-[11px] leading-5 2xl:inline', on ? 'bg-brand-soft text-brand-ink' : 'bg-surface-3 text-muted')} aria-hidden="true">{t.count}</span>}
+              </span>
               <span className="sr-only">{`(${t.count}${t.flag ? `, ${t.flagLabel}` : ''})`}</span>
               {on && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-brand" aria-hidden="true" />}
             </button>
@@ -501,6 +520,8 @@ export function ClientPortalSection({ client, portal, projects, onReload }) {
       </div>
 
       <div role="tabpanel" id={`portal-panel-${tab}`} aria-labelledby={`portal-tab-${tab}`}>
+        {tab === 'actualizaciones' && <RequestsPanel client={client} requests={requests} projects={projects} canBill={canBill} onReload={onReload} />}
+        {tab === 'pagos' && <PaymentsPanel client={client} billing={billing} projects={projects} canBill={canBill} onReload={onReload} />}
         {tab === 'accesos' && <AccessesPanel client={client} accounts={accounts} canManage={canManage} onReload={onReload} />}
 
         {tab === 'solicitudes' && (

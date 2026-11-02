@@ -1,12 +1,13 @@
-// Cáscara del portal de clientes (v5). Mismo lenguaje visual que el portal del equipo,
+// Cáscara del portal de clientes. Mismo lenguaje visual que el portal del equipo,
 // pero claro y sereno: nada de barra lateral "tinta" ni herramientas internas.
+// Portal simple: tres secciones (Proyectos, Actualizaciones y Pagos); documentos y
+// entregables quedan a mano en el menú de la cuenta.
 // Escritorio: barra superior de vidrio con la marca, el nombre de la empresa, avisos y
 // cuenta, y debajo las secciones como pestañas. Celular: barra superior compacta y
 // barra inferior de pestañas (con la zona segura del iPhone).
 import { useEffect, useRef, useState } from 'react';
 import {
-  House, FolderKanban, ClipboardList, PackageCheck, FolderOpen, Bell, ChevronDown, UserRound, LogOut, ShieldCheck,
-  Building2,
+  FolderKanban, PackageCheck, FolderOpen, Bell, ChevronDown, UserRound, LogOut, ShieldCheck, Building2, Sparkles, Wallet,
 } from 'lucide-react';
 import { Link, useLocation } from '../lib/router.jsx';
 import { useSession } from '../lib/session.jsx';
@@ -16,21 +17,23 @@ import { useClientCounts, firstName } from './components.jsx';
 import logoMark from '../assets/logo-mark.webp';
 import { useTypingFlag, SectionJump, PullToRefresh } from '../components/mobile.jsx';
 
+// `also`: otras rutas que cuentan como esa sección (la ficha de un proyecto es parte de "Proyectos").
+// `count`: qué globo lleva (montos por decidir o pagos vencidos), `sr`: cómo se lee.
 const NAV = [
-  { to: '/cliente', label: 'Inicio', icon: House, exact: true },
-  { to: '/cliente/proyectos', label: 'Proyectos', icon: FolderKanban },
-  { to: '/cliente/solicitudes', label: 'Solicitudes', icon: ClipboardList },
-  { to: '/cliente/entregables', label: 'Entregables', icon: PackageCheck, badge: true },
-  { to: '/cliente/documentos', label: 'Documentos', icon: FolderOpen },
+  { to: '/cliente', label: 'Proyectos', icon: FolderKanban, exact: true, also: ['/cliente/proyectos'] },
+  { to: '/cliente/actualizaciones', label: 'Actualizaciones', icon: Sparkles, count: 'quotes', sr: (n) => `${n} por aprobar` },
+  { to: '/cliente/pagos', label: 'Pagos', icon: Wallet, count: 'overdue', tone: 'coral', sr: (n) => `${n} vencidos` },
 ];
 
 const ACCOUNT_COLOR = '#0065df';
 
 function useNav() {
   const { path } = useLocation();
-  const { approvals } = useClientCounts();
-  const isActive = (n) => (n.exact ? path === n.to : path === n.to || path.startsWith(`${n.to}/`));
-  return { isActive, approvals, path };
+  const counts = useClientCounts();
+  const isActive = (n) => (n.exact ? path === n.to : path === n.to || path.startsWith(`${n.to}/`))
+    || (n.also ?? []).some((p) => path === p || path.startsWith(`${p}/`));
+  const countOf = (n) => (n.count ? counts[n.count] ?? 0 : 0);
+  return { isActive, countOf, counts, path };
 }
 
 const countText = (n) => (n > 99 ? '99+' : String(n));
@@ -88,6 +91,7 @@ function BellLink() {
 /** Menú de cuenta (escritorio): divulgación simple con enlaces, cierra con Escape o clic afuera. */
 function AccountMenu() {
   const { account, client, unread, logout } = useSession();
+  const { approvals } = useClientCounts();
   const [open, setOpen] = useState(false);
   const box = useRef(null);
   const button = useRef(null);
@@ -128,6 +132,10 @@ function AccountMenu() {
           <Link to="/cliente/avisos" onClick={close} className={item}>
             <Bell className="h-4 w-4 text-muted" /><span className="flex-1">Avisos</span><Count n={unread} tone="coral" />
           </Link>
+          <Link to="/cliente/documentos" onClick={close} className={item}><FolderOpen className="h-4 w-4 text-muted" />Documentos y facturas</Link>
+          <Link to="/cliente/entregables" onClick={close} className={item}>
+            <PackageCheck className="h-4 w-4 text-muted" /><span className="flex-1">Entregables</span><Count n={approvals} />
+          </Link>
           <div className="my-1.5 h-px bg-line" />
           <button type="button" onClick={logout} className={cx(item, 'w-full text-coral-ink hover:bg-coral-soft')}><LogOut className="h-4 w-4" />Salir</button>
         </div>
@@ -139,9 +147,12 @@ function AccountMenu() {
 /** Hoja de cuenta (celular): datos, accesos, tema y salir. */
 function AccountSheet({ onClose }) {
   const { account, client, unread, logout } = useSession();
+  const { approvals } = useClientCounts();
   const tiles = [
     { to: '/cliente/cuenta', label: 'Mi cuenta', icon: UserRound, tone: 'tile-blue' },
     { to: '/cliente/avisos', label: 'Avisos', icon: Bell, tone: 'tile-amber', count: unread },
+    { to: '/cliente/documentos', label: 'Documentos', icon: FolderOpen, tone: 'tile-violet' },
+    { to: '/cliente/entregables', label: 'Entregables', icon: PackageCheck, tone: 'tile-teal', count: approvals },
   ];
   return (
     <Sheet label="Tu cuenta" onClose={onClose}>
@@ -174,7 +185,7 @@ function AccountSheet({ onClose }) {
 }
 
 function DesktopTabs() {
-  const { isActive, approvals } = useNav();
+  const { isActive, countOf } = useNav();
   return (
     <nav className="-mb-px hidden lg:block" aria-label="Secciones del portal">
       <ul className="flex gap-1">
@@ -187,7 +198,7 @@ function DesktopTabs() {
                   active ? 'text-ink' : 'text-muted hover:text-ink')}>
                 <n.icon className={cx('h-4 w-4', active ? 'text-brand' : 'text-muted-2 group-hover:text-muted')} strokeWidth={active ? 2.4 : 2} aria-hidden="true" />
                 {n.label}
-                {n.badge && approvals > 0 && <><Count n={approvals} /><span className="sr-only">, {approvals} por revisar</span></>}
+                {countOf(n) > 0 && <><Count n={countOf(n)} tone={n.tone} /><span className="sr-only">, {n.sr(countOf(n))}</span></>}
                 <span className={cx('absolute inset-x-2 bottom-0 h-[2.5px] rounded-full transition', active ? 'bg-linear-to-r from-brand to-teal' : 'bg-transparent group-hover:bg-line-strong')} aria-hidden="true" />
               </Link>
             </li>
@@ -199,10 +210,10 @@ function DesktopTabs() {
 }
 
 function MobileTabs() {
-  const { isActive, approvals } = useNav();
+  const { isActive, countOf } = useNav();
   return (
     <nav className="mobile-tabbar safe-bottom glass fixed inset-x-0 bottom-0 z-30 border-t border-line shadow-up lg:hidden" aria-label="Secciones del portal">
-      <ul className="mx-auto grid max-w-lg grid-cols-5 px-1">
+      <ul className="mx-auto grid max-w-lg grid-cols-3 px-1">
         {NAV.map((n) => {
           const active = isActive(n);
           return (
@@ -213,10 +224,10 @@ function MobileTabs() {
                   <n.icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} aria-hidden="true" />
                 </span>
                 {n.label}
-                {n.badge && approvals > 0 && (
+                {countOf(n) > 0 && (
                   <>
-                    <Count n={approvals} className="absolute left-1/2 top-1 ml-2 ring-2 ring-surface" />
-                    <span className="sr-only">, {approvals} por revisar</span>
+                    <Count n={countOf(n)} tone={n.tone} className="absolute left-1/2 top-1 ml-2 ring-2 ring-surface" />
+                    <span className="sr-only">, {n.sr(countOf(n))}</span>
                   </>
                 )}
               </Link>

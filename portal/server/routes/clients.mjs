@@ -4,19 +4,21 @@
 //  No hay DELETE: para dar de baja se usa status 'inactivo'.
 // ============================================================================
 
-import { CLIENT_STATUS } from '../../shared/catalog.js';
+import { CLIENT_STATUS, canInvest } from '../../shared/catalog.js';
 import { fail, invalid, has, text, oneOf, id, email } from '../http.mjs';
 import { transaction } from '../schema.mjs';
 import { createHelpers, sameName } from './common.mjs';
 import { createPortalHelpers } from './portal-common.mjs';
 import { createBriefService } from './brief-service.mjs';
 import { canManagePortal } from './portal-admin.mjs';
+import { createClientBilling } from './client-billing.mjs';
 
 export function clientRoutes(route, ctx) {
   const { db } = ctx;
   const { keepOrCheck, PROJECT_SELECT, decorateProject, APPOINTMENT_SELECT, decorateAppointment, listClients, getClient } = createHelpers(ctx);
   const portal = createPortalHelpers(ctx);
   const briefs = createBriefService(ctx, portal);
+  const billing = createClientBilling(ctx);
 
   const optionalEmail = (v, field) => (v == null || (typeof v === 'string' && v.trim() === '') ? null : email(v, field));
 
@@ -73,6 +75,10 @@ export function clientRoutes(route, ctx) {
         .map((r) => briefs.decorate(r, 'team', { withData: false })),
       deliverables: portal.listDeliverables({ clientId: client.id }),
       documents: portal.listDocuments({ clientId: client.id }),
+      // Portal simple: actualizaciones que pide (y su monto) y su cuenta de pagos.
+      requests: billing.listRequests({ clientId: client.id }).map((r) => billing.decorateRequest(r)),
+      billing: billing.account(client.id, 'team'),
+      can_bill: canInvest(user),
     };
     return { client, projects: projects.map(decorateProject), appointments: appointments.map(decorateAppointment), updates, portal: portalInfo };
   });

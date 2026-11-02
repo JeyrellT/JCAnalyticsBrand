@@ -9,8 +9,10 @@ import { canInvest, PROJECT_STATUS } from '../../shared/catalog.js';
 import { toCRC, formatMoney } from '../../shared/finance.js';
 import { pendingForUser } from './core.mjs';
 import { occurrences, BILLING_PROJECT_STATUSES } from '../../shared/billing.js';
+import { createClientBilling } from './client-billing.mjs';
 
 export function dashboardRoutes(route, ctx) {
+  const clientBilling = createClientBilling(ctx);
   const { db } = ctx;
 
   route('GET', '/api/dashboard', 'user', ({ user }) => {
@@ -75,6 +77,18 @@ export function dashboardRoutes(route, ctx) {
         link: briefsToReview.length === 1 ? `/briefs/${first.id}` : '/briefs?estado=enviado',
       });
     }
+    // Portal simple: actualizaciones que un cliente pidió y esperan monto.
+    const toQuote = db.prepare(`SELECT r.id, r.title, r.client_id, c.name client_name FROM client_requests r JOIN clients c ON c.id = r.client_id
+      WHERE r.status = 'pendiente' ORDER BY r.created_at`).all();
+    if (toQuote.length) {
+      const first = toQuote[0];
+      alerts.unshift({
+        tone: 'amber', kind: 'request',
+        title: toQuote.length === 1 ? `${first.client_name} pidió una actualización: ${first.title}` : `${toQuote.length} actualizaciones de clientes esperan monto`,
+        detail: toQuote.length === 1 ? 'Ponele el monto para que el cliente la apruebe desde su portal.' : toQuote.slice(0, 3).map((r) => `${r.client_name} · ${r.title}`).join(' · '),
+        link: `/clientes/${first.client_id}?portal=actualizaciones`,
+      });
+    }
     for (const d of changesRequested.slice(0, 3)) {
       alerts.push({ tone: 'amber', kind: 'deliverable', title: `${d.client_name} pidió cambios: ${d.title}`, detail: 'Subí una versión nueva del entregable.', link: d.project_id ? `/proyectos/${d.project_id}` : `/clientes/${d.client_id}` });
     }
@@ -129,6 +143,20 @@ export function dashboardRoutes(route, ctx) {
           link: '/cobros',
         });
       }
+      // Portal simple: cobros a clientes vencidos (incluye las fechas de cobros programados que ya pasaron).
+      clientBilling.syncScheduled();
+      const overdueClients = db.prepare(`SELECT pay.client_id, c.name client_name, COUNT(*) n, MIN(pay.due_date) oldest FROM client_payments pay
+        JOIN clients c ON c.id = pay.client_id WHERE pay.status = 'pendiente' AND pay.due_date < ? GROUP BY pay.client_id ORDER BY oldest`).all(today);
+      if (overdueClients.length) {
+        const first = overdueClients[0];
+        const count = overdueClients.reduce((a, r) => a + r.n, 0);
+        alerts.push({
+          tone: 'amber', kind: 'billing',
+          title: overdueClients.length === 1 ? `${first.client_name} tiene ${first.n === 1 ? 'un pago vencido' : `${first.n} pagos vencidos`}` : `${count} pagos de clientes vencidos`,
+          detail: `${overdueClients.slice(0, 3).map((r) => r.client_name).join(' · ')}. Registrá el pago cuando entre o escribiles.`,
+          link: `/clientes/${first.client_id}?portal=pagos`,
+        });
+      }
       const objected = movements.filter((m) => m.status === 'objetado' && m.created_by === user.id);
       if (objected.length) alerts.unshift({ tone: 'red', kind: 'movement', title: `${objected.length} ${objected.length === 1 ? 'movimiento tuyo fue rechazado' : 'movimientos tuyos fueron rechazados'}`, detail: 'Revisá el motivo y registralo de nuevo si hace falta.', link: '/inversiones' });
     }
@@ -144,7 +172,7 @@ export function dashboardRoutes(route, ctx) {
         today_appointments: todayAppointments.length,
         week_appointments: upcoming.length,
       },
-      client_portal: { briefs_to_review: briefsToReview.length, changes_requested: changesRequested.length, waiting_client: waitingClient },
+      client_portal: { briefs_to_review: briefsToReview.length, changes_requested: changesRequested.length, waiting_client: waitingClient, requests_to_quote: toQuote.length },
       web_leads: webLeads,
       alerts,
       agenda: upcoming.slice(0, 8),

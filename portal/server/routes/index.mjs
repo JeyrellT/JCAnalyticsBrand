@@ -12,6 +12,7 @@ import { automationRoutes } from './automations.mjs';
 import { briefRoutes } from './briefs.mjs';
 import { portalAdminRoutes } from './portal-admin.mjs';
 import { clientPortalRoutes } from './client-portal.mjs';
+import { clientBillingRoutes } from './client-billing.mjs';
 import { investorRoutes } from './investor.mjs';
 import { inviteRoutes } from './invites.mjs';
 import { financeRoutes } from './finance.mjs';
@@ -42,6 +43,8 @@ export function registerRoutes(route, ctx, session) {
   briefRoutes(route, ctx);
   portalAdminRoutes(route, ctx);
   clientPortalRoutes(route, ctx, session);
+  // Portal simple del cliente: actualizaciones cotizadas y cuenta de pagos (docs/portal-cliente-simple.md).
+  clientBillingRoutes(route, ctx);
   // v6: portal de inversionistas (docs/v6-contrato.md).
   investorRoutes(route, ctx);
   // v7: enlaces de registro (docs/v7-contrato.md).

@@ -4,7 +4,7 @@ La experiencia **Punto de encuentro** incorpora un inicio visual para el equipo,
 
 Aplicación privada (detrás de login) para el equipo de 5 personas: **portal de proyectos**, **centro de operaciones** (tablero kanban + agenda de citas) e **inversiones de socios**, donde la administración aprueba cada movimiento de dinero.
 
-Desde la v5 incluye además el **portal de clientes** (`/cliente`). Cada cliente sigue su servicio con JC Analytics desde ahí: etapas, avances, entregables por aprobar, solicitudes, documentos y reuniones. Las solicitudes usan el **brief creativo** (el formato "CREATIVIDAD" de JC), con versiones congeladas y verificables. El cliente no ve la operación interna: ni tareas, ni montos, ni notas del equipo. Ver `docs/v5-contrato.md`.
+Desde la v5 incluye además el **portal de clientes** (`/cliente`). Cada cliente sigue su servicio con JC Analytics desde ahí: etapas, avances, entregables por aprobar, solicitudes, documentos y reuniones. Las solicitudes usan el **brief creativo** (el formato "CREATIVIDAD" de JC), con versiones congeladas y verificables. El cliente no ve la operación interna: ni tareas, ni el valor interno de los proyectos, ni notas del equipo. Sí ve el monto de las actualizaciones que pide y su cuenta de pagos (ver `docs/portal-cliente-simple.md`). Ver `docs/v5-contrato.md`.
 
 Está separada del sitio público (`jcanalytics-app/`, GitHub Pages): el portal necesita servidor, base de datos y sesiones, así que se publica como un servicio propio (Railway), en un subdominio como `portal.jcanalytic.com`.
 
@@ -78,16 +78,16 @@ Los movimientos en dólares **guardan su tipo de cambio**, así el consolidado e
 - Cada paso, comentario y **nota interna** queda en la bitácora del brief. El cliente nunca ve las notas internas.
 - Se imprime o se guarda en PDF en A4 con el logo de JC.
 
-**Portal de clientes (`/cliente`).** Es un acceso aparte para cada persona del cliente. Lo crean un admin, un socio o quien lleva la cuenta, desde la ficha del cliente → "Portal del cliente". El cliente ve:
-- sus proyectos con **etapas** y avance;
-- los **avances** que le registró el equipo;
-- los **entregables** por aprobar: aprueba la versión que vio o pide cambios con nota;
-- sus **solicitudes** (briefs);
-- los **documentos** compartidos (contrato, facturas, manual de marca, reportes);
-- sus **reuniones**;
-- el contacto de su ejecutivo.
+**Portal de clientes (`/cliente`).** Es un acceso aparte para cada persona del cliente. Lo crean un admin, un socio o quien lleva la cuenta, desde la ficha del cliente → "Portal del cliente". Es **simple, en tres secciones** (ver [docs/portal-cliente-simple.md](docs/portal-cliente-simple.md)):
+- **Proyectos:** sus proyectos con **etapas**, el avance y los **avances** que le registró el equipo; arriba, "Requiere tu atención" solo cuando hay algo.
+- **Actualizaciones:** el cliente pide un cambio o mejora; **un socio o la administración pone el monto** (o "sin costo"); el cliente lo acepta o lo rechaza. Al aceptarlo, el cobro queda "por pagar".
+- **Pagos:** lo que tiene por pagar (con lo vencido en rojo), el próximo cobro de su plan, lo pagado en el año, "Cómo pagar" (SINPE/IBAN, en Ajustes) e historial con referencia.
 
-Cada aprobación, cambio pedido o brief enviado avisa al equipo, en el buzón y por push (categoría "Portal de clientes"). El equipo, a su vez, avisa al cliente dentro de su portal.
+Los **cobros programados** de cada proyecto (mensualidad, quincena…) entran solos a Pagos el día que tocan, desde que se registran: no se inventa deuda vieja. En la ficha del cliente, las pestañas **Actualizaciones** y **Pagos** sirven para poner montos, registrar pagos (fecha y referencia SINPE), agregar cobros, anular o deshacer con motivo.
+
+Entregables por aprobar, documentos, reuniones y briefs siguen disponibles: desde el menú de la cuenta y en la ficha de cada proyecto, solo si existen.
+
+Cada pedido o decisión del cliente avisa al equipo, en el buzón y por push (categoría "Portal de clientes"). El equipo, a su vez, avisa al cliente dentro de su portal.
 
 **Consultas y tráfico del sitio (`/consultas`, `/trafico`).** Las personas que dejan su WhatsApp o correo en jcanalytic.com llegan a la bandeja "Consultas": se contactan con un toque, se asignan, llevan notas, muestran el recorrido de su visita y se pasan a clientes. "Tráfico del sitio" está hecho para decidir: compara cada cifra con el periodo anterior, abre con **"Qué hacer esta semana"** (recomendaciones por reglas, solo cuando la muestra alcanza), da un **veredicto a cada página** (engancha, mucho tráfico y poca acción, rebote, pocos datos) con su detalle al tocarla, muestra **cuándo entra la gente** (día × hora de Costa Rica), **qué CTA convierte** por sección y el **embudo de las consultas** (contactadas, mediana a primer contacto, tasa de cierre, sin atender más de 24 h). El inicio avisa en rojo cuando una consulta lleva más de 24 h sin respuesta. Medición propia sin cookies; el texto del visitante nunca llega a una IA. Ver [docs/consultas-y-trafico.md](docs/consultas-y-trafico.md).
 
