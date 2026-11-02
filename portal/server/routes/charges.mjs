@@ -15,12 +15,14 @@ import { PROJECT_STATUS } from '../../shared/catalog.js';
 import { formatMoney } from '../../shared/finance.js';
 import { fail, invalid, has, text, oneOf, dateOnly, minorAmount } from '../http.mjs';
 import { createHelpers } from './common.mjs';
+import { createClientBilling } from './client-billing.mjs';
 
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 export function chargeRoutes(route, ctx) {
   const { db } = ctx;
   const { chargeCRC, billingCounts, decorateCharge, chargesOf, decorateProject, getProjectFull } = createHelpers(ctx);
+  const clientBilling = createClientBilling(ctx);
   const getProject = (projectId) => db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId) ?? fail(404, 'not_found');
   const getCharge = (chargeId) => db.prepare('SELECT * FROM project_charges WHERE id = ?').get(chargeId) ?? fail(404, 'not_found');
 
@@ -53,8 +55,9 @@ export function chargeRoutes(route, ctx) {
     const project = getProject(params.id);
     const c = readChargeBody(body, {}, project);
     const at = ctx.nowIso();
-    const { lastInsertRowid } = db.prepare(`INSERT INTO project_charges (project_id, concept, amount, currency, frequency, start_date, end_date, created_by, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(project.id, c.concept, c.amount, c.currency, c.frequency, c.start_date, c.end_date, user.id, at, at);
+    // ledger_from = hoy: en "Pagos" del cliente entran las fechas desde que se registra el cobro (lo anterior no se inventa).
+    const { lastInsertRowid } = db.prepare(`INSERT INTO project_charges (project_id, concept, amount, currency, frequency, start_date, end_date, ledger_from, created_by, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(project.id, c.concept, c.amount, c.currency, c.frequency, c.start_date, c.end_date, ctx.today(), user.id, at, at);
     const charge = getCharge(Number(lastInsertRowid));
     ctx.log(user.id, 'project', project.id, 'charge_created', `${user.name} agregó un cobro a ${project.name}: ${describe(charge)}`);
     return projectReply(project.id, charge);
@@ -66,6 +69,8 @@ export function chargeRoutes(route, ctx) {
     const c = readChargeBody(body, current, project);
     db.prepare(`UPDATE project_charges SET concept = ?, amount = ?, currency = ?, frequency = ?, start_date = ?, end_date = ?, updated_at = ? WHERE id = ?`)
       .run(c.concept, c.amount, c.currency, c.frequency, c.start_date, c.end_date, ctx.nowIso(), current.id);
+    // Lo pendiente en la cuenta del cliente sigue al calendario nuevo; lo pagado o anulado no se toca.
+    clientBilling.resyncCharge(current.id);
     const charge = getCharge(current.id);
     ctx.log(user.id, 'project', project.id, 'charge_updated', `${user.name} cambió un cobro de ${project.name}: ${describe(charge)}`);
     return projectReply(project.id, charge);
@@ -74,6 +79,7 @@ export function chargeRoutes(route, ctx) {
   route('DELETE', '/api/charges/:id', 'invest', ({ user, params }) => {
     const charge = getCharge(params.id);
     const project = getProject(charge.project_id);
+    clientBilling.dropChargePending(charge.id);
     db.prepare('DELETE FROM project_charges WHERE id = ?').run(charge.id);
     ctx.log(user.id, 'project', project.id, 'charge_deleted', `${user.name} quitó un cobro de ${project.name}: ${describe(charge)}`);
     return projectReply(project.id);

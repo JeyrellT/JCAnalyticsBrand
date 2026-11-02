@@ -11,13 +11,14 @@
 //    · Escrituras con freno por cuenta (además del límite de login).
 // ============================================================================
 
-import { DELIVERABLE_STATUS, MAX_OPEN_CLIENT_DRAFTS } from '../../shared/client-portal.js';
+import { DELIVERABLE_STATUS, MAX_OPEN_CLIENT_DRAFTS, MAX_OPEN_CLIENT_REQUESTS, REQUEST_OPEN_STATUSES } from '../../shared/client-portal.js';
 import { BRIEF_FINAL_STATUSES } from '../../shared/brief.js';
 import { fail, invalid, has, text, id } from '../http.mjs';
 import { hashPassword, verifyPassword, passwordProblem, burnPasswordCheck, createLoginLimiter } from '../auth.mjs';
 import { transaction } from '../schema.mjs';
 import { createPortalHelpers } from './portal-common.mjs';
 import { createBriefService } from './brief-service.mjs';
+import { createClientBilling } from './client-billing.mjs';
 
 const WRITE_LIMIT = 120;            // escrituras por cuenta…
 const WRITE_WINDOW_MS = 10 * 60_000; // …cada 10 minutos
@@ -26,6 +27,7 @@ export function clientPortalRoutes(route, ctx, session) {
   const { db } = ctx;
   const portal = createPortalHelpers(ctx);
   const briefs = createBriefService(ctx, portal);
+  const billing = createClientBilling(ctx);
   const writes = createLoginLimiter({ max: WRITE_LIMIT, windowMs: WRITE_WINDOW_MS, now: ctx.now });
   const clientSession = session.client;
 
@@ -36,6 +38,10 @@ export function clientPortalRoutes(route, ctx, session) {
     writes.fail(key);
   }
   const asClient = (account) => ({ type: 'cliente', account });
+  const oneOfDecision = (value) => {
+    if (value !== 'aceptar' && value !== 'rechazar') invalid('decision', 'Elegí aceptar o rechazar.');
+    return value;
+  };
 
   const meAccount = (account) => ({ ...portal.publicAccount(account), client_name: account.client_name });
   const unreadCount = (account) => db.prepare('SELECT COUNT(*) n FROM client_notifications WHERE account_id = ? AND read_at IS NULL').get(account.id).n;
@@ -115,6 +121,10 @@ export function clientPortalRoutes(route, ctx, session) {
     const meetings = portal.clientMeetings(clientId, { limit: 60 });
     const upcoming = meetings.filter((m) => m.ends_at >= nowIso && !['cancelada', 'no_asistio'].includes(m.status)).reverse().slice(0, 5);
     const recent = meetings.filter((m) => m.ends_at < nowIso).slice(0, 3);
+    // Portal simple: actualizaciones abiertas y la cuenta de pagos.
+    const requests = billing.listRequests({ clientId, visibleOnly: true }).filter((r) => REQUEST_OPEN_STATUSES.includes(r.status))
+      .map((r) => billing.decorateRequest(r, 'client'));
+    const { summary: payments, upcoming: nextCharges } = billing.account(clientId, 'client');
     return {
       client: { id: clientId, name: account.client_name },
       kpis: {
@@ -122,7 +132,14 @@ export function clientPortalRoutes(route, ctx, session) {
         pending_approvals: approvals.length,
         open_briefs: openBriefs.length,
         upcoming_meetings: upcoming.length,
+        quotes_to_decide: requests.filter((r) => r.status === 'cotizada').length,
+        open_requests: requests.length,
+        payments_pending: payments.pending_count,
+        payments_overdue: payments.overdue_count,
       },
+      requests,
+      payments,
+      next_charge: nextCharges[0] ?? null,
       projects: active,
       approvals: approvals.slice(0, 5),
       briefs: openBriefs,
@@ -149,6 +166,8 @@ export function clientPortalRoutes(route, ctx, session) {
       meetings: portal.clientMeetings(clientId, { projectId: row.id, limit: 30 }),
       briefs: db.prepare(`${briefs.BRIEF_SELECT} WHERE b.client_id = ? AND b.project_id = ? ORDER BY b.updated_at DESC`).all(clientId, row.id)
         .map((r) => briefs.decorate(r, 'client', { withData: false })),
+      requests: billing.listRequests({ clientId, visibleOnly: true }).filter((r) => r.project_id === row.id)
+        .map((r) => billing.decorateRequest(r, 'client')),
     };
   });
 
@@ -284,6 +303,95 @@ export function clientPortalRoutes(route, ctx, session) {
   route('GET', '/api/client/documents', 'client', ({ account }) => ({
     documents: portal.listDocuments({ clientId: account.client_id, visibleOnly: true }),
   }));
+
+  // ── Actualizaciones (el cliente pide; JC pone el monto) ───────────────────
+  const requestReply = (account, requestId) => ({ request: billing.decorateRequest(billing.getClientRequestRow(requestId, account.client_id), 'client') });
+  /** A quién del equipo avisar: responsable del proyecto, quien lleva al cliente y la administración (pone los montos). */
+  function requestRecipients(account, projectId) {
+    const owners = db.prepare('SELECT c.owner_id client_owner, p.owner_id project_owner FROM clients c LEFT JOIN projects p ON p.id = ? WHERE c.id = ?')
+      .get(projectId ?? null, account.client_id);
+    const admins = db.prepare("SELECT id FROM users WHERE active = 1 AND role = 'admin'").all().map((r) => r.id);
+    return [owners?.project_owner, owners?.client_owner, ...admins];
+  }
+  const teamLink = (clientId) => `/clientes/${clientId}?portal=actualizaciones`;
+
+  route('GET', '/api/client/requests', 'client', ({ account }) => ({
+    requests: billing.listRequests({ clientId: account.client_id, visibleOnly: true }).map((r) => billing.decorateRequest(r, 'client')),
+    can_approve: !!account.can_approve,
+    // Proyectos a los que se puede ligar una actualización (los que el cliente ve y siguen abiertos).
+    projects: portal.clientProjectRows(account.client_id).filter((p) => !p.archived && p.status !== 'cerrado').map((p) => ({ id: p.id, name: p.name })),
+  }));
+
+  route('POST', '/api/client/requests', 'client', ({ account, body }) => {
+    guardWrite(account);
+    const open = db.prepare("SELECT COUNT(*) n FROM client_requests WHERE client_id = ? AND status = 'pendiente'").get(account.client_id).n;
+    if (open >= MAX_OPEN_CLIENT_REQUESTS) fail(409, 'too_many_requests', { max: MAX_OPEN_CLIENT_REQUESTS });
+    const title = text(body.title, 'title', { max: 120, min: 3, required: true });
+    const detail = text(body.detail, 'detail', { max: 2000 });
+    const projectId = clientProjectId(account, body.project_id);
+    const at = ctx.nowIso();
+    const { lastInsertRowid } = db.prepare(`INSERT INTO client_requests (client_id, project_id, title, detail, status, created_by_account, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 'pendiente', ?, ?, ?)`).run(account.client_id, projectId, title, detail, account.id, at, at);
+    const requestId = Number(lastInsertRowid);
+    ctx.log(null, 'client', account.client_id, 'request_created', `${account.name} (${account.client_name}) pidió la actualización "${title}"`);
+    portal.notifyTeam(requestRecipients(account, projectId), {
+      kind: 'request', title: `${account.client_name} pidió una actualización`, body: `${title} · ponele el monto`, link: teamLink(account.client_id),
+    });
+    portal.notifyClient(account.client_id, { kind: 'actualizacion', title: `${account.name} pidió: ${title}`, link: `/cliente/actualizaciones?ver=${requestId}` }, { exceptAccountId: account.id });
+    return requestReply(account, requestId);
+  });
+
+  route('POST', '/api/client/requests/:id/decision', 'client', ({ account, body, params }) => {
+    guardWrite(account);
+    const r = billing.getClientRequestRow(params.id, account.client_id);
+    if (!account.can_approve) fail(403, 'approval_not_allowed');
+    if (r.status !== 'cotizada') fail(409, 'already_decided', { status: r.status });
+    const decision = oneOfDecision(body.decision);
+    const note = text(body.note, 'note', { max: 1000 });
+    // Se acepta exactamente el monto que el cliente estaba viendo.
+    if (has(body, 'amount') && (body.amount !== r.amount || (has(body, 'currency') && body.currency !== r.currency))) {
+      fail(409, 'stale_quote', { amount: r.amount, currency: r.currency });
+    }
+    const price = billing.money(r.amount, r.currency);
+    if (decision === 'aceptar') {
+      billing.acceptRequest(r, { accountId: account.id, note });
+      ctx.log(null, 'client', r.client_id, 'request_accepted', `${account.name} (${account.client_name}) aceptó "${r.title}" por ${price}`);
+    } else {
+      const at = ctx.nowIso();
+      db.prepare("UPDATE client_requests SET status = 'rechazada', decided_by_account = ?, decided_at = ?, decision_note = ?, updated_at = ? WHERE id = ?")
+        .run(account.id, at, note, at, r.id);
+      ctx.log(null, 'client', r.client_id, 'request_declined', `${account.name} (${account.client_name}) rechazó la cotización de "${r.title}" (${price})${note ? `: ${note}` : ''}`);
+    }
+    const verb = decision === 'aceptar' ? 'aceptó' : 'rechazó';
+    portal.notifyTeam([r.quoted_by, ...requestRecipients(account, r.project_id)], {
+      kind: 'request', title: `${account.client_name} ${verb} "${r.title}"`, body: `${price}${note ? ` · ${note}` : ''}`, link: teamLink(r.client_id),
+    });
+    portal.notifyClient(r.client_id, { kind: 'actualizacion', title: `${account.name} ${verb} "${r.title}"`, body: price, link: `/cliente/actualizaciones?ver=${r.id}` }, { exceptAccountId: account.id });
+    return requestReply(account, r.id);
+  });
+
+  route('POST', '/api/client/requests/:id/cancel', 'client', ({ account, params }) => {
+    guardWrite(account);
+    const r = billing.getClientRequestRow(params.id, account.client_id);
+    if (r.status !== 'pendiente') fail(409, 'invalid_transition', { status: r.status });
+    db.prepare("UPDATE client_requests SET status = 'cancelada', decided_by_account = ?, decided_at = ?, updated_at = ? WHERE id = ?").run(account.id, ctx.nowIso(), ctx.nowIso(), r.id);
+    ctx.log(null, 'client', r.client_id, 'request_cancelled', `${account.name} (${account.client_name}) retiró la actualización "${r.title}"`);
+    return requestReply(account, r.id);
+  });
+
+  // ── Pagos ─────────────────────────────────────────────────────────────────
+  route('GET', '/api/client/payments', 'client', ({ account }) => billing.account(account.client_id, 'client'));
+
+  /** Globos de la navegación: cotizaciones por decidir, pagos vencidos y entregables por revisar. */
+  route('GET', '/api/client/counts', 'client', ({ account }) => {
+    const { summary } = billing.account(account.client_id, 'client');
+    return {
+      quotes: billing.listRequests({ clientId: account.client_id, visibleOnly: true }).filter((r) => r.status === 'cotizada').length,
+      payments_pending: summary.pending_count,
+      payments_overdue: summary.overdue_count,
+      approvals: portal.listDeliverables({ clientId: account.client_id, visibleOnly: true, status: 'en_revision' }).length,
+    };
+  });
 
   // ── Avisos ────────────────────────────────────────────────────────────────
   route('GET', '/api/client/notifications', 'client', ({ account }) => ({

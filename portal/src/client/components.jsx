@@ -7,13 +7,14 @@ import {
 } from 'lucide-react';
 import { Link } from '../lib/router.jsx';
 import { Badge, IconTile, Avatar, RowArrow, cx } from '../components/ui.jsx';
-import { TZ, dayKey, formatTime, formatDate, formatDateTime, daysUntil, whatsappLink, downloadIcs } from '../lib/format.js';
-import { CLIENT_PROJECT_STATUS, MILESTONE_STATUS, DELIVERABLE_STATUS, DOCUMENT_CATEGORIES } from '../../shared/client-portal.js';
+import { TZ, dayKey, formatTime, formatDate, formatDateTime, daysUntil, whatsappLink, downloadIcs, formatMoney } from '../lib/format.js';
+import { CLIENT_PROJECT_STATUS, MILESTONE_STATUS, DELIVERABLE_STATUS, DOCUMENT_CATEGORIES, REQUEST_STATUS, totalsText } from '../../shared/client-portal.js';
 import { BRIEF_STATUS } from '../../shared/brief.js';
 import { APPOINTMENT_KINDS, APPOINTMENT_STATUS, UPDATE_CHANNELS } from '../../shared/catalog.js';
 
-// ── Contadores compartidos por la cáscara (entregables por revisar) ─────────
-export const ClientCountsContext = createContext({ approvals: 0, refreshCounts: () => {} });
+// ── Contadores compartidos por la cáscara (globos de la navegación) ─────────
+// quotes: actualizaciones con monto por decidir · overdue: pagos vencidos · approvals: entregables por revisar.
+export const ClientCountsContext = createContext({ approvals: 0, quotes: 0, overdue: 0, pending: 0, refreshCounts: () => {} });
 export const useClientCounts = () => useContext(ClientCountsContext);
 
 // ── Utilidades ──────────────────────────────────────────────────────────────
@@ -388,5 +389,58 @@ export function SeeAll({ to, children }) {
     <Link to={to} className="link tap -my-2 flex items-center gap-0.5 text-sm lg:min-h-9">
       {children}<ChevronRight className="h-4 w-4" aria-hidden="true" />
     </Link>
+  );
+}
+
+// ── Montos ──────────────────────────────────────────────────────────────────
+/** "₡65 000" · "₡65 000 + $150,00" · "₡0" para totales por moneda ({ CRC, USD }). */
+export { totalsText };
+
+/** Monto de una actualización: "Sin costo", el monto o "Por cotizar". */
+export function requestPrice(r) {
+  if (r.amount == null) return null;
+  return r.amount === 0 ? 'Sin costo' : formatMoney(r.amount, r.currency ?? 'CRC');
+}
+
+// ── Actualizaciones ─────────────────────────────────────────────────────────
+export function RequestStatusBadge({ status }) {
+  const meta = REQUEST_STATUS[status];
+  if (!meta) return null;
+  return <Badge tone={meta.tone} dot>{meta.client}</Badge>;
+}
+
+// ── Pagos ───────────────────────────────────────────────────────────────────
+/** Cuándo vence un cobro, en palabras: "Vence hoy", "Venció hace 3 días", "Vence el 12 nov". */
+export function dueText(p) {
+  if (p.status === 'pagado') return p.paid_date ? `Pagado el ${formatDate(p.paid_date)}` : 'Pagado';
+  const d = daysUntil(p.due_date);
+  if (d == null) return null;
+  if (d < 0) return `Venció hace ${-d} ${d === -1 ? 'día' : 'días'}`;
+  if (d === 0) return 'Vence hoy';
+  if (d === 1) return 'Vence mañana';
+  return `Vence el ${formatDate(p.due_date)}`;
+}
+
+/** Fila de un cobro: concepto, proyecto, cuándo vence (o cuándo se pagó) y el monto. */
+export function PaymentRow({ p, action }) {
+  const paid = p.status === 'pagado';
+  const tone = paid ? 'teal' : p.overdue ? 'red' : 'amber';
+  const meta = [p.project_name, p.frequency_label, paid && p.reference && `Ref. ${p.reference}`].filter(Boolean).join(' · ');
+  return (
+    <li className="flex flex-col gap-2.5 px-4 py-3.5 sm:flex-row sm:items-center sm:gap-4 sm:px-5">
+      <div className="flex min-w-0 flex-1 items-start gap-3">
+        <IconTile icon={paid ? CircleCheck : Receipt} tone={tone} />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold leading-snug text-ink">{p.concept}</p>
+          {meta && <p className="truncate text-xs text-muted">{meta}</p>}
+          <p className={cx('mt-0.5 text-xs font-semibold', paid ? 'text-teal-ink' : p.overdue ? 'text-coral-ink' : 'text-amber-ink')}>{dueText(p)}</p>
+        </div>
+        <p className="num shrink-0 pt-0.5 font-display text-[17px] font-bold text-ink sm:hidden">{formatMoney(p.amount, p.currency)}</p>
+      </div>
+      <div className="flex items-center justify-end gap-3 sm:shrink-0">
+        <p className="num hidden font-display text-[17px] font-bold text-ink sm:block">{formatMoney(p.amount, p.currency)}</p>
+        {action}
+      </div>
+    </li>
   );
 }

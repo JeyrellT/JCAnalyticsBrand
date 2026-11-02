@@ -4,7 +4,10 @@
 //  estados de proyecto en lenguaje de cliente y avisos. Sin dependencias.
 //  El cliente ve el control del servicio (etapas, avances, entregas,
 //  documentos y reuniones), nunca la operación interna (tareas, montos, notas).
+//  Excepción del portal simple: sus actualizaciones cotizadas y su cuenta de pagos.
 // ============================================================================
+
+import { formatMoney } from './finance.js';
 
 export const MILESTONE_STATUS = {
   pendiente: { label: 'Pendiente', tone: 'slate' },
@@ -57,7 +60,53 @@ export const CLIENT_NOTIFICATION_KINDS = {
   avance: 'Avances',
   documento: 'Documentos',
   cuenta: 'Cuenta',
+  actualizacion: 'Actualizaciones',
+  pago: 'Pagos',
 };
 
 /** Cuántos borradores abiertos puede tener un cliente a la vez (freno a abuso o duplicados). */
 export const MAX_OPEN_CLIENT_DRAFTS = 15;
+
+// ── Actualizaciones y pagos (portal simple) ─────────────────────────────────
+//  El cliente pide una actualización; el equipo (socios y admin) pone el monto;
+//  el cliente la acepta y queda como cobro pendiente en "Pagos".
+
+/** Estados de una actualización pedida por el cliente (client_requests.status). */
+export const REQUEST_STATUS = {
+  pendiente: { label: 'Por cotizar', client: 'Esperando cotización', tone: 'slate', hint: 'JC Analytics la está revisando para darte el monto.' },
+  cotizada: { label: 'Cotizada', client: 'Lista para aprobar', tone: 'amber', hint: 'Revisá el monto y aceptala o rechazala.' },
+  en_proceso: { label: 'En proceso', client: 'En proceso', tone: 'blue', hint: 'Aceptada. El equipo está trabajando en ella.' },
+  lista: { label: 'Lista', client: 'Lista', tone: 'teal', hint: 'Actualización terminada.' },
+  rechazada: { label: 'Rechazada', client: 'No se hará', tone: 'red', hint: 'Quedó descartada.' },
+  cancelada: { label: 'Retirada', client: 'Retirada', tone: 'slate', hint: 'El cliente la retiró antes de cotizarla.' },
+};
+
+/** Estados que siguen abiertos (no son un cierre). */
+export const REQUEST_OPEN_STATUSES = ['pendiente', 'cotizada', 'en_proceso'];
+
+/** Estados de un cobro al cliente (client_payments.status). Los anulados no se muestran al cliente. */
+export const PAYMENT_STATUS = {
+  pendiente: { label: 'Por pagar', tone: 'amber' },
+  pagado: { label: 'Pagado', tone: 'teal' },
+  anulado: { label: 'Anulado', tone: 'slate' },
+};
+
+/** Cuántas actualizaciones abiertas "por cotizar" puede tener un cliente a la vez (freno a spam). */
+export const MAX_OPEN_CLIENT_REQUESTS = 20;
+
+/** "₡65 000" · "₡65 000 + $150,00" · "₡0": totales por moneda en texto. */
+export function totalsText(totals) {
+  const parts = ['CRC', 'USD'].filter((c) => totals?.[c]).map((c) => formatMoney(totals[c], c));
+  return parts.length ? parts.join(' + ') : formatMoney(0, 'CRC');
+}
+
+/** Suma de montos por moneda: { CRC: n, USD: n } (sin convertir: al cliente se le muestra lo que paga). */
+export function totalsByCurrency(items, amountOf = (x) => x.amount) {
+  const out = {};
+  for (const item of items) {
+    const value = amountOf(item);
+    if (!value) continue;
+    out[item.currency] = (out[item.currency] ?? 0) + value;
+  }
+  return out;
+}

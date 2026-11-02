@@ -788,6 +788,65 @@ export const MIGRATIONS = [
   CREATE INDEX site_events_day ON site_events(day, type);
   CREATE INDEX site_events_session ON site_events(session_id, at);
   `,
+  // Portal simple del cliente: actualizaciones que el cliente pide y el equipo cotiza, y su cuenta de pagos.
+  //   · client_requests: el cliente pide; socios/admin ponen el monto; el cliente acepta o rechaza.
+  //   · client_payments: lo que el cliente debe y lo que ya pagó. Nace de una actualización aceptada,
+  //     de un cobro manual o de cada fecha de un cobro programado del proyecto (project_charges).
+  //   · project_charges.ledger_from: desde qué día un cobro programado genera pendientes. Los cobros que
+  //     ya existían arrancan hoy, para no inventarle al cliente una deuda de meses pasados.
+  `
+  CREATE TABLE client_requests (
+    id INTEGER PRIMARY KEY,
+    client_id INTEGER NOT NULL REFERENCES clients(id),
+    project_id INTEGER REFERENCES projects(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    detail TEXT,
+    status TEXT NOT NULL DEFAULT 'pendiente'
+      CHECK (status IN ('pendiente','cotizada','en_proceso','lista','rechazada','cancelada')),
+    amount INTEGER CHECK (amount IS NULL OR amount >= 0),
+    currency TEXT CHECK (currency IS NULL OR currency IN ('CRC','USD')),
+    quote_note TEXT,
+    quoted_by INTEGER REFERENCES users(id),
+    quoted_at TEXT,
+    decided_by_account INTEGER REFERENCES client_accounts(id),
+    decided_at TEXT,
+    decision_note TEXT,
+    closed_note TEXT,
+    done_at TEXT,
+    created_by_account INTEGER REFERENCES client_accounts(id),
+    created_by_user INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  CREATE INDEX client_requests_client ON client_requests(client_id, status, updated_at);
+
+  CREATE TABLE client_payments (
+    id INTEGER PRIMARY KEY,
+    client_id INTEGER NOT NULL REFERENCES clients(id),
+    project_id INTEGER REFERENCES projects(id) ON DELETE SET NULL,
+    charge_id INTEGER REFERENCES project_charges(id) ON DELETE SET NULL,
+    request_id INTEGER REFERENCES client_requests(id) ON DELETE SET NULL,
+    concept TEXT NOT NULL,
+    amount INTEGER NOT NULL CHECK (amount > 0),
+    currency TEXT NOT NULL CHECK (currency IN ('CRC','USD')),
+    due_date TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pendiente' CHECK (status IN ('pendiente','pagado','anulado')),
+    paid_date TEXT,
+    reference TEXT,
+    note TEXT,
+    void_reason TEXT,
+    created_by INTEGER REFERENCES users(id),
+    recorded_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  CREATE INDEX client_payments_client ON client_payments(client_id, status, due_date);
+  CREATE UNIQUE INDEX client_payments_charge_due ON client_payments(charge_id, due_date) WHERE charge_id IS NOT NULL;
+  CREATE UNIQUE INDEX client_payments_request ON client_payments(request_id) WHERE request_id IS NOT NULL;
+
+  ALTER TABLE project_charges ADD COLUMN ledger_from TEXT;
+  UPDATE project_charges SET ledger_from = date('now', '-6 hours');
+  `,
 ];
 
 export const DEFAULT_SETTINGS = {
@@ -796,6 +855,7 @@ export const DEFAULT_SETTINGS = {
   wip_en_progreso: '6',       // Límite WIP (Lean) de la columna "En progreso".
   wip_revision: '4',
   brief_lead_days: '3',       // Días mínimos de producción entre el envío de un brief y su fecha de salida.
+  payment_info: '',           // "Cómo pagar" que ve el cliente en su sección Pagos (SINPE, cuenta IBAN…).
 };
 
 /**

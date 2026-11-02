@@ -245,7 +245,7 @@ export async function seedDemoData({ db, passwordHash, login, loginClient = null
   await hil('POST', `/api/directory/${ybId('Pizzería Don Leño')}/calls`, { outcome: 'no_contesta', next_call_at: day(1) });
   await hil('POST', `/api/directory/${ybId('Pollo Dorado')}/calls`, { outcome: 'no_interesado', note: 'Ya tienen proveedor.' });
 
-  const clients = loginClient ? await seedClientPortal({ db, hash, iso, day, U, C, P, cata, alex, loginClient }) : [];
+  const clients = loginClient ? await seedClientPortal({ db, hash, iso, day, U, C, P, cata, alex, jey, loginClient }) : [];
   return { users: people.map(([email, name, role]) => ({ email, name, role })), clients };
 }
 
@@ -253,7 +253,7 @@ export async function seedDemoData({ db, passwordHash, login, loginClient = null
  * Portal de clientes (v5): accesos, etapas, avances, entregables, documentos y
  * briefs. El brief "Giveaway Tacos" replica el formato CREATIVIDAD que usa JC.
  */
-async function seedClientPortal({ db, hash, iso, day, U, C, P, cata, alex, loginClient }) {
+async function seedClientPortal({ db, hash, iso, day, U, C, P, cata, alex, jey, loginClient }) {
   const accounts = [
     [C.burrada, `laburrada@${DEMO_CLIENT_DOMAIN}`, 'Dueño La Burrada', 'Gerente general', '+506 8888-0000', 1],
     [C.burrada, `marketing.laburrada@${DEMO_CLIENT_DOMAIN}`, 'Marketing La Burrada', 'Redes y promociones', null, 0],
@@ -342,7 +342,44 @@ async function seedClientPortal({ db, hash, iso, day, U, C, P, cata, alex, login
   await share(cata, { client_id: C.burrada, project_id: P.burrada, brief_id: seasonal.id, title: 'Historias semana 1 · menú de temporada', description: '4 historias + 1 reel de 20 s.', url: 'https://docs.example.com/laburrada/historias-semana-1' });
   await share(alex, { client_id: C.uniquex, project_id: P.uniquex, title: 'Landing narrativa · versión 2', description: 'Incluye los ajustes de la escena de portones.', url: 'https://uniquexcr.com/landing?v=2' });
 
-  // Los avisos de la siembra al equipo quedan leídos, salvo el brief por revisar.
+  // ── Portal simple: actualizaciones con monto y cuenta de pagos ────────────
+  // La Burrada pide desde su portal; Jeyrell (admin) pone el monto; el cliente acepta o no.
+  const marketing = await loginClient(`marketing.laburrada@${DEMO_CLIENT_DOMAIN}`);
+  const ask = (api, title, detail, projectId = P.burrada) => api('POST', '/api/client/requests', { title, detail, project_id: projectId }).then((r) => r.request);
+  const quote = (requestId, amount, note, currency = 'CRC') => jey('POST', `/api/client-requests/${requestId}/quote`, { amount, currency, note });
+  // 1) Aceptada y lista: botón flotante de WhatsApp (su cobro queda por pagar, vence hoy).
+  const whatsapp = await ask(owner, 'Botón flotante de WhatsApp', 'Que aparezca en todas las páginas del menú, abajo a la derecha.');
+  await quote(whatsapp.id, 25_000_00, 'Diseño, instalación y prueba en Android y iPhone.');
+  await owner('POST', `/api/client/requests/${whatsapp.id}/decision`, { decision: 'aceptar', amount: 25_000_00, currency: 'CRC' });
+  await alex('POST', `/api/client-requests/${whatsapp.id}/status`, { to: 'lista', note: 'Publicado y probado en celulares.' });
+  // 2) Con monto, esperando que el dueño la apruebe (aparece en "Requiere tu atención").
+  const combos = await ask(owner, 'Sección de combos familiares', 'Agregar 6 combos con foto, precio y botón para pedir por WhatsApp.');
+  await quote(combos.id, 65_000_00, 'Incluye diseño, carga de los 6 combos y publicación.');
+  // 3) Recién pedida por Marketing: todavía sin monto.
+  await ask(marketing, 'Cambiar las fotos del menú de temporada', 'Tenemos fotos nuevas de los platillos de noviembre.');
+  // 4) Uniquex: un cambio sin costo, ya en proceso.
+  const uniquexOwner = await loginClient(`uniquex@${DEMO_CLIENT_DOMAIN}`);
+  const phone = await ask(uniquexOwner, 'Actualizar el teléfono de contacto', 'El número nuevo de ventas es 4000-1234.', P.uniquex);
+  await quote(phone.id, 0, 'Incluido en el soporte.');
+
+  // Pagos: los cobros programados de La Burrada y Uniquex generan su historial desde el inicio (en producción,
+  // un cobro empieza a generar pendientes el día que se registra). Lo viejo queda pagado; lo reciente, por pagar.
+  db.prepare('UPDATE project_charges SET ledger_from = start_date WHERE project_id IN (?, ?)').run(P.burrada, P.uniquex);
+  let ref = 40_211;
+  for (const [clientId, cutoff] of [[C.burrada, day(-4)], [C.uniquex, day(0)]]) {
+    const { payments } = await jey('GET', `/api/clients/${clientId}/payments`);
+    for (const pay of payments.filter((x) => x.status === 'pendiente' && x.due_date < cutoff)) {
+      ref += 137;
+      await jey('POST', `/api/client-payments/${pay.id}/pay`, { paid_date: pay.due_date, reference: `SINPE ${ref}` });
+    }
+  }
+  if (!db.prepare("SELECT value FROM settings WHERE key = 'payment_info'").get()?.value) {
+    await jey('PATCH', '/api/settings', { payment_info: 'SINPE Móvil: 8000-0000 a nombre de JC Analytics (ficticio de la demo)\nTransferencia: IBAN CR00 0000 0000 0000 0000 00 (ficticio)\nEnviá el comprobante por WhatsApp a tu ejecutivo.' });
+  }
+  // Los avisos viejos de pagos del cliente quedan leídos (solo lo reciente se ve como nuevo).
+  db.prepare("UPDATE client_notifications SET read_at = ? WHERE kind = 'pago' AND read_at IS NULL").run(iso(0));
+
+  // Los avisos de la siembra al equipo quedan leídos, salvo el brief por revisar y lo que espera monto.
   db.prepare("UPDATE notifications SET read_at = ? WHERE kind = 'deliverable' AND read_at IS NULL").run(iso(0));
   seedSiteActivity({ db, U, day, iso });
   return accounts.map(([, email, name]) => ({ email, name }));

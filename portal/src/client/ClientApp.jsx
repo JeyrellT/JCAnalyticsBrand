@@ -19,12 +19,17 @@ const ClientDeliverables = lazy(() => import('./pages/ClientDeliverables.jsx'));
 const ClientDeliverableDetail = lazy(() => import('./pages/ClientDeliverableDetail.jsx'));
 const ClientDocuments = lazy(() => import('./pages/ClientDocuments.jsx'));
 const ClientNotifications = lazy(() => import('./pages/ClientNotifications.jsx'));
+const ClientRequests = lazy(() => import('./pages/ClientRequests.jsx'));
+const ClientPayments = lazy(() => import('./pages/ClientPayments.jsx'));
 const ClientAccount = lazy(() => import('./pages/ClientAccount.jsx'));
 const BriefPrint = lazy(() => import('../pages/BriefPrint.jsx'));
 
 // [patrón, página, título de la pestaña del navegador, opciones]. El orden importa: "nueva" antes de ":id".
+// Portal simple: Proyectos (inicio), Actualizaciones y Pagos. Lo demás sigue disponible por enlace y avisos.
 const ROUTES = [
-  ['/cliente', ClientHome, 'Inicio'],
+  ['/cliente', ClientHome, 'Mis proyectos'],
+  ['/cliente/actualizaciones', ClientRequests, 'Actualizaciones'],
+  ['/cliente/pagos', ClientPayments, 'Pagos'],
   ['/cliente/proyectos', ClientProjects, 'Proyectos'],
   ['/cliente/proyectos/:id', ClientProjectDetail, 'Proyecto'],
   ['/cliente/solicitudes', ClientBriefs, 'Solicitudes'],
@@ -46,16 +51,16 @@ function resolve(path) {
   return null;
 }
 
-/** Entregables por revisar (globo de la pestaña "Entregables"). Se refresca con los avisos. */
+/** Globos de la navegación: montos por decidir, pagos vencidos y entregables por revisar. Se refresca con los avisos. */
 function CountsProvider({ children }) {
   const { unread } = useSession();
-  const [approvals, setApprovals] = useState(0);
-  const refreshCounts = useCallback(() => api('/api/client/deliverables').then(
-    (r) => setApprovals(r.deliverables.filter((d) => d.status === 'en_revision').length),
+  const [counts, setCounts] = useState({ approvals: 0, quotes: 0, overdue: 0, pending: 0 });
+  const refreshCounts = useCallback(() => api('/api/client/counts').then(
+    (r) => setCounts({ approvals: r.approvals, quotes: r.quotes, overdue: r.payments_overdue, pending: r.payments_pending }),
     () => {},
   ), []);
   useEffect(() => { refreshCounts(); }, [refreshCounts, unread]);
-  const value = useMemo(() => ({ approvals, refreshCounts }), [approvals, refreshCounts]);
+  const value = useMemo(() => ({ ...counts, refreshCounts }), [counts, refreshCounts]);
   return <ClientCountsContext.Provider value={value}>{children}</ClientCountsContext.Provider>;
 }
 

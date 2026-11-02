@@ -1,18 +1,20 @@
-// Inicio del portal de clientes: el estado del servicio con JC Analytics de un vistazo.
-// Sin micro-gestión: etapas, lo que espera una respuesta del cliente, reuniones, avances y su contacto.
+// Inicio del portal de clientes ("Mis proyectos"): lo mínimo para saber cómo va todo.
+//   1. Saludo y una frase con el estado, más "Pedir una actualización".
+//   2. "Requiere tu atención" solo si hay algo: montos por aprobar, pagos y entregables por revisar.
+//   3. Sus proyectos con el avance, y los últimos avances que el equipo le contó.
+//   4. Al lado: la cuenta de pagos, sus actualizaciones abiertas y su ejecutivo.
 import {
-  FolderKanban, PackageCheck, ClipboardList, CalendarClock, Sparkles, Plus, FolderOpen, BellRing, History, PenLine, FilePen,
-  Eye, ArrowRight,
+  FolderKanban, PackageCheck, Sparkles, Plus, BellRing, History, ArrowRight, Wallet, Receipt, CircleCheck,
 } from 'lucide-react';
 import { useSession, useResource } from '../../lib/session.jsx';
 import { Link } from '../../lib/router.jsx';
 import { PageLoader, EmptyState, IconTile, SectionHead, Badge, RowArrow, cx } from '../../components/ui.jsx';
-import { formatDayLong, todayKey } from '../../lib/format.js';
+import { formatDayLong, formatDate, todayKey } from '../../lib/format.js';
 import {
-  KpiTile, ProjectCard, MeetingRow, UpdatesTimeline, ContactCard, BriefRow, SeeAll, greeting, firstName, plural, dateOf,
+  ProjectCard, UpdatesTimeline, ContactCard, RequestStatusBadge, SeeAll, greeting, firstName, plural, dateOf, totalsText, requestPrice,
 } from '../components.jsx';
 
-const STRIPE = { amber: 'bg-amber', violet: 'bg-violet', slate: 'bg-slate' };
+const STRIPE = { amber: 'bg-amber', red: 'bg-coral', slate: 'bg-slate', blue: 'bg-brand' };
 
 /** Fila de "Requiere tu atención": franja de tono, ícono, contexto y la acción esperada. */
 function AttentionRow({ to, icon, tone, title, detail, cta }) {
@@ -21,8 +23,8 @@ function AttentionRow({ to, icon, tone, title, detail, cta }) {
       <span className={cx('absolute inset-y-2 left-0 w-1 rounded-r-full', STRIPE[tone] ?? 'bg-brand')} aria-hidden="true" />
       <IconTile icon={icon} tone={tone} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-semibold text-ink">{title}</span>
-        <span className="block truncate text-xs text-muted">{detail}</span>
+        <span className="line-clamp-2 block text-sm font-semibold text-ink">{title}</span>
+        <span className="line-clamp-2 block text-xs text-muted">{detail}</span>
       </span>
       <span className="hidden shrink-0 items-center gap-1 rounded-full bg-brand-soft px-3 py-1.5 text-xs font-semibold text-brand-ink transition group-hover:bg-brand/15 sm:inline-flex">
         {cta}<ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -32,15 +34,80 @@ function AttentionRow({ to, icon, tone, title, detail, cta }) {
   );
 }
 
-function statusLine({ approvals, toFix, drafts, canApprove, hasProjects }) {
-  if (approvals) {
-    return canApprove
-      ? `Tenés ${plural(approvals, 'entregable esperando', 'entregables esperando')} tu revisión.`
-      : `${plural(approvals, 'entregable espera', 'entregables esperan')} la aprobación de tu empresa.`;
-  }
-  if (toFix) return `JC Analytics te dejó observaciones en ${plural(toFix, 'solicitud', 'solicitudes')}.`;
-  if (drafts) return `Tenés ${plural(drafts, 'borrador', 'borradores')} de solicitud sin enviar.`;
+/** Una frase con lo más importante, en orden de urgencia. */
+function statusLine({ quotes, overdue, pending, approvals, hasProjects }) {
+  if (quotes) return `Tenés ${plural(quotes, 'actualización con monto', 'actualizaciones con monto')} por aprobar.`;
+  if (overdue) return `Tenés ${plural(overdue, 'pago vencido', 'pagos vencidos')}.`;
+  if (approvals) return `Tenés ${plural(approvals, 'entregable', 'entregables')} por revisar.`;
+  if (pending) return `Tenés ${plural(pending, 'pago pendiente', 'pagos pendientes')}.`;
   return hasProjects ? 'Nada pendiente de tu parte. Tu proyecto avanza.' : 'Nada pendiente de tu parte.';
+}
+
+/** Tarjeta "Pagos": por pagar, vencido y el próximo cobro. */
+function PaymentsCard({ payments, nextCharge }) {
+  const overdue = payments.overdue_count > 0;
+  const pending = payments.pending_count > 0;
+  // Con algo pendiente, lo que vence primero; si está al día, el próximo cobro de su plan.
+  const next = payments.next_due
+    ? { lead: 'Vence primero', label: payments.next_due.concept, date: payments.next_due.due_date }
+    : nextCharge ? { lead: 'Próximo cobro', label: nextCharge.concept, date: nextCharge.date } : null;
+  return (
+    <Link to="/cliente/pagos" className="card card-hover group animate-rise block overflow-hidden" aria-labelledby="home-pay-title">
+      <div className="flex items-center gap-3 border-b border-line px-4 py-3.5 sm:px-5">
+        <IconTile icon={Wallet} tone={overdue ? 'red' : pending ? 'amber' : 'teal'} size="sm" />
+        <h2 id="home-pay-title" className="section-title flex-1">Pagos</h2>
+        <RowArrow />
+      </div>
+      <div className="px-4 py-4 sm:px-5">
+        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">{overdue ? 'Vencido' : 'Por pagar'}</p>
+        <p className={cx('num mt-1 font-display text-[28px] font-bold leading-none', overdue ? 'text-coral-ink' : pending ? 'text-ink' : 'text-teal-ink')}>
+          {totalsText(overdue ? payments.overdue : payments.pending)}
+        </p>
+        <p className="mt-1.5 text-sm text-muted">
+          {overdue
+            ? `${plural(payments.overdue_count, 'pago vencido', 'pagos vencidos')}${payments.pending_count > payments.overdue_count ? ` · ${payments.pending_count} en total por pagar` : ''}`
+            : pending ? plural(payments.pending_count, 'pago pendiente', 'pagos pendientes') : 'Estás al día. ¡Gracias!'}
+        </p>
+        {next && (
+          <p className="mt-3 flex items-start gap-2 rounded-xl bg-surface-2 px-3 py-2 text-xs text-ink-2">
+            <Receipt className="mt-px h-3.5 w-3.5 shrink-0 text-muted" aria-hidden="true" />
+            <span className="min-w-0">{next.lead}: <span className="font-semibold text-ink">{next.label}</span> · {formatDate(next.date)}</span>
+          </p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+/** Actualizaciones abiertas (por cotizar, por aprobar o en proceso) y el botón para pedir otra. */
+function RequestsCard({ requests }) {
+  return (
+    <section className="card animate-rise overflow-hidden" aria-labelledby="home-req-title">
+      <SectionHead flush id="home-req-title" icon={Sparkles} tone="violet" title="Actualizaciones"
+        hint={requests.length ? plural(requests.length, 'abierta', 'abiertas') : 'Cambios o mejoras a tu proyecto'}
+        action={requests.length > 0 && <SeeAll to="/cliente/actualizaciones">Ver todas</SeeAll>} />
+      {requests.length === 0 ? (
+        <div className="px-4 py-5 sm:px-5">
+          <p className="text-sm text-muted">¿Querés cambiar o agregar algo? Pedilo aquí: te decimos el monto y vos decidís.</p>
+          <Link to="/cliente/actualizaciones?nueva=1" className="btn btn-soft tap mt-3"><Plus className="h-4 w-4" />Pedir una actualización</Link>
+        </div>
+      ) : (
+        <ul className="divide-y divide-line">
+          {requests.slice(0, 4).map((r) => (
+            <li key={r.id}>
+              <Link to={`/cliente/actualizaciones?ver=${r.id}`} className="group row min-h-[60px] px-4 py-3 sm:px-5">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-ink">{r.title}</span>
+                  <span className="block truncate text-xs text-muted">{[requestPrice(r), r.project_name].filter(Boolean).join(' · ') || `Pedida ${dateOf(r.created_at)}`}</span>
+                </span>
+                <RequestStatusBadge status={r.status} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
 }
 
 export default function ClientHome() {
@@ -48,111 +115,82 @@ export default function ClientHome() {
   const { data, error, reload } = useResource('/api/client/overview');
   if (!data) return <PageLoader error={error} onRetry={reload} />;
 
-  const { kpis, projects, approvals, briefs, meetings, updates, documents_count: docs } = data;
+  const { projects, approvals, updates, requests = [], payments, next_charge: nextCharge } = data;
   const companyName = data.client?.name ?? client?.name;
+  const quotes = requests.filter((r) => r.status === 'cotizada');
   const canApprove = !!account.can_approve;
-  const toFix = briefs.filter((b) => b.status === 'observado');
-  const drafts = briefs.filter((b) => b.status === 'borrador');
-  const inProgress = briefs.filter((b) => b.status !== 'observado' && b.status !== 'borrador');
-  const attention = kpis.pending_approvals + toFix.length + drafts.length;
-  const pending = statusLine({ approvals: kpis.pending_approvals, toFix: toFix.length, drafts: drafts.length, canApprove, hasProjects: projects.length > 0 });
+  const hasPayments = payments.pending_count > 0;
+  const attention = quotes.length + approvals.length + (hasPayments ? 1 : 0);
+  const pending = statusLine({
+    quotes: quotes.length, overdue: payments.overdue_count, pending: payments.pending_count, approvals: approvals.length, hasProjects: projects.length > 0,
+  });
   const manyProjects = new Set(updates.map((u) => u.project_id)).size > 1;
-  const scrollToMeetings = () => document.getElementById('reuniones')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   return (
     <div className="space-y-6">
-      {/* Bienvenida: momento de marca, con el estado en una frase y la acción principal. */}
-      <section className="card-panel animate-rise p-5 sm:p-7 lg:p-8" aria-labelledby="home-title">
+      {/* Bienvenida: el estado en una frase y la acción principal. */}
+      <section className="card-panel animate-rise p-5 sm:p-7" aria-labelledby="home-title">
         <div className="grid-dots-light absolute inset-0 opacity-40 [mask-image:radial-gradient(60%_90%_at_85%_0%,black,transparent)]" aria-hidden="true" />
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 max-w-2xl">
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-teal first-letter:uppercase">{formatDayLong(today ?? todayKey())}</p>
-            <h1 id="home-title" className="mt-2 font-display text-[28px] font-bold leading-tight text-white sm:text-[36px]">{greeting()}, {firstName(account.name)}</h1>
-            <p className="mt-1.5 text-[15px] leading-relaxed text-white/75">Así avanza el trabajo de JC Analytics con <span className="font-semibold text-white">{companyName}</span>.</p>
+            <h1 id="home-title" className="mt-2 font-display text-[28px] font-bold leading-tight text-white sm:text-[34px]">{greeting()}, {firstName(account.name)}</h1>
+            <p className="mt-1.5 text-[15px] leading-relaxed text-white/75">Así van tus proyectos con JC Analytics en <span className="font-semibold text-white">{companyName}</span>.</p>
             <p className={cx('mt-4 inline-flex items-start gap-2 rounded-xl bg-white/[0.08] px-3 py-2 text-sm font-medium text-white/90', attention && 'ring-1 ring-amber/50')}>
-              {attention ? <BellRing className="mt-0.5 h-4 w-4 shrink-0 text-amber" aria-hidden="true" /> : <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-teal" aria-hidden="true" />}
+              {attention ? <BellRing className="mt-0.5 h-4 w-4 shrink-0 text-amber" aria-hidden="true" /> : <CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-teal" aria-hidden="true" />}
               {pending}
             </p>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
-            <Link to="/cliente/solicitudes/nueva" className="btn btn-lg bg-white text-panel shadow-raised hover:bg-white/90">
-              <Plus className="h-5 w-5 text-brand" strokeWidth={2.5} />Nueva solicitud
-            </Link>
-            {approvals.length > 0 && (
-              <Link to={`/cliente/entregables/${approvals[0].id}`} className="btn btn-lg border border-white/15 bg-white/10 text-white hover:bg-white/15">
-                <Eye className="h-5 w-5" />Revisar entregable
-              </Link>
-            )}
-          </div>
+          <Link to="/cliente/actualizaciones?nueva=1" className="btn btn-lg bg-white text-panel shadow-raised hover:bg-white/90">
+            <Plus className="h-5 w-5 text-brand" strokeWidth={2.5} />Pedir una actualización
+          </Link>
         </div>
       </section>
 
-      <section className="stagger grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4" aria-label="Resumen">
-        <KpiTile to="/cliente/proyectos" icon={FolderKanban} tone="blue" label="Proyectos activos" value={kpis.active_projects}
-          hint={kpis.active_projects ? 'En marcha' : 'Sin proyectos activos'} />
-        <KpiTile to="/cliente/entregables" icon={PackageCheck} tone={kpis.pending_approvals ? 'amber' : 'teal'} label="Por aprobar" value={kpis.pending_approvals}
-          hint={kpis.pending_approvals ? (canApprove ? 'Esperan tu revisión' : 'Esperan aprobación') : 'Nada pendiente'} />
-        <KpiTile to="/cliente/solicitudes" icon={ClipboardList} tone="violet" label="Solicitudes abiertas" value={kpis.open_briefs}
-          hint={kpis.open_briefs ? 'En curso con el equipo' : 'Pedí algo cuando quieras'} />
-        <KpiTile onClick={scrollToMeetings} icon={CalendarClock} tone="teal" label="Próximas reuniones" value={kpis.upcoming_meetings}
-          hint={meetings.upcoming[0] ? `La próxima: ${dateOf(meetings.upcoming[0].starts_at)}` : 'Ninguna agendada'} />
-      </section>
+      {attention > 0 && (
+        <section className="card animate-rise overflow-hidden" aria-labelledby="attention-title">
+          <SectionHead flush id="attention-title" icon={BellRing} tone="amber" title="Requiere tu atención"
+            hint="Lo que espera una respuesta de tu parte" action={<Badge tone="amber">{attention}</Badge>} />
+          <ul className="divide-y divide-line">
+            {quotes.map((r) => (
+              <li key={`r${r.id}`}>
+                <AttentionRow to={`/cliente/actualizaciones?ver=${r.id}`} icon={Sparkles} tone="amber" title={r.title}
+                  detail={[requestPrice(r), canApprove ? 'Aprobá el monto para que arranquemos' : 'Espera la aprobación de tu empresa'].join(' · ')}
+                  cta={canApprove ? 'Revisar monto' : 'Ver'} />
+              </li>
+            ))}
+            {hasPayments && (
+              <li>
+                <AttentionRow to="/cliente/pagos" icon={Wallet} tone={payments.overdue_count ? 'red' : 'amber'}
+                  title={payments.overdue_count ? `${plural(payments.overdue_count, 'pago vencido', 'pagos vencidos')} · ${totalsText(payments.overdue)}` : `Por pagar · ${totalsText(payments.pending)}`}
+                  detail={payments.next_due ? `${payments.next_due.concept} · vence ${formatDate(payments.next_due.due_date)}` : plural(payments.pending_count, 'pago pendiente', 'pagos pendientes')}
+                  cta="Ver pagos" />
+              </li>
+            )}
+            {approvals.map((d) => (
+              <li key={`d${d.id}`}>
+                <AttentionRow to={`/cliente/entregables/${d.id}`} icon={PackageCheck} tone="blue" title={d.title}
+                  detail={[d.project_name, `Versión ${d.version}`, `compartido ${dateOf(d.shared_at)}`].filter(Boolean).join(' · ')}
+                  cta={canApprove ? 'Revisar y aprobar' : 'Ver entregable'} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-6">
-          <section className="card animate-rise overflow-hidden" aria-labelledby="attention-title">
-            <SectionHead flush id="attention-title" icon={attention ? BellRing : Sparkles} tone={attention ? 'amber' : 'teal'} title="Requiere tu atención"
-              hint={attention ? 'Lo que espera una respuesta de tu parte' : 'Te avisamos cuando haya algo para revisar'}
-              action={attention > 0 && <Badge tone="amber">{attention}</Badge>} />
-            {attention === 0 ? (
-              <div className="flex items-start gap-3 px-4 py-5 sm:px-5">
-                <IconTile icon={Sparkles} tone="teal" />
-                <div className="min-w-0">
-                  <p className="font-semibold text-teal-ink">Nada pendiente de tu parte</p>
-                  <p className="mt-0.5 text-sm text-muted">El equipo sigue avanzando. Cuando haya un entregable para revisar, aparece aquí y te llega un aviso.</p>
-                </div>
-              </div>
-            ) : (
-              <ul className="divide-y divide-line">
-                {approvals.map((d) => (
-                  <li key={`d${d.id}`}>
-                    <AttentionRow to={`/cliente/entregables/${d.id}`} icon={PackageCheck} tone="amber" title={d.title}
-                      detail={[d.project_name, `Versión ${d.version}`, `compartido ${dateOf(d.shared_at)}`].filter(Boolean).join(' · ')}
-                      cta={canApprove ? 'Revisar y aprobar' : 'Ver entregable'} />
-                  </li>
-                ))}
-                {toFix.map((b) => (
-                  <li key={`b${b.id}`}>
-                    <AttentionRow to={`/cliente/solicitudes/${b.id}`} icon={PenLine} tone="amber" title={b.title}
-                      detail={`${b.code} · JC Analytics te pidió algunos ajustes`} cta="Ajustar" />
-                  </li>
-                ))}
-                {drafts.map((b) => (
-                  <li key={`b${b.id}`}>
-                    <AttentionRow to={`/cliente/solicitudes/${b.id}`} icon={FilePen} tone="slate" title={b.title}
-                      detail={`${b.code} · Borrador sin enviar · ${b.completeness?.pct ?? 0} % completo`} cta="Continuar" />
-                  </li>
-                ))}
-              </ul>
-            )}
-            {kpis.pending_approvals > approvals.length && (
-              <Link to="/cliente/entregables" className="tap flex items-center justify-center gap-1.5 border-t border-line bg-surface-2/60 px-4 py-3 text-sm font-semibold text-brand-ink">
-                Ver los {kpis.pending_approvals} entregables por revisar<ArrowRight className="h-4 w-4" />
-              </Link>
-            )}
-          </section>
-
           <section aria-labelledby="projects-title" className="animate-rise">
             <div className="section-head mb-3">
               <div className="flex items-center gap-3">
                 <IconTile icon={FolderKanban} tone="blue" size="sm" />
                 <h2 id="projects-title" className="section-title">Tus proyectos</h2>
               </div>
-              {projects.length > 0 && <SeeAll to="/cliente/proyectos">Ver todos</SeeAll>}
+              <SeeAll to="/cliente/proyectos">Todos</SeeAll>
             </div>
             {projects.length === 0 ? (
               <EmptyState icon={FolderKanban} title="Todavía no hay proyectos activos"
-                action={<Link to="/cliente/solicitudes/nueva" className="btn btn-primary"><Plus className="h-4 w-4" />Nueva solicitud</Link>}>
+                action={<Link to="/cliente/actualizaciones?nueva=1" className="btn btn-primary"><Plus className="h-4 w-4" />Pedir algo</Link>}>
                 Cuando arranquemos un proyecto juntos, vas a ver aquí cada etapa y cómo avanza.
               </EmptyState>
             ) : (
@@ -172,45 +210,10 @@ export default function ClientHome() {
           </section>
         </div>
 
-        <aside className="min-w-0 space-y-6" aria-label="Contacto, reuniones y documentos">
+        <aside className="min-w-0 space-y-6" aria-label="Pagos, actualizaciones y contacto">
+          <PaymentsCard payments={payments} nextCharge={nextCharge} />
+          <RequestsCard requests={requests} />
           <ContactCard contact={contact} clientName={companyName} className="animate-rise" />
-
-          <section id="reuniones" className="card animate-rise scroll-mt-28 overflow-hidden" aria-labelledby="meetings-title">
-            <SectionHead flush id="meetings-title" icon={CalendarClock} tone="teal" title="Próximas reuniones" hint="Hora de Costa Rica" />
-            {meetings.upcoming.length === 0 ? (
-              <p className="px-4 py-5 text-sm text-muted sm:px-5">No hay reuniones agendadas. Si necesitás una, escribile a tu ejecutivo de cuenta.</p>
-            ) : (
-              <ul className="divide-y divide-line">{meetings.upcoming.map((m) => <MeetingRow key={m.id} m={m} showProject />)}</ul>
-            )}
-            {meetings.recent.length > 0 && (
-              <>
-                <p className="border-t border-line bg-surface-2/60 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted sm:px-5">Recientes</p>
-                <ul className="divide-y divide-line">{meetings.recent.map((m) => <MeetingRow key={m.id} m={m} showProject past />)}</ul>
-              </>
-            )}
-          </section>
-
-          <Link to="/cliente/documentos" className="card card-hover group animate-rise flex items-center gap-3.5 p-4 sm:p-5">
-            <IconTile icon={FolderOpen} tone="violet" size="lg" />
-            <span className="min-w-0 flex-1">
-              <span className="block font-display text-[17px] font-bold text-ink">Documentos</span>
-              <span className="block text-sm text-muted">{docs ? `${plural(docs, 'documento compartido', 'documentos compartidos')}: contratos, facturas, marca y reportes.` : 'Aquí vas a encontrar contratos, facturas y reportes.'}</span>
-            </span>
-            <RowArrow />
-          </Link>
-
-          <section className="card animate-rise overflow-hidden" aria-labelledby="briefs-title">
-            <SectionHead flush id="briefs-title" icon={ClipboardList} tone="violet" title="Solicitudes en curso"
-              action={<SeeAll to="/cliente/solicitudes">Ver todas</SeeAll>} />
-            {inProgress.length === 0 ? (
-              <div className="px-4 py-5 sm:px-5">
-                <p className="text-sm text-muted">¿Necesitás una campaña, piezas para redes o un cambio? Contanos en una solicitud y el equipo la toma.</p>
-                <Link to="/cliente/solicitudes/nueva" className="btn btn-soft tap mt-3"><Plus className="h-4 w-4" />Nueva solicitud</Link>
-              </div>
-            ) : (
-              <ul className="divide-y divide-line">{inProgress.map((b) => <li key={b.id}><BriefRow b={b} hint={b.code} /></li>)}</ul>
-            )}
-          </section>
         </aside>
       </div>
     </div>

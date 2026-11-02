@@ -1,16 +1,17 @@
-// Ficha de un proyecto para el cliente: estado y fechas, etapas, avances, entregables,
-// documentos, reuniones, solicitudes ligadas y el equipo de JC Analytics que lo lleva.
+// Ficha de un proyecto para el cliente (portal simple): avance, etapas, avances y sus
+// actualizaciones, más quién lo lleva. Entregables, reuniones, documentos y solicitudes
+// creativas aparecen solo si el proyecto tiene alguno: sin secciones vacías.
 import {
   FolderKanban, Route, PackageCheck, History, Users, CalendarClock, FolderOpen, ClipboardList, Globe, ExternalLink, Plus, Mail,
-  MessageCircle,
+  MessageCircle, Sparkles,
 } from 'lucide-react';
-import { useSession, useResource } from '../../lib/session.jsx';
+import { useResource } from '../../lib/session.jsx';
 import { Link } from '../../lib/router.jsx';
 import { PageHeader, PageLoader, SectionHead, Avatar, Badge } from '../../components/ui.jsx';
 import { formatDate, timeAgo, whatsappLink } from '../../lib/format.js';
 import {
   BackLink, ProgressRing, ProjectStatusBadge, MilestoneStepper, DeliverableRow, UpdatesTimeline, MeetingRow, DocumentRow, BriefRow,
-  ExternalAnchor, StageBar, plural, firstName,
+  ExternalAnchor, StageBar, RequestStatusBadge, requestPrice, dateOf, plural, firstName,
 } from '../components.jsx';
 
 /** Una frase tranquila sobre el estado, en lenguaje de cliente. */
@@ -37,17 +38,17 @@ function Fact({ label, value, hint }) {
 }
 
 export default function ClientProjectDetail({ params }) {
-  const { client } = useSession();
   const { data, error, reload } = useResource(`/api/client/projects/${params.id}`);
   if (!data) return <PageLoader error={error} onRetry={reload} />;
 
-  const { project: p, milestones, updates, deliverables, documents, meetings, briefs } = data;
+  const { project: p, milestones, updates, deliverables, documents, meetings, briefs, requests = [] } = data;
+  const closed = p.archived || p.status === 'cerrado';
   const nowIso = new Date().toISOString();
   const upcoming = meetings.filter((m) => m.ends_at >= nowIso && !['cancelada', 'no_asistio'].includes(m.status)).reverse();
-  const past = meetings.filter((m) => m.ends_at < nowIso).slice(0, 4);
   const toReview = deliverables.filter((d) => d.status === 'en_revision').length;
   const current = milestones.find((m) => m.status !== 'completado');
   const owner = p.owner;
+  const others = p.team.filter((m) => m.role !== 'responsable' || m.name !== owner?.name);
   const ownerWa = owner?.phone ? whatsappLink(owner.phone, `Hola ${firstName(owner.name)}, te escribo por el proyecto "${p.name}" desde el portal de clientes.`) : null;
   const facts = [
     { label: 'Inicio', value: p.start_date ? formatDate(p.start_date) : 'Por definir' },
@@ -60,7 +61,7 @@ export default function ClientProjectDetail({ params }) {
 
   return (
     <div className="space-y-6">
-      <PageHeader back={<BackLink to="/cliente/proyectos">Proyectos</BackLink>} eyebrow={p.service_label ?? 'Proyecto'} title={p.name}
+      <PageHeader back={<BackLink to="/cliente">Mis proyectos</BackLink>} eyebrow={p.service_label ?? 'Proyecto'} title={p.name}
         subtitle={p.description} icon={FolderKanban} tone="blue"
         actions={p.url && (
           <ExternalAnchor href={p.url} className="btn btn-outline">
@@ -91,6 +92,13 @@ export default function ClientProjectDetail({ params }) {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-6">
+          <section className="card animate-rise overflow-hidden" aria-labelledby="updates-title">
+            <SectionHead flush id="updates-title" icon={History} tone="teal" title="Avances" hint={updates.length ? plural(updates.length, 'avance comunicado', 'avances comunicados') : 'Lo que el equipo te ha contado'} />
+            {updates.length === 0
+              ? <p className="px-4 py-5 text-sm text-muted sm:px-5">Los avances que te comuniquemos quedan registrados aquí.</p>
+              : <div className="px-4 py-5 sm:px-5"><UpdatesTimeline updates={updates} /></div>}
+          </section>
+
           <section className="card animate-rise overflow-hidden" aria-labelledby="stages-title">
             <SectionHead flush id="stages-title" icon={Route} tone="blue" title="Etapas del proyecto"
               hint={milestones.length ? (current ? `Ahora: ${current.title}` : 'Todas las etapas completadas') : 'El plan de trabajo, paso a paso'} />
@@ -101,24 +109,43 @@ export default function ClientProjectDetail({ params }) {
             </div>
           </section>
 
-          <section className="card animate-rise overflow-hidden" aria-labelledby="deliverables-title">
-            <SectionHead flush id="deliverables-title" icon={PackageCheck} tone="amber" title="Entregables"
-              hint={toReview ? `${plural(toReview, 'versión espera', 'versiones esperan')} tu revisión` : 'Versiones compartidas para tu revisión'}
-              action={toReview > 0 && <Badge tone="amber">{toReview}</Badge>} />
-            {deliverables.length === 0
-              ? <p className="px-4 py-5 text-sm text-muted sm:px-5">Cuando el equipo comparta algo para revisar, aparece aquí y te llega un aviso.</p>
-              : <ul className="divide-y divide-line">{deliverables.map((d) => <li key={d.id}><DeliverableRow d={d} showProject={false} /></li>)}</ul>}
-          </section>
-
-          <section className="card animate-rise overflow-hidden" aria-labelledby="updates-title">
-            <SectionHead flush id="updates-title" icon={History} tone="teal" title="Avances" hint={updates.length ? plural(updates.length, 'avance comunicado', 'avances comunicados') : 'Lo que el equipo te ha contado'} />
-            {updates.length === 0
-              ? <p className="px-4 py-5 text-sm text-muted sm:px-5">Los avances que te comuniquemos quedan registrados aquí.</p>
-              : <div className="px-4 py-5 sm:px-5"><UpdatesTimeline updates={updates} /></div>}
-          </section>
+          {deliverables.length > 0 && (
+            <section className="card animate-rise overflow-hidden" aria-labelledby="deliverables-title">
+              <SectionHead flush id="deliverables-title" icon={PackageCheck} tone="amber" title="Entregables"
+                hint={toReview ? `${plural(toReview, 'versión espera', 'versiones esperan')} tu revisión` : 'Versiones compartidas para tu revisión'}
+                action={toReview > 0 && <Badge tone="amber">{toReview}</Badge>} />
+              <ul className="divide-y divide-line">{deliverables.map((d) => <li key={d.id}><DeliverableRow d={d} showProject={false} /></li>)}</ul>
+            </section>
+          )}
         </div>
 
-        <aside className="min-w-0 space-y-6" aria-label="Equipo, reuniones, documentos y solicitudes">
+        <aside className="min-w-0 space-y-6" aria-label="Actualizaciones y equipo">
+          <section className="card animate-rise overflow-hidden" aria-labelledby="project-requests-title">
+            <SectionHead flush id="project-requests-title" icon={Sparkles} tone="violet" title="Actualizaciones"
+              hint={requests.length ? plural(requests.length, 'pedida', 'pedidas') : 'Cambios o mejoras a este proyecto'} />
+            {requests.length > 0 && (
+              <ul className="divide-y divide-line">
+                {requests.slice(0, 6).map((r) => (
+                  <li key={r.id}>
+                    <Link to={`/cliente/actualizaciones?ver=${r.id}`} className="group row min-h-[60px] px-4 py-3 sm:px-5">
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold text-ink">{r.title}</span>
+                        <span className="block truncate text-xs text-muted">{requestPrice(r) ?? `Pedida ${dateOf(r.created_at)}`}</span>
+                      </span>
+                      <RequestStatusBadge status={r.status} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {!closed && (
+              <div className={requests.length ? 'border-t border-line bg-surface-2/50 p-3 sm:px-5' : 'px-4 py-5 sm:px-5'}>
+                {requests.length === 0 && <p className="mb-3 text-sm text-muted">¿Querés cambiar o agregar algo? Te decimos el monto antes de empezar.</p>}
+                <Link to={`/cliente/actualizaciones?nueva=1&proyecto=${p.id}`} className="btn btn-soft tap w-full sm:w-auto"><Plus className="h-4 w-4" />Pedir una actualización</Link>
+              </div>
+            )}
+          </section>
+
           <section className="card animate-rise overflow-hidden" aria-labelledby="team-title">
             <SectionHead flush id="team-title" icon={Users} tone="teal" title="Quién lo lleva" hint="Equipo de JC Analytics en este proyecto" />
             {owner && (
@@ -138,9 +165,9 @@ export default function ClientProjectDetail({ params }) {
                 )}
               </div>
             )}
-            {p.team.filter((m) => m.role !== 'responsable' || m.name !== owner?.name).length > 0 ? (
+            {others.length > 0 ? (
               <ul className="divide-y divide-line">
-                {p.team.filter((m) => m.role !== 'responsable' || m.name !== owner?.name).map((m) => (
+                {others.map((m) => (
                   <li key={`${m.name}-${m.role}`} className="flex min-h-14 items-center gap-3 px-4 py-2.5 sm:px-5">
                     <Avatar name={m.name} color="#5b6b82" size={32} />
                     <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{m.name}</span>
@@ -151,33 +178,26 @@ export default function ClientProjectDetail({ params }) {
             ) : !owner && <p className="px-4 py-5 text-sm text-muted sm:px-5">Pronto te presentamos al equipo de este proyecto.</p>}
           </section>
 
-          <section className="card animate-rise overflow-hidden" aria-labelledby="meetings-title">
-            <SectionHead flush id="meetings-title" icon={CalendarClock} tone="teal" title="Reuniones" hint="Hora de Costa Rica" />
-            {upcoming.length === 0 && past.length === 0 && <p className="px-4 py-5 text-sm text-muted sm:px-5">No hay reuniones de este proyecto por ahora.</p>}
-            {upcoming.length > 0 && <ul className="divide-y divide-line">{upcoming.map((m) => <MeetingRow key={m.id} m={m} />)}</ul>}
-            {past.length > 0 && (
-              <>
-                <p className="border-t border-line bg-surface-2/60 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted sm:px-5">Anteriores</p>
-                <ul className="divide-y divide-line">{past.map((m) => <MeetingRow key={m.id} m={m} past />)}</ul>
-              </>
-            )}
-          </section>
+          {upcoming.length > 0 && (
+            <section className="card animate-rise overflow-hidden" aria-labelledby="meetings-title">
+              <SectionHead flush id="meetings-title" icon={CalendarClock} tone="teal" title="Próximas reuniones" hint="Hora de Costa Rica" />
+              <ul className="divide-y divide-line">{upcoming.map((m) => <MeetingRow key={m.id} m={m} />)}</ul>
+            </section>
+          )}
 
-          <section className="card animate-rise overflow-hidden" aria-labelledby="docs-title">
-            <SectionHead flush id="docs-title" icon={FolderOpen} tone="violet" title="Documentos" hint={documents.length ? plural(documents.length, 'documento', 'documentos') : 'Contratos, reportes y recursos'} />
-            {documents.length === 0
-              ? <p className="px-4 py-5 text-sm text-muted sm:px-5">Los documentos de este proyecto van a aparecer aquí. <Link to="/cliente/documentos" className="link">Ver todos tus documentos</Link></p>
-              : <ul className="divide-y divide-line">{documents.map((doc) => <li key={doc.id}><DocumentRow doc={doc} showCategory showProject={false} /></li>)}</ul>}
-          </section>
+          {documents.length > 0 && (
+            <section className="card animate-rise overflow-hidden" aria-labelledby="docs-title">
+              <SectionHead flush id="docs-title" icon={FolderOpen} tone="violet" title="Documentos" hint={plural(documents.length, 'documento', 'documentos')} />
+              <ul className="divide-y divide-line">{documents.map((doc) => <li key={doc.id}><DocumentRow doc={doc} showCategory showProject={false} /></li>)}</ul>
+            </section>
+          )}
 
-          <section className="card animate-rise overflow-hidden" aria-labelledby="project-briefs-title">
-            <SectionHead flush id="project-briefs-title" icon={ClipboardList} tone="violet" title="Solicitudes" hint="Pedidos ligados a este proyecto" />
-            {briefs.length > 0 && <ul className="divide-y divide-line">{briefs.map((b) => <li key={b.id}><BriefRow b={b} hint={`${b.code} · ${b.status_label}`} /></li>)}</ul>}
-            <div className={briefs.length ? 'border-t border-line bg-surface-2/50 p-3 sm:px-5' : 'px-4 py-5 sm:px-5'}>
-              {briefs.length === 0 && <p className="mb-3 text-sm text-muted">¿Necesitás algo nuevo para {client?.name ?? 'tu empresa'}? Contanos en una solicitud.</p>}
-              <Link to="/cliente/solicitudes/nueva" className="btn btn-soft tap w-full sm:w-auto"><Plus className="h-4 w-4" />Nueva solicitud</Link>
-            </div>
-          </section>
+          {briefs.length > 0 && (
+            <section className="card animate-rise overflow-hidden" aria-labelledby="project-briefs-title">
+              <SectionHead flush id="project-briefs-title" icon={ClipboardList} tone="violet" title="Solicitudes creativas" hint="Briefs ligados a este proyecto" />
+              <ul className="divide-y divide-line">{briefs.map((b) => <li key={b.id}><BriefRow b={b} hint={`${b.code} · ${b.status_label}`} /></li>)}</ul>
+            </section>
+          )}
         </aside>
       </div>
     </div>

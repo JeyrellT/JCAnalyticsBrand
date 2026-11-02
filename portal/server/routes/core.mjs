@@ -201,6 +201,12 @@ export function coreRoutes(route, ctx, session) {
       upsert.run(key, String(v));
       changed.push(`${key}=${v}`);
     }
+    // "Cómo pagar" (texto libre) que ve el cliente en su sección Pagos: SINPE Móvil, IBAN, a nombre de quién.
+    if (has(body, 'payment_info')) {
+      const info = text(body.payment_info, 'payment_info', { max: 600 }) ?? '';
+      upsert.run('payment_info', info);
+      changed.push('payment_info');
+    }
     if (changed.length) ctx.log(user.id, 'settings', null, 'updated', `${user.name} actualizó la configuración: ${changed.join(', ')}`);
     return { settings: ctx.settings() };
   });
