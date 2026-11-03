@@ -1,6 +1,8 @@
 // JC Analytics, portada corta (reunión del 31 de octubre de 2026): qué hacemos por categoría →
-// proyectos reales → cómo trabajamos → precios → cotizador → equipo → ideas → preguntas → contacto.
+// proyectos reales → cómo trabajamos → precios → equipo → ideas → preguntas → contacto.
 // Las demos de sistemas, finanzas, IA y marketing viven ahora en la página de cada servicio (ServiceDemo).
+// El cotizador en vivo salió de la portada el 3 de noviembre de 2026: los precios publicados viven en
+// Paquetes y en la página de cada categoría (con su calculadora); lo demás se cotiza conversando.
 import { useEffect } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import Lenis from 'lenis';
@@ -16,7 +18,6 @@ import Process from './components/site/Process';
 import Contact from './components/site/Contact';
 import Footer from './components/site/Footer';
 import FAQ from './components/site/FAQ';
-import QuoteEstimator from './components/ui/QuoteEstimator';
 import KnowledgePreview from './components/site/KnowledgePreview';
 import './styles/studio.css';
 import './styles/art-direction.css';
@@ -68,12 +69,6 @@ const App = () => {
         <Work />
         <Process />
         <Packages />
-
-        {/* Cotizador en vivo */}
-        <section id="cotizar" className="quote-premium scroll-mt-24 bg-ink text-paper py-20 sm:py-32 rounded-t-[2rem] sm:rounded-t-[3rem] relative z-10">
-          <QuoteEstimator />
-        </section>
-
         <Team />
         <KnowledgePreview />
         <FAQ />

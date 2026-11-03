@@ -2,7 +2,7 @@
 //  src/data/packages.js
 //  PAQUETES · lo que se puede comprar hoy, con precio publicado. Los montos,
 //  plazos y alcances salen de portal/shared/service-pricing.js (la misma fuente
-//  del cotizador y del portal): acá solo va el texto de venta de cada tarjeta.
+//  de las páginas de servicio y del portal): acá solo va el texto de venta de cada tarjeta.
 //
 //  Anuncios: ?p=<alias> en la URL pone ese paquete primero y lo marca como
 //  "el que viste en el anuncio" (ver docs/anuncios.md).

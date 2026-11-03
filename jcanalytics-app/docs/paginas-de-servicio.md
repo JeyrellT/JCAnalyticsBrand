@@ -38,7 +38,7 @@ persona; el texto lo dice y no promete ahorros.
 ## De dónde salen los datos
 
 - **Precios, plazos, alcances, exclusiones y agregados:** `portal/shared/service-pricing.js`. Es la misma fuente
-  del cotizador, de los paquetes de la portada y del portal. Si un precio cambia ahí, cambia en todas partes.
+  de los paquetes de la portada y del portal. Si un precio cambia ahí, cambia en todas partes.
 - **Texto de venta por servicio:** `src/content/service-offers.js` (`SERVICE_OFFERS`). Por servicio: los dos
   paquetes (`packages`), el proyecto y la pantalla del ejemplo (`example`), los campos y la fórmula de la
   calculadora (`calculator`) y, en `es` y `en`, señales, títulos de la calculadora y preguntas frecuentes.

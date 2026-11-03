@@ -30,3 +30,9 @@ Pruebas de navegador en Chromium/Edge con emulación táctil: 320×568, 360×740
 Se verificaron los seis destinos del menú, foco y restauración del desplazamiento, ambos lados del sistema, pestañas y teclado, vistas y meses del dashboard, el borrador contextual de contacto sin enviar mensajes, gestos táctiles de galería, botones y flechas, y la coordinación entre navegación inferior y cotizador. También se revisaron movimiento normal y reducido, vistas de escritorio y la compilación de producción.
 
 La emulación no sustituye una revisión en un iPhone o Android físico. No se afirma una certificación de accesibilidad ni un incremento medido de conversiones.
+
+## Nota del 3 de noviembre de 2026
+
+El cotizador en vivo y su barra inferior salieron de la portada; las referencias a la «barra del cotizador» de
+este documento ya no aplican. El hero muestra pantallas reales de proyectos dentro de un teléfono (captura a
+390 px) y, en computadora, dentro de una laptop (captura a 1440 px). Ver [diseño y recorrido](design-conversion.md).

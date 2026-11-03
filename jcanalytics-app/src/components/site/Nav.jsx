@@ -18,7 +18,7 @@ const CHAPTERS = {
   marketing: { icon: Sparkles, detail: t('Redes, contenido y Meta Ads', 'Social media, content and Meta Ads') },
   pricing: { icon: Tag, detail: t('Paquetes con precio publicado', 'Packages with published pricing') },
 };
-const SECTION_NAMES = { top: t('El estudio', 'The studio'), servicios: t('Servicios', 'Services'), equipo: t('El equipo', 'The team'), proceso: t('El proceso', 'Our process'), cotizar: t('Cotizador', 'Estimator'), ideas: t('Ideas', 'Insights'), preguntas: t('Preguntas', 'Questions'), contacto: t('Contacto', 'Contact') };
+const SECTION_NAMES = { top: t('El estudio', 'The studio'), servicios: t('Servicios', 'Services'), equipo: t('El equipo', 'The team'), proceso: t('El proceso', 'Our process'), paquetes: t('Precios', 'Pricing'), ideas: t('Ideas', 'Insights'), preguntas: t('Preguntas', 'Questions'), contacto: t('Contacto', 'Contact') };
 
 const Brand = ({ onClick, className = '' }) => (
   <a href="#top" onClick={onClick} className={`jca-brand ${className}`} aria-label={t('JC Analytics — inicio', 'JC Analytics — home')}>
@@ -216,7 +216,7 @@ const Nav = () => {
                 </motion.a>
               ))}
             </nav>
-            <div className="jca-menu__shortcuts"><a href="#cotizar" onClick={(event) => visit(event, '#cotizar')}>{t('Estimar mi proyecto', 'Estimate my project')} <ArrowRight size={15} aria-hidden="true" /></a><a href="#contacto" onClick={(event) => visit(event, '#contacto')}>{t('Contacto', 'Contact')} <ArrowRight size={15} aria-hidden="true" /></a><a href="#equipo" onClick={(event) => visit(event, '#equipo')}>{t('El equipo', 'The team')} <ArrowRight size={15} aria-hidden="true" /></a><a href={journalPath(locale)} onClick={() => setOpen(false)}>{t('Ideas', 'Insights')} <ArrowRight size={15} aria-hidden="true" /></a></div>
+            <div className="jca-menu__shortcuts"><a href="#proceso" onClick={(event) => visit(event, '#proceso')}>{t('Cómo trabajamos', 'How we work')} <ArrowRight size={15} aria-hidden="true" /></a><a href="#contacto" onClick={(event) => visit(event, '#contacto')}>{t('Contacto', 'Contact')} <ArrowRight size={15} aria-hidden="true" /></a><a href="#equipo" onClick={(event) => visit(event, '#equipo')}>{t('El equipo', 'The team')} <ArrowRight size={15} aria-hidden="true" /></a><a href={journalPath(locale)} onClick={() => setOpen(false)}>{t('Ideas', 'Insights')} <ArrowRight size={15} aria-hidden="true" /></a></div>
             <div className="jca-menu__bottom">
               <a href={wa(t('Hola, quiero cotizar un proyecto con JC Analytics.', 'Hi, I would like a project estimate from JC Analytics.'))} target="_blank" rel="noreferrer" onClick={() => setOpen(false)} className="jca-menu__contact">
                 {t('Conversemos sobre tu idea', "Let's talk about your idea")}<span aria-hidden="true"><ArrowUpRight size={21} /></span>

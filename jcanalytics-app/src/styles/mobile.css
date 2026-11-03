@@ -49,7 +49,6 @@
   .studio-v4 :is(a, button) { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   .studio-v4 :focus-visible { outline: 2px solid #579b77; outline-offset: 4px; }
   .studio-v4 :is(.studio-hero, .ai-section, .contact-section, .jca-menu) :focus-visible { outline-color: #c3f5db; }
-  .studio-v4 .wa-fab { display: none; }
   .studio-v4 .jca-navigation { padding: max(7px, env(safe-area-inset-top)) var(--mobile-edge) 0; }
   .studio-v4 .jca-navigation__bar { min-height: 56px; padding-block: 5px; }
   .studio-v4 .jca-navigation--scrolled { padding-top: env(safe-area-inset-top); }
@@ -64,15 +63,9 @@
   .mobile-wa { position: fixed; z-index: 65; right: max(16px, env(safe-area-inset-right)); bottom: calc(16px + env(safe-area-inset-bottom)); display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: #25d366; color: #06301a; box-shadow: 0 10px 28px #03170b66, inset 0 1px #fff5; transition: opacity .18s, transform .18s; }
   .mobile-wa:active { transform: scale(.94); }
   .mobile-wa[aria-hidden=true] { visibility: hidden; opacity: 0; pointer-events: none; }
-  body.quote-bar-visible .mobile-wa, body.mobile-input-active .quote-mobile-summary { display: none; }
-  .studio-v4 .quote-mobile-summary { z-index: 66; padding: 12px 16px max(14px, env(safe-area-inset-bottom)); background: #142c23f5; backdrop-filter: blur(16px); border-radius: 18px 18px 0 0; }
-  .quote-mobile-summary .truncate { white-space: normal; }
-  .quote-result { scroll-margin-top: 90px; }
-  .quote-premium :is(input[type=range], button[aria-haspopup=listbox]) { min-height: 44px; }
 
   /* Title, sculptural object and invitation read as one opening composition. */
   .studio-hero { padding: 91px var(--mobile-edge) 0; }
-  .studio-hero__topline { font-size: 8px; padding-bottom: 15px; }
   .studio-hero__main { display: flex; flex-direction: column; }
   .studio-hero__copy { display: contents; }
   .studio-hero__lead { order: 0; padding-top: 26px; }
@@ -80,26 +73,12 @@
   .studio-hero h1 { order: 1; padding-top: 12px; font-size: clamp(50px, 16.8vw, 100px); line-height: .89; }
   .studio-hero h1 em { font-size: clamp(34px, 12.6vw, 72px); } /* «con entrega a tiempo.» entra completa en celular (nov. 2026) */
   .studio-hero .studio-object { order: 6; width: 100%; margin: 6px 0 2px; height: auto; transform: none !important; }
-  .studio-object__halo, .studio-object__fallback, .studio-object__coordinate, .studio-object__badge, .studio-hero .studio-motion-control { display: none; }
-  .hero-screens { display: grid; }
-  .studio-object__coordinate { right: 10%; top: 21%; }
-  .studio-hero .studio-motion-control { right: 7%; bottom: 5%; min-height: 44px; min-width: 44px; padding: 10px 12px; font-size: 10px; background: #080c10dd; }
   .studio-hero__intro { order: 2; }
   .studio-hero__description { margin-top: 8px; max-width: 100%; font-size: 14px; line-height: 1.7; }
   .studio-hero__actions { order: 4; display: grid; grid-template-columns: 1fr; gap: 7px; margin-top: 20px; }
   .studio-start { width: 100%; justify-content: space-between; border-radius: 14px; font-size: 13px; padding: 8px 8px 8px 19px; min-height: 56px; }
   .studio-start > span { width: 40px; }
-  .studio-work-link { justify-content: center; font-size: 12px; }
   .studio-hero__invitation { order: 5; text-align: center; font-size: 11px; margin: 2px 0 20px; }
-  .studio-hero__signature { order: 6; display: none; }
-  .studio-hero__bottom { padding-top: 18px; gap: 15px; }
-  .studio-materials > div { gap: 4px; padding: 4px; border: 1px solid #c3f5db24; border-radius: 14px; }
-  .studio-materials button { flex: 1; justify-content: center; font-size: 11px; min-height: 44px; border-radius: 10px; gap: 6px; }
-  .studio-materials button[aria-pressed=true] { background: #c3f5db13; }
-  .studio-materials button > span { display: none; }
-  .studio-materials > p { font-size: 11px; margin-top: 12px; min-height: 36px; }
-  .studio-latest { padding-top: 14px; }
-  .studio-scroll-note { display: none; }
   .studio-v4 .capabilities-ribbon { padding-block: 16px; }
   .studio-v4 .jca-marquee__control { width: 44px; height: 44px; }
 

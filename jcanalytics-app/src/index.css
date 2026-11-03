@@ -231,21 +231,6 @@ a, button, [role="button"], input[type="range"], select, label, summary {
   .pb-safe { padding-bottom: max(0.75rem, var(--safe-bottom)); }
   .mb-safe { margin-bottom: var(--safe-bottom); }
 
-  /* Botón flotante de WhatsApp: sube cuando la barra del cotizador está
-     visible para no taparle el CTA (la clase la togglea QuoteEstimator). */
-  .wa-fab {
-    bottom: calc(1.25rem + var(--safe-bottom));
-    transition: bottom 0.35s var(--ease-out-quart), transform 0.2s var(--ease-out-quart);
-  }
-  @media (min-width: 640px) {
-    .wa-fab { bottom: calc(2rem + var(--safe-bottom)); }
-  }
-  body.quote-bar-visible .wa-fab {
-    bottom: calc(5.25rem + var(--safe-bottom));
-  }
-  @media (min-width: 1024px) {
-    body.quote-bar-visible .wa-fab { bottom: calc(2rem + var(--safe-bottom)); }
-  }
 }
 
 @keyframes blob {
@@ -796,16 +781,6 @@ html.lenis { scroll-behavior: auto; }
 .social-premium { background: radial-gradient(ellipse at 8% 8%,#0b3565 0,transparent 45%),#071a36; }
 .social-premium [class*="bg-white/5"] { background: #ffffff06; border: 1px solid #ffffff0a; transition: border-color .4s; }
 .social-premium [class*="bg-white/5"]:hover { border-color: #9cdfe52e; }
-.quote-premium { background: radial-gradient(ellipse at 80% 12%,#0c366333 0,transparent 50%),#071a36; }
-.quote-premium [class*="bg-neutral-900"], .quote-premium [class*="bg-neutral-800"] { background-color: #0d2342; }
-.quote-premium [class*="border-neutral-800"], .quote-premium [class*="border-neutral-700"] { border-color: #aec8e521; }
-.quote-premium [class*="text-neutral-500"], .quote-premium [class*="text-neutral-600"] { color: #9aaec7; }
-.quote-premium [class*="text-neutral-400"] { color: #acc0d8; }
-.quote-premium [role="radio"][aria-checked="true"] { background: #0065df20; border-color: #6aaaf580; }
-.quote-premium [role="radio"][aria-checked="true"] svg { color: #9cdfe5; }
-.quote-premium .glass-premium { background: linear-gradient(140deg,#17385b,#0c2342); box-shadow: 0 18px 45px -25px #0008; border-color: #9cdfe536; }
-.quote-premium .touch-slider { background-image: linear-gradient(90deg,#9cdfe5 var(--pct,33%),#ffffff20 var(--pct,33%)); }
-.quote-premium h2 { font-size: clamp(2.6rem,6vw,5.5rem); }
 .site-premium ::selection { background: #9cdfe5; color: #071a36; text-shadow: none; }
 @media (max-width:767px) { .studio-proof__intro { flex-direction: column; gap: 10px; margin-bottom: 32px; } .studio-proof__intro > p { font-size: 25px; } .capabilities-ribbon { padding: 18px 0; } }
 @media (prefers-reduced-motion:reduce) { .site-premium *, .site-premium *::before, .site-premium *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }

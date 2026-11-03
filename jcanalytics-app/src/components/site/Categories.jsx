@@ -30,7 +30,7 @@ const Card = ({ item, index }) => {
   return (
     <Reveal as="li" delay={index * 0.05} className="category-card">
       <a href={item.href} data-track-label={`${t('Categorías', 'Categories')} · ${item.kicker}`}>
-        <span className="category-card__image"><img src={item.image} srcSet={shotSrcSet(item.image)} sizes="(max-width: 767px) 92vw, (max-width: 1199px) 30vw, 260px" alt="" width={portrait ? 720 : 1600} height={portrait ? 900 : 1000} loading="lazy" decoding="async" /></span>
+        <span className={`category-card__image ${portrait ? 'category-card__image--portrait' : ''}`}><img src={item.image} srcSet={shotSrcSet(item.image)} sizes="(max-width: 767px) 92vw, (max-width: 1199px) 30vw, 260px" alt="" width={portrait ? 720 : 1600} height={portrait ? 900 : 1000} loading="lazy" decoding="async" /></span>
         <span className="category-card__kicker">{String(index + 1).padStart(2, '0')} / {item.kicker}</span>
         <h3>{item.title}</h3>
         <p className="category-card__who">{item.who}</p>

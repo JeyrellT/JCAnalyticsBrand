@@ -196,7 +196,7 @@
 .studio-v4 .automation-premium { background: #e8eee3; border-radius: 0; }
 .studio-v4 .social-premium { background: #101b17; border-radius: 0; margin-top: 0; }
 .studio-v4 .social-premium h2 { font-weight: 450; }
-.studio-v4 .team-section { background: #eff1e9; border-radius: 0; margin-top: 0; }
+.studio-v4 .team-section { background: #e6ecdf; border-radius: 0; margin-top: 0; }
 .studio-v4 .closing-label,.studio-v4 .closing-kicker { color: #647a64; }
 .studio-v4 .closing-title { font-size: clamp(50px,6.7vw,94px); }
 .studio-v4 .team-member__portrait { border-radius: 4px; }
@@ -211,7 +211,6 @@
 .studio-v4 .process-step__icon { background: #dae5d4; border-color: #b9cbb7; color: #446e4c; }
 .studio-v4 .process-step__line span { background: #668b62; }
 .studio-v4 .process-step__line::before { background: #668b62; }
-.studio-v4 .quote-premium { background: #0c1512; border-radius: 0; }
 .studio-v4 .contact-section { background: #c3f5db; color: #142b20; border: 0; }
 .studio-v4 .contact-atmosphere { background: none; border: 1px solid #244f3317; }
 .studio-v4 .contact-heading { border-color: #2e58332b; }
@@ -238,7 +237,6 @@
 .studio-v4 .footer-topline,.studio-v4 .footer-bottomline,.studio-v4 .footer-location { color: #8da294; }
 .studio-v4 .footer-label { color: #7e9888; }
 .studio-v4 .footer-links-grid a { color: #b2c6b8; }
-.studio-v4 .wa-fab { background: #14281d; color: #c3f5db; box-shadow: 0 8px 22px #0002; width: 48px; height: 48px; }
 @media (hover:hover) and (prefers-reduced-motion:no-preference) {
   .case-card a:hover .case-preview__desktop { transform: translate(-3px,-5px) rotate(-1deg); }
   .case-card a:hover .case-preview__phone { transform: translate(3px,-8px) rotate(2deg); }

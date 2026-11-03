@@ -50,7 +50,8 @@
 .studio-wa:hover { background: #3ee07a; box-shadow: 0 8px 30px -14px #25d366; }
 .studio-wa:focus-visible { outline: 2px solid #c3f5db; outline-offset: 3px; }
 .studio-hero__ad { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 8px 12px; border: 1px solid #25d36688; border-radius: 999px; background: #25d3661a; color: #d6f9e3; font-size: 12px; }
-.studio-hero .studio-start--link { min-height: 44px; padding: 0; background: none; color: #b9cbbf; font-size: 12px; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
+/* Enlace en línea: el área de toque la da el padding vertical, sin agrandar la línea cuando el texto se parte. */
+.studio-hero .studio-start--link { display: inline; min-height: 0; padding: 10px 0; background: none; color: #b9cbbf; font-size: 12px; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
 .studio-hero .studio-start--link:hover { background: none; box-shadow: none; color: #fff; }
 .packages-intro p { max-width: 46ch; font-size: 14px; line-height: 1.7; color: #4b5d52; }
 @media (min-width: 900px) { .packages-heading { grid-template-columns: 1.2fr .8fr; align-items: end; gap: 60px; } }

@@ -10,6 +10,10 @@ Hola JC Analytics, quiero el paquete Dashboard inicial ($135). ¿Qué necesitan 
 
 La plataforma se recuerda 30 días en el navegador de la persona, así que si vuelve otro día sin hacer clic en el anuncio, el chat igual dice de dónde vino.
 
+Desde el 3 de noviembre de 2026 la portada ya no tiene el cotizador en vivo: un enlace a `/#cotizar` abre la
+portada arriba, sin error pero sin nada especial. Las URL de destino deben ser la página de la categoría (abajo).
+Los datos exactos para cargar en cada plataforma están en [campañas: datos exactos](campanas-datos.md).
+
 ## 1. URL de destino por anuncio
 
 Agregá `?p=<paquete>` para que ese paquete aparezca primero, marcado "El que viste en el anuncio", y el botón del hero ya pida ese paquete.
