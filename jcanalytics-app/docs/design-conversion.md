@@ -99,3 +99,16 @@ No aplicado y por qué: cambiar las nueve necesidades del formulario por las cin
 alimentan el portal y las pruebas; se revisa con el equipo), fusionar Equipo en Contacto, y esconder los botones
 flotantes en celular (la acción principal del hero ahora queda por encima del pliegue, antes del carrusel).
 Pendientes de la reunión: colores y redacción definitiva del eslogan.
+
+## Pantallas reales en el hero y portada sin cotizador (3 de noviembre de 2026)
+
+| Decisión | Cambio aplicado | Dónde |
+| --- | --- | --- |
+| La portada no necesita un cotizador en vivo: los precios publicados viven en Paquetes y en cada página de categoría, con su calculadora. | Sale la sección `#cotizar` con su selector de moneda y su barra inferior de celular; el menú de celular cambia el atajo «Estimar mi proyecto» por «Cómo trabajamos»; Paquetes y las páginas de finanzas y automatización dejan de remitir al cotizador. | `App.jsx`, `Nav.jsx`, `Packages.jsx`, `services.js`, estilos |
+| El objeto 3D no decía nada del trabajo. En celular ya se mostraban pantallas reales. | El hero muestra la misma idea en los dos dispositivos: en computadora una laptop con la captura de escritorio (1440 px) de seis proyectos reales y en celular un teléfono con la captura móvil (390 px) de la misma pantalla. El navegador elige la captura con `<picture>`, así el HTML estático es idéntico. Rotación cada 3,6 s con pausa, «Siguiente», barra de progreso y la dirección pública del sitio cuando existe. Sale la dependencia de three.js. | `Hero.jsx`, `hero.css`, `mobile.css`, `package.json` |
+| Sin la banda oscura del cotizador, Paquetes y Equipo se leían como una sola sección. | Equipo toma el tono verde claro del proceso. | `studio.css` |
+| La tarjeta de marketing recortaba el titular de la pieza. | La pieza vertical se recorta hacia la foto. | `Categories.jsx`, `categories.css` |
+
+Pruebas: `check:site` ya no ejercita el cotizador y comprueba que `#cotizar` no exista en el HTML estático de la
+portada. La asistente se sincronizó con los textos nuevos (`sync:assistant`). Los datos para las campañas están
+en [campañas: datos exactos](campanas-datos.md).

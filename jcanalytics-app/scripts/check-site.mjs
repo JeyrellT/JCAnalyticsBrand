@@ -21,7 +21,7 @@ const PORTAL_INGEST = 'https://portal.jcanalytic.com/ingest/';
 const COPY = {
   en: {
     path: '/en/', heading: 'Websites and systems delivered on time.', system: 'System / backend', website: 'Website',
-    objective: 'What would you like to solve?', name: 'Your name', estimator: 'Your project, with clarity.',
+    objective: 'What would you like to solve?', name: 'Your name',
     faqQuestion: 'What can JC Analytics build for my business?', faqAnswer: 'We design websites and custom software',
     emailPrefix: 'Inquiry:', messagePrefix: 'Hello', estimateLabel: 'Estimated investment',
     title: 'Web Development & AI in Costa Rica | JC Analytics', descriptionStart: 'Custom websites, software, Power BI',
@@ -31,7 +31,7 @@ const COPY = {
   },
   es: {
     path: '/', heading: 'Webs y sistemas con entrega a tiempo.', system: 'Sistema / backend', website: 'Página web',
-    objective: '¿Qué querés resolver?', name: 'Tu nombre', estimator: 'Tu proyecto, con claridad.',
+    objective: '¿Qué querés resolver?', name: 'Tu nombre',
     faqQuestion: '¿Qué puede desarrollar JC Analytics para mi negocio?', faqAnswer: 'Diseñamos páginas web y software a medida',
     emailPrefix: 'Consulta:', messagePrefix: 'Hola', estimateLabel: 'Inversión estimada',
     title: 'Diseño Web, Software e IA Costa Rica | JC Analytics', descriptionStart: 'Diseño web, software a medida, dashboards Power BI',
@@ -597,30 +597,6 @@ async function checkContactTelemetry(page, language, preparedBody) {
   }
 }
 
-async function checkEstimator(page, language) {
-  const before = await page.$eval('#cotizar .quote-result', (node) => node.innerText);
-  const button = await page.$('#cotizar [data-service-key="excel_vba"]');
-  await button.click();
-  await page.waitForFunction((node) => node.getAttribute('aria-checked') === 'true', {}, button);
-  const after = await page.$eval('#cotizar .quote-result', (node) => node.innerText);
-  assert.notEqual(after, before, 'Changing service must update the estimate');
-  assert.match(after, language === 'en' ? /one-time payment/i : /pago único/i);
-  assert.match(after, language === 'en' ? /3–5 business days/ : /3–5 días hábiles/);
-  assert.equal(compact(await page.$eval('#cotizar [data-quote-price]', node => node.textContent)), '$60');
-  await page.click('#cotizar input[name="quote-ai"][aria-label="' + (language === 'en' ? 'With AI' : 'Con IA') + '"]');
-  await page.waitForFunction(() => document.querySelector('#cotizar [data-quote-price]').textContent === '$165');
-  await page.click('#cotizar [data-service-key="pagina_web"]');
-  await page.waitForFunction(() => document.querySelector('#cotizar [data-quote-price]').textContent === '$770');
-  const webResult = await page.$eval('#cotizar .quote-result', node => node.innerText);
-  assert.match(webResult, /\$30/);
-  assert.match(webResult, language === 'en' ? /2 h\/week/ : /2 h\/semana/);
-  await page.click('#cotizar input[name="quote-ai"][aria-label="' + (language === 'en' ? 'Functional base' : 'Base funcional') + '"]');
-  await page.waitForFunction(() => document.querySelector('#cotizar [data-quote-price]').textContent === '$570');
-  const whatsapp = new URL(await page.$eval('#cotizar .quote-result a[href^="https://wa.me"]', node => node.href));
-  assert.match(whatsapp.searchParams.get('text'), /\$570/);
-  assert.match(whatsapp.searchParams.get('text'), language === 'en' ? /Functional base/ : /Base funcional/);
-}
-
 async function checkMenu(page, language) {
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   await page.click('header button[aria-controls="menu-movil"]');
@@ -702,9 +678,9 @@ async function checkStaticRoute(browser, origin, route, snapshots) {
     await checkSelector(page, language, 'header', route);
     await checkVisibleText(page, ['main h1']);
     if (route.type === 'home') {
-      assert.ok(compact(await page.$eval('#cotizar h2', (node) => node.innerText)).includes(COPY[language].estimator));
       assert.ok((await page.$eval('#contacto', (node) => node.innerText)).includes(COPY[language].name));
-      await checkVisibleText(page, ['#contacto h2', '#cotizar h2']);
+      await checkVisibleText(page, ['#contacto h2', '#paquetes h2']);
+      assert.equal(await page.$('#cotizar'), null, 'The live estimator left the home page (3 November 2026)');
       const details = await page.$$('#preguntas details');
       assert.ok(details.length >= 2, 'FAQ content must be present in static HTML');
       assert.ok(compact(await details[0].evaluate((node) => node.querySelector('summary').textContent)).includes(COPY[language].faqQuestion));
@@ -1398,7 +1374,6 @@ async function main() {
           await checkPackages(page, language);
           await checkProjects(page, language);
           await checkContact(page, language);
-          await checkEstimator(page, language);
           // Return to contact through a real anchor, then switch using a real click.
           await page.click('.studio-start');
           await page.waitForFunction(() => location.hash === '#contacto');
@@ -1411,7 +1386,7 @@ async function main() {
           assert.equal(new URL(page.url()).hash, '#contacto', 'Language change preserves the current section');
           await checkMetadata(page, other);
           verifyErrors();
-          console.log(`[check-site] PASS ${language} ${width}px: SEO, visible language links, assets, contact, estimator and language navigation`);
+          console.log(`[check-site] PASS ${language} ${width}px: SEO, visible language links, assets, contact and language navigation`);
         } finally {
           await page.close();
         }

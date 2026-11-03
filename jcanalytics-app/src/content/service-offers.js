@@ -6,8 +6,8 @@
 //  preguntas frecuentes y el formulario corto que llega al portal.
 //
 //  Los precios, plazos, alcances y exclusiones salen SIEMPRE de
-//  portal/shared/service-pricing.js (la misma fuente del cotizador, los paquetes
-//  de la portada y el portal): acá solo vive el texto de venta.
+//  portal/shared/service-pricing.js (la misma fuente de los paquetes de la
+//  portada y del portal): acá solo vive el texto de venta.
 //
 //  Las calculadoras son estimaciones con los números que escribe la persona.
 //  No prometen ahorros: muestran cuánto cuesta hoy el trabajo manual y en

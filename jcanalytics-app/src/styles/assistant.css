@@ -35,7 +35,6 @@
   body:has(.mobile-wa) .assistant-launcher { right: calc(max(16px, env(safe-area-inset-right)) + 66px); }
   .assistant-launcher > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .assistant-launcher > svg { width: 24px; height: 24px; }
-  body.quote-bar-visible .assistant-launcher { bottom: calc(96px + env(safe-area-inset-bottom)); }
   .assistant-dialog { right: 12px; bottom: calc(12px + env(safe-area-inset-bottom) + var(--assistant-keyboard-inset, 0px)); width: calc(100vw - 24px); height: min(640px, calc(var(--assistant-viewport-height, 100dvh) - 24px - env(safe-area-inset-bottom))); border-radius: 20px; }
   .assistant-header { padding-block: 14px; }
 }
