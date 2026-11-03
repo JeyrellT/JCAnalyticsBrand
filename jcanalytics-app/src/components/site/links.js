@@ -6,6 +6,8 @@
 
 import { t, locale } from '../../i18n/locale';
 import { attributionNote } from '../../seo/attribution';
+import { servicePath } from '../../seo/routes';
+import { servicePages } from '../../content/catalog';
 
 // Dos líneas de WhatsApp atienden las consultas. Cada visitante queda asignado
 // al azar (50/50) a una de ellas y la conserva en todo el sitio y en visitas
@@ -59,12 +61,16 @@ export const wa = (text) => {
 // Curva de easing de toda la v3 (salida exponencial).
 export const EASE = [0.19, 1, 0.22, 1];
 
+// Menú principal (reunión del 31 de octubre de 2026): cada categoría abre su propia página en vez
+// de un ancla del one-page; la portada conserva los proyectos reales arriba y los precios más abajo.
+// `key` identifica el capítulo (icono y detalle del menú de celular en Nav.jsx).
+const service = (id) => servicePath(servicePages.find((item) => item.id === id), locale);
 export const NAV_LINKS = [
-  { label: t('Precios', 'Pricing'), href: '#paquetes' },
-  { label: t('Sistemas', 'Software'), href: '#plataformas' },
-  { label: t('Finanzas & BI', 'Finance & BI'), href: '#finanzas' },
-  { label: t('IA & ML', 'AI & ML'), href: '#inteligencia' },
-  { label: t('Proyectos', 'Projects'), href: '#trabajo' },
-  { label: 'Marketing', href: '#redes' },
-  { label: t('Contacto', 'Contact'), href: '#contacto' },
+  { key: 'projects', label: t('Proyectos', 'Projects'), href: '#trabajo' },
+  { key: 'systems', label: t('Webs y sistemas', 'Websites & systems'), href: service('web-development') },
+  { key: 'automation', label: t('Automatización', 'Automation'), href: service('process-automation') },
+  { key: 'finance', label: t('Finanzas & BI', 'Finance & BI'), href: service('business-intelligence') },
+  { key: 'intelligence', label: t('IA & ML', 'AI & ML'), href: service('ai-integration') },
+  { key: 'marketing', label: 'Marketing', href: service('digital-marketing') },
+  { key: 'pricing', label: t('Precios', 'Pricing'), href: '#paquetes' },
 ];

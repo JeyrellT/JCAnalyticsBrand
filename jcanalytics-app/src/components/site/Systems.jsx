@@ -80,7 +80,7 @@ const Systems = () => {
       <div className="systems-container">
         <div className="systems-heading">
           <div>
-            <Label className="systems-section-label">{t("01 / Desarrollo de sistemas", "01 / Software development")}</Label>
+            <Label className="systems-section-label">{t("Desarrollo de sistemas", "Software development")}</Label>
             <h2 id={`${id}-heading`} className="systems-title font-display">
               <MaskLines lines={[t("Del primer píxel", "From the first pixel"), <em key="inside" className="font-serif font-normal">{t("al último dato.", "to the last data point.")}</em>]} />
             </h2>

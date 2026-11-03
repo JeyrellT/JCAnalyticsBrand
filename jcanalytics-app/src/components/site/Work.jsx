@@ -37,16 +37,6 @@ const whatsappFor = (project) => wa(t(
 const WhatsApp = ({ href, children, className = '' }) => (
   <a href={href} target="_blank" rel="noreferrer" className={`works-wa ${className}`}><MessageCircle size={18} aria-hidden="true" />{children}</a>
 );
-const MARKETING = [
-  { src: 'laburrada/foto-chifrijo', alt: t('Burrito chifrijo de La Burrada con guacamole y pico de gallo', 'La Burrada chifrijo burrito with guacamole and pico de gallo'), caption: t('Fotografía de producto · La Burrada', 'Product photography · La Burrada'), tall: true },
-  { src: 'laburrada/foto-fries', alt: t('Loaded fries de La Burrada con guacamole y tocino', 'La Burrada loaded fries with guacamole and bacon'), caption: t('Fotografía de producto · La Burrada', 'Product photography · La Burrada'), tall: true },
-  { src: 'laburrada/foto-pico', alt: t('Pico de gallo y guacamole de La Burrada', 'La Burrada pico de gallo and guacamole'), caption: t('Fotografía de producto · La Burrada', 'Product photography · La Burrada'), tall: true },
-  { src: 'laburrada/instagram', alt: t('Publicaciones de Instagram de La Burrada diseñadas por JC Analytics', 'La Burrada Instagram posts designed by JC Analytics'), caption: t('Contenido para redes · La Burrada', 'Social media content · La Burrada') },
-  { src: 'caviq/instagram', alt: t('Perfil de Instagram de CAVIQ con 3.617 seguidores', 'CAVIQ Instagram profile with 3,617 followers'), caption: t('Perfil y publicaciones · CAVIQ (3.617 seguidores)', 'Profile and posts · CAVIQ (3,617 followers)') },
-  { base: 'marketing', src: 'luna-post-029', alt: t('Post de Transporte Luz de Luna: “Que la próxima foto sea juntos”, con una buseta al atardecer', 'Transporte Luz de Luna post: “Let the next photo be together”, with a van at sunset'), caption: t('Contenido para redes · Transporte Luz de Luna', 'Social media content · Transporte Luz de Luna'), tall: true },
-  { base: 'marketing', src: 'luna-post-192', alt: t('Post de Transporte Luz de Luna con el equipo completo: “Un detalle menos en el aire”', 'Transporte Luz de Luna post with the whole team: “One less detail up in the air”'), caption: t('Contenido para redes · Transporte Luz de Luna', 'Social media content · Transporte Luz de Luna'), tall: true },
-  { base: 'marketing', src: 'jc-anuncio-tfg-1', alt: t('Anuncio de JC Analytics: “Convertí tus datos en resultados claros”, análisis de datos para TFG', 'JC Analytics ad: “Turn your data into clear results”, data analysis for thesis projects'), caption: t('Anuncio para Meta y Google · JC Analytics', 'Ad for Meta and Google · JC Analytics'), square: true },
-];
 
 const Browser = ({ project, screen }) => (
   <figure className="works-browser" style={{ '--project-color': project.accent }}>
@@ -213,7 +203,7 @@ const Work = () => {
         </Reveal>
 
         <Reveal className="works-gallery-head">
-          <div><Label>{t('Más pantallas reales', 'More real screens')}</Label><p>{t('Cada imagen es una pantalla de un sistema que existe.', 'Every image is a screen from a system that exists.')}</p></div>
+          <div><Label>{t('Una pantalla por proyecto', 'One screen per project')}</Label><p>{t('Cada imagen es una pantalla de un sistema que existe. Tocá una para abrirla en el explorador.', 'Every image is a screen from a system that exists. Tap one to open it in the explorer.')}</p></div>
           <span>{t('ESCRITORIO 1440 PX · MÓVIL 390 PX', 'DESKTOP 1440 PX · MOBILE 390 PX')}</span>
         </Reveal>
         <MobileRail className="works-gallery" label={t('Galería de pantallas reales', 'Gallery of real screens')}>
@@ -227,21 +217,8 @@ const Work = () => {
           ))}
         </MobileRail>
 
-        <Reveal className="works-gallery-head works-marketing-head">
-          <div><Label>{t('También el contenido', 'The content, too')}</Label><p>{t('Fotos de producto y redes sociales de los mismos proyectos.', 'Product photos and social media for the same projects.')}</p></div>
-          <span>{t('FOTOGRAFÍA · INSTAGRAM · CAMPAÑAS', 'PHOTOGRAPHY · INSTAGRAM · CAMPAIGNS')}</span>
-        </Reveal>
-        <MobileRail className="works-marketing" label={t('Fotografía y redes sociales reales', 'Real photography and social media')}>
-          {MARKETING.map((item, index) => (
-            <Reveal key={item.src} delay={(index % 3) * 0.06} className={`works-marketing__item ${item.tall ? 'works-marketing__item--tall' : ''} ${item.square ? 'works-marketing__item--square' : ''}`}>
-              <img src={`${import.meta.env.BASE_URL}${item.base || 'projects'}/${item.src}.webp`} width={item.tall ? 900 : item.square ? 720 : 1000} height={item.tall ? 1125 : item.square ? 720 : 760} loading="lazy" decoding="async" alt={item.alt} />
-              <span>{item.caption}</span>
-            </Reveal>
-          ))}
-        </MobileRail>
-
         <Reveal className="works-close">
-          <p>{t('Contanos qué necesitás. Un mensaje y seguimos por WhatsApp.', 'Tell us what you need. One message and we continue on WhatsApp.')}</p>
+          <p>{t('¿Querés algo así para tu negocio? Contanos tu caso.', 'Want something like this for your business? Tell us your case.')}</p>
           <WhatsApp href={wa(t('Hola JC Analytics, vi sus proyectos y quiero conversar sobre uno para mi negocio.', 'Hi JC Analytics, I saw your projects and want to talk about one for my business.'))} className="works-wa--lg">{t('Escribinos por WhatsApp', 'Message us on WhatsApp')}</WhatsApp>
           <small>{t(`Cifras calculadas desde los repositorios el ${EVIDENCE_DATE}. Capturas con datos de demostración.`, `Figures computed from the repositories on ${EVIDENCE_DATE}. Screenshots use demo data.`)}</small>
         </Reveal>

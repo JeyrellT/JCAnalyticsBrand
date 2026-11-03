@@ -1,4 +1,6 @@
-// JC Analytics: sistemas → finanzas y BI → ML e IA → portafolio → marketing.
+// JC Analytics, portada corta (reunión del 31 de octubre de 2026): qué hacemos por categoría →
+// proyectos reales → cómo trabajamos → precios → cotizador → equipo → ideas → preguntas → contacto.
+// Las demos de sistemas, finanzas, IA y marketing viven ahora en la página de cada servicio (ServiceDemo).
 import { useEffect } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import Lenis from 'lenis';
@@ -6,20 +8,15 @@ import gsap from 'gsap';
 
 import Nav from './components/site/Nav';
 import Hero from './components/site/Hero';
+import Categories from './components/site/Categories';
 import Work from './components/site/Work';
 import Packages from './components/site/Packages';
-import Systems from './components/site/Systems';
-import Finance from './components/site/Finance';
-import Intelligence from './components/site/Intelligence';
-import Services from './components/site/Services';
-import Social from './components/site/Social';
 import Team from './components/site/Team';
 import Process from './components/site/Process';
 import Contact from './components/site/Contact';
 import Footer from './components/site/Footer';
 import FAQ from './components/site/FAQ';
 import QuoteEstimator from './components/ui/QuoteEstimator';
-import { Marquee } from './components/site/primitives';
 import KnowledgePreview from './components/site/KnowledgePreview';
 import './styles/studio.css';
 import './styles/art-direction.css';
@@ -29,8 +26,6 @@ import './styles/discovery.css';
 import { t } from './i18n/locale';
 import { trackContactClicks } from './seo/analytics';
 import { useInitialFragment } from './components/useInitialFragment';
-
-const TICKER = t(['Desarrollo de sistemas', 'Diseño de interfaces', 'Backend a medida', 'Finanzas', 'Dashboards', 'Machine learning', 'Integración de IA'], ['Software development', 'Interface design', 'Custom backend', 'Finance', 'Dashboards', 'Machine learning', 'AI integration']);
 
 const App = () => {
   useInitialFragment();
@@ -67,36 +62,18 @@ const App = () => {
 
       <main id="main-content" tabIndex={-1}>
         <Hero />
-
-        {/* Cinta: qué hacemos, en grande */}
-        <div className="capabilities-ribbon" aria-label={t('Servicios del estudio', 'Studio services')}>
-          <Marquee duration={55}>
-            {TICKER.map((t) => (
-              <span key={t} className="flex items-center font-display text-xl sm:text-2xl font-medium tracking-tight whitespace-nowrap">
-                <span className="px-6 sm:px-10">{t}</span>
-                <span className="text-lime text-sm" aria-hidden="true">✦</span>
-              </span>
-            ))}
-          </Marquee>
-        </div>
-
-        <Packages />
+        <Categories />
         <Work />
-        <Systems />
-        <Finance />
-        <Intelligence />
-
-        <Services />
-        <Social />
-        <Team />
         <Process />
-        <KnowledgePreview />
+        <Packages />
 
         {/* Cotizador en vivo */}
         <section id="cotizar" className="quote-premium scroll-mt-24 bg-ink text-paper py-20 sm:py-32 rounded-t-[2rem] sm:rounded-t-[3rem] relative z-10">
           <QuoteEstimator />
         </section>
 
+        <Team />
+        <KnowledgePreview />
         <FAQ />
         <Contact />
       </main>

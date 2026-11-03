@@ -194,14 +194,14 @@ const Social = () => {
       <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12 sm:mb-16">
           <div>
-            <Label className="text-paper/70">{t("04 / Marketing digital · el siguiente impulso", "04 / Digital marketing · the next step")}</Label>
+            <Label className="text-paper/70">{t("Marketing digital · redes, contenido y campañas", "Digital marketing · social media, content and campaigns")}</Label>
             <h2 className="mt-4 font-display font-semibold tracking-[-0.04em] leading-[0.92] text-[clamp(2.6rem,7vw,6rem)]">
               <MaskLines lines={[t("Tus redes,", "Your social media,"), <span key="b" className="font-serif italic font-normal text-lime">{t("con criterio.", "with purpose.")}</span>]} />
             </h2>
           </div>
           <Reveal delay={0.2} className="max-w-sm">
             <p className="text-paper/55 text-lg leading-snug">
-             {t("Tu sistema ya tiene una base. Ahora, hagamos que más personas lo conozcan: contenido, community manager, diseño publicitario, video y Meta Ads.", "Your system has a foundation. Now let's help more people discover it: content, community management, ad design, video and Meta Ads.")}
+             {t("Contenido, community manager, diseño publicitario, video y Meta Ads para que más personas conozcan tu negocio.", "Content, community management, ad design, video and Meta Ads so more people discover your business.")}
             </p>
             <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.18em] text-paper/35">{t("Trabajo real · La Burrada, Luz de Luna, Maison Valcour y JC Analytics", "Real work · La Burrada, Luz de Luna, Maison Valcour and JC Analytics")}</p>
             {!reduce && <button type="button" onClick={() => setPaused((value) => !value)} aria-pressed={paused} className="demo-pause demo-pause--dark">{paused ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}{paused ? t("Reanudar", "Resume") : t("Pausar", "Pause")}</button>}

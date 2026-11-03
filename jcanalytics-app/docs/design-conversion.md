@@ -56,3 +56,46 @@ qué no, cómo trabajamos (con el portal de clientes), un ejemplo real, pregunta
 que deja la consulta en el portal. La barra fija de celular y la tarjeta del índice repiten la acción principal.
 Todo queda medido por bloque para revisar en el portal dónde se queda la gente y qué botón convierte. Detalle en
 [páginas de servicio](paginas-de-servicio.md).
+
+## Portada corta y una página por categoría (2 de noviembre de 2026)
+
+Cambios acordados por el equipo en la reunión del 31 de octubre de 2026 (revisión del sitio con Kata, Hilary,
+Alex y Jeyrell):
+
+| Decisión | Cambio aplicado | Dónde |
+| --- | --- | --- |
+| El titular no debe hablar de precio. | «Webs y sistemas con entrega a tiempo.» (la opción con más apoyo; la redacción final se define en el grupo). La invitación pasa a «primera conversación sin costo · alcance y precio por escrito». | `Hero.jsx` |
+| Los precios salen de la primera pantalla. | Paquetes baja después de proyectos y proceso; el cotizador la sigue. El menú deja «Precios» al final. El aviso del paquete del anuncio (`?p=`) se conserva en la portada y sigue enlazando a `#paquetes`. | `App.jsx`, `links.js` |
+| El menú abre páginas, no anclas del one-page. | Webs y sistemas, Automatización, Finanzas & BI, IA & ML y Marketing llevan a `/servicios/…`. Proyectos y Precios siguen siendo anclas de la portada. | `links.js`, `Nav.jsx`, `Footer.jsx` |
+| Portada más corta, organizada por categorías. | Nueva sección «Qué hacemos» con una tarjeta por categoría (seis, con proyectos reales). Salen de la portada las demos de sistemas, finanzas e IA, la lista de nueve especialidades y la sección de redes. | `Categories.jsx`, `App.jsx` |
+| Cada categoría se explica a fondo en su página. | Las demos interactivas se muestran ahora dentro de la página de su servicio, debajo de la portada y antes del índice, con la misma dirección de arte. | `ServiceDemo.jsx`, `JournalApp.jsx` |
+| Marketing tiene landing propio y otro lenguaje. | Nueva página `/servicios/marketing-digital-costa-rica/` (y `/en/services/digital-marketing-costa-rica/`) para comercios y emprendimientos, con las piezas reales de la sección de redes y botón a WhatsApp. Sin oferta ni calculadora: los precios publicados son los del cotizador. | `services.js`, `catalog.js` |
+
+Quedó para la siguiente reunión: los colores (la página se percibe oscura; se pidieron propuestas visuales
+antes de tocar código) y la redacción definitiva del eslogan. No se cambió la paleta.
+
+Lo que no se afirma: no hay cifras, testimonios ni promesas nuevas. «Entrega a tiempo» se apoya en los
+compromisos ya publicados (precio fijo por escrito, avances cada 72 horas, 30 días de soporte).
+
+## Portada más simple, revisada por tres equipos (2 de noviembre de 2026)
+
+Tres revisiones independientes de la portada (neuromarketing, ventas y marketing), con las decisiones del 31 de
+octubre como restricción, coincidieron en lo esencial. Lo aplicado:
+
+| Hallazgo común | Cambio aplicado | Dónde |
+| --- | --- | --- |
+| El hero tenía ocho micro-mensajes (rótulos, firma, botones Diseño/Ingeniería/Inteligencia, tarjeta de Ideas, nota de scroll, badge) que competían con el titular. | Queda un eyebrow («Software, datos e IA · Costa Rica»), el titular, un párrafo, el selector de categoría y un botón de WhatsApp. | `Hero.jsx`, `hero.css`, `mobile.css` |
+| La categoría aparecía recién en la segunda pantalla; el visitante de finanzas, IA o marketing no se veía reflejado. | Cinco chips bajo el titular abren la página de cada categoría. En celular van antes del carrusel de pantallas y el eyebrow con «Costa Rica» vuelve a mostrarse. | `Hero.jsx` |
+| La cinta en movimiento decía siete cosas distintas de las cinco categorías. | Eliminada. | `App.jsx` |
+| «Qué hacemos» hablaba del sitio, no del cliente. | Pregunta en segunda persona, una línea «para quién» por tarjeta y un verbo por enlace; la tarjeta de proyectos pasa a ser un enlace al pie. | `Categories.jsx` |
+| El proceso se contaba cuatro veces y omitía el precio fijo y el portal. | «Cuatro compromisos, por escrito» con los textos de `WORK_PROMISES`; Paquetes y Contacto pierden sus pasos y preguntas internas. | `Process.jsx`, `Packages.jsx`, `Contact.jsx` |
+| Proyectos funcionaba como catálogo (dos galerías más). | Quedan totales, explorador, una pantalla por proyecto (la prueba automática exige una captura real por proyecto en el HTML estático) y un cierre; la galería de fotos y redes vive en la página de marketing. | `Work.jsx` |
+| Paquetes destacaba «Desde $60» y repetía pasos. | Seis destacados, uno por categoría; cada tarjeta enlaza a la página de su categoría; título «Precio publicado. Alcance por escrito.». | `Packages.jsx`, `packages.js` |
+| Equipo sumaba cinco botones de WhatsApp más y listas de habilidades. | Retrato, nombre, rol y una línea. | `Team.jsx` |
+| Ideas y Preguntas tenían títulos gemelos; Preguntas devolvía al cotizador. | «Lo que aprendimos construyendo.» y «Antes de escribirnos, lo que más preguntan.», con enlace a contacto. | `KnowledgePreview.jsx`, `FAQ.jsx` |
+| Con `?p=` el precio volvía a la primera pantalla. | El aviso del anuncio nombra el paquete sin cifra; los anuncios deben aterrizar en la página de su categoría. | `Hero.jsx`, [anuncios](anuncios.md) |
+
+No aplicado y por qué: cambiar las nueve necesidades del formulario por las cinco categorías (los valores internos
+alimentan el portal y las pruebas; se revisa con el equipo), fusionar Equipo en Contacto, y esconder los botones
+flotantes en celular (la acción principal del hero ahora queda por encima del pliegue, antes del carrusel).
+Pendientes de la reunión: colores y redacción definitiva del eslogan.

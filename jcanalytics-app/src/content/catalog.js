@@ -11,4 +11,5 @@ export const topics = {
   experience: { en: 'Digital experience', es: 'Experiencia digital' },
   operations: { en: 'Better operations', es: 'Mejor operación' },
   intelligence: { en: 'Applied intelligence', es: 'Inteligencia aplicada' },
+  marketing: { en: 'Marketing & content', es: 'Marketing y contenido' },
 };

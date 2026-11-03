@@ -1,0 +1,5 @@
+/* Demo interactiva dentro de una página de servicio: misma dirección de arte que la portada, en un bloque propio. */
+.service-demo { margin: 44px 0 0; border-radius: 22px; overflow: clip; }
+.service-demo .systems-section, .service-demo .finance-section, .service-demo .ai-section, .service-demo .social-premium { margin-top: 0; border-radius: 0; padding-block: clamp(56px, 6vw, 84px); }
+.service-demo .systems-section, .service-demo .finance-section, .service-demo .ai-section, .service-demo .social-premium { scroll-margin-top: 110px; }
+@media (max-width: 767px) { .service-demo { margin-top: 28px; border-radius: 14px; } }
