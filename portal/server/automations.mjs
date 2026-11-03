@@ -1,7 +1,7 @@
 // ============================================================================
 //  server/automations.mjs
 //  Motor de automatizaciones (compatible con el navegador: corre también en la
-//  demo). Las 9 automatizaciones incluidas revisan la base y avisan por
+//  demo). Las 10 automatizaciones incluidas revisan la base y avisan por
 //  ctx.notify (buzón + push según la política de cada persona).
 //
 //  · runDue() se llama cada minuto (index.mjs en el servidor, un intervalo
@@ -18,6 +18,8 @@
 
 import { AUTOMATIONS, SLA_STATUSES, MOVEMENT_TYPE_LABEL, WEEKDAYS } from '../shared/catalog.js';
 import { formatMoney } from '../shared/finance.js';
+import { PAGE_VERDICTS, pageLabel } from '../shared/leads.js';
+import { computeAnalytics } from './analytics.mjs';
 import { HttpError, invalid, has } from './http.mjs';
 import { transaction } from './schema.mjs';
 import { pendingForUser } from './routes/common.mjs';
@@ -33,12 +35,17 @@ const DIGEST_WINDOW_MINUTES = 180;
 const FX_RETRY_MS = 30 * MINUTE;
 export const FX_MIN = 300;
 export const FX_MAX = 1500;
+/** El resumen semanal de tráfico mira los últimos 7 días (lo mismo que «7 días» en Tráfico del sitio) contra los 7 anteriores. */
+const TRAFFIC_WEEK_DAYS = 7;
+/** Veredictos de página de mejor a peor; «pocos datos» no compite. */
+const VERDICT_RANK = { engancha: 3, ok: 2, mucho_trafico_poca_accion: 1, rebote: 0 };
 
 const timeField = (label, def) => ({ key: 'time', label, type: 'time', min: '00:00', max: '23:59', default: def });
 
 /** Configuración editable de cada automatización (config_schema) con su valor por defecto. */
 export const AUTOMATION_CONFIG = {
   resumen_diario: [],
+  resumen_semanal_trafico: [timeField('Hora del aviso (los lunes)', '08:00')],
   recordatorio_citas: [{ key: 'minutes_before', label: 'Minutos antes de la cita', type: 'number', min: 10, max: 240, default: 60 }],
   cita_sin_confirmar: [],
   avance_72h: [],
@@ -56,6 +63,11 @@ export const addDays = (date, n) => new Date(Date.parse(`${date}T00:00:00Z`) + n
 /** Inicio del día `date` de Costa Rica en ISO UTC. */
 const crDayStartIso = (date) => new Date(Date.parse(`${date}T00:00:00Z`) + 6 * HOUR).toISOString();
 const weekdayOf = (date) => new Date(`${date}T00:00:00Z`).getUTCDay() || 7;
+/** Lunes de la semana (Costa Rica) a la que pertenece `date`: clave de deduplicación del resumen semanal. */
+const weekStartOf = (date) => addDays(date, 1 - weekdayOf(date));
+const shortDayFmt = new Intl.DateTimeFormat('es-CR', { timeZone: 'America/Costa_Rica', day: 'numeric', month: 'short' });
+/** "13 oct" para una fecha AAAA-MM-DD de Costa Rica. */
+const fmtShortDate = (date) => shortDayFmt.format(new Date(`${date}T12:00:00-06:00`));
 const whenFmt = new Intl.DateTimeFormat('es-CR', { timeZone: 'America/Costa_Rica', weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 const dayFmt = new Intl.DateTimeFormat('es-CR', { timeZone: 'America/Costa_Rica', weekday: 'short', day: 'numeric', month: 'short' });
 const fmtWhen = (iso) => whenFmt.format(new Date(iso));
@@ -176,7 +188,7 @@ export function createAutomationEngine(ctx) {
   const adminIds = () => db.prepare("SELECT id FROM users WHERE active = 1 AND role = 'admin' ORDER BY id").all().map((r) => r.id);
   const attendeeIds = (appointmentId) => db.prepare('SELECT user_id FROM appointment_attendees WHERE appointment_id = ? ORDER BY user_id').all(appointmentId).map((r) => r.user_id);
 
-  // ── Las 9 automatizaciones ────────────────────────────────────────────────
+  // ── Las 10 automatizaciones ───────────────────────────────────────────────
 
   function digestFor(user, date) {
     const start = crDayStartIso(date);
@@ -193,6 +205,36 @@ export function createAutomationEngine(ctx) {
     const text = `Hoy: ${plural(citas, 'cita', 'citas')} · ${plural(tareas, 'tarea', 'tareas')}`
       + `${vencidas ? ` (${plural(vencidas, 'vencida', 'vencidas')})` : ''}${approver ? ` · ${pendientes} por aprobar` : ''}`;
     return { total: citas + tareas + pendientes, text };
+  }
+
+  /** Cifras de la semana para el resumen de tráfico, o null si no hubo visitas ni consultas en los últimos 7 días. */
+  function weeklyTrafficDigest() {
+    const data = computeAnalytics(ctx, TRAFFIC_WEEK_DAYS);
+    const { totals, delta } = data;
+    if (!totals.sessions && !totals.leads) return null;
+    const trend = delta.sessions == null ? (totals.sessions ? 'sin visitas la semana anterior' : null)
+      : delta.sessions === 0 ? 'igual que la semana anterior'
+        : `${delta.sessions > 0 ? '▲' : '▼'} ${Math.abs(delta.sessions)} % frente a la semana anterior`;
+    // Consultas que nadie ha contactado, lleguen cuando lleguen (lo mismo que la alerta del inicio).
+    const unattended = db.prepare("SELECT COUNT(*) n FROM leads WHERE status = 'nuevo'").get().n;
+    const ranked = data.pages.filter((p) => VERDICT_RANK[p.verdict] != null)
+      .sort((a, b) => VERDICT_RANK[b.verdict] - VERDICT_RANK[a.verdict] || b.sessions - a.sessions);
+    const best = ranked[0] ?? null;
+    // La peor: el veredicto más bajo y, entre iguales, la de más visitas.
+    const worst = ranked.length > 1 ? ranked.find((p) => VERDICT_RANK[p.verdict] === VERDICT_RANK[ranked.at(-1).verdict]) : null;
+    const page = (p) => `“${pageLabel(p.path)}” (${PAGE_VERDICTS[p.verdict].label})`;
+    const visits = plural(totals.sessions, 'visita', 'visitas');
+    const parts = [
+      `${visits}${trend ? ` (${trend})` : ''}`,
+      `${plural(totals.leads, 'consulta nueva', 'consultas nuevas')}, ${unattended} sin atender`,
+      best && worst && worst !== best ? `Mejor página: ${page(best)} · Peor: ${page(worst)}` : best ? `Página: ${page(best)}` : 'Páginas: pocos datos todavía',
+      data.insights[0] ? `Qué hacer: ${data.insights[0].title}` : null,
+    ];
+    return {
+      headline: `${visits} y ${plural(totals.leads, 'consulta', 'consultas')}`,
+      title: `Tráfico de la semana · ${fmtShortDate(data.from)} – ${fmtShortDate(data.to)}`,
+      body: parts.filter(Boolean).join(' · '),
+    };
   }
 
   const HANDLERS = {
@@ -213,6 +255,19 @@ export function createAutomationEngine(ctx) {
         }));
       }
       return { summary: t.items ? `Resumen enviado a ${plural(t.items, 'persona', 'personas')}.` : 'Sin resúmenes pendientes.', recipients: t.recipients };
+    },
+
+    resumen_semanal_trafico({ clock }) {
+      const dedupeKey = `traffic-week:${weekStartOf(clock.date)}`;
+      if (logged(dedupeKey)) return { summary: 'El resumen de esta semana ya se envió.', recipients: 0 };
+      const digest = weeklyTrafficDigest();
+      if (!digest) return { summary: `Sin visitas ni consultas en los últimos ${TRAFFIC_WEEK_DAYS} días: no se envía.`, recipients: 0 };
+      // Es del negocio, no de cada persona: va a la administración y a los socios activos.
+      const n = emit('resumen_semanal_trafico', dedupeKey, `Resumen semanal de tráfico: ${digest.headline}`, ctx.investorIds(), {
+        kind: 'digest', title: digest.title, body: digest.body, link: '/trafico',
+      });
+      if (n == null) return { summary: 'El resumen de esta semana ya se envió.', recipients: 0 };
+      return { summary: `Resumen enviado a ${plural(n, 'persona', 'personas')}: ${digest.headline}.`, recipients: n };
     },
 
     recordatorio_citas({ config, clock }) {
@@ -398,6 +453,8 @@ export function createAutomationEngine(ctx) {
   function isDue(key, config, clock, row) {
     if (!config.time) return true; // revisa en cada minuto
     if (clock.minutes < hhmmToMinutes(config.time)) return false;
+    // El resumen semanal solo sale los lunes, y una vez por semana.
+    if (key === 'resumen_semanal_trafico' && (clock.weekday !== 1 || logged(`traffic-week:${weekStartOf(clock.date)}`))) return false;
     if (key === 'tipo_cambio') {
       if (logged(`fx:${clock.date}`)) return false; // ya se consultó hoy
       const last = row.last_run_at ? Date.parse(row.last_run_at) : 0;
@@ -409,6 +466,7 @@ export function createAutomationEngine(ctx) {
   function scheduleText(key, config) {
     switch (key) {
       case 'resumen_diario': return 'Cada día, a la hora del resumen de cada persona';
+      case 'resumen_semanal_trafico': return `Cada lunes a las ${config.time}, con los últimos ${TRAFFIC_WEEK_DAYS} días`;
       case 'recordatorio_citas': return `${config.minutes_before} min antes de cada cita`;
       case 'cita_sin_confirmar': return 'Revisa cada minuto las citas de las próximas 24 h';
       case 'avance_72h': return `Revisa cada minuto el compromiso de ${ctx.numberSetting('update_sla_hours', 72)} h`;
@@ -422,6 +480,11 @@ export function createAutomationEngine(ctx) {
   function nextRunHint(key, config, row, clock) {
     if (!row.enabled) return 'Desactivada';
     if (key === 'resumen_diario') return `Cada mañana a la hora de cada persona (${DEFAULT_PREFS.digest_time} por defecto)`;
+    if (key === 'resumen_semanal_trafico') {
+      const sent = logged(`traffic-week:${weekStartOf(clock.date)}`);
+      if (clock.weekday === 1 && !sent) return clock.minutes < hhmmToMinutes(config.time) ? `Hoy a las ${config.time}` : 'En el próximo minuto';
+      return `${clock.weekday === 7 ? 'Mañana' : 'El lunes'} a las ${config.time}`;
+    }
     if (!config.time) return 'En el próximo minuto';
     if (clock.minutes < hhmmToMinutes(config.time)) return `Hoy a las ${config.time}`;
     if (key === 'tipo_cambio' && !logged(`fx:${clock.date}`)) return 'Reintenta en menos de 30 min';

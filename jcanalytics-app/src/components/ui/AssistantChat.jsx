@@ -115,7 +115,7 @@ export default function AssistantChat() {
             <textarea ref={inputRef} id="assistant-question" value={draft} onChange={event => setDraft(event.target.value)} maxLength={1200} rows={2} placeholder={t('Contame qué necesitás…', 'Tell me what you need…')} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); sendMessage(); } }} />
             <button type="submit" disabled={pending || !draft.trim()} aria-label={t('Enviar consulta', 'Send question')}><Send size={18} aria-hidden="true" /></button>
           </form>
-          <div className="assistant-footer"><span>{t('Asistente con IA · Mensajes procesados por DeepSeek.', 'AI assistant · Messages processed by DeepSeek.')}</span><a href={whatsapp} target="_blank" rel="noopener noreferrer">{t('Hablar con el equipo', 'Talk to our team')}</a></div>
+          <div className="assistant-footer"><span>{t('Asistente con IA · Mensajes procesados por DeepSeek.', 'AI assistant · Messages processed by DeepSeek.')}</span><a href={whatsapp} target="_blank" rel="noopener noreferrer" data-wa-direct="">{t('Hablar con el equipo', 'Talk to our team')}</a></div>
         </div>
       </div>
     </dialog>

@@ -1,19 +1,21 @@
 import { t } from '../../i18n/locale';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, ArrowRight, Check, PhoneCall } from 'lucide-react';
+import { ArrowUpRight, ArrowRight, Check, MessageCircle, PhoneCall } from 'lucide-react';
 import { Label, MaskLines, Reveal } from './primitives';
 import { wa, EMAIL } from './links';
+import { emailOk, phoneOk } from './contact-rules';
 import { TEAM } from '../../data/team';
 import { sendLead } from '../../seo/site-tracker';
-
-const phoneOk = (v) => /^\+?[\d\s\-()]+$/.test(v.trim()) && v.replace(/\D/g, '').length >= 8 && v.replace(/\D/g, '').length <= 15;
-// Igual a la regla del portal (shared/leads.js): solo caracteres de correo, sin ? ni & que se cuelen en un mailto.
-const emailOk = (v) => /^[a-z0-9._+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(v.trim());
+import { trackContactIntent, trackLeadCaptured } from '../../seo/analytics';
+import { useDesktop } from '../../hooks/useDesktop';
 
 const NEEDS = ['Sistema / backend', 'Página web', 'Finanzas', 'Dashboard', 'Machine learning', 'Integración de IA', 'Automatización', 'Marketing digital', 'Otro'];
 const NEED_LABELS = t(NEEDS, ['System / backend', 'Website', 'Finance', 'Dashboard', 'Machine learning', 'AI integration', 'Automation', 'Digital marketing', 'Other']);
 const needLabel = (value) => NEED_LABELS[NEEDS.indexOf(value)] || value;
 const Contact = () => {
+  // Celular: el botón principal abre WhatsApp con el mensaje listo. Computadora: WhatsApp Web exige
+  // sesión iniciada y ahí se pierden consultas, así que el botón principal envía la consulta al portal.
+  const desktop = useDesktop();
   const [need, setNeed] = useState('Sistema / backend');
   const [name, setName] = useState('');
   const [objective, setObjective] = useState('');
@@ -48,15 +50,20 @@ const Contact = () => {
   ].filter(Boolean).join('\n\n');
   const href = wa(message);
   const contact = { phone: phoneOk(phone) ? phone.trim() : '', email: emailOk(mail) ? mail.trim() : '' };
-  const lead = (channel) => sendLead({
-    channel, name: name.trim(), ...contact, need, message: objective.trim(), website, startedAt: startedAt.current,
-  });
-  const requestCallback = async () => {
+  // Deja la consulta en el portal y, si llega, la cuenta como consulta captada en las plataformas de anuncios.
+  const captureLead = async (channel, { ads = true } = {}) => {
+    const ok = await sendLead({
+      channel, name: name.trim(), ...contact, need, message: objective.trim(), website, startedAt: startedAt.current,
+    }).catch(() => false);
+    if (ok) trackLeadCaptured({ form: 'contacto', section: 'contacto', ads });
+    return ok;
+  };
+  const requestCallback = async (channel = 'devolucion') => {
     // Un dato escrito pero mal formado se avisa: no se descarta en silencio.
     if ((phone.trim() && !contact.phone) || (mail.trim() && !contact.email)) { setCallback('invalid'); return; }
     if (!contact.phone && !contact.email) { setCallback('missing'); return; }
     setCallback('sending');
-    setCallback((await lead('devolucion').catch(() => false)) ? 'sent' : 'error');
+    setCallback((await captureLead(channel)) ? 'sent' : 'error');
   };
   return (
     <section id="contacto" className="contact-section scroll-mt-24" aria-labelledby="contact-title">
@@ -73,11 +80,15 @@ const Contact = () => {
           <Reveal className="contact-form-wrap">
             <p className="contact-intro">{t("Contanos la idea. En una primera conversación de 30 minutos, sin costo, podemos entender tu objetivo y definir por dónde empezar.", "Tell us your idea. In a free 30-minute conversation, we can understand your goal and work out where to start.")}</p>
             {/* noValidate: un correo a medio escribir no debe bloquear «Continuar en WhatsApp». */}
-            <form data-track="contacto" noValidate onSubmit={(event) => {
+            <form data-track="contacto" data-mode={desktop ? 'form' : 'whatsapp'} noValidate onSubmit={(event) => {
               event.preventDefault();
+              // Computadora: la consulta va al portal; el enlace a WhatsApp Web queda como alternativa.
+              if (desktop) { requestCallback('formulario'); return; }
+              // Celular: abre WhatsApp con el mensaje listo y cuenta como clic a WhatsApp.
+              trackContactIntent({ channel: 'whatsapp', section: 'contacto' });
               window.open(href, '_blank', 'noopener,noreferrer');
-              // Si dejó cómo contactarle, la consulta también queda en el portal del equipo.
-              if (contact.phone || contact.email) lead('formulario').catch(() => {});
+              // Si además dejó cómo contactarle, la consulta queda en el portal (ya contó como clic a WhatsApp).
+              if (contact.phone || contact.email) captureLead('formulario', { ads: false }).catch(() => {});
             }} className="contact-form">
               <fieldset>
                 <legend className="contact-form__label"><span>01</span> {t('¿Qué tenés en mente?', 'What do you have in mind?')}</legend>
@@ -100,7 +111,7 @@ const Contact = () => {
                 <input id="contacto-nombre" type="text" autoComplete="name" maxLength={100} placeholder={t("¿Cómo te llamás?", "What is your name?")} value={name} onChange={(event) => setName(event.target.value)} />
               </div>
               <fieldset className="contact-form__name contact-form__reach">
-                <legend className="contact-form__label"><span>04</span> {t('¿Cómo te contactamos?', 'How can we reach you?')} <small>{t('(opcional)', '(optional)')}</small></legend>
+                <legend className="contact-form__label"><span>04</span> {t('¿Cómo te contactamos?', 'How can we reach you?')} <small>{desktop ? t('(WhatsApp o correo)', '(WhatsApp or email)') : t('(opcional)', '(optional)')}</small></legend>
                 <label htmlFor="contacto-telefono" className="sr-only">{t('WhatsApp o teléfono', 'WhatsApp or phone')}</label>
                 <input id="contacto-telefono" type="tel" inputMode="tel" autoComplete="tel" maxLength={30} placeholder={t('WhatsApp o teléfono', 'WhatsApp or phone')}
                   value={phone} onChange={(event) => { setPhone(event.target.value); if (callback !== 'sending') setCallback('idle'); }} aria-invalid={phone.trim() !== '' && !phoneOk(phone)} />
@@ -112,20 +123,32 @@ const Contact = () => {
                   <input id="contacto-sitio" type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(event) => setWebsite(event.target.value)} />
                 </div>
               </fieldset>
-              <button type="submit" className="contact-submit tap-press">
-                <span>{t("Continuar en WhatsApp", "Continue on WhatsApp")}</span>
+              <button type="submit" className="contact-submit tap-press" disabled={desktop && (callback === 'sending' || callback === 'sent')}>
+                <span>{desktop
+                  ? (callback === 'sending' ? t('Enviando…', 'Sending…') : t('Enviar consulta', 'Send inquiry'))
+                  : t("Continuar en WhatsApp", "Continue on WhatsApp")}</span>
                 <span className="contact-submit__arrow" aria-hidden="true"><ArrowUpRight size={24} strokeWidth={1.8} /></span>
               </button>
-              <p className="contact-send-note">{t("Se abrirá WhatsApp con tu mensaje listo para revisar.", "WhatsApp will open with your message ready to review.")}</p>
+              <p className="contact-send-note">{desktop
+                ? t('Te escribimos en menos de 24 h al WhatsApp o correo que dejés.', 'We’ll reach out within 24 hours to the WhatsApp or email you leave.')
+                : t("Se abrirá WhatsApp con tu mensaje listo para revisar.", "WhatsApp will open with your message ready to review.")}</p>
               <div className="contact-callback">
-                <button type="button" className="contact-callback__button tap-press" onClick={requestCallback} disabled={callback === 'sending' || callback === 'sent'} data-track="contact">
-                  <PhoneCall size={17} aria-hidden="true" />{callback === 'sending' ? t('Enviando…', 'Sending…') : t('Prefiero que me contacten', 'I’d rather you contact me')}
-                </button>
+                {desktop ? (
+                  <a href={href} target="_blank" rel="noreferrer" className="contact-callback__button tap-press" data-wa-direct="" data-track-label="Contacto · WhatsApp Web">
+                    <MessageCircle size={17} aria-hidden="true" />{t('Prefiero seguir en WhatsApp Web', 'I’d rather continue on WhatsApp Web')}
+                  </a>
+                ) : (
+                  <button type="button" className="contact-callback__button tap-press" onClick={() => requestCallback()} disabled={callback === 'sending' || callback === 'sent'} data-track="contact">
+                    <PhoneCall size={17} aria-hidden="true" />{callback === 'sending' ? t('Enviando…', 'Sending…') : t('Prefiero que me contacten', 'I’d rather you contact me')}
+                  </button>
+                )}
                 <p className="contact-callback__status" role="status">
                   {callback === 'sent' && t('¡Listo! Te escribimos en menos de 24 h.', 'Done! We’ll reach out within 24 hours.')}
                   {callback === 'missing' && t('Dejanos tu WhatsApp o tu correo en el paso 04.', 'Leave your WhatsApp or email in step 04.')}
                   {callback === 'invalid' && t('Revisá el número (8 a 15 dígitos) o el correo del paso 04.', 'Check the number (8 to 15 digits) or the email in step 04.')}
-                  {callback === 'error' && t('No pudimos enviarlo. Escribinos por WhatsApp con el botón de arriba.', 'We could not send it. Message us on WhatsApp with the button above.')}
+                  {callback === 'error' && (desktop
+                    ? t('No pudimos enviarlo. Probá de nuevo o seguí por WhatsApp Web.', 'We could not send it. Try again or continue on WhatsApp Web.')
+                    : t('No pudimos enviarlo. Escribinos por WhatsApp con el botón de arriba.', 'We could not send it. Message us on WhatsApp with the button above.'))}
                 </p>
               </div>
               <p className="contact-email">{t('¿Preferís correo?', 'Prefer email?')}{' '}<a href={`mailto:${EMAIL}?subject=${encodeURIComponent(t(`Consulta: ${needLabel(need)}`, `Inquiry: ${needLabel(need)}`))}&body=${encodeURIComponent(message)}`}>{EMAIL}</a></p>

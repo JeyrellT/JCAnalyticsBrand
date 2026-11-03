@@ -289,7 +289,7 @@ test('permisos: inversionistas no ven consultas ni tráfico; borrar es solo del 
 
 test('las consultas nunca se exponen por MCP (Claude) ni a un modelo de IA', async () => {
   const mcp = await readFile(new URL('../server/mcp.mjs', import.meta.url), 'utf8');
-  assert.ok(!mcp.includes('/api/leads') && !mcp.includes('/api/analytics'));
+  assert.ok(!mcp.includes('/api/leads') && !mcp.includes('/api/analytics') && !mcp.includes('analytics.mjs'));
   const ingest = await readFile(new URL('../server/ingest.mjs', import.meta.url), 'utf8');
   assert.ok(!/fetch\(/.test(ingest), 'la entrada pública no llama a servicios externos');
 });

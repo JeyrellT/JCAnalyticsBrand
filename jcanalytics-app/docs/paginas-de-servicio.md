@@ -25,6 +25,12 @@ En este orden, con su `id` (lo usa el índice de la página y la medición del p
 En celular y tableta aparece una barra fija (`barra-cta`) con el precio, WhatsApp y «Que me contacten» cuando la
 oferta deja de verse. En escritorio, la tarjeta del índice (`indice-cta`) cumple ese papel.
 
+**Computadora.** Los botones de WhatsApp cambian de texto («Lo quiero», «Pedir cotización») y abren el
+formulario corto (`src/components/ui/LeadDialog.jsx`, medido como `contacto-rapido`) con el mensaje ya armado;
+la persona deja su WhatsApp o correo y la consulta llega al portal con canal «Paquete con precio», la
+necesidad del servicio y el paquete. En el formulario de la página, «Enviar consulta» pasa a ser el botón
+principal y «Seguir en WhatsApp Web» queda como enlace directo. Ver [estrategia de conversión](estrategia-conversion.md).
+
 Todo el bloque comparte estado: lo que se marca en «¿Es para vos?» y lo que se calcula se agrega al mensaje de
 WhatsApp y al texto de la consulta que llega al portal. La calculadora es una estimación con los números de la
 persona; el texto lo dice y no promete ahorros.

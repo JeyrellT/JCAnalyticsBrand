@@ -6,6 +6,7 @@ import { servicePath } from '../../seo/routes';
 import { MaskLines, Reveal } from './primitives';
 import { prepareContact, wa } from './links';
 import { adPackage } from '../../data/packages';
+import { useDesktop } from '../../hooks/useDesktop';
 import { shotSrcSet } from '../../data/shots';
 import '../../styles/packages.css';
 import '../../styles/hero.css';
@@ -80,6 +81,8 @@ class SculptureBoundary extends Component {
 const Hero = () => {
   const ref = useRef(null);
   const reduce = useReducedMotion();
+  // En computadora el botón abre el formulario corto (ui/LeadDialog.jsx), no WhatsApp Web: el texto lo dice.
+  const desktop = useDesktop();
   const [paused, setPaused] = useState(false);
   const [mode] = useState(0);
   const [ready, setReady] = useState(false);
@@ -113,7 +116,7 @@ const Hero = () => {
               {PATHS.map((path) => <a key={path.id} href={path.href} data-track-label={`Hero · ${path.label}`}>{path.label}<ArrowUpRight size={13} aria-hidden="true" /></a>)}
             </nav>
           </Reveal>
-          <Reveal delay={0.38} className="studio-hero__actions"><a href={wa(adPackage ? adPackage.message : t('Hola JC Analytics, quiero contarles mi caso y cotizar un proyecto para mi negocio.', 'Hi JC Analytics, I would like to tell you about my case and get a quote for my business.'))} target="_blank" rel="noreferrer" className="studio-wa" {...(adPackage ? { 'data-package': adPackage.key, 'data-value': adPackage.price } : {})}><MessageCircle size={20} aria-hidden="true" />{t('¿No sabés cuál? Contanos tu caso por WhatsApp', 'Not sure? Tell us your case on WhatsApp')}</a></Reveal>
+          <Reveal delay={0.38} className="studio-hero__actions"><a href={wa(adPackage ? adPackage.message : t('Hola JC Analytics, quiero contarles mi caso y cotizar un proyecto para mi negocio.', 'Hi JC Analytics, I would like to tell you about my case and get a quote for my business.'))} target="_blank" rel="noreferrer" className="studio-wa" data-need={adPackage ? adPackage.need : 'Otro'} {...(adPackage ? { 'data-package': adPackage.key, 'data-value': adPackage.price, 'data-package-label': adPackage.name } : {})}><MessageCircle size={20} aria-hidden="true" />{desktop ? t('¿No sabés cuál? Pedir cotización', 'Not sure? Request a quote') : t('¿No sabés cuál? Contanos tu caso por WhatsApp', 'Not sure? Tell us your case on WhatsApp')}</a></Reveal>
           {adPackage && <a href="#paquetes" className="studio-hero__ad">{t(`Viste ${adPackage.name} en el anuncio · ver el paquete`, `You saw ${adPackage.name} in the ad · see the package`)} <ArrowDown size={13} aria-hidden="true" /></a>}
           <p className="studio-hero__invitation">{t('30 min sin costo · alcance y precio fijo por escrito · avances cada 72 h en tu portal · 30 días de soporte.', 'Free 30-min call · fixed written scope and price · progress every 72 h in your portal · 30 days of support.')} <a href="#contacto" className="studio-start studio-start--link" onClick={() => prepareContact({ need: 'Sistema / backend', source: t('Hero · formulario', 'Hero · form') })}>{t('¿Preferís el formulario?', 'Prefer the form?')}</a></p>
         </div>

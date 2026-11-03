@@ -6,6 +6,7 @@ import { t, locale } from '../../i18n/locale';
 import { EVIDENCE_DATE, EVIDENCE_TOTALS, FACT_LABELS, PROJECTS, PROJECT_KINDS, projectCode, projectEvidence, screenImage, shotSrcSet } from '../../data/projects';
 import { Label, MaskLines, Reveal } from './primitives';
 import { wa } from './links';
+import { useDesktop } from '../../hooks/useDesktop';
 import '../../styles/projects.css';
 import MobileRail from './MobileRail';
 
@@ -34,8 +35,8 @@ const whatsappFor = (project) => wa(t(
   `Hola JC Analytics, vi el proyecto ${project.name} (${project.sector}) y quiero algo así para mi negocio.`,
   `Hi JC Analytics, I saw the ${project.name} project (${project.sector}) and I want something like it for my business.`,
 ));
-const WhatsApp = ({ href, children, className = '' }) => (
-  <a href={href} target="_blank" rel="noreferrer" className={`works-wa ${className}`}><MessageCircle size={18} aria-hidden="true" />{children}</a>
+const WhatsApp = ({ href, children, className = '', ...rest }) => (
+  <a href={href} target="_blank" rel="noreferrer" className={`works-wa ${className}`} {...rest}><MessageCircle size={18} aria-hidden="true" />{children}</a>
 );
 
 const Browser = ({ project, screen }) => (
@@ -108,6 +109,8 @@ const projectFromQuery = () => {
 };
 
 const Work = () => {
+  // En computadora el botón abre el formulario corto, no WhatsApp Web: el texto lo dice.
+  const desktop = useDesktop();
   const [active, setActive] = useState(projectFromQuery);
   const [view, setView] = useState('screen');
   const [screenIndex, setScreenIndex] = useState(0);
@@ -219,7 +222,7 @@ const Work = () => {
 
         <Reveal className="works-close">
           <p>{t('¿Querés algo así para tu negocio? Contanos tu caso.', 'Want something like this for your business? Tell us your case.')}</p>
-          <WhatsApp href={wa(t('Hola JC Analytics, vi sus proyectos y quiero conversar sobre uno para mi negocio.', 'Hi JC Analytics, I saw your projects and want to talk about one for my business.'))} className="works-wa--lg">{t('Escribinos por WhatsApp', 'Message us on WhatsApp')}</WhatsApp>
+          <WhatsApp href={wa(t('Hola JC Analytics, vi sus proyectos y quiero conversar sobre uno para mi negocio.', 'Hi JC Analytics, I saw your projects and want to talk about one for my business.'))} className="works-wa--lg" data-need="Otro">{desktop ? t('Escribinos', 'Message us') : t('Escribinos por WhatsApp', 'Message us on WhatsApp')}</WhatsApp>
           <small>{t(`Cifras calculadas desde los repositorios el ${EVIDENCE_DATE}. Capturas con datos de demostración.`, `Figures computed from the repositories on ${EVIDENCE_DATE}. Screenshots use demo data.`)}</small>
         </Reveal>
       </div>

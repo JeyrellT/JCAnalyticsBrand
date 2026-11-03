@@ -1,0 +1,38 @@
+/* Formulario corto de computadora (ui/LeadDialog.jsx): mismo lenguaje que las páginas de servicio. */
+.lead-dialog { margin: auto; padding: 0; border: 0; border-radius: 22px; width: min(580px, calc(100vw - 32px)); max-height: min(92vh, 780px); background: #eef3ee; color: #132b2d; box-shadow: 0 30px 80px -30px #0a1f1a99; }
+.lead-dialog::backdrop { background: #0a1f1aa6; backdrop-filter: blur(4px); }
+.lead-dialog[open] { animation: lead-dialog-in .28s cubic-bezier(.19, 1, .22, 1); }
+@keyframes lead-dialog-in { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+.lead-dialog__panel { position: relative; display: grid; gap: 14px; padding: 30px 30px 26px; }
+.lead-dialog__close { position: absolute; top: 14px; right: 14px; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; color: #405f58; background: transparent; cursor: pointer; }
+.lead-dialog__close:hover { background: #132b2d12; }
+.lead-dialog__eyebrow { font: 500 10px/1.4 var(--font-mono); letter-spacing: .16em; text-transform: uppercase; color: #236c60; }
+.lead-dialog h2 { font: 500 clamp(26px, 3vw, 32px)/1.08 var(--font-display); letter-spacing: -.04em; padding-right: 44px; }
+.lead-dialog__intro { font-size: 14px; line-height: 1.7; color: #405f58; max-width: 56ch; }
+.lead-dialog__package { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; width: fit-content; padding: 7px 12px; border-radius: 999px; background: #fff; font-size: 13px; color: #236c60; }
+.lead-dialog__package strong { color: #132b2d; }
+.lead-dialog__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 2px; }
+.lead-field { display: grid; gap: 6px; }
+.lead-field--wide { grid-column: 1 / -1; }
+.lead-field label { font-size: 13px; font-weight: 600; color: #132b2d; }
+.lead-field label small { font-weight: 400; color: #536863; }
+.lead-field input, .lead-field textarea { width: 100%; min-height: 48px; padding: 10px 14px; border: 1px solid #132b2d33; border-radius: 10px; background: #fff; font: inherit; font-size: 15px; color: #132b2d; }
+.lead-field textarea { resize: vertical; min-height: 96px; line-height: 1.55; }
+.lead-field input:focus-visible, .lead-field textarea:focus-visible { outline: 2px solid #087783; outline-offset: 2px; }
+.lead-field input[aria-invalid="true"] { border-color: #b4542f; }
+.lead-dialog__trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.lead-dialog__actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 2px; }
+.lead-dialog__submit { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 24px; border-radius: 10px; background: #132b2d; color: #f5f7f4; font: inherit; font-size: 15px; font-weight: 650; cursor: pointer; transition: background .2s, transform .2s; }
+.lead-dialog__submit:hover { background: #1e4044; transform: translateY(-1px); }
+.lead-dialog__submit:disabled { opacity: .6; cursor: default; transform: none; }
+.lead-dialog__wa { display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 16px; border: 1px solid #132b2d33; border-radius: 10px; font-size: 14px; font-weight: 600; color: #0b5a2e; transition: background .2s, border-color .2s; }
+.lead-dialog__wa:hover { background: #25d3661a; border-color: #25d366; }
+.lead-dialog__status { min-height: 1.4em; font-size: 13px; line-height: 1.6; color: #31562f; }
+.lead-dialog__status[data-tone="bad"] { color: #8a3a1f; }
+.lead-dialog :is(button, a, input, textarea):focus-visible { outline: 2px solid #087783; outline-offset: 2px; }
+@media (max-width: 767px) {
+  .lead-dialog__panel { padding: 24px 18px 20px; }
+  .lead-dialog__grid { grid-template-columns: 1fr; }
+  .lead-dialog__actions .lead-dialog__submit, .lead-dialog__actions .lead-dialog__wa { width: 100%; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) { .lead-dialog[open] { animation: none; } .lead-dialog__submit, .lead-dialog__wa { transition: none; } }

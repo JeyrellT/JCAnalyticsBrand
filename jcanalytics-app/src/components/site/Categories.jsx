@@ -5,6 +5,7 @@ import { servicePath } from '../../seo/routes';
 import { shotSrcSet } from '../../data/shots';
 import { Label, MaskLines, Reveal } from './primitives';
 import { wa } from './links';
+import { useDesktop } from '../../hooks/useDesktop';
 import '../../styles/categories.css';
 
 // ============================================================================
@@ -39,7 +40,10 @@ const Card = ({ item, index }) => {
   );
 };
 
-const Categories = () => (
+const Categories = () => {
+  // En computadora el enlace de WhatsApp abre el formulario corto (ui/LeadDialog.jsx): el texto no promete WhatsApp.
+  const desktop = useDesktop();
+  return (
   <section id="servicios" className="categories-section scroll-mt-24" aria-labelledby="categories-title">
     <div className="categories-container">
       <div className="categories-heading">
@@ -57,10 +61,11 @@ const Categories = () => (
       <Reveal delay={0.1} className="categories-foot">
         <a href="#trabajo" className="categories-foot__next">{t('Ver proyectos reales', 'See real projects')} <ArrowDown size={15} aria-hidden="true" /></a>
         <a href="#paquetes" className="categories-foot__next">{t('Ver paquetes con precio publicado', 'See packages with published pricing')} <ArrowDown size={15} aria-hidden="true" /></a>
-        <a href={wa(t('Hola JC Analytics, no sé bien qué categoría me toca. Les cuento mi caso:', 'Hi JC Analytics, I am not sure which category fits my case. Here it is:'))} target="_blank" rel="noreferrer" className="categories-foot__wa"><MessageCircle size={16} aria-hidden="true" />{t('No sé cuál me toca · WhatsApp', 'Not sure which one · WhatsApp')}</a>
+        <a href={wa(t('Hola JC Analytics, no sé bien qué categoría me toca. Les cuento mi caso:', 'Hi JC Analytics, I am not sure which category fits my case. Here it is:'))} target="_blank" rel="noreferrer" className="categories-foot__wa" data-need="Otro"><MessageCircle size={16} aria-hidden="true" />{desktop ? t('No sé cuál me toca · contanos tu caso', 'Not sure which one · tell us your case') : t('No sé cuál me toca · WhatsApp', 'Not sure which one · WhatsApp')}</a>
       </Reveal>
     </div>
   </section>
-);
+  );
+};
 
 export default Categories;

@@ -38,6 +38,10 @@ jobs:
 
       - name: Build all localized pages
         working-directory: jcanalytics-app
+        env:
+          # Etiqueta de la conversión "Envío de formulario" de Google Ads (Settings → Variables → ADS_FORM_LABEL).
+          # Vacía, los formularios cuentan en "Clic WhatsApp". Ver jcanalytics-app/docs/anuncios.md.
+          VITE_ADS_FORM_LABEL: ${{ vars.ADS_FORM_LABEL }}
         run: npm run build
 
       - name: Verify public comparison and retry tools
