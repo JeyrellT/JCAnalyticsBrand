@@ -163,15 +163,6 @@ const Contact = () => {
             <p className="contact-people__note">{t("No un bot. Las mismas personas que van a trabajar con vos.", "The people replying are the same people who will work with you.")}</p>
             <a href="#equipo" className="contact-people__link">{t('Conocelos', 'Meet them')} <ArrowRight size={17} aria-hidden="true" /></a>
             <p className="contact-people__response">{t("Respondemos en menos de 24 h.", "We reply within 24 hours.")}</p>
-            <ol className="contact-next-steps" aria-label={t("Qué sigue después de escribirnos", "What happens after you contact us")}>
-              <li><span>01</span><div><strong>{t("Entendemos tu objetivo.", "We understand your goal.")}</strong><p>{t("Qué querés mejorar y cómo trabajás hoy.", "What you want to improve and how you work today.")}</p></div></li>
-              <li><span>02</span><div><strong>{t("Definimos el alcance.", "We define the scope.")}</strong><p>{t("Prioridades, funcionalidades e integraciones.", "Priorities, features and integrations.")}</p></div></li>
-              <li><span>03</span><div><strong>{t("Acordamos el siguiente paso.", "We agree on the next step.")}</strong><p>{t("Una propuesta para tu caso, con tiempos y costos claros.", "A proposal for your needs, with clear timing and costs.")}</p></div></li>
-            </ol>
-            <div className="contact-faq">
-              <details><summary>{t("¿Todavía no tengo la idea definida?", "What if my idea is not fully defined yet?")}<span aria-hidden="true">+</span></summary><p>{t("Podés contarnos el problema o lo que te gustaría mejorar. La primera conversación sirve para darle forma.", "Tell us about the problem or what you would like to improve. The first conversation helps give it shape.")}</p></details>
-              <details><summary>{t("¿Ya tengo una web o un sistema?", "What if I already have a website or system?")}<span aria-hidden="true">+</span></summary><p>{t("Revisamos lo que existe y definimos qué conviene mejorar, integrar o desarrollar según el alcance.", "We review what you have and decide what to improve, integrate or build based on the scope.")}</p></details>
-            </div>
           </Reveal>
         </div>
       </div>

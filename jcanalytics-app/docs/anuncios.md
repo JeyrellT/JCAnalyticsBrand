@@ -1,6 +1,6 @@
 # Anuncios: cómo enlazar Google Ads, Meta Ads y ChatGPT Ads al sitio
 
-La portada está pensada para la visita que llega de un anuncio: titular con la oferta, botón verde de WhatsApp arriba, paquetes con precio justo debajo y un botón "Lo quiero · WhatsApp" por paquete. El mensaje de WhatsApp ya va escrito y termina con la plataforma y campaña del anuncio, por ejemplo:
+Desde noviembre de 2026 cada anuncio debe aterrizar en la página de su categoría (por ejemplo `/servicios/desarrollo-web-costa-rica/`): ahí están el paquete con su precio, las señales «¿es para vos?», la calculadora y el botón "Lo quiero · WhatsApp". La portada con `?p=<paquete>` sigue funcionando para el tráfico que ya existe: muestra un aviso con el paquete del anuncio (sin precio en la primera pantalla, como acordó el equipo) y lo pone primero en la sección de paquetes, más abajo. El mensaje de WhatsApp ya va escrito y termina con la plataforma y campaña del anuncio, por ejemplo:
 
 ```
 Hola JC Analytics, quiero el paquete Dashboard inicial ($135). ¿Qué necesitan para empezar?
@@ -43,7 +43,7 @@ Con el seguimiento automático activo, Google agrega `gclid` solo; el sitio lo r
 utm_source=meta&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}
 ```
 
-URL del sitio web: `https://www.jcanalytic.com/?p=web` (español; el inglés está en `/en/?p=web`). Meta agrega `fbclid` solo.
+URL del sitio web recomendada: `https://www.jcanalytic.com/servicios/desarrollo-web-costa-rica/` (inglés: `/en/services/web-development-costa-rica/`). La anterior, `https://www.jcanalytic.com/?p=web`, sigue funcionando. Meta agrega `fbclid` solo.
 
 **ChatGPT Ads**: ChatGPT agrega `utm_source=chatgpt.com`. Usá la URL con `?p=` y, si la plataforma lo permite, `&utm_campaign=nombre`.
 

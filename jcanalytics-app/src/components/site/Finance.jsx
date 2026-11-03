@@ -31,7 +31,7 @@ const Finance = () => {
     <section id="finanzas" className="finance-section" aria-labelledby="finance-title">
       <div className="intelligence-container">
         <div className="finance-heading">
-          <div><Label className="text-blue">{t("02 / Finanzas & dashboards", "02 / Finance & dashboards")}</Label><h2 id="finance-title"><MaskLines lines={[t("El poder de", "The power of"), <em key="claridad">{t("verlo claro.", "seeing clearly.")}</em>]} /></h2></div>
+          <div><Label className="text-blue">{t("Finanzas & dashboards", "Finance & dashboards")}</Label><h2 id="finance-title"><MaskLines lines={[t("El poder de", "The power of"), <em key="claridad">{t("verlo claro.", "seeing clearly.")}</em>]} /></h2></div>
           <Reveal className="finance-intro"><p>{t("La parte financiera también se diseña. Construimos herramientas para entender tu flujo de caja, analizar costos y convertir datos dispersos en decisiones.", "Financial clarity takes design, too. We build tools to understand cash flow, analyze costs and turn scattered data into decisions.")}</p><div className="intelligence-tags"><span>{t("Modelos financieros", "Financial models")}</span><span>Power BI</span><span>{t("Dashboards a medida", "Custom dashboards")}</span></div></Reveal>
         </div>
         <Reveal className="finance-workspace">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { ArrowUpRight, ArrowRight, Search, Plus, Check, ArrowLeft } from 'lucide-react';
 import { articles, servicePages, topics } from './content/catalog';
 import { articlePath, servicePath, homePath, journalPath } from './seo/routes';
@@ -17,10 +17,16 @@ import {
   ServiceSalesProvider, OfferStrip, Signals, ImpactCalculator, Includes, HowWeWork, RealExample, ServiceFaq, ServiceLeadForm, ServiceBar, TocOffer,
 } from './components/site/ServiceSales';
 import { serviceOutline, hasServiceOffer } from './components/site/service-outline';
+import { hasServiceDemo } from './components/site/service-demos';
 
-// Las portadas son pantallas reales de sistemas construidos por el estudio (con datos de demostración).
+// La demo interactiva de cada servicio (antes en la portada) se carga solo en la página que la usa.
+const ServiceDemo = lazy(() => import('./components/site/ServiceDemo'));
+
+// Las portadas son pantallas reales de sistemas construidos por el estudio (con datos de demostración),
+// o piezas publicadas en las redes de un cliente en el caso de marketing.
 const COVER_PROJECTS = { laburrada: 'La Burrada Street Food', caviq: 'CAVIQ', multiagencia: 'Multiagencia Gutiérrez', crimson: 'Crimson Consulting', maison: 'Taller Maison Valcour', soporte20: 'Soporte 2.0', transportesluna: 'Transporte Luz de Luna' };
 const coverCredit = (image = '') => {
+  if (image.includes('/marketing/')) return t('Pieza real publicada en las redes de un cliente de JC Analytics.', 'Real piece published on a JC Analytics client’s social media.');
   const id = Object.keys(COVER_PROJECTS).find((key) => image.includes(`/projects/${key}/`));
   return id
     ? t(`Pantalla real de ${COVER_PROJECTS[id]}, un sistema construido por JC Analytics. Datos de demostración.`, `Real screen from ${COVER_PROJECTS[id]}, a system built by JC Analytics. Demo data.`)
@@ -66,7 +72,7 @@ function DecisionGuide() {
 }
 
 function ServicesDirectory() {
-  return <section className="journal-services" aria-labelledby="services-title"><div className="journal-section-heading"><div><span className="journal-eyebrow">{t('DE LA LECTURA A LA ACCIÓN', 'FROM READING TO DOING')}</span><h2 id="services-title">{t('Hagamos que funcione.', 'Let’s make it work.')}</h2></div><p>{t('Cuatro formas de construir el siguiente paso de tu negocio.', 'Four ways to build the next step for your business.')}</p></div><div className="journal-service-grid">{servicePages.map((service, index) => <a href={path(service)} key={service.id}><span className="journal-eyebrow">0{index + 1} / {topics[service.topic][locale]}</span><h3>{text(service).title}</h3><ArrowUpRight size={22} /></a>)}</div></section>;
+  return <section className="journal-services" aria-labelledby="services-title"><div className="journal-section-heading"><div><span className="journal-eyebrow">{t('DE LA LECTURA A LA ACCIÓN', 'FROM READING TO DOING')}</span><h2 id="services-title">{t('Hagamos que funcione.', 'Let’s make it work.')}</h2></div><p>{t('Cada categoría tiene su propia página. Entrá a la que te toca.', 'Each category has its own page. Open the one you need.')}</p></div><div className="journal-service-grid">{servicePages.map((service, index) => <a href={path(service)} key={service.id}><span className="journal-eyebrow">0{index + 1} / {topics[service.topic][locale]}</span><h3>{text(service).title}</h3><ArrowUpRight size={22} /></a>)}</div></section>;
 }
 
 function JournalHome() {
@@ -80,7 +86,7 @@ function JournalHome() {
       <a href={path(featured)} className="journal-feature"><div className="journal-feature__image"><img src={featured.image} srcSet={shotSrcSet(featured.image)} sizes="(max-width: 767px) 92vw, 55vw" alt="" width="1600" height="1000" fetchPriority="high" /></div><div className="journal-feature__copy"><span className="journal-eyebrow">01 / {t('EN FOCO', 'IN FOCUS')}</span><h2>{text(featured).title}</h2><p>{text(featured).summary}</p><span className="journal-text-link">{t('Explorar la idea', 'Explore the idea')}<ArrowUpRight size={22} /></span></div></a>
     </div></section>
     <div className="journal-container"><section className="journal-library" aria-labelledby="library-title"><div className="journal-section-heading"><div><span className="journal-eyebrow">{t('CONOCIMIENTO PARA COMPARTIR', 'KNOWLEDGE WORTH SHARING')}</span><h2 id="library-title">{t('El cuaderno.', 'The field notes.')}</h2></div><label className="journal-search" htmlFor="insight-search"><Search size={18} /><span className="sr-only">{t('Buscar ideas', 'Search insights')}</span><input id="insight-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('Buscá una idea…', 'Find an idea…')} /></label></div>
-      <div className="journal-filters" role="group" aria-label={t('Filtrar por tema', 'Filter by topic')}>{[['all', t('Todas las ideas', 'All insights')], ...Object.entries(topics).map(([id, copy]) => [id, copy[locale]])].map(([id, label]) => <button type="button" data-topic={id} key={id} onClick={() => setTopic(id)} aria-pressed={topic === id}>{label}</button>)}</div>
+      <div className="journal-filters" role="group" aria-label={t('Filtrar por tema', 'Filter by topic')}>{[['all', t('Todas las ideas', 'All insights')], ...Object.entries(topics).filter(([id]) => articles.some(article => article.topic === id)).map(([id, copy]) => [id, copy[locale]])].map(([id, label]) => <button type="button" data-topic={id} key={id} onClick={() => setTopic(id)} aria-pressed={topic === id}>{label}</button>)}</div>
       <p className="journal-count" aria-live="polite">{filtered.length} {t('lecturas para explorar', 'notes to explore')}</p><div className="journal-cards" id="journal-grid">{filtered.map(article => <ArticleCard key={article.id} article={article} />)}</div>
       {!filtered.length && <div className="journal-empty"><p>{t('No encontramos esa idea. Probá otro tema o palabra.', 'No matching notes yet. Try another topic or word.')}</p><button type="button" className="journal-text-link" onClick={() => { setQuery(''); setTopic('all'); }}>{t('Mostrar todas las ideas', 'Show all insights')}<ArrowRight size={18} /></button></div>}
     </section><DecisionGuide /><ServicesDirectory /></div>
@@ -106,6 +112,7 @@ function DocumentPage({ route }) {
     <MaybeSales enabled={sales} item={item}><article className="journal-document"><header className="document-heading"><span className="journal-eyebrow">{isArticle ? t('CUADERNO DE IDEAS', 'FIELD NOTES') : t('SERVICIOS / COSTA RICA', 'SERVICES / COSTA RICA')} · {topics[item.topic][locale]}</span><h1>{copy.title}</h1><p className="document-summary">{copy.summary}</p>{isArticle && <div className="document-byline"><span>JC Analytics</span><span>{item.minutes} min {t('de lectura', 'read')}</span><time dateTime={item.published}>{new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(`${item.published}T12:00:00Z`))}</time></div>}{item.tool && <a className="journal-button document-tool-link" href="#practical-tool">{t('Probar la herramienta', 'Try the tool')}<ArrowRight size={18} /></a>}</header>
       {sales && <OfferStrip />}
       <figure className="document-cover"><img src={item.image} srcSet={shotSrcSet(item.image)} sizes="(max-width: 1000px) 92vw, 900px" alt="" width="1600" height="1000" fetchPriority="high" /><figcaption>{coverCredit(item.image)}</figcaption></figure>
+      {!isArticle && hasServiceDemo(item.id) && <Suspense fallback={null}><ServiceDemo item={item} /></Suspense>}
       <div className="document-layout"><aside className="document-toc"><span className="journal-eyebrow">{t('EN ESTA LECTURA', 'ON THIS PAGE')}</span><nav aria-label={t('Índice del contenido', 'Table of contents')}>{item.tool && <a className="document-toc__tool" href="#practical-tool"><span>↗</span>{t('Probar la herramienta', 'Try the tool')}</a>}{outline.map((section, index) => <a href={`#${section.id}`} key={section.id} className={section.sales ? 'document-toc__sales' : undefined}><span>{String(index + 1).padStart(2, '0')}</span>{section.heading}</a>)}<a href="#discussion"><span>↗</span>{t('Para conversar', 'Let’s discuss')}</a></nav>{sales && <TocOffer />}</aside>
         <div className="document-body"><div className="document-takeaway"><span className="journal-eyebrow">{t('LA IDEA CLAVE', 'THE KEY IDEA')}</span><p>{copy.takeaway}</p></div>
           {item.tool && <PracticalTool tool={item.tool} />}

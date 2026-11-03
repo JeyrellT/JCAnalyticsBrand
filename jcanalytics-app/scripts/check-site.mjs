@@ -20,7 +20,7 @@ const TIMEOUT = 20_000;
 const PORTAL_INGEST = 'https://portal.jcanalytic.com/ingest/';
 const COPY = {
   en: {
-    path: '/en/', heading: 'Websites and systems with clear pricing.', system: 'System / backend', website: 'Website',
+    path: '/en/', heading: 'Websites and systems delivered on time.', system: 'System / backend', website: 'Website',
     objective: 'What would you like to solve?', name: 'Your name', estimator: 'Your project, with clarity.',
     faqQuestion: 'What can JC Analytics build for my business?', faqAnswer: 'We design websites and custom software',
     emailPrefix: 'Inquiry:', messagePrefix: 'Hello', estimateLabel: 'Estimated investment',
@@ -30,7 +30,7 @@ const COPY = {
     journalDescription: 'Practical guides to clearer business decisions, useful websites, reliable data and responsible AI.',
   },
   es: {
-    path: '/', heading: 'Webs y sistemas con precio claro.', system: 'Sistema / backend', website: 'Página web',
+    path: '/', heading: 'Webs y sistemas con entrega a tiempo.', system: 'Sistema / backend', website: 'Página web',
     objective: '¿Qué querés resolver?', name: 'Tu nombre', estimator: 'Tu proyecto, con claridad.',
     faqQuestion: '¿Qué puede desarrollar JC Analytics para mi negocio?', faqAnswer: 'Diseñamos páginas web y software a medida',
     emailPrefix: 'Consulta:', messagePrefix: 'Hola', estimateLabel: 'Inversión estimada',
@@ -876,8 +876,8 @@ async function checkSitemap(browser, origin) {
   // New blog entries must not break the deploy: only guard the floor, not an exact count.
   assert.ok(articles.length >= 10, 'The public catalog keeps at least the ten original bilingual articles');
   assert.deepEqual(articles.filter((article) => article.tool).map((article) => article.tool).sort(), ['list-reconciler', 'retry-simulator'], 'Exactly two articles provide the intended practical tools');
-  // 12 non-article routes (home, services, etc.) plus one per language for each article.
-  assert.equal(routes.length, 12 + articles.length * 2, 'Every article contributes exactly one route per language');
+  // 14 non-article routes (home, journal and five services, each in two languages) plus one per language for each article.
+  assert.equal(routes.length, 14 + articles.length * 2, 'Every article contributes exactly one route per language');
   assert.equal(new Set(routes.map((route) => route.path)).size, routes.length, 'Public routes are unique');
   const response = await fetch(`${origin}/sitemap.xml`);
   assert.equal(response.status, 200);

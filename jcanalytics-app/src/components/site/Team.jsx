@@ -2,7 +2,6 @@ import { t } from '../../i18n/locale';
 import { ArrowUpRight } from 'lucide-react';
 import { TEAM } from '../../data/team';
 import { Label, MaskLines, Reveal } from './primitives';
-import { wa } from './links';
 import MobileRail from './MobileRail';
 import '../../styles/closing.css';
 
@@ -20,12 +19,6 @@ const TeamCard = ({ person, index }) => (
       <h3 className="font-display">{person.name}</h3>
       <p className="team-member__role">{person.role}</p>
       <p className="team-member__bio">{person.bio}</p>
-      <ul className="team-member__skills" aria-label={t(`Especialidades de ${person.first}`, `${person.first}’s specialties`)}>
-        {person.skills.map((skill) => <li key={skill}>{skill}</li>)}
-      </ul>
-      <a href={wa(person.wa)} target="_blank" rel="noreferrer" className="team-member__link">
-        <span>{t('Escribile a', 'Message')} {person.first}</span><ArrowUpRight size={17} aria-hidden="true" />
-      </a>
     </div>
   </Reveal>
 );
@@ -42,7 +35,7 @@ const Team = () => (
         </div>
         <Reveal delay={0.15} className="team-heading__intro">
           <span className="closing-kicker">{t("Cercanía, de principio a fin.", "Personal, from start to finish.")}</span>
-          <p>{t("Cinco personas, sin intermediarios. Con la que hablás es la que hace el trabajo.", "Five people, no middlemen. The person you talk to is the person doing the work.")}</p>
+          <p>{t("Cinco personas, sin intermediarios. Con la que hablás es la que hace el trabajo; el contacto es uno solo, más abajo.", "Five people, no middlemen. The person you talk to is the person doing the work; there is one point of contact, below.")}</p>
         </Reveal>
       </div>
       <MobileRail className="team-grid" label={t("Personas del equipo", "Meet the team")}>

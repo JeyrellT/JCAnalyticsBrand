@@ -7,7 +7,7 @@ npm ci
 npm run dev
 ```
 
-Antes de publicar: `npm run lint`, `npm run build`, `npm run check:tools` y `npm run check:site`. El build necesita el Chromium de Puppeteer y debe generar 28 rutas de inicio, servicios e ideas en ambos idiomas. El catálogo contiene ocho artículos, dos de ellos con recursos prácticos locales. Ver [SEO, idiomas y publicación](docs/seo-and-languages.md) para mantenimiento, pruebas y pasos de Search Console, y [páginas de servicio](docs/paginas-de-servicio.md) para la oferta, la calculadora y el formulario que deja consultas en el portal.
+Antes de publicar: `npm run lint`, `npm run build`, `npm run check:tools` y `npm run check:site`. El build necesita el Chromium de Puppeteer y debe generar 38 rutas de inicio, servicios e ideas en ambos idiomas. El catálogo contiene doce artículos, dos de ellos con recursos prácticos locales. Ver [SEO, idiomas y publicación](docs/seo-and-languages.md) para mantenimiento, pruebas y pasos de Search Console, y [páginas de servicio](docs/paginas-de-servicio.md) para la oferta, la calculadora y el formulario que deja consultas en el portal.
 
 Contacto por dispositivo: en celular los botones abren WhatsApp; en computadora abren un formulario corto que deja la consulta en el portal, y la conversión de anuncios se mide al aceptarla. Regla, medición y pasos en Google Ads en [estrategia de conversión](docs/estrategia-conversion.md) y [anuncios](docs/anuncios.md).
 

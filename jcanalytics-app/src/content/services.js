@@ -1,4 +1,5 @@
 import { SERVICE_PRICING } from '../../../portal/shared/service-pricing.js';
+import { SERVICES } from '../data/cotizador.js';
 export const servicePages = [
   {
     id: 'web-development', topic: 'experience', image: '/projects/laburrada/home-desktop.webp', need: 'Sistema / backend',
@@ -98,6 +99,34 @@ export const servicePages = [
         { id: 'prepare', heading: 'Traé una pregunta frecuente de tu equipo', paragraphs: ['Describí la tarea, dónde vive la información y quién usa el resultado. Utilizá un ejemplo ficticio en la primera conversación en lugar de cargar documentos privados. Después acordamos cómo evaluar el caso.', 'La evaluación inicial puede mostrar que alcanza con un flujo más simple. Cuando la IA resulta adecuada, la propuesta define alcance, integración, revisión y entrega; no prometemos precisión ni ahorros antes de evaluar el caso.'] },
       ],
       discussion: ['¿Qué tarea útil apoyaría la IA?', '¿Qué sería una respuesta inaceptable?', '¿Quién puede detener, corregir o revisar el resultado?'], sources: [],
+    },
+  },
+  // Marketing digital: landing propio acordado en la reunión del 31 de octubre de 2026. Habla a comercios y
+  // emprendimientos con lenguaje simple; el sitio principal conserva el tono para clientes corporativos.
+  // Sin oferta en SERVICE_OFFERS: la página muestra el contenido editorial y la demo con piezas reales.
+  {
+    id: 'digital-marketing', topic: 'marketing', image: '/marketing/luna-post-029.webp', need: 'Marketing digital',
+    en: {
+      slug: 'digital-marketing-costa-rica', title: 'Digital marketing for businesses that are growing.',
+      summary: 'Social media, content, short videos and Meta Ads, handled by a real person who learns your brand’s voice.',
+      takeaway: 'Start with what your business already does well. Then make sure people see it, consistently.',
+      sections: [
+        { id: 'fit', heading: 'When it makes sense to hire marketing', paragraphs: ['If you already take good care of your customers but nobody is telling that story, or you post only when you find time and without a plan, this service is for you. It is designed for shops, restaurants, transport companies, workshops and people starting a business.', 'We publish for you, reply to messages in your brand’s voice and run campaigns on Meta (Facebook and Instagram) with weekly monitoring.'] },
+        { id: 'scope', heading: 'What we can do together', paragraphs: ['Each monthly plan is defined with you. It can include:'], bullets: ['A monthly content calendar with designs that use your brand.', 'Photos and short videos recorded at your business, without stock images.', 'Publishing and replies to messages and comments.', 'Meta Ads campaigns with weekly monitoring.', 'A monthly report that shows what worked and what did not.'] },
+        { id: 'prepare', heading: 'What to bring to the first conversation', paragraphs: ['Bring the name of your social accounts, what you sell and to whom, a few recent photos and the budget you can put into ads. If you have never run a campaign, we talk it through in that first call.', `The community manager plan starts at US$${SERVICES.community_manager.priceMin} per month and video editing at US$${SERVICES.video_edicion.priceMin} per video. The Meta Ads budget is agreed separately.`] },
+      ],
+      discussion: ['Which of your products or services do customers praise most?', 'Who answers messages today, and how long does it take?', 'What would you like a new customer to see first on your profile?'], sources: [],
+    },
+    es: {
+      slug: 'marketing-digital-costa-rica', title: 'Marketing digital para negocios que están creciendo.',
+      summary: 'Redes sociales, contenido, videos cortos y Meta Ads, llevados por una persona real que aprende la voz de tu marca.',
+      takeaway: 'Empezá por lo que tu negocio ya hace bien. Después, hacé que la gente lo vea, con constancia.',
+      sections: [
+        { id: 'fit', heading: 'Cuándo tiene sentido contratar marketing', paragraphs: ['Si ya atendés bien a tus clientes pero nadie lo está contando, o publicás cuando podés y sin un plan, este servicio es para vos. Está pensado para comercios, restaurantes, transportistas, talleres y personas que están arrancando un negocio.', 'Publicamos por vos, respondemos mensajes con el tono de tu marca y llevamos campañas en Meta (Facebook e Instagram) con seguimiento semanal.'] },
+        { id: 'scope', heading: 'Qué podemos hacer juntos', paragraphs: ['Cada plan mensual se define con vos. Puede incluir:'], bullets: ['Calendario mensual de contenido con diseños que usan tu marca.', 'Fotos y videos cortos grabados en tu negocio, sin banco de imágenes.', 'Publicación y respuesta a mensajes y comentarios.', 'Campañas en Meta Ads con seguimiento semanal.', 'Un reporte mensual con lo que funcionó y lo que no.'] },
+        { id: 'prepare', heading: 'Qué traer a la primera conversación', paragraphs: ['Traé el nombre de tus redes, qué vendés y a quién, un par de fotos recientes y cuánto podés invertir en pauta. Si nunca hiciste una campaña, lo conversamos en esa primera llamada.', `El plan de community manager arranca en US$${SERVICES.community_manager.priceMin} al mes y la edición de video en US$${SERVICES.video_edicion.priceMin} por pieza. La inversión en pauta de Meta Ads se acuerda aparte.`] },
+      ],
+      discussion: ['¿Qué producto o servicio tuyo es el que más elogian tus clientes?', '¿Quién responde los mensajes hoy y cuánto tarda?', '¿Qué te gustaría que viera primero un cliente nuevo en tu perfil?'], sources: [],
     },
   },
 ];

@@ -75,15 +75,16 @@
   .studio-hero__topline { font-size: 8px; padding-bottom: 15px; }
   .studio-hero__main { display: flex; flex-direction: column; }
   .studio-hero__copy { display: contents; }
-  .studio-hero__lead { display: none; }
-  .studio-hero h1 { order: 1; padding-top: 30px; font-size: clamp(50px, 16.8vw, 100px); line-height: .89; }
-  .studio-hero h1 em { font-size: .97em; }
-  .studio-hero .studio-object { order: 2; width: 100%; margin: 18px 0 2px; height: auto; transform: none !important; }
+  .studio-hero__lead { order: 0; padding-top: 26px; }
+  .studio-hero__eyebrow { margin-bottom: 0; font-size: 11px; }
+  .studio-hero h1 { order: 1; padding-top: 12px; font-size: clamp(50px, 16.8vw, 100px); line-height: .89; }
+  .studio-hero h1 em { font-size: clamp(34px, 12.6vw, 72px); } /* «con entrega a tiempo.» entra completa en celular (nov. 2026) */
+  .studio-hero .studio-object { order: 6; width: 100%; margin: 6px 0 2px; height: auto; transform: none !important; }
   .studio-object__halo, .studio-object__fallback, .studio-object__coordinate, .studio-object__badge, .studio-hero .studio-motion-control { display: none; }
   .hero-screens { display: grid; }
   .studio-object__coordinate { right: 10%; top: 21%; }
   .studio-hero .studio-motion-control { right: 7%; bottom: 5%; min-height: 44px; min-width: 44px; padding: 10px 12px; font-size: 10px; background: #080c10dd; }
-  .studio-hero__intro { order: 3; }
+  .studio-hero__intro { order: 2; }
   .studio-hero__description { margin-top: 8px; max-width: 100%; font-size: 14px; line-height: 1.7; }
   .studio-hero__actions { order: 4; display: grid; grid-template-columns: 1fr; gap: 7px; margin-top: 20px; }
   .studio-start { width: 100%; justify-content: space-between; border-radius: 14px; font-size: 13px; padding: 8px 8px 8px 19px; min-height: 56px; }

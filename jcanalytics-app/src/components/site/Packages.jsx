@@ -2,9 +2,10 @@
 // visita que llega de un anuncio: precio a la vista y un solo botón por tarjeta.
 import { useEffect, useState } from 'react';
 import { ArrowDown, ArrowUpRight, Check, Clock3, MessageCircle } from 'lucide-react';
-import { t } from '../../i18n/locale';
+import { locale, t } from '../../i18n/locale';
 import { FEATURED_COUNT, PACKAGES, adPackage } from '../../data/packages';
-import { PROJECTS } from '../../data/projects';
+import { servicePages } from '../../content/catalog';
+import { servicePath } from '../../seo/routes';
 import { Label, MaskLines, Reveal } from './primitives';
 import { wa } from './links';
 import { useDesktop } from '../../hooks/useDesktop';
@@ -12,17 +13,11 @@ import MobileRail from './MobileRail';
 import '../../styles/packages.css';
 
 const ORDERED = adPackage ? [adPackage, ...PACKAGES.filter((item) => item !== adPackage)] : PACKAGES;
-// Paso 2 según el dispositivo: en celular el botón abre WhatsApp; en computadora, el formulario corto.
-const STEPS = (desktop) => [
-  t('Elegís el paquete', 'Pick a package'),
-  desktop
-    ? t('Nos dejás tu WhatsApp o correo (o seguís por WhatsApp Web)', 'Leave your WhatsApp or email (or continue on WhatsApp Web)')
-    : t('Nos escribís por WhatsApp (el mensaje ya va listo)', 'Message us on WhatsApp (the text is ready)'),
-  t('Confirmamos alcance y fecha de inicio', 'We confirm scope and start date'),
-];
-const showProject = (id) => window.dispatchEvent(new CustomEvent('jca:show-project', { detail: { id } }));
+// Cada paquete enlaza a la página de su categoría: ahí están qué incluye, las señales y el ejemplo real.
+const categoryHref = (id) => servicePath(servicePages.find((service) => service.id === id), locale);
 
 const Packages = () => {
+  // Celular: «Lo quiero» abre WhatsApp. Computadora: abre el formulario corto (ui/LeadDialog.jsx); los textos no prometen WhatsApp.
   const desktop = useDesktop();
   const [all, setAll] = useState(false);
   // En celular el listado es un carrusel: se muestran todos y se deslizan, sin botón de "ver más".
@@ -40,16 +35,17 @@ const Packages = () => {
       <div className="packages-container">
         <div className="packages-heading">
           <div>
-            <Label>{t('Paquetes y precios / Pago único', 'Packages and pricing / One-time payment')}</Label>
-            <h2 id="packages-title"><MaskLines lines={[t('Elegí. Escribinos.', 'Choose. Message us.'), <em key="start">{t('Arrancamos.', 'We start.')}</em>]} /></h2>
+            <Label>{t('Paquetes con precio publicado / Pago único', 'Packages with published pricing / One-time payment')}</Label>
+            <h2 id="packages-title"><MaskLines lines={[t('Precio publicado.', 'Published price.'), <em key="scope">{t('Alcance por escrito.', 'Written scope.')}</em>]} /></h2>
           </div>
-          <ol className="packages-steps">{STEPS(desktop).map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}</ol>
+          <Reveal delay={0.15} className="packages-intro"><p>{desktop
+            ? t('Lo que ves es lo que cuesta: cada paquete tiene alcance, plazo y precio fijos. Elegís uno, nos dejás tu contacto con el mensaje listo y arrancamos; si tu caso es distinto, el cotizador de abajo te da un rango.', 'What you see is what it costs: every package has a fixed scope, timeline and price. Pick one, leave your contact with the text ready and we start; if your case is different, the estimator below gives you a range.')
+            : t('Lo que ves es lo que cuesta: cada paquete tiene alcance, plazo y precio fijos. Elegís uno y escribís por WhatsApp con el mensaje listo; si tu caso es distinto, el cotizador de abajo te da un rango.', 'What you see is what it costs: every package has a fixed scope, timeline and price. Pick one and message us on WhatsApp with the text ready; if your case is different, the estimator below gives you a range.')}</p></Reveal>
         </div>
 
         <MobileRail className="packages-grid" label={t('Paquetes con precio', 'Packages with pricing')}>
           {visible.map((item) => {
             const fromAd = item === adPackage;
-            const example = item.example && PROJECTS.find((project) => project.id === item.example);
             return (
               <Reveal key={item.key} className={`package-card ${fromAd ? 'package-card--ad' : ''}`}>
                 <div className="package-card__top">
@@ -64,7 +60,7 @@ const Packages = () => {
                 <a className="package-card__buy" href={wa(item.message)} target="_blank" rel="noreferrer" data-package={item.key} data-value={item.price} data-package-label={item.name} data-need={item.need}>
                   <MessageCircle size={18} aria-hidden="true" />{desktop ? t('Lo quiero', 'I want it') : t('Lo quiero · WhatsApp', 'I want it · WhatsApp')}
                 </a>
-                {example && <a className="package-card__example" href="#trabajo" onClick={() => showProject(example.id)}>{t('Ver ejemplo real:', 'See a real example:')} {example.name}<ArrowUpRight size={14} aria-hidden="true" /></a>}
+                <a className="package-card__example" href={categoryHref(item.category)}>{t('¿Es para vos? Ver qué incluye y un ejemplo real', 'Is it for you? See what is included and a real example')}<ArrowUpRight size={14} aria-hidden="true" /></a>
               </Reveal>
             );
           })}

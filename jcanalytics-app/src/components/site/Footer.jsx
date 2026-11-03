@@ -9,6 +9,7 @@ const SERVICE_LABELS = {
   'business-intelligence': t('Dashboards y datos', 'Dashboards and data'),
   'process-automation': t('Automatización', 'Automation'),
   'ai-integration': t('Integración de IA', 'AI integration'),
+  'digital-marketing': t('Marketing digital', 'Digital marketing'),
 };
 const topHref = `${homePath(locale)}#top`;
 const Footer = () => (

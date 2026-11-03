@@ -2,7 +2,7 @@
 
 28 de octubre de 2026.
 
-Las cuatro páginas de servicio (`/servicios/…` y `/en/services/…`) concentran la mayor parte de las visitas que
+Las páginas de servicio (`/servicios/…` y `/en/services/…`; cinco desde noviembre de 2026, incluida marketing digital sin oferta) concentran la mayor parte de las visitas que
 no llegan a la portada. Además del contenido editorial (cuándo tiene sentido, qué definimos, qué traer), cada una
 muestra ahora una oferta concreta y da dos caminos para convertir la lectura en una consulta: WhatsApp con el
 mensaje armado, o «prefiero que me contacten», que deja la consulta en el portal del equipo.
@@ -81,3 +81,12 @@ Los envíos al portal se responden dentro de la prueba; ningún mensaje sale a i
 No hay testimonios, cifras de clientes ni promesas de resultados. La calculadora muestra el costo del trabajo
 manual con los números que escribe la persona y en cuántos meses de ese costo se cubre el paquete; no estima un
 ahorro ni un retorno garantizado.
+
+## Demo interactiva por servicio (2 de noviembre de 2026)
+
+Las demos que vivían en la portada (sistemas, finanzas y dashboards, machine learning e IA, y marketing con
+piezas reales) se muestran ahora dentro de la página de su servicio, entre la portada y el índice, con la misma
+dirección de arte (`src/components/site/ServiceDemo.jsx`, cargado solo en esas páginas; la lista está en
+`service-demos.js`). Sus botones de contacto llevan al formulario corto de la página cuando hay oferta y, en
+marketing, a WhatsApp con el mensaje armado (`contact-target.js`). La página de marketing digital no tiene
+oferta en `SERVICE_OFFERS`: muestra el contenido editorial, la demo y los precios publicados del cotizador.

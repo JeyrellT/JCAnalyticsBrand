@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion, useScroll } from 'framer-motion';
-import { Menu, X, ArrowUpRight, ArrowRight, Layers3, ChartNoAxesCombined, BrainCircuit, PanelsTopLeft, Sparkles, MessageCircle, LockKeyhole, Tag } from 'lucide-react';
+import { Menu, X, ArrowUpRight, ArrowRight, Layers3, ChartNoAxesCombined, BrainCircuit, PanelsTopLeft, Sparkles, MessageCircle, LockKeyhole, Tag, Workflow } from 'lucide-react';
 import { wa, EASE, PHONE, PHONE_DISPLAY, EMAIL, NAV_LINKS, PORTAL_URL } from './links';
 import '../../styles/navigation.css';
 import { t, locale } from '../../i18n/locale';
@@ -8,16 +8,17 @@ import { journalPath } from '../../seo/routes';
 import LanguageSwitcher from '../ui/LanguageSwitcher';
 
 const _MOTION = motion;
-const CHAPTERS = [
-  { icon: Tag, detail: t('Paquetes desde $60', 'Packages from $60'), need: 'Sistema / backend' },
-  { icon: Layers3, detail: 'Web + backend', need: 'Sistema / backend' },
-  { icon: ChartNoAxesCombined, detail: t('Datos que orientan', 'Data that guides you'), need: 'Dashboard' },
-  { icon: BrainCircuit, detail: t('Ideas con inteligencia', 'Intelligence at work'), need: 'Integración de IA' },
-  { icon: PanelsTopLeft, detail: t('Del estudio al mundo', 'From our studio to the world'), need: 'Sistema / backend' },
-  { icon: Sparkles, detail: t('Marcas que conectan', 'Brands that connect'), need: 'Marketing digital' },
-  { icon: MessageCircle, detail: t('Tu siguiente paso', 'Your next step'), need: 'Sistema / backend' },
-];
-const SECTION_NAMES = { top: t('El estudio', 'The studio'), servicios: t('Servicios', 'Services'), equipo: t('El equipo', 'The team'), proceso: t('El proceso', 'Our process'), cotizar: t('Cotizador', 'Estimator'), preguntas: t('Preguntas', 'Questions') };
+// Icono y detalle de cada destino del menú de celular, por la `key` del enlace (links.js).
+const CHAPTERS = {
+  projects: { icon: PanelsTopLeft, detail: t('Capturas y código real', 'Real screens and code') },
+  systems: { icon: Layers3, detail: t('Webs, reservas y software a medida', 'Websites, bookings and custom software') },
+  automation: { icon: Workflow, detail: t('Excel, Power Automate y Python', 'Excel, Power Automate and Python') },
+  finance: { icon: ChartNoAxesCombined, detail: t('Power BI y análisis financiero', 'Power BI and financial analysis') },
+  intelligence: { icon: BrainCircuit, detail: t('Asistentes y modelos predictivos', 'Assistants and predictive models') },
+  marketing: { icon: Sparkles, detail: t('Redes, contenido y Meta Ads', 'Social media, content and Meta Ads') },
+  pricing: { icon: Tag, detail: t('Paquetes con precio publicado', 'Packages with published pricing') },
+};
+const SECTION_NAMES = { top: t('El estudio', 'The studio'), servicios: t('Servicios', 'Services'), equipo: t('El equipo', 'The team'), proceso: t('El proceso', 'Our process'), cotizar: t('Cotizador', 'Estimator'), ideas: t('Ideas', 'Insights'), preguntas: t('Preguntas', 'Questions'), contacto: t('Contacto', 'Contact') };
 
 const Brand = ({ onClick, className = '' }) => (
   <a href="#top" onClick={onClick} className={`jca-brand ${className}`} aria-label={t('JC Analytics — inicio', 'JC Analytics — home')}>
@@ -148,7 +149,8 @@ const Nav = () => {
   }, [open, reduce]);
 
   const openMenu = (event) => { btnRef.current = event.currentTarget; setOpen(true); };
-  const visit = (event, href) => { event.preventDefault(); destinationRef.current = href; setOpen(false); };
+  // Un ancla de la portada se visita al cerrar el menú (con foco y desplazamiento); otra página navega normal.
+  const visit = (event, href) => { if (!href.startsWith('#')) { setOpen(false); return; } event.preventDefault(); destinationRef.current = href; setOpen(false); };
   const currentIndex = NAV_LINKS.findIndex(link => link.href === active);
   const currentName = NAV_LINKS[currentIndex]?.label ?? SECTION_NAMES[active.slice(1)] ?? t('El estudio', 'The studio');
 
@@ -210,11 +212,11 @@ const Nav = () => {
               {NAV_LINKS.map((link, index) => (
                 <motion.a key={link.href} href={link.href} onClick={(event) => visit(event, link.href)} initial={reduce ? false : { y: 18, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.12 + index * 0.045, duration: 0.45, ease: EASE }} aria-current={active === link.href ? 'location' : undefined}>
-                  <span className="jca-menu__number">0{index + 1}</span><span className="jca-menu__icon" aria-hidden="true">{(() => { const Icon = CHAPTERS[index].icon; return <Icon size={22} strokeWidth={1.3} />; })()}</span><span>{link.label}<small>{CHAPTERS[index].detail}</small></span><ArrowUpRight size={24} strokeWidth={1.3} aria-hidden="true" />
+                  <span className="jca-menu__number">0{index + 1}</span><span className="jca-menu__icon" aria-hidden="true">{(() => { const Icon = CHAPTERS[link.key].icon; return <Icon size={22} strokeWidth={1.3} />; })()}</span><span>{link.label}<small>{CHAPTERS[link.key].detail}</small></span><ArrowUpRight size={24} strokeWidth={1.3} aria-hidden="true" />
                 </motion.a>
               ))}
             </nav>
-            <div className="jca-menu__shortcuts"><a href="#cotizar" onClick={(event) => visit(event, '#cotizar')}>{t('Estimar mi proyecto', 'Estimate my project')} <ArrowRight size={15} aria-hidden="true" /></a><a href="#equipo" onClick={(event) => visit(event, '#equipo')}>{t('El equipo', 'The team')} <ArrowRight size={15} aria-hidden="true" /></a><a href={journalPath(locale)} onClick={() => setOpen(false)}>{t('Ideas', 'Insights')} <ArrowRight size={15} aria-hidden="true" /></a></div>
+            <div className="jca-menu__shortcuts"><a href="#cotizar" onClick={(event) => visit(event, '#cotizar')}>{t('Estimar mi proyecto', 'Estimate my project')} <ArrowRight size={15} aria-hidden="true" /></a><a href="#contacto" onClick={(event) => visit(event, '#contacto')}>{t('Contacto', 'Contact')} <ArrowRight size={15} aria-hidden="true" /></a><a href="#equipo" onClick={(event) => visit(event, '#equipo')}>{t('El equipo', 'The team')} <ArrowRight size={15} aria-hidden="true" /></a><a href={journalPath(locale)} onClick={() => setOpen(false)}>{t('Ideas', 'Insights')} <ArrowRight size={15} aria-hidden="true" /></a></div>
             <div className="jca-menu__bottom">
               <a href={wa(t('Hola, quiero cotizar un proyecto con JC Analytics.', 'Hi, I would like a project estimate from JC Analytics.'))} target="_blank" rel="noreferrer" onClick={() => setOpen(false)} className="jca-menu__contact">
                 {t('Conversemos sobre tu idea', "Let's talk about your idea")}<span aria-hidden="true"><ArrowUpRight size={21} /></span>

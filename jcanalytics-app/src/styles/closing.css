@@ -197,3 +197,14 @@
   .team-member:hover .team-member__image, .contact-submit:hover .contact-submit__arrow, .team-member__link:hover svg, .contact-people__link:hover svg { transform: none; }
 }
 .contact-need__check--hidden { opacity: 0; }
+
+/* Cuatro compromisos (2 de noviembre de 2026): misma retícula del proceso, en cuatro columnas. */
+.process-sequence--promises { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.process-sequence--promises .process-step__content { padding-right: 2rem; }
+.process-sequence--promises .process-step h3 { font-size: clamp(1.35rem, 1.75vw, 1.7rem); line-height: 1.15; }
+.process-sequence--promises .process-step p { font-size: .95rem; line-height: 1.6; }
+.process-action__portal { display: inline-flex; align-items: center; gap: .5rem; min-height: 2.75rem; color: #07838c; font-size: .9rem; font-weight: 500; }
+.process-action__portal svg { transition: transform 400ms cubic-bezier(.22, 1, .36, 1); }
+.process-action__portal:hover svg { transform: translate(3px, -3px); }
+@media (max-width: 1099px) { .process-sequence--promises { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 1.5rem; } .process-sequence--promises .process-step:nth-child(3) .process-step__content { padding-left: 0; } }
+@media (max-width: 767px) { .process-sequence--promises { grid-template-columns: 1fr; } .process-sequence--promises .process-step .process-step__content { padding-left: 0; } .process-action { flex-direction: column; align-items: flex-start; gap: 1rem; } }
