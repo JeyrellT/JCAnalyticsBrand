@@ -97,3 +97,10 @@ Temas pendientes por falta de fuentes primarias verificadas (2026-10-20). Public
 - **Costa Rica y automatización (contexto, sin verificar):** la búsqueda solo devuelve de nuevo réplicas del estudio de Grupo CMA (43 %), el Plan Táctico 2026 de la Oficina de Suministros de la UCR (mejora continua en el sector público, PDF en osum.ucr.ac.cr) y una nota de delfino.cr de agosto 2026 sobre competitividad y automatización industrial. Una revista citaría 60 % de empleos en riesgo por automatización en Costa Rica: cifra sin fuente original. Sin eventos de noviembre distintos del congreso CICR del 18 nov.
 - **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001).
 - **Agentes de IA, técnicas sin tecnología:** sin cambios; siguen pendientes los anuncios oficiales de OpenAI, Salesforce, UiPath y Microsoft. Revisar tras el congreso CICR del 18 nov.
+
+## Actualización 2026-11-03
+
+- **Sin entrada nueva hoy:** pmc.ncbi.nlm.nih.gov sigue sin resolverse desde este entorno (WebFetch: ENOTFOUND; hay que permitir ese dominio, además de justice.gov y openai.com, en la red de la sesión), así que no hay lectura directa del artículo del OIJ; se acumula para mañana.
+- **Agentes de IA y automatización:** una búsqueda sobre anuncios oficiales de noviembre 2026 solo devuelve material genérico de proveedores (Beam, Automation Anywhere, agencias) y un artículo de CIO que menciona Agentforce sin fecha nueva. Nada verificable; siguen pendientes los comunicados de OpenAI, Salesforce, UiPath y Microsoft.
+- **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001).
+- **Costa Rica y automatización, técnicas sin tecnología:** sin cambios. Revisar tras el congreso CICR del 18 nov.
