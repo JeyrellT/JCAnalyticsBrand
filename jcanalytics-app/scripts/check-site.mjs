@@ -610,6 +610,16 @@ async function checkMenu(page, language) {
   assert.equal(await page.$eval('main', (node) => node.inert), false, 'Closing menu restores page interaction');
 }
 
+// Each line of the hero headline must end inside its mask: the italic line was cut from 1600 px up until 3 November 2026.
+async function heroTitleOverflow(page) {
+  await page.evaluate(() => document.fonts.ready);
+  return page.$$eval('#hero-title > span > span', (blocks) => Math.max(...blocks.map((block) => {
+    const range = document.createRange();
+    range.selectNodeContents(block);
+    return Math.max(...[...range.getClientRects()].map((rect) => rect.right)) - block.getBoundingClientRect().right;
+  })));
+}
+
 async function checkVisibleText(page, selectors) {
   for (const selector of selectors) {
     assert.ok(await page.$eval(selector, (node) => {
@@ -681,6 +691,12 @@ async function checkStaticRoute(browser, origin, route, snapshots) {
       assert.ok((await page.$eval('#contacto', (node) => node.innerText)).includes(COPY[language].name));
       await checkVisibleText(page, ['#contacto h2', '#paquetes h2']);
       assert.equal(await page.$('#cotizar'), null, 'The live estimator left the home page (3 November 2026)');
+      for (const width of [1440, 1920, 2560]) {
+        await page.setViewport({ width, height: 1000, deviceScaleFactor: 1 });
+        const overflow = await heroTitleOverflow(page);
+        assert.ok(overflow <= 1, `Hero headline fits its column at ${width}px (${Math.round(overflow)}px past the edge)`);
+      }
+      await page.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 1 });
       const details = await page.$$('#preguntas details');
       assert.ok(details.length >= 2, 'FAQ content must be present in static HTML');
       assert.ok(compact(await details[0].evaluate((node) => node.querySelector('summary').textContent)).includes(COPY[language].faqQuestion));
