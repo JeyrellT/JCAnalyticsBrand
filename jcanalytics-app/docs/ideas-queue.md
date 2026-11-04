@@ -104,3 +104,11 @@ Temas pendientes por falta de fuentes primarias verificadas (2026-10-20). Public
 - **Agentes de IA y automatización:** una búsqueda sobre anuncios oficiales de noviembre 2026 solo devuelve material genérico de proveedores (Beam, Automation Anywhere, agencias) y un artículo de CIO que menciona Agentforce sin fecha nueva. Nada verificable; siguen pendientes los comunicados de OpenAI, Salesforce, UiPath y Microsoft.
 - **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001).
 - **Costa Rica y automatización, técnicas sin tecnología:** sin cambios. Revisar tras el congreso CICR del 18 nov.
+
+## Actualización 2026-11-04
+
+- **Sin entrada nueva hoy:** pmc.ncbi.nlm.nih.gov, justice.gov y openai.com siguen sin resolverse desde este entorno (curl: sin conexión; hay que permitir esos dominios en la red de la sesión), así que no hay lectura directa de las fuentes primarias; se acumula para mañana.
+- **Agentes de IA y automatización:** la búsqueda no devuelve comunicados fechados en noviembre 2026. Solo réplicas de ecosistemastartup.com con cifras atribuidas a CompTIA (62 % probando agentes) y Gartner (40 % de aplicaciones empresariales con agentes a fines de 2026), y una publicación de LinkedIn que advierte que más del 40 % de los proyectos de IA agéntica podría cancelarse; esta última es de baja calidad. Confirmar las tres cifras en los informes originales de CompTIA y Gartner. En la sala de prensa de Automation Anywhere lo más reciente es de mayo-junio 2026.
+- **Lean Six Sigma Costa Rica:** sin eventos de noviembre distintos del congreso CICR del 18 nov. Sin cambios en CITEC/CFIA.
+- **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001).
+- **Costa Rica y automatización, técnicas sin tecnología:** sin cambios. Revisar tras el congreso CICR del 18 nov.
