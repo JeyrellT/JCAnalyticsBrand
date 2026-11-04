@@ -108,6 +108,7 @@ Pendientes de la reunión: colores y redacción definitiva del eslogan.
 | El objeto 3D no decía nada del trabajo. En celular ya se mostraban pantallas reales. | El hero muestra la misma idea en los dos dispositivos: en computadora una laptop con la captura de escritorio (1440 px) de seis proyectos reales y en celular un teléfono con la captura móvil (390 px) de la misma pantalla. El navegador elige la captura con `<picture>`, así el HTML estático es idéntico. Rotación cada 3,6 s con pausa, «Siguiente», barra de progreso y la dirección pública del sitio cuando existe. Sale la dependencia de three.js. | `Hero.jsx`, `hero.css`, `mobile.css`, `package.json` |
 | Sin la banda oscura del cotizador, Paquetes y Equipo se leían como una sola sección. | Equipo toma el tono verde claro del proceso. | `studio.css` |
 | La tarjeta de marketing recortaba el titular de la pieza. | La pieza vertical se recorta hacia la foto. | `Categories.jsx`, `categories.css` |
+| En pantallas de 1600 px o más la línea «con entrega a tiempo.» se cortaba: el titular crecía con el ancho de la ventana pero la columna se detiene en 1336 px. | El tamaño del titular tiene tope en 5.4rem (el de 1440 px) y la línea en cursiva puede partirse en vez de cortarse. `check:site` mide que cada línea del titular quepa a 1440, 1920 y 2560 px. | `hero.css`, `check-site.mjs` |
 
 Pruebas: `check:site` ya no ejercita el cotizador y comprueba que `#cotizar` no exista en el HTML estático de la
 portada. La asistente se sincronizó con los textos nuevos (`sync:assistant`). Los datos para las campañas están
