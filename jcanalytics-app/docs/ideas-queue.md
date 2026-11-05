@@ -112,3 +112,10 @@ Temas pendientes por falta de fuentes primarias verificadas (2026-10-20). Public
 - **Lean Six Sigma Costa Rica:** sin eventos de noviembre distintos del congreso CICR del 18 nov. Sin cambios en CITEC/CFIA.
 - **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001).
 - **Costa Rica y automatización, técnicas sin tecnología:** sin cambios. Revisar tras el congreso CICR del 18 nov.
+
+## Actualización 2026-11-05
+
+- **Sin entrada nueva hoy:** pmc.ncbi.nlm.nih.gov, justice.gov, openai.com y salesforce.com siguen sin resolverse desde este entorno (WebFetch: ENOTFOUND; curl: sin conexión; hay que permitir esos dominios en la red de la sesión), así que no hay lectura directa de fuentes primarias; se acumula para mañana.
+- **Costa Rica y automatización:** una búsqueda sobre noviembre 2026 solo devuelve de nuevo réplicas del estudio de Grupo CMA (43 %), una nota de La Nación sobre centros de servicios que automatizan y reubican personal en tareas más complejas (leer la nota original para fecha y datos), una nota de Empresas & Management sobre industria 4.0 y un blog de g-talent.net (proveedor de cursos). Sin eventos de noviembre distintos del congreso CICR del 18 nov.
+- **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001).
+- **Agentes de IA, técnicas sin tecnología:** sin cambios; siguen pendientes los anuncios oficiales de OpenAI, Salesforce, UiPath y Microsoft. Revisar tras el congreso CICR del 18 nov.
