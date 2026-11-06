@@ -119,3 +119,10 @@ Temas pendientes por falta de fuentes primarias verificadas (2026-10-20). Public
 - **Costa Rica y automatización:** una búsqueda sobre noviembre 2026 solo devuelve de nuevo réplicas del estudio de Grupo CMA (43 %), una nota de La Nación sobre centros de servicios que automatizan y reubican personal en tareas más complejas (leer la nota original para fecha y datos), una nota de Empresas & Management sobre industria 4.0 y un blog de g-talent.net (proveedor de cursos). Sin eventos de noviembre distintos del congreso CICR del 18 nov.
 - **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001).
 - **Agentes de IA, técnicas sin tecnología:** sin cambios; siguen pendientes los anuncios oficiales de OpenAI, Salesforce, UiPath y Microsoft. Revisar tras el congreso CICR del 18 nov.
+
+## Actualización 2026-11-06
+
+- **Sin entrada nueva hoy:** pmc.ncbi.nlm.nih.gov sigue sin resolverse desde este entorno (WebFetch: ENOTFOUND; hay que permitir ese dominio, además de justice.gov y openai.com, en la red de la sesión), así que no hay lectura directa de fuentes primarias; se acumula para mañana.
+- **Costa Rica y automatización:** la búsqueda sobre noviembre 2026 no devuelve nada fechado en noviembre. Reaparecen las réplicas del estudio de Grupo CMA (43 %), el Plan Táctico 2026 de la Oficina de Suministros de la UCR, la nota de delfino.cr de agosto 2026 sobre competitividad y automatización industrial, notas de La Nación y El Financiero (leer los originales para fecha y datos) y una oferta de empleo de ManpowerGroup (sin valor como fuente).
+- **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001).
+- **Agentes de IA, técnicas sin tecnología:** sin cambios; siguen pendientes los anuncios oficiales de OpenAI, Salesforce, UiPath y Microsoft. Revisar tras el congreso CICR del 18 nov.
