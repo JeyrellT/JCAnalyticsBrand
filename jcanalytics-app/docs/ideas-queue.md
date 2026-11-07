@@ -126,3 +126,11 @@ Temas pendientes por falta de fuentes primarias verificadas (2026-10-20). Public
 - **Costa Rica y automatización:** la búsqueda sobre noviembre 2026 no devuelve nada fechado en noviembre. Reaparecen las réplicas del estudio de Grupo CMA (43 %), el Plan Táctico 2026 de la Oficina de Suministros de la UCR, la nota de delfino.cr de agosto 2026 sobre competitividad y automatización industrial, notas de La Nación y El Financiero (leer los originales para fecha y datos) y una oferta de empleo de ManpowerGroup (sin valor como fuente).
 - **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001).
 - **Agentes de IA, técnicas sin tecnología:** sin cambios; siguen pendientes los anuncios oficiales de OpenAI, Salesforce, UiPath y Microsoft. Revisar tras el congreso CICR del 18 nov.
+
+## Actualización 2026-11-07
+
+- **Sin entrada nueva hoy:** pmc.ncbi.nlm.nih.gov, justice.gov, openai.com y salesforce.com siguen sin resolverse desde este entorno (WebFetch: ENOTFOUND; curl: sin conexión; hay que permitir esos dominios en la red de la sesión), así que no hay lectura directa de fuentes primarias; se acumula para mañana.
+- **Agentes de IA y automatización (por confirmar):** una búsqueda sitúa el 7 oct 2026 un anuncio de Automation Anywhere (adquisición de Boost.ai y Automation 360 v.42 con soporte de Model Context Protocol) y la versión 2026.1 de JobRouter (Aptean) con agentes de IA integrados en flujos. Son resultados de búsqueda y comunicados de proveedor: confirmar en automationanywhere.com y en la página de Aptean antes de publicar. Las dos notas "November 2026" de blog.mean.ceo son análisis de opinión, sin anuncios concretos.
+- **Costa Rica y automatización:** sin material fechado en noviembre. Reaparecen las réplicas del estudio de Grupo CMA (43 %), el foro CICR de abril 2026 y las ofertas de CITEC (Yellow Belt, ago-sep). Un artículo advierte que en procesos sensibles la automatización debe asistir y no decidir sola (sin fuente original localizada).
+- **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001).
+- **Técnicas sin tecnología:** sin cambios. Revisar tras el congreso CICR del 18 nov.
