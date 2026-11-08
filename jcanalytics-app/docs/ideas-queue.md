@@ -134,3 +134,10 @@ Temas pendientes por falta de fuentes primarias verificadas (2026-10-20). Public
 - **Costa Rica y automatización:** sin material fechado en noviembre. Reaparecen las réplicas del estudio de Grupo CMA (43 %), el foro CICR de abril 2026 y las ofertas de CITEC (Yellow Belt, ago-sep). Un artículo advierte que en procesos sensibles la automatización debe asistir y no decidir sola (sin fuente original localizada).
 - **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001).
 - **Técnicas sin tecnología:** sin cambios. Revisar tras el congreso CICR del 18 nov.
+
+## Actualización 2026-11-08
+
+- **Sin entrada nueva hoy:** pmc.ncbi.nlm.nih.gov sigue sin resolverse desde este entorno (WebFetch: ENOTFOUND; curl: sin conexión; hay que permitir ese dominio, además de justice.gov y openai.com, en la red de la sesión), así que no hay lectura directa del artículo del OIJ; se acumula para mañana.
+- **Costa Rica y automatización (por verificar):** la búsqueda no devuelve nada fechado en noviembre. Aparecen de nuevo el estudio de Grupo CMA (43 %, solo en réplicas), un informe de CINDE ("Estadísticas Vitales: Carreras de Mayor Demanda 2026": las multinacionales priorizan perfiles de ingeniería, datos y automatización), la jornada del CFIA sobre transformación digital y automatización industrial (agosto 2026), una nota de La Nación/QCostarica sobre call centers que pasan de atender llamadas a programar y supervisar bots (marzo 2026) y un curso de CITEC sobre IA y automatización de procesos sin fecha. Leer los originales de CINDE y CFIA para citar con precisión.
+- **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001).
+- **Agentes de IA, técnicas sin tecnología:** sin cambios; siguen pendientes los anuncios oficiales de OpenAI, Salesforce, UiPath, Microsoft y Automation Anywhere. Revisar tras el congreso CICR del 18 nov.
