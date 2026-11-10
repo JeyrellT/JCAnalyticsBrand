@@ -17,7 +17,7 @@ const _MOTION = motion;
 const CHAPTERS = {
   projects: { icon: PanelsTopLeft, detail: t('Sistemas reales, con sus pantallas', 'Real systems, with their screens') },
   systems: { icon: Layers3, detail: t('Webs, reservas y software a medida', 'Websites, bookings and custom software') },
-  automation: { icon: Workflow, detail: t('Tareas repetidas, hechas solas', 'Repeated tasks, done automatically') },
+  automation: { icon: Workflow, detail: t('Tareas repetidas que se hacen solas', 'Repeated tasks, done automatically') },
   finance: { icon: ChartNoAxesCombined, detail: t('Power BI y análisis financiero', 'Power BI and financial analysis') },
   intelligence: { icon: BrainCircuit, detail: t('Asistentes y modelos predictivos', 'Assistants and predictive models') },
   marketing: { icon: Sparkles, detail: t('Redes, contenido y Meta Ads', 'Social media, content and Meta Ads') },

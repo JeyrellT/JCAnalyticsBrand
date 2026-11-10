@@ -144,7 +144,7 @@ Lo que cambia respecto de las secciones anteriores de este documento:
   (`#hoja-pagina_web.ia.whatsapp`), abrirlo agrega una entrada al historial («atrás» lo cierra) y el PDF sale en
   una página con los cuatro compromisos.
 - **«Tu caso en una frase» dura toda la visita** (`components/site/case.js`, en `sessionStorage`): la respuesta
-  trae precio y plazo, cotizar es el botón verde, la tarjeta del paquete más cercano lleva «El de tu caso» y los
+  trae precio y plazo, cotizar es el botón verde, la tarjeta del paquete más cercano lleva «El más cercano a tu caso» y los
   pedidos y «Cotizar» salen con la frase. Nada de eso llega a las plataformas de anuncios.
 - **Un solo mensaje de paquete** en portada, detalle y páginas de servicio (`packageMessage`): cierra con «¿Me
   confirman si calza con mi caso?» y la línea abierta «Mi negocio:». En computadora el formulario corto ofrece

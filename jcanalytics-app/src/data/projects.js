@@ -68,8 +68,8 @@ export const PROJECTS = [
       'A weekend burrito restaurant selling through WhatsApp needed to take orders without mandatory accounts, charge by SINPE without checking receipts by hand and let the kitchen see every order instantly.',
     ),
     built: t(
-      'Un menú en línea donde el cliente arma su pedido desde el celular y paga sin que nadie revise comprobantes a mano. La cocina ve cada pedido al instante en una tablet, el inventario se descuenta según la receta de cada plato, hay un programa de puntos para clientes frecuentes y el dueño ve sus ventas en un panel.',
-      'An online menu where customers build their order on their phone and pay without anyone checking receipts by hand. The kitchen sees every order instantly on a tablet, stock is deducted by each dish’s recipe, there is a points program for regulars and the owner sees sales on a panel.',
+      'Un menú en línea donde el cliente arma su pedido desde el celular y paga por SINPE: el sistema empareja cada pago con su pedido y, si hay duda, lo revisa una persona. La cocina ve cada pedido al instante en una tablet, el inventario se lleva por receta y proyecta cuánto preparar de viernes a domingo, hay un programa de puntos para clientes frecuentes y el dueño ve sus ventas en un panel.',
+      'An online menu where customers build their order on their phone and pay by SINPE: the system matches each payment to its order and, when in doubt, a person reviews it. The kitchen sees every order instantly on a tablet, stock is tracked by recipe and projects how much to prep from Friday to Sunday, there is a points program for regulars and the owner sees sales on a panel.',
     ),
     features: t(
       ['Cotización y pedido autoritativos en la API: el navegador nunca decide precios ni disponibilidad', 'Tablet de cocina con eventos en vivo (SSE), estaciones, alertas de audio y retrocesos permitidos', 'SINPE por ONVO Pay con emparejamiento por código, monto y teléfono; si hay duda, lo revisa una persona', 'Modo degradado: el menú sigue abierto aunque la API no responda'],

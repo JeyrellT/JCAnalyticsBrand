@@ -82,7 +82,8 @@ consultas. Detalle y criterios en [estrategia de conversión](estrategia-convers
 | Volver de WhatsApp y dejar el número en la hoja «¿Pudiste enviar tu mensaje?» (`whatsapp-retorno`) | solo `lead_submit` (el toque a WhatsApp ya contó) | `Lead` | — (el toque ya avisó) |
 | Clic a WhatsApp **después** de una consulta aceptada en la misma visita | solo `contact_click` con `after_lead: true` (no es otra persona) | — | — |
 | Segundo clic a WhatsApp en la misma visita (otro botón, o «Volver a WhatsApp» de la hoja de retorno) | solo `contact_click` con `repeat: true` | — | — |
-| Clic a WhatsApp hecho antes de que la página termine de cargar | se guarda y se mide al montar (en computadora abre el formulario corto) | igual que arriba | igual que arriba |
+| Primer clic a WhatsApp después de **otro clic en un anuncio** (la dirección trae un `gclid`, `gbraid`, `wbraid` o `fbclid` que esta pestaña no había visto) | cuenta de nuevo: es otra visita | `Contact` | `lead_created` |
+| Clic a WhatsApp hecho antes de que la página termine de cargar | se guarda y se mide al montar. En computadora se retiene y abre el formulario corto (`cta_mode: form`); en celular, o con Ctrl+clic, ya siguió a WhatsApp y cuenta como clic directo, sin tope de tiempo | igual que la fila que corresponda | igual |
 
 Nunca viajan nombres, teléfonos, correos ni texto libre: solo canal, sección, paquete, idioma, fuente y la
 etiqueta estable del botón (`cta_id`, por ejemplo `Paquetes · Lo quiero · pagina_web`). Desde el 10 de noviembre
@@ -91,7 +92,13 @@ portada y en las páginas de servicio, en los dos idiomas: `package_id` en Googl
 Antes las páginas de servicio enviaban el nombre en español («Web con reservas») y las etiquetas llevaban el
 nombre traducido, así que un mismo paquete aparecía en dos o tres filas; el historial anterior a esa fecha
 conserva los nombres viejos. También desde esa fecha se cuenta **una conversión de «Clic WhatsApp» por
-visita**. El píxel de Meta
+visita**. Una visita es la pestaña del navegador (`sessionStorage`) hasta que llega **otro clic en un anuncio**:
+en un celular la pestaña vive días, y quien vuelve por un anuncio nuevo tiene que contar para ese anuncio. Al
+llegar un identificador de clic que la pestaña no había visto se reinician las marcas de la visita (`jc_wa`,
+`jc_lead` y la de la hoja de retorno); recargar, o volver atrás a la dirección de un anuncio ya visto, no
+reinicia nada. El identificador se guarda solo en ese navegador (`jc_click`). Meta agrega `fbclid` también a
+enlaces que no son anuncios (una publicación, un enlace compartido): cuenta igual, es una llegada nueva desde
+afuera. Las visitas de ChatGPT no traen identificador de clic: ahí la visita sigue siendo la pestaña. El píxel de Meta
 tiene apagada la configuración automática (`autoConfig`): no lee por su cuenta el texto ni el destino de los
 botones, que en los enlaces de contacto incluyen el nombre y el mensaje de la persona.
 

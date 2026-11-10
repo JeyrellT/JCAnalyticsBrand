@@ -10,7 +10,7 @@
 //
 //  Ahora la elección queda en sessionStorage y la usan:
 //    · los mensajes ya escritos de paquetes y de «Cotizar» (salen con la frase);
-//    · la tarjeta del paquete más cercano (insignia «El de tu caso»);
+//    · la tarjeta del paquete más cercano (insignia «El más cercano a tu caso»);
 //    · el explorador de proyectos (abre en el proyecto de ese giro);
 //    · el detalle del paquete (ofrece el proyecto real de ese giro).
 //
@@ -31,7 +31,9 @@ export const BUSINESSES = [
   { id: 'barberia', label: t('una barbería o salón', 'a barbershop or salon'), project: 'barberxcr', screen: 'dashboard' },
   { id: 'taller', label: t('un taller', 'a repair or body shop'), project: 'maison', screen: 'operacion' },
   { id: 'transporte', label: t('una empresa de transporte', 'a transport company'), project: 'transportesluna', screen: 'admin' },
-  { id: 'distribuidora', label: t('una distribuidora', 'a distribution business'), project: 'silglobal', screen: 'catalogo' },
+  // `note`: cuando el proyecto del giro no es «un sistema más amplio» que un paquete, se dice qué es.
+  { id: 'distribuidora', label: t('una distribuidora', 'a distribution business'), project: 'silglobal', screen: 'catalogo',
+    note: t('Es un sitio web con catálogo y cotización por WhatsApp, sin sistema detrás: no equivale al paquete.', 'It is a website with a catalogue and WhatsApp quotes, with no system behind it: it is not equivalent to the package.') },
   { id: 'tienda', label: t('una tienda o comercio', 'a shop or store'), project: 'multiagencia', screen: 'tienda' },
   { id: 'servicios', label: t('una empresa de servicios', 'a services company'), project: 'crimson', screen: 'inicio' },
   { id: 'otro', label: t('otro tipo de negocio', 'another kind of business'), project: null },
@@ -41,7 +43,7 @@ export const GOALS = [
   { id: 'vender', label: t('recibir pedidos o reservas en línea', 'take orders or bookings online'), category: 'web-development', need: 'Página web', pkg: 'pagina_web' },
   { id: 'ordenar', label: t('ordenar mi operación en un sistema', 'run my operation in one system'), category: 'web-development', need: 'Sistema / backend', pkg: 'software_medida' },
   { id: 'automatizar', label: t('dejar de repetir tareas a mano', 'stop repeating tasks by hand'), category: 'process-automation', need: 'Automatización', pkg: 'power_automate' },
-  { id: 'numeros', label: t('ver mis números al día', 'see my numbers up to date'), category: 'business-intelligence', need: 'Dashboard', pkg: 'dashboard_inicial' },
+  { id: 'numeros', label: t('ver mis números al día', 'see up-to-date numbers'), category: 'business-intelligence', need: 'Dashboard', pkg: 'dashboard_inicial' },
   { id: 'ia', label: t('usar IA en una tarea concreta', 'use AI on one specific task'), category: 'ai-integration', need: 'Integración de IA', pkg: 'asistente_ia_documental' },
   { id: 'clientes', label: t('que más gente conozca mi negocio', 'get more people to know my business'), category: 'digital-marketing', need: 'Marketing digital', pkg: null },
 ];

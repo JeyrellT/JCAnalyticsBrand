@@ -42,6 +42,32 @@ const WA_KEY = 'jc_wa';
 const whatsappCounted = () => { try { return window.sessionStorage.getItem(WA_KEY) === '1'; } catch { return false; } };
 const rememberWhatsapp = () => { try { window.sessionStorage.setItem(WA_KEY, '1'); } catch { /* sin almacenamiento: queda la ventana de 3 s */ } };
 
+// Un clic nuevo en un anuncio empieza otra visita. sessionStorage dura lo que dure la pestaña (días en un celular)
+// y sobrevive a salir y volver: sin esto, quien regresaba por otro anuncio ya no contaba para ese anuncio, ni en
+// WhatsApp ni al dejar sus datos (revisión de código, nov. 2026). Se recuerdan los identificadores ya vistos para
+// que recargar o volver atrás a la dirección de un anuncio anterior no reinicie nada. No son datos de la persona:
+// es el identificador de clic que la plataforma puso en la dirección, y no sale de este navegador. Meta agrega
+// `fbclid` también a los enlaces que no son anuncios (una publicación, un enlace compartido): es igualmente una
+// llegada nueva desde afuera.
+const CLICK_KEY = 'jc_click';
+const CLICKS_KEPT = 8;
+const RETURN_KEY = 'jc_wa_return'; // lo escribe ui/WhatsAppReturn.jsx: la hoja «¿Pudiste enviar tu mensaje?» sale una vez por visita
+function newAdClickStartsAVisit() {
+  if (typeof window === 'undefined') return;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const click = (params.get('gclid') || params.get('gbraid') || params.get('wbraid') || params.get('fbclid') || '').slice(-48);
+    if (!click) return;
+    let seen = [];
+    try { seen = JSON.parse(window.sessionStorage.getItem(CLICK_KEY) || '[]'); } catch { /* dato viejo: se empieza de cero */ }
+    if (!Array.isArray(seen)) seen = [];
+    if (seen.includes(click)) return;
+    window.sessionStorage.setItem(CLICK_KEY, JSON.stringify([...seen, click].slice(-CLICKS_KEPT)));
+    for (const key of [WA_KEY, LEAD_KEY, RETURN_KEY]) window.sessionStorage.removeItem(key);
+  } catch { /* sin almacenamiento: queda la ventana de 3 s */ }
+}
+newAdClickStartsAVisit();
+
 const trafficSource = () => ATTRIBUTION?.source ?? 'directo';
 const eventId = (prefix) => `${prefix}_${window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
 

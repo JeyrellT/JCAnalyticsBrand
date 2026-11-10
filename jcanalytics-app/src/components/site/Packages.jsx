@@ -22,7 +22,7 @@
 //      el enlace (#hoja-<clave>.ia.<agregado>).
 //    · Llegar a #paquete-<clave> deja la tarjeta debajo de la barra fija, no
 //      detrás (scroll.js), y la tarjeta del paquete más cercano a «Tu caso en
-//      una frase» lleva la insignia «El de tu caso».
+//      una frase» lleva la insignia «El más cercano a tu caso».
 //  Los montos, plazos y alcances salen de portal/shared/service-pricing.js.
 // ============================================================================
 import { useEffect, useRef, useState } from 'react';
@@ -177,13 +177,13 @@ const Packages = () => {
                   <span className="package-card__category">{categoryName(item.category)}</span>
                   <div className="package-card__top">
                     <h3>{item.name}</h3>
-                    {(fromCase || fromAd || item.badge) && <span className="package-card__badge">{fromCase ? t('El de tu caso', 'The one for your case') : fromAd ? t('El que viste en el anuncio', 'The one from the ad') : item.badge}</span>}
+                    {(fromCase || fromAd || item.badge) && <span className="package-card__badge">{fromCase ? t('El más cercano a tu caso', 'Closest to your case') : fromAd ? t('El que viste en el anuncio', 'The one from the ad') : item.badge}</span>}
                   </div>
                   <p className="package-card__pitch">{item.pitch}</p>
                   <p className="package-card__price"><strong>{item.priceLabel}</strong><span>{t('pago único + IVA', 'one-time + tax')} · ≈ {item.colones}</span></p>
                   {/* Solo en celular: la cabecera despliega el detalle. En computadora la tarjeta siempre está abierta. */}
                   {mobile && <button type="button" className="package-card__toggle" aria-expanded={expanded} aria-controls={`detalle-${item.key}`} onClick={() => toggle(item.key, expanded)}
-                    aria-label={t(`${expanded ? 'Ocultar' : 'Ver'} el detalle de ${item.name}`, `${expanded ? 'Hide' : 'Show'} details for ${item.name}`)} data-track-label={`Paquetes · Desplegar ${item.key}`}><ChevronDown size={20} aria-hidden="true" /></button>}
+                    aria-label={t(`${expanded ? 'Plegar' : 'Desplegar'} ${item.name}`, `${expanded ? 'Collapse' : 'Expand'} ${item.name}`)} data-track-label={`Paquetes · Desplegar ${item.key}`}><ChevronDown size={20} aria-hidden="true" /></button>}
                 </div>
                 <div className="package-card__body" id={`detalle-${item.key}`} hidden={!expanded}>
                   <p className="package-card__fact"><Clock3 size={14} aria-hidden="true" /><span>{t('Entrega:', 'Delivery:')} {item.time}</span></p>

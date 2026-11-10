@@ -140,8 +140,8 @@ function Sheet({ item, initial, close, onSwitch }) {
     if (next !== window.location.hash) window.history.replaceState(window.history.state, '', `${here()}${next}`);
   }, [item, withAi, picked]);
 
-  const toggleAi = () => { setTouched(true); setWithAi((value) => !value); };
-  const toggle = (key) => { setTouched(true); setPicked((list) => (list.includes(key) ? list.filter((value) => value !== key) : [...list, key])); };
+  const toggleAi = () => { setTouched(true); setCopied(false); setWithAi((value) => !value); };
+  const toggle = (key) => { setTouched(true); setCopied(false); setPicked((list) => (list.includes(key) ? list.filter((value) => value !== key) : [...list, key])); };
 
   // Imprimir o guardar en PDF: se imprime una copia del detalle, sola en el documento. Antes se ocultaba el
   // resto del sitio con visibility y el PDF salía con todas sus páginas en blanco detrás.
@@ -159,8 +159,8 @@ function Sheet({ item, initial, close, onSwitch }) {
   };
   const share = async () => {
     const text = t(
-      `${item.name} de JC Analytics: ${money(total)} + IVA${marks ? ` (${marks})` : ''}, entrega en ${item.time}.`,
-      `${item.name} by JC Analytics: ${money(total)} + tax${marks ? ` (${marks})` : ''}, delivered in ${item.time}.`,
+      `${item.name} de JC Analytics: ${money(total)} + IVA, entrega en ${item.time}.${marks ? ` Incluye: ${marks}.` : ''}`,
+      `${item.name} by JC Analytics: ${money(total)} + tax, delivered in ${item.time}.${marks ? ` Includes: ${marks}.` : ''}`,
     );
     const url = `${window.location.origin}${window.location.pathname}${sheetHash(item, { withAi, picked })}`;
     try {
@@ -218,14 +218,14 @@ function Sheet({ item, initial, close, onSwitch }) {
       <legend>{t('Opcional, con precio publicado', 'Optional, at a published price')}</legend>
       {item.ai && (
         <label className={withAi ? 'is-on' : ''}>
-          <input type="checkbox" checked={withAi} onChange={toggleAi} data-track-label="Hoja · Con IA" />
+          <input type="checkbox" checked={withAi} onChange={toggleAi} data-track-label={`Hoja · ${item.key} · Con IA`} />
           <span><strong>{t('Con IA', 'With AI')}</strong>{item.ai.scope}<small>{t(`Total con IA: ${money(item.ai.total)} en vez de ${item.priceLabel} (reemplaza al precio base; no se suma).`, `Total with AI: ${money(item.ai.total)} instead of ${item.priceLabel} (it replaces the base price; it is not added).`)}</small></span>
           <em>+{money(item.ai.total - item.price)}</em>
         </label>
       )}
       {item.extras.map((extra) => (
         <label key={extra.key} className={picked.includes(extra.key) ? 'is-on' : ''}>
-          <input type="checkbox" checked={picked.includes(extra.key)} onChange={() => toggle(extra.key)} data-track-label={`Hoja · Agregado ${extra.key}`} />
+          <input type="checkbox" checked={picked.includes(extra.key)} onChange={() => toggle(extra.key)} data-track-label={`Hoja · ${item.key} · Agregado ${extra.key}`} />
           <span>{extra.label}</span>
           <em>+{money(extra.price)}</em>
         </label>
@@ -303,7 +303,7 @@ function Sheet({ item, initial, close, onSwitch }) {
             {related && (
               <a href="#proyecto" onClick={goToProject} data-track-label={`Hoja · Proyecto ${related.id}`}>
                 {visit.project ? t(`Ver un proyecto real de tu giro: ${related.name}`, `See a real project in your line of business: ${related.name}`) : t(`Ver un proyecto real relacionado: ${related.name}`, `See a related real project: ${related.name}`)} <ArrowDown size={14} aria-hidden="true" />
-                <small>{(!visit.project && item.relatedNote) || t('Es un sistema más amplio que este paquete.', 'It is a broader system than this package.')}</small>
+                <small>{(!visit.project && item.relatedNote) || (visit.project && visit.chosenBusiness?.note) || t('Es un sistema más amplio que este paquete.', 'It is a broader system than this package.')}</small>
               </a>
             )}
           </div>

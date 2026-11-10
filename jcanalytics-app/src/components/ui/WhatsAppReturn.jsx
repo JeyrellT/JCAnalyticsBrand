@@ -34,7 +34,7 @@ import { PACKAGES } from '../../data/packages';
 import '../../styles/whatsapp-return.css';
 
 const FORM = 'whatsapp-retorno';
-const SHOWN_KEY = 'jc_wa_return';
+const SHOWN_KEY = 'jc_wa_return'; // analytics.js la borra cuando la visita llega por un clic nuevo en un anuncio
 const LEAD_KEY = 'jc_lead'; // lo escribe analytics.js cuando el portal acepta una consulta
 const AWAY_MIN_MS = 3000; // menos que esto no fue ir a WhatsApp: fue un cambio de pestaña o un toque fallido
 const AWAY_MAX_MS = 30 * 60 * 1000;

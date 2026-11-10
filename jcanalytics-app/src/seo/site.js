@@ -1,5 +1,5 @@
 import { articles, topics } from '../content/catalog.js';
-import { SERVICE_PRICING } from '../../../portal/shared/service-pricing.js';
+import { PRICE_SOURCES, SERVICE_PRICING } from '../../../portal/shared/service-pricing.js';
 import { alternatePath, homePath, journalPath, articlePath, servicePath, routes, resolveRoute } from './routes.js';
 import { categoryById } from '../content/categories.js';
 import { SERVICE_OFFERS } from '../content/service-offers.js';
@@ -34,10 +34,16 @@ const offerCatalog = (id, language) => {
           '@type': 'Offer', name: language === 'es' ? pricing.label : pricing.label_en,
           description: language === 'es' ? pricing.scope : pricing.scope_en,
           price: pricing.base_usd, priceCurrency: 'USD', url: `${page}?p=${key}#oferta`,
-          // Plazo publicado de entrega: días hábiles (DAY) o semanas (WEE), códigos UN/CEFACT.
+          // El tarifario publica precios sin IVA (la página siempre escribe «+ IVA»): se le dice también a la máquina.
+          priceSpecification: {
+            '@type': 'UnitPriceSpecification', price: pricing.base_usd, priceCurrency: 'USD',
+            valueAddedTaxIncluded: PRICE_SOURCES[pricing.source.key].tax_included,
+          },
+          // Plazo publicado de entrega, en el idioma de la página. Los días son hábiles: no llevan el código DAY
+          // (día calendario); las semanas llevan WEE (UN/CEFACT).
           deliveryLeadTime: pricing.days_min
-            ? { '@type': 'QuantitativeValue', minValue: pricing.days_min, maxValue: pricing.days_max, unitCode: 'DAY', unitText: 'business days' }
-            : { '@type': 'QuantitativeValue', minValue: pricing.weeks_min, maxValue: pricing.weeks_max, unitCode: 'WEE', unitText: 'weeks' },
+            ? { '@type': 'QuantitativeValue', minValue: pricing.days_min, maxValue: pricing.days_max, unitText: language === 'es' ? 'días hábiles' : 'business days' }
+            : { '@type': 'QuantitativeValue', minValue: pricing.weeks_min, maxValue: pricing.weeks_max, unitCode: 'WEE', unitText: language === 'es' ? 'semanas' : 'weeks' },
         };
       }),
     },

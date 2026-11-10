@@ -8,24 +8,41 @@
 //  además se iba a WhatsApp Web, justo lo que la regla por dispositivo evita
 //  (segunda ronda de la auditoría, noviembre de 2026).
 //
-//  Un script en línea de index.html guarda ese clic en `window.__jcEarly` y, en
-//  computadora, lo detiene. Acá, con la página ya montada:
-//    · computadora: se repite el clic sobre el mismo botón (por su etiqueta
+//  Un script en línea de index.html guarda ese clic en `window.__jcEarly` y dice
+//  si lo retuvo (`held`: computadora, clic simple). Acá, con la página ya montada:
+//    · retenido: se repite el clic sobre el mismo botón (por su etiqueta
 //      estable o, si cambió al montar, por su mensaje o su lugar), que ahora
 //      abre el formulario corto y se mide como siempre;
-//    · celular: WhatsApp ya se abrió; solo se registra la intención.
+//    · no retenido (celular, enlace directo, Ctrl+clic): WhatsApp ya se abrió;
+//      solo se registra, sin abrir nada más.
 // ============================================================================
 import { isDesktopPointer } from '../../hooks/useDesktop';
 import { trackContactLink } from '../../seo/analytics';
 
-const MAX_AGE_MS = 30000; // un clic más viejo ya no es «el de recién»
+// Un clic retenido más viejo ya no es «el de recién»: no se abre un formulario medio minuto después. El tope no
+// vale para el clic que siguió su curso: en un celular la pestaña se congela al pasar a WhatsApp y la página
+// monta cuando la persona vuelve; ese toque (el de quien sí escribió) se mide igual (revisión de código, nov. 2026).
+const MAX_AGE_MS = 30000;
 
-export function replayEarlyClick() {
+let pending = null;
+
+/**
+ * Da la página por montada y se queda con el clic temprano. Se llama en el mismo efecto que registra los
+ * listeners de clic: desde ese instante el script en línea deja de guardar clics, así que ninguno queda
+ * atendido dos veces (por el listener nuevo y por la repetición).
+ */
+export function takeEarlyClick() {
   if (window.__jcMounted) return;
   window.__jcMounted = true;
-  const early = window.__jcEarly;
+  pending = window.__jcEarly ?? null;
   window.__jcEarly = null;
-  if (!early || Date.now() - early.at > MAX_AGE_MS) return;
+}
+
+/** Atiende el clic temprano, una vez que todos los componentes terminaron de montar. */
+export function replayEarlyClick() {
+  const early = pending;
+  pending = null;
+  if (!early) return;
   const links = [...document.querySelectorAll('a[href^="https://wa.me/"]')];
   const textOf = (node) => (node.getAttribute('href') || '').split('text=')[1] || '';
   // La etiqueta puede cambiar al montar (con ?p= el botón del hero pasa de «Cotizar» a «Lo quiero: …», y cambian
@@ -40,7 +57,12 @@ export function replayEarlyClick() {
     || (early.text && links.find((node) => textOf(node) === early.text))
     || null;
   if (!link) return;
-  // Un enlace directo (data-wa-direct) ya abrió WhatsApp Web antes de montar: se mide, no se abre otra pestaña.
-  if (isDesktopPointer() && !link.hasAttribute('data-wa-direct')) link.click();
-  else trackContactLink(link);
+  if (early.held) {
+    // Retenido: nada se abrió todavía. Se repite sobre el botón ya montado, que abre el formulario corto.
+    const opensForm = isDesktopPointer() && !link.hasAttribute('data-wa-direct');
+    if (opensForm && Date.now() - early.at <= MAX_AGE_MS) link.click();
+    return;
+  }
+  // Siguió su curso: WhatsApp ya está abierto. Se mide como clic directo, sin tope de tiempo y sin abrir otra pestaña.
+  trackContactLink(link);
 }

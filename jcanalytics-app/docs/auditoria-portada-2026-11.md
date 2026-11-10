@@ -160,7 +160,7 @@ conversión; sin parpadeo de opacidad al montar.
 |---|---|---|
 | La respuesta mandaba a navegar en vez de a cotizar y no mostraba el precio | Precio, colones y plazo en la respuesta; cotizar es el botón verde; «Ver qué incluye…» abre el detalle sin salir de la portada | `CaseMatcher.jsx`, `categories.css` |
 | Un restaurante veía un sistema de pedidos con pagos junto a un paquete de reservas que no los incluye | El proyecto se presenta como «más amplio que ese paquete: si querés algo así, te lo cotizamos por escrito» | `CaseMatcher.jsx` |
-| La frase se perdía al pedir un paquete o tocar «Cotizar» | La elección dura toda la visita: los pedidos y «Cotizar» salen con la frase, la tarjeta del paquete lleva «El de tu caso» y el explorador abre en el proyecto de ese giro. Solo vive en el navegador; a los anuncios no les llega | `case.js` (nuevo), `Hero.jsx`, `Nav.jsx`, `Packages.jsx`, `Work.jsx` |
+| La frase se perdía al pedir un paquete o tocar «Cotizar» | La elección dura toda la visita: los pedidos y «Cotizar» salen con la frase, la tarjeta del paquete lleva «El más cercano a tu caso» y el explorador abre en el proyecto de ese giro. Solo vive en el navegador; a los anuncios no les llega | `case.js` (nuevo), `Hero.jsx`, `Nav.jsx`, `Packages.jsx`, `Work.jsx` |
 
 **Claridad**
 
@@ -186,13 +186,44 @@ conversión; sin parpadeo de opacidad al montar.
 | Hallazgo | Cambio | Dónde |
 |---|---|---|
 | El clic hecho antes de que monte React no se medía y en computadora se iba a WhatsApp Web | Se guarda, se detiene en computadora y se repite al montar (abre el formulario); en celular se mide | `index.html`, `early-click.js` (nuevo) |
-| El selector y las casillas no dejaban rastro | Llegan al portal como clics con la clave elegida («Caso · meta · numeros», «Hoja · Agregado whatsapp · sí»); también que la hoja de retorno se mostró | `site-tracker.js`, `WhatsAppReturn.jsx` |
+| El selector y las casillas no dejaban rastro | Llegan al portal como clics con la clave elegida («Caso · meta · numeros», «Hoja · pagina_web · Agregado whatsapp · sí»); también que la hoja de retorno se mostró | `site-tracker.js`, `WhatsAppReturn.jsx` |
 | Conteos dobles: ChatGPT recibía dos consultas por la hoja de retorno; «Volver a WhatsApp» convertía otra vez | Una conversión de WhatsApp por visita; los clics siguientes llevan `repeat: true` | `analytics.js` |
 | Las etiquetas de los botones llevaban el nombre traducido del paquete | Llevan la clave (`Paquetes · Lo quiero · pagina_web`) | `Packages.jsx`, `PackageSheet.jsx`, `Hero.jsx` |
 | Cambio de idioma: un ancla vieja le ganaba a la sección que se estaba leyendo | Manda lo que hay en pantalla; `#hoja-…` y `#paquete-…` se conservan | `LanguageSwitcher.jsx` |
 | Hoja de retorno: 89 px de campo a 320 px, invisible para lector de pantalla | Una columna a 320 px, foco al título, Escape la cierra | `WhatsAppReturn.jsx`, `whatsapp-return.css` |
 | Los flotantes tapaban un tercio de los enlaces secundarios de WhatsApp | También se retiran ante ellos | `Nav.jsx` |
 | Los precios y las preguntas no estaban en los datos estructurados | Cada servicio declara sus paquetes como ofertas (10) y la portada sus seis preguntas | `seo/site.js` |
+
+### Revisión de código de lo cambiado en la segunda ronda
+
+Antes de publicar, cuatro revisores leyeron el diff de la segunda ronda, cada uno con una lente (flujo y
+estado, CSS y accesibilidad, medición y datos, textos y verdad), con la consigna de encontrar lo que se rompe
+y decir cómo reproducirlo. Encontraron 29 puntos (10 de severidad media, 19 baja); cada uno se comprobó contra
+el código antes de tocarlo y todos quedaron corregidos. Ninguno era visible en el recorrido normal: salen con
+anuncios, con «atrás», con teclado o cuando todo está marcado a la vez.
+
+| Hallazgo | Cambio | Dónde |
+|---|---|---|
+| Cerrar el detalle saltaba a la tarjeta del `#paquete-…` anterior (dos avisos del historial, se frenaba uno) | El cierre no mueve la página ni cambia la fila abierta | `Packages.jsx` |
+| Con «otro tipo de negocio», o solo la meta, el pedido perdía «Mi negocio:» y el formulario, su campo | La frase reemplaza esa línea solo cuando dice el giro (`packSentence`) | `case.js`, `Packages.jsx`, `PackageSheet.jsx` |
+| Los formularios que escriben directo al portal no llevaban la frase del caso | La llevan, con su necesidad | `Contact.jsx`, `ServiceSales.jsx` |
+| El clic temprano se perdía si la etiqueta del botón cambiaba al montar (`?p=`) | Se busca por etiqueta, después por lugar y al final por mensaje | `early-click.js` |
+| Los enlaces de la confirmación recargaban la portada en visitas de anuncio | Conservan la consulta de la dirección: son saltos de ancla | `LeadDialog.jsx` |
+| «Ver el mensaje» no mostraba la línea del anuncio; «…, con Con IA»; nombre traducido en la hoja de retorno | Se muestra lo que de verdad sale; «Incluye: Con IA»; nombre del tarifario | `PackageSheet.jsx`, `LeadDialog.jsx`, `WhatsAppReturn.jsx` |
+| Pasar al paquete mayor dejaba el título y el foco fuera de pantalla | Empieza arriba, con el foco en el título | `PackageSheet.jsx` |
+| La barra pegada tapaba el control enfocado | El detalle declara `scroll-padding` | `package-sheet.css` |
+| Foco perdido al ir al proyecto y al cerrar la hoja de retorno; ejemplos de campo a 3,09:1; anillo en títulos enfocados por programa; expansor inútil sin JavaScript | Foco al proyecto elegido y de vuelta al botón de origen; contraste 5,08:1; sin anillo; expansor oculto | `PackageSheet.jsx`, `WhatsAppReturn.jsx`, `lead-dialog.css`, `packages.css` |
+| «Sus indicadores de operación son reales» contradecía «captura con datos de demostración» | La nota dice que es el panel de un sistema real con datos de demostración, y que no es Power BI | `data/packages.js` |
+| El aviso del paquete mayor ofrecía «que cada persona vea lo suyo», que es un agregado de +$90 | Pregunta por dos fuentes o más de un perfil de acceso, que sí incluye | `data/packages.js` |
+| «Es un sistema más amplio que ese paquete» era falso para la distribuidora (su proyecto es un sitio web) | Ese giro dice qué es su proyecto y que no equivale al paquete | `case.js`, `CaseMatcher.jsx`, `PackageSheet.jsx` |
+| La insignia «El de tu caso» afirmaba un calce sin confirmar | «El más cercano a tu caso» | `Packages.jsx` |
+| «Copiado» seguía a la vista después de cambiar lo marcado; «andá juntando:» no armaba con cuatro paquetes; La Burrada decía «sin que nadie revise comprobantes» | El aviso se borra al cambiar; frase completa; la historia dice revisión humana en caso de duda e inventario por receta | `PackageSheet.jsx`, `LeadDialog.jsx`, `data/projects.js` |
+| Página de servicio con anuncio y todo marcado: el pedido pasaba de 600 y llegaba cortado («Mi neg») | Se mide lo que sale (con la nota del anuncio) y se deja lugar para el negocio; si no entra, las situaciones van por número («Me pasan las situaciones 1, 2 y 4 de las 5»), sin perder cuáles | `ServiceSales.jsx` |
+| La conversión «por visita» duraba lo que la pestaña: quien volvía por otro anuncio ya no contaba | Otro clic de anuncio (`gclid`, `gbraid`, `wbraid`, `fbclid`) empieza otra visita | `analytics.js` |
+| Las casillas y señales medidas no decían de qué paquete o página eran (`whatsapp` es +$270 en CRM y +$180 en Web) | Etiquetas con la clave del paquete o de la página; ninguna pasa de 60 caracteres | `PackageSheet.jsx`, `ServiceSales.jsx` |
+| Clic temprano: el de celular se descartaba pasados 30 s y un Ctrl+clic terminaba abriendo el formulario | El script anota si retuvo el clic; el que siguió su curso se mide siempre y no abre nada | `index.html`, `early-click.js`, `LeadDialog.jsx` |
+| Datos estructurados: «días hábiles» como día calendario, unidad en inglés y precio sin decir que es sin IVA | Unidad en el idioma de la página, sin código `DAY`, y `valueAddedTaxIncluded: false` desde el tarifario | `seo/site.js` |
+| Los candados no cubrían las reglas de medición nuevas | Candados para una conversión por visita, anuncio nuevo, hoja de retorno, clic temprano (retenido, Ctrl+clic, celular), etiquetas, ofertas y preguntas declaradas, pedido de 600 caracteres y confirmación a la vista con el desplazamiento suave; cuatro se verificaron rompiendo la regla a propósito | `scripts/check-site.mjs` |
 
 ### Lo que la segunda ronda propuso y no se aplicó
 

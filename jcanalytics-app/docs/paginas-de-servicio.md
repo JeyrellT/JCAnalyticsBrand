@@ -62,13 +62,17 @@ en `src/content/services.js`. Sin entrada, la página se muestra como antes (sol
   la página (`page`) y el mensaje con lo marcado y lo calculado. Aparece en **Web → Consultas** con su recorrido.
 - **Mensaje:** el mismo de las tarjetas de la portada (`packageMessage`): «Hola JC Analytics, me interesa el
   paquete … ($… + IVA).», las señales marcadas, lo calculado, «¿Me confirman si calza con mi caso?» y la línea
-  abierta «Mi negocio:» (o la frase de «Tu caso en una frase», si la persona la armó en la portada).
+  abierta «Mi negocio:» (o la frase de «Tu caso en una frase», si la persona la armó en la portada). El portal
+  corta los mensajes en 600 caracteres: se mide el mensaje tal como sale (con la nota del anuncio) y se deja
+  lugar para lo que la persona escriba del negocio; si con todo marcado no entra, las situaciones viajan por
+  número («Me pasan las situaciones 1, 2 y 4 de las 5 de esta página.») en vez de cortarse.
 - **Formulario:** el aviso dice qué campo corregir y lleva el foco ahí; al enviar, una confirmación con los tres
   pasos que siguen reemplaza al formulario y queda a la vista.
 - **Medición:** cada bloque es una `<section id>`, así que el portal muestra tiempo y alcance por bloque en
   **Web → Tráfico del sitio**. Los botones llevan `data-track-label` legible («Oferta · WhatsApp · Automatización
   de procesos», «Barra · Que me contacten»…), y la barra fija declara su sección con `data-track-section`. El
-  formulario se mide como `contacto-servicio`.
+  formulario se mide como `contacto-servicio`. Cada señal marcada llega con la clave de su página (`Señal ·
+  web-development · 2 · sí`): la señal 2 es una frase distinta en cada servicio.
 - **Anuncios:** los botones de WhatsApp llevan `data-package` (la clave del tarifario, igual que en la portada)
   y `data-value`, así que Google Ads, Meta y ChatGPT reciben el paquete y su precio como en la portada (ver
   [anuncios](anuncios.md)).

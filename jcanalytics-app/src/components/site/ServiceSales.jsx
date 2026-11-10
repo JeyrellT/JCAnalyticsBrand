@@ -29,7 +29,7 @@ import { EXTRA_LABELS_EN, SERVICE_OFFERS, WORK_PROMISES } from '../../content/se
 import { PROJECTS, PROJECT_KINDS, screenImage, shotSrcSet } from '../../data/projects';
 import { PACKAGES, adPackage, caseLine, colones, money, packageMessage, thousands as integer } from '../../data/packages';
 import { homePath } from '../../seo/routes';
-import { PORTAL_URL, wa } from './links';
+import { PORTAL_URL, wa, waMessage } from './links';
 import { NEXT_STEPS } from './messages';
 import { useCase } from './case';
 import { scrollToNode } from './scroll';
@@ -48,6 +48,8 @@ const timeLabel = (p) => (p.days_min
   : t(`${p.weeks_min}–${p.weeks_max} semanas`, `${p.weeks_min}–${p.weeks_max} weeks`));
 const label = (p) => (locale === 'es' ? p.label : p.label_en);
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+// «1, 2 y 4» · “1, 2 and 4”.
+const listOf = (items) => (items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} ${t('y', 'and')} ${items.at(-1)}`);
 
 // Avisos del formulario: los mismos de la portada y del formulario corto (dicen qué campo corregir).
 const PROBLEMS = {
@@ -114,11 +116,21 @@ export function ServiceSalesProvider({ item, children }) {
   const whatsapp = (extraLines = []) => {
     const build = (lines) => packageMessage(pack, { lines: [...lines, ...extraLines], sentence: visit.packSentence });
     const full = build(summary);
-    // El portal corta el mensaje en 600 caracteres. Con las cinco señales marcadas, la calculadora y la frase
-    // del caso se pasaba y el formulario corto cortaba el cierre a la mitad: ahí las señales van contadas.
-    if (full.length <= MESSAGE_MAX || !picked.length) return wa(full);
-    const counted = t(`Me pasan ${picked.length} de las ${copy.signals.length} situaciones de esta página.`, `${picked.length} of the ${copy.signals.length} situations on this page happen to me.`);
-    return wa(build([counted, ...summary.slice(1)]));
+    // El portal corta el mensaje en 600 caracteres. Con las cinco señales marcadas, la calculadora y la nota
+    // del anuncio se pasaba y el formulario corto cortaba el cierre a la mitad («Mi neg»): ahí las señales van
+    // por número (el equipo las lee en la página del paquete pedido), sin perder cuáles son. Se mide lo que de
+    // verdad sale (con la nota del anuncio) y se deja lugar para lo que la persona escriba en «¿Para qué negocio
+    // es?» (120 caracteres y su espacio), salvo que la frase del caso ya lo diga.
+    const fits = waMessage(full).length + (visit.packSentence ? 0 : 121) <= MESSAGE_MAX;
+    if (fits || !picked.length) return wa(full);
+    const total = copy.signals.length;
+    const numbers = listOf(picked.map((index) => String(index + 1)));
+    const numbered = picked.length === total
+      ? t(`Me pasan las ${total} situaciones de esta página.`, `All ${total} situations on this page happen to me.`)
+      : picked.length === 1
+        ? t(`Me pasa la situación ${numbers} de las ${total} de esta página.`, `Situation ${numbers} of the ${total} on this page happens to me.`)
+        : t(`Me pasan las situaciones ${numbers} de las ${total} de esta página.`, `Situations ${numbers} of the ${total} on this page happen to me.`);
+    return wa(build([numbered, ...summary.slice(1)]));
   };
 
   const value = {
@@ -192,7 +204,7 @@ export function OfferStrip() {
 
 // ── Señales ─────────────────────────────────────────────────────────────────
 export function Signals() {
-  const { copy, picked, toggleSignal } = useSales();
+  const { item, copy, picked, toggleSignal } = useSales();
   const count = picked.length;
   const verdict = count === 0
     ? t('Marcá lo que te pase. Con una o dos ya vale la pena conversar.', 'Tick what happens to you. One or two is already worth a conversation.')
@@ -207,7 +219,8 @@ export function Signals() {
         {copy.signals.map((signal, index) => (
           <li key={signal}>
             <label className={picked.includes(index) ? 'is-on' : ''}>
-              <input type="checkbox" id={`senal-${index}`} checked={picked.includes(index)} onChange={() => toggleSignal(index)} data-track-label={`Señal ${index + 1}`} />
+              {/* La etiqueta dice de qué página es la señal: la número 1 es una frase distinta en cada servicio. */}
+              <input type="checkbox" id={`senal-${index}`} checked={picked.includes(index)} onChange={() => toggleSignal(index)} data-track-label={`Señal · ${item.id} · ${index + 1}`} />
               <span className="so-check" aria-hidden="true"><Check size={14} /></span>
               <span>{signal}</span>
             </label>
@@ -417,7 +430,7 @@ export function ServiceLeadForm() {
           <h3 ref={sentTitle} tabIndex={-1}>{t('¡Listo! Te escribimos en menos de 24 h.', 'Done! We’ll reach out within 24 hours.')}</h3>
           <p>{t(`Tu consulta sobre ${label(main)} ya está con el equipo. Esto es lo que sigue:`, `Your inquiry about ${label(main)} is with the team. Here is what comes next:`)}</p>
           <ol>{AFTER_SENDING.map((step, index) => <li key={step}><span aria-hidden="true">{index + 1}</span>{step}</li>)}</ol>
-          <WhatsAppLink href={href} pkg={main} className="so-wa--quiet" direct trackLabel={`Formulario · WhatsApp después de enviar · ${main.label}`}>{desktop ? t('¿Es urgente? Abrir WhatsApp Web', 'Is it urgent? Open WhatsApp Web') : t('¿Es urgente? Escribinos por WhatsApp', 'Is it urgent? Message us on WhatsApp')}</WhatsAppLink>
+          <WhatsAppLink href={href} pkg={main} className="so-wa--quiet" direct trackLabel={`Formulario · Urgente · ${main.label}`}>{desktop ? t('¿Es urgente? Abrir WhatsApp Web', 'Is it urgent? Open WhatsApp Web') : t('¿Es urgente? Escribinos por WhatsApp', 'Is it urgent? Message us on WhatsApp')}</WhatsAppLink>
           <p className="so-form__status sr-only" role="status">{t('Consulta enviada. Te escribimos en menos de 24 h.', 'Inquiry sent. We’ll reach out within 24 hours.')}</p>
         </div>
       ) : (

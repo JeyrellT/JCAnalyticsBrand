@@ -53,7 +53,7 @@ import { sendLead } from '../../seo/site-tracker';
 import { trackLeadCaptured } from '../../seo/analytics';
 import { homePath, resolveRoute } from '../../seo/routes';
 import { lockScroll } from './scroll-lock';
-import { replayEarlyClick } from './early-click';
+import { replayEarlyClick, takeEarlyClick } from './early-click';
 import '../../styles/lead-dialog.css';
 
 export const LEAD_DIALOG_FORM = 'contacto-rapido';
@@ -99,7 +99,6 @@ function withBusiness(text, business) {
   else if (filled) lines.push(filled);
   return lines.join('\n').trim().slice(0, MESSAGE_MAX);
 }
-const lowerFirst = (text) => text.charAt(0).toLowerCase() + text.slice(1);
 
 const dialogState = (open) => window.dispatchEvent(new CustomEvent('jca:lead-dialog-state', { detail: { open } }));
 
@@ -138,6 +137,9 @@ export default function LeadDialog() {
     };
     document.addEventListener('click', intercept, true);
     // Con la página ya interactiva, se atiende el clic a WhatsApp hecho antes de tiempo (ver early-click.js).
+    // Se toma acá mismo, junto con el listener (ningún clic queda atendido por los dos), y se repite cuando los
+    // demás componentes ya montaron y el botón tiene su etiqueta y su mensaje definitivos.
+    takeEarlyClick();
     const replay = window.setTimeout(replayEarlyClick, 0);
     return () => { window.clearTimeout(replay); document.removeEventListener('click', intercept, true); };
   }, []);
@@ -234,7 +236,7 @@ export default function LeadDialog() {
               )}
               <ol className="lead-dialog__next">{AFTER_SENDING.map((step, index) => <li key={step}><span aria-hidden="true">{index + 1}</span>{step}</li>)}</ol>
               {/* Algo útil para hacer mientras tanto, con un dato que ya está publicado en el detalle del paquete. */}
-              {context.pack?.ready && <p className="lead-dialog__ready">{t('Para ganar tiempo, andá juntando:', 'To save time, start gathering:')} {lowerFirst(context.pack.ready)}</p>}
+              {context.pack?.ready && <p className="lead-dialog__ready">{t('Para ganar tiempo, andá preparando lo que necesitamos para empezar.', 'To save time, start preparing what we need to begin.')} {context.pack.ready}</p>}
               <div className="lead-dialog__actions">
                 {context.pack
                   ? <a className="lead-dialog__submit" href={homeHref(context.sheet)} onClick={viewSheet} data-track-label="Formulario rápido · Ver mi pedido">{t('Ver o guardar el detalle de mi pedido', 'View or save my request details')}<ArrowRight size={17} aria-hidden="true" /></a>
@@ -308,7 +310,7 @@ export default function LeadDialog() {
           )}
           {/* Siempre presente: un lector de pantalla anuncia tanto el error como la confirmación. */}
           <p id="rapido-estado" className={`lead-dialog__status ${status === 'sent' ? 'sr-only' : ''}`} role="status" data-tone={bad ? 'bad' : undefined}>
-            {status === 'sent' && t('Consulta enviada. Te escribimos en menos de 24 h.', 'Inquiry sent. We’ll reach out within 24 hours.')}
+            {status === 'sent' && (isPackage ? t('Pedido enviado. Te escribimos en menos de 24 h.', 'Request sent. We’ll reach out within 24 hours.') : t('Consulta enviada. Te escribimos en menos de 24 h.', 'Inquiry sent. We’ll reach out within 24 hours.'))}
             {problem && PROBLEMS[problem]}
             {status === 'error' && t('No pudimos enviarlo. Probá de nuevo o seguí por WhatsApp Web.', 'We could not send it. Try again or continue on WhatsApp Web.')}
             {!problem && (status === 'idle' || status === 'sending') && t('Responde una persona del equipo, no un bot. Tus datos solo se usan para responderte.', 'A person from the team replies, not a bot. Your details are only used to reply to you.')}

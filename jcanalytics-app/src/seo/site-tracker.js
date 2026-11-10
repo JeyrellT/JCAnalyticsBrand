@@ -145,8 +145,9 @@ function onClick(event) {
 // Elecciones que no son un clic en un enlace o botón: las dos listas de «Tu caso en una frase», las casillas del
 // detalle del paquete y las señales de las páginas de servicio. Antes no dejaban rastro: no se sabía si alguien
 // usaba el selector ni qué agregados se marcaban (segunda ronda de la auditoría). Llegan al portal como un
-// clic más, con la clave elegida en la etiqueta («Caso · meta · numeros», «Hoja · Agregado whatsapp · sí»):
-// son claves internas del sitio, nunca texto escrito por la persona.
+// clic más, con la clave elegida en la etiqueta («Caso · meta · numeros», «Hoja · pagina_web · Agregado whatsapp ·
+// sí»): son claves internas del sitio, nunca texto escrito por la persona. La etiqueta dice de qué paquete o página
+// es la elección, porque el portal agrupa los clics por etiqueta y sección, sin la ruta.
 function onChange(event) {
   const el = event.target.closest?.('select[data-track-label], input[type="checkbox"][data-track-label]');
   if (!el || el.closest('.assistant-dialog')) return;

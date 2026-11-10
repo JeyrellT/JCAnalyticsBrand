@@ -18,7 +18,8 @@
 //      a un paquete de reservas que no los incluye).
 //    · Con una sola elección hay una guía en vez de un espacio vacío.
 //    · La elección queda guardada para el resto de la visita (case.js): los
-//      pedidos y cotizaciones salen con la frase y la portada marca «El de tu caso».
+//      pedidos y cotizaciones salen con la frase y la portada marca el paquete
+//      «más cercano a tu caso».
 //
 //  Nada es inventado: los giros son los de los diez proyectos de data/projects.js
 //  y cada meta lleva a una de las cinco categorías. Funciona con dos <select>
@@ -75,7 +76,9 @@ export default function CaseMatcher() {
               {project && (
                 <p className="case-matcher__proof">
                   {t('Un proyecto real de tu giro:', 'A real project in your line of business:')} <strong>{project.name}</strong> <span>({project.sector})</span>.
-                  {pack && <> {t('Es un sistema más amplio que ese paquete: si querés algo así, te lo cotizamos por escrito.', 'It is a broader system than that package: if you want something like it, we quote it in writing.')}</>}
+                  {pack && <> {chosenBusiness.note
+                    ? <>{chosenBusiness.note} {t('Si querés algo así, te lo cotizamos por escrito.', 'If you want something like it, we quote it in writing.')}</>
+                    : t('Es un sistema más amplio que ese paquete: si querés algo así, te lo cotizamos por escrito.', 'It is a broader system than that package: if you want something like it, we quote it in writing.')}</>}
                 </p>
               )}
               <div className="case-matcher__actions">

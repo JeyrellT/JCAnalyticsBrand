@@ -184,7 +184,7 @@ const Hero = () => {
               // La primera frase dice qué resuelve, con palabras de quien compra, y es la única en celular. La lista
               // de servicios queda para computadora: en celular la repiten los atajos de abajo y, sola, se leía
               // como un inventario del estudio (segunda ronda de la auditoría, noviembre de 2026).
-              <p className="studio-hero__description">{t('Para recibir pedidos y reservas en línea, dejar de repetir tareas a mano y ver tus números al día.', 'To take orders and bookings online, stop repeating tasks by hand and see your numbers up to date.')}<span className="studio-hero__description-more"> {t('Páginas web, sistemas a medida, dashboards Power BI, automatización, IA y marketing, con el precio por escrito antes de empezar.', 'Websites, custom systems, Power BI dashboards, automation, AI and marketing, with the price in writing before we start.')}</span></p>
+              <p className="studio-hero__description">{t('Para recibir pedidos y reservas en línea, dejar de repetir tareas a mano y ver tus números al día.', 'To take orders and bookings online, stop repeating tasks by hand and see up-to-date numbers.')}<span className="studio-hero__description-more"> {t('Páginas web, sistemas a medida, dashboards Power BI, automatización, IA y marketing, con el precio por escrito antes de empezar.', 'Websites, custom systems, Power BI dashboards, automation, AI and marketing, with the price in writing before we start.')}</span></p>
             )}
           </Reveal>
 

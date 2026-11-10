@@ -203,6 +203,7 @@ async function checkMetadata(page, language, route = homeRoute(language)) {
     assert.equal(services.length, 1);
     assert.equal(services[0].name, copy.title);
     assert.equal(services[0].url, url);
+    assertOffers(services, language, SERVICE_OFFERS[route.data.id]?.packages ?? []);
   }
   if (route.type === 'home') {
     // Cada servicio de la portada apunta a su página (antes: anclas que la portada ya no tiene).
@@ -210,6 +211,39 @@ async function checkMetadata(page, language, route = homeRoute(language)) {
     const servicePages = routes.filter((item) => item.type === 'service' && item.language === language).map((item) => `${PRODUCTION}${item.path}`);
     assert.equal(services.length, servicePages.length, 'The home page declares one Service per category page');
     assert.deepEqual(services.map((item) => item.url).sort(), [...servicePages].sort(), 'Each Service points to its own category page');
+    assertOffers(services, language, Object.keys(SERVICE_PRICING));
+    // Las preguntas que lee una máquina son las seis que se ven.
+    const faq = graph.filter((item) => item['@type'] === 'FAQPage');
+    assert.equal(faq.length, 1, 'The home page declares its FAQ once');
+    assert.equal(faq[0].mainEntity.length, 6, 'The six visible questions are declared');
+    assert.equal(faq[0].mainEntity[0].name, COPY[language].faqQuestion);
+    assert.ok(faq[0].mainEntity.every((item) => item['@type'] === 'Question' && item.acceptedAnswer?.text), 'Every declared question carries its answer');
+  }
+}
+
+// Los paquetes que lee una máquina son los del tarifario: las mismas claves, una vez cada una, con su precio
+// sin IVA y su plazo en el idioma de la página. Antes ningún candado miraba el catálogo de ofertas: se podía
+// publicar un precio distinto del visible con la suite en verde (revisión de código, nov. 2026).
+function assertOffers(services, language, expectedKeys) {
+  const offers = services.flatMap((item) => item.hasOfferCatalog?.itemListElement ?? []);
+  const keyOf = (offer) => new URL(offer.url).searchParams.get('p');
+  assert.deepEqual(offers.map(keyOf).sort(), [...expectedKeys].sort(), 'Every published package is declared exactly once as an Offer');
+  for (const offer of offers) {
+    const key = keyOf(offer);
+    const pricing = SERVICE_PRICING[key];
+    assert.equal(offer.name, language === 'es' ? pricing.label : pricing.label_en, `${key}: the Offer carries the price-list name`);
+    assert.equal(offer.price, pricing.base_usd, `${key}: the Offer price is the published price`);
+    assert.equal(offer.priceCurrency, 'USD');
+    assert.equal(offer.priceSpecification?.price, pricing.base_usd, `${key}: the price specification repeats the published price`);
+    assert.equal(offer.priceSpecification?.valueAddedTaxIncluded, false, `${key}: the published price is declared before VAT`);
+    assert.ok(new URL(offer.url).hash === '#oferta' && offer.url.startsWith(PRODUCTION), `${key}: the Offer opens its package on its category page`);
+    const lead = offer.deliveryLeadTime;
+    if (pricing.days_min) {
+      // Días hábiles: no llevan el código DAY, que es día calendario.
+      assert.deepEqual([lead.minValue, lead.maxValue, lead.unitCode, lead.unitText], [pricing.days_min, pricing.days_max, undefined, language === 'es' ? 'días hábiles' : 'business days'], `${key}: delivery in business days`);
+    } else {
+      assert.deepEqual([lead.minValue, lead.maxValue, lead.unitCode, lead.unitText], [pricing.weeks_min, pricing.weeks_max, 'WEE', language === 'es' ? 'semanas' : 'weeks'], `${key}: delivery in weeks`);
+    }
   }
 }
 
@@ -336,6 +370,18 @@ async function stubAdPixels(page) {
   });
 }
 const readAdPixels = (page) => page.evaluate(() => window.__ads);
+// Ningún clic a WhatsApp sale del navegador de prueba. El listener va en `window`, al final del burbujeo: los de
+// la página (en `document`) ya leyeron el clic tal como venía, y recién ahí se anota si llegó detenido
+// (`__waClicks`) y se anula la navegación. Se llama antes de navegar.
+const holdWhatsApp = (page) => page.evaluateOnNewDocument(() => {
+  window.__waClicks = [];
+  window.addEventListener('click', (event) => {
+    if (!event.target.closest?.('a[href^="https://wa.me/"]')) return;
+    window.__waClicks.push(event.defaultPrevented);
+    event.preventDefault();
+  });
+});
+const countOf = (list, name) => list.filter((entry) => entry[1] === name).length;
 const ADS_ACCOUNT = 'AW-18237462818';
 const ADS_WHATSAPP = `${ADS_ACCOUNT}/5C2RCMSwvaIdEKKypvhD`;
 // Las conversiones de Google Ads se deduplican 3 s: entre dos acciones distintas de una prueba hay que esperar.
@@ -541,6 +587,8 @@ async function checkSiteTracking(browser, origin) {
     await delay(400);
     await page.$eval('#paquetes', (node) => node.scrollIntoView({ block: 'start' }));
     await delay(400);
+    // Una elección en una lista también es una señal: llega como clic, con la clave elegida y sin texto de la persona.
+    await page.select('#servicios select[data-track-label="Caso · negocio"]', 'restaurante');
     await page.evaluate(() => {
       document.addEventListener('click', (event) => event.preventDefault(), true);
       document.querySelector('#paquetes .package-card__buy').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
@@ -560,6 +608,7 @@ async function checkSiteTracking(browser, origin) {
     has((e) => e.t === 'click' && e.k === 'package' && e.s === 'paquetes' && e.l, 'Package click with its label and section');
     has((e) => e.t === 'scroll' && e.v >= 25, 'Scroll depth');
     has((e) => e.t === 'form_start' && e.k === 'contacto', 'Form start');
+    has((e) => e.t === 'click' && e.k === 'button' && e.l === 'Caso · negocio · restaurante' && e.s === 'servicios', 'A choice in the sentence builder reaches the portal with its key');
     assert.ok(batches.every((b) => /^[a-z0-9]{16,40}$/.test(b.sid) && b.device === 'desktop'));
     assert.ok(!JSON.stringify(batches).includes('Persona Privada'), 'Typed values never leave the browser');
     verifyErrors();
@@ -833,6 +882,7 @@ async function checkServiceSales(browser, origin, language, width) {
     await navigate(page, `${origin}${route.path}`);
     await page.waitForSelector('#senales input[type="checkbox"]');
     assert.equal(await page.$eval('.so-signals__verdict', (node) => node.dataset.count), '0');
+    assert.equal(await page.$eval('#senal-0', (node) => node.dataset.trackLabel), `Señal · ${route.data.id} · 1`, 'A ticked signal is measured with its own page: signal 1 is a different sentence on each service');
     await page.click('#senales li:first-child label');
     await page.waitForFunction(() => document.querySelector('.so-signals__verdict').dataset.count === '1');
     const signal = offer[language].signals[0];
@@ -1124,7 +1174,11 @@ async function checkPurchasePaths(browser, origin) {
 //   · el detalle del paquete escribe su dirección, guarda lo marcado en ella, tiene el botón siempre a la vista,
 //     se cierra con «atrás», abre un enlace compartido con el mismo total y se imprime en una página;
 //   · el formulario corto se abre encima del detalle, nombra lo marcado y completa «Mi negocio:»;
-//   · el clic hecho antes de que cargue React abre el formulario en vez de irse a WhatsApp Web;
+//   · el clic hecho antes de que cargue React abre el formulario en vez de irse a WhatsApp Web (y un Ctrl+clic
+//     o un toque en celular, que sí siguen su curso, se miden al montar sin abrir nada);
+//   · en celular hay una sola conversión de WhatsApp por visita, la hoja de retorno deja la consulta sin contarla
+//     dos veces y un clic nuevo en un anuncio empieza otra visita;
+//   · en la página de servicio, con anuncio y todo marcado, el pedido entra en los 600 caracteres del portal;
 //   · en celular la fila que se abre no queda tapada y el detalle conserva cierre y botón al desplazar.
 async function checkSecondRound(browser, origin) {
   const pricing = SERVICE_PRICING.dashboard_inicial;
@@ -1153,7 +1207,7 @@ async function checkSecondRound(browser, origin) {
     await delay(2600); // desplazamiento suave
     const title = await box(page, '#paquete-dashboard_inicial h3');
     assert.ok(title.top >= 70 && title.top < 500, `The package card lands below the fixed bar (h3 at ${Math.round(title.top)} px)`);
-    assert.ok((await page.$eval('#paquete-dashboard_inicial .package-card__badge', (node) => node.textContent)).includes('El de tu caso'), 'The matched package is marked as the one for this visitor');
+    assert.ok((await page.$eval('#paquete-dashboard_inicial .package-card__badge', (node) => node.textContent)).includes('El más cercano a tu caso'), 'The matched package is marked as the closest one, without promising it is the answer');
     const order = new URL(await page.$eval('#paquete-dashboard_inicial .package-card__buy', (node) => node.href)).searchParams.get('text');
     assert.ok(order.includes('Mi caso: tengo una distribuidora') && !order.includes('Mi negocio:'), 'A package order carries the sentence instead of the open business line');
 
@@ -1161,6 +1215,9 @@ async function checkSecondRound(browser, origin) {
     await page.$eval('#paquete-dashboard_inicial .package-card__sheet', (node) => node.click());
     await page.waitForSelector('dialog.package-sheet[open]');
     assert.equal(new URL(page.url()).hash, '#hoja-dashboard_inicial', 'Opening the package detail writes its address');
+    // Lo que llega al portal dice de qué paquete es cada casilla: «whatsapp» o «api» se repiten entre paquetes.
+    const boxLabels = await page.$$eval('.package-sheet__options input[type="checkbox"]', (nodes) => nodes.map((node) => node.dataset.trackLabel));
+    assert.deepEqual(boxLabels, ['Hoja · dashboard_inicial · Con IA', ...pricing.extras.map((item) => `Hoja · dashboard_inicial · Agregado ${item.key}`)], 'Every option of the detail is measured with its own package');
     await page.$eval('.package-sheet__options label:nth-of-type(2) input', (node) => node.click());
     await page.waitForFunction((key) => window.location.hash === `#hoja-dashboard_inicial.${key}`, {}, extra.key);
     const total = `$${pricing.base_usd + extra.price_usd}`;
@@ -1211,6 +1268,18 @@ async function checkSecondRound(browser, origin) {
     assert.ok(await page.$('#rapido-negocio'), 'Without a known line of business the short form still asks what business it is for');
     await page.keyboard.press('Escape');
     await page.waitForFunction(() => !document.querySelector('dialog.lead-dialog').open);
+
+    // Con el desplazamiento suave activo (la visita normal de computadora) la confirmación del formulario de
+    // contacto queda a la vista, aunque la persona envíe desde el final del formulario. Los otros candados de
+    // «confirmación a la vista» corren con «reducir movimiento» y no pasan por el desplazamiento suave.
+    await page.type('#contacto-telefono', '8888-1234');
+    await page.$eval('#contacto form [type="submit"]', (node) => node.scrollIntoView({ block: 'start', behavior: 'instant' }));
+    await delay(1700);
+    await page.$eval('#contacto form', (form) => form.requestSubmit());
+    await page.waitForSelector('#contacto .contact-sent');
+    await delay(700);
+    const sentTop = await page.$eval('#contacto .contact-sent h3', (node) => node.getBoundingClientRect().top);
+    assert.ok(sentTop >= 64 && sentTop < 700, `With smooth scrolling on, the confirmation is on screen after sending (title at ${Math.round(sentTop)} px)`);
     verifyErrors();
   } finally { await page.close(); }
 
@@ -1261,10 +1330,11 @@ async function checkSecondRound(browser, origin) {
   ({ page, verifyErrors } = await openPage(browser, origin, 1440, true, { delayEntryMs: 3000 }));
   try {
     await page.evaluateOnNewDocument(() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); });
+    await holdWhatsApp(page);
     const loading = page.goto(`${origin}/?p=web&wa_line=a`, { waitUntil: 'load' });
     await page.waitForSelector('.studio-wa');
     await page.$eval('.studio-wa', (node) => node.click());
-    assert.ok(await page.evaluate(() => Boolean(window.__jcEarly) && !window.__jcMounted), 'The early click on an ad landing is remembered');
+    assert.ok(await page.evaluate(() => Boolean(window.__jcEarly) && !window.__jcMounted && window.__waClicks.join() === 'true'), 'The early click on an ad landing is remembered and held');
     await loading;
     await page.waitForSelector('dialog.lead-dialog[open]');
     assert.ok((await page.$eval('.lead-dialog__package', (node) => node.textContent)).includes(SERVICE_PRICING.pagina_web.label), 'After mounting, the early click orders the advertised package even though the button label changed');
@@ -1275,6 +1345,7 @@ async function checkSecondRound(browser, origin) {
   ({ page, verifyErrors } = await openPage(browser, origin, 1440, true, { delayEntryMs: 3000 }));
   try {
     await page.evaluateOnNewDocument(() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); });
+    await holdWhatsApp(page);
     // No se espera a la navegación: DOMContentLoaded llega recién cuando el módulo de entrada (retenido) corre.
     const loading = page.goto(`${origin}/?wa_line=a`, { waitUntil: 'load' });
     await page.waitForSelector('.studio-wa');
@@ -1285,6 +1356,8 @@ async function checkSecondRound(browser, origin) {
     assert.equal(await page.$eval('.studio-hero__invitation', (node) => getComputedStyle(node).display), 'none', 'The phone-only line is hidden on a computer before React loads');
     await page.$eval('.studio-wa', (node) => node.click());
     assert.ok(await page.evaluate(() => Boolean(window.__jcEarly?.label) && !window.__jcMounted), 'A click before the page is interactive is remembered, not lost');
+    // Sin esto la prueba pasaba aunque el script en línea dejara de detener el clic (y abriera WhatsApp Web).
+    assert.deepEqual(await page.evaluate(() => [window.__waClicks, window.__jcEarly.held]), [[true], true], 'On a computer the early click is held: it never leaves for WhatsApp Web');
     await loading;
     await page.waitForSelector('dialog.lead-dialog[open]');
     const clicks = await page.evaluate(() => window.dataLayer.filter((entry) => entry[0] === 'event' && entry[1] === 'contact_click').map((entry) => entry[2]));
@@ -1292,6 +1365,140 @@ async function checkSecondRound(browser, origin) {
     assert.equal(await page.$eval('.studio-wa', (node) => node.innerText.trim()), staticLabel, 'The button label does not change when React mounts');
     verifyErrors();
   } finally { await page.close(); }
+
+  // ── Ctrl+clic antes de que cargue React: la persona pidió el enlace tal cual; al montar se mide y no se abre nada ──
+  ({ page, verifyErrors } = await openPage(browser, origin, 1440, true, { delayEntryMs: 3000 }));
+  try {
+    await page.evaluateOnNewDocument(() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); });
+    await holdWhatsApp(page);
+    const loading = page.goto(`${origin}/?wa_line=a`, { waitUntil: 'load' });
+    await page.waitForSelector('.studio-wa');
+    await page.$eval('.studio-wa', (node) => node.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true, button: 0 })));
+    assert.deepEqual(await page.evaluate(() => [window.__waClicks, window.__jcEarly?.held]), [[false], false], 'A Ctrl+click made before the page mounts is left alone');
+    await loading;
+    await page.waitForFunction(() => window.__jcMounted === true && window.dataLayer.some((entry) => entry[0] === 'event' && entry[1] === 'conversion'));
+    await delay(300);
+    const measured = await page.evaluate(() => window.dataLayer.filter((entry) => entry[0] === 'event' && ['contact_click', 'conversion'].includes(entry[1])).map((entry) => [entry[1], entry[2].cta_mode ?? entry[2].send_to ?? null]));
+    assert.deepEqual(measured, [['contact_click', null], ['conversion', ADS_WHATSAPP]], 'It is measured as the direct WhatsApp click it was, not as a form');
+    assert.equal(await page.$('dialog.lead-dialog[open]'), null, 'And the short form does not open on its own afterwards');
+    verifyErrors();
+  } finally { await page.close(); }
+
+  // ── Celular: una conversión de WhatsApp por visita, la hoja de retorno y un anuncio nuevo ──
+  // Las visitas «con anuncio» corren en un contexto de navegador aparte: la fuente del anuncio queda 30 días en
+  // localStorage (seo/attribution.js) y, en el contexto compartido, la nota «(Vi el anuncio…)» se colaba en los
+  // mensajes de las pruebas que corren después.
+  let adVisit = await browser.createBrowserContext();
+  ({ page, verifyErrors } = await openPage(adVisit, origin, 390));
+  try {
+    await holdWhatsApp(page);
+    await navigate(page, `${origin}/?gclid=qa-click-1&wa_line=a`);
+    await stubAdPixels(page);
+    const platforms = (ads) => [countOf(ads.gtag, 'conversion'), countOf(ads.fbq, 'Contact'), countOf(ads.oaiq, 'lead_created')];
+    await page.$eval('.studio-wa', (node) => node.click());
+    let ads = await readAdPixels(page);
+    assert.deepEqual(platforms(ads), [1, 1, 1], 'The first tap to WhatsApp counts once on each platform');
+    assert.equal(ads.gtag.find((entry) => entry[1] === 'conversion')[2].send_to, ADS_WHATSAPP);
+    await delay(CONVERSION_GAP_MS); // fuera de la ventana de 3 s: lo que se prueba es la regla por visita
+    await page.$eval('#paquete-pagina_web .package-card__buy', (node) => node.click());
+    ads = await readAdPixels(page);
+    assert.deepEqual(platforms(ads), [1, 1, 1], 'A second tap in the same visit is the same person: no second conversion, Contact or lead_created');
+    const second = ads.gtag.filter((entry) => entry[1] === 'contact_click').at(-1)[2];
+    assert.ok(second.repeat === true && second.package_id === 'pagina_web', 'The second tap is still recorded, marked as a repeat, with its package');
+
+    // Volver de WhatsApp sin haber enviado: la hoja deja la consulta en el portal y no la cuenta dos veces.
+    const away = (state) => page.evaluate((value) => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => value });
+      document.dispatchEvent(new Event('visibilitychange'));
+    }, state);
+    await away('hidden');
+    await delay(3200);
+    await away('visible');
+    await page.waitForSelector('.wa-return');
+    await page.type('#retorno-telefono', '8888-1234');
+    await delay(1700);
+    await page.$eval('.wa-return__submit', (node) => node.click());
+    await page.waitForSelector('.wa-return div[role="status"]');
+    const returned = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body).at(-1);
+    assert.deepEqual([returned.channel, returned.package, returned.phone], ['devolucion', SERVICE_PRICING.pagina_web.label, '8888-1234'], 'The return sheet leaves the inquiry in the portal with the price-list package name');
+    ads = await readAdPixels(page);
+    assert.ok(ads.gtag.some((entry) => entry[1] === 'lead_submit' && entry[2].form_id === 'whatsapp-retorno' && entry[2].package_id === 'pagina_web'), 'The return sheet is recorded as a captured inquiry');
+    assert.deepEqual([...platforms(ads), countOf(ads.fbq, 'Lead')], [1, 1, 1, 1], 'The return sheet adds a Meta Lead and nothing else: the tap already counted on Google Ads and ChatGPT');
+    assert.ok(!JSON.stringify(ads).includes('8888-1234'), 'Ad platforms never receive the phone number');
+
+    // Otro clic en un anuncio empieza otra visita: la pestaña de un celular vive días.
+    await navigate(page, `${origin}/?gclid=qa-click-2&wa_line=a`);
+    await stubAdPixels(page);
+    await page.$eval('.studio-wa', (node) => node.click());
+    ads = await readAdPixels(page);
+    const fresh = ads.gtag.find((entry) => entry[1] === 'contact_click')[2];
+    assert.ok(countOf(ads.gtag, 'conversion') === 1 && !fresh.repeat && !fresh.after_lead, 'A new ad click starts a new visit: its tap counts for that ad');
+    // Recargar o volver a la dirección de un anuncio ya visto no empieza otra.
+    await navigate(page, `${origin}/?gclid=qa-click-1&wa_line=a`);
+    await stubAdPixels(page);
+    await page.$eval('.studio-wa', (node) => node.click());
+    ads = await readAdPixels(page);
+    assert.ok(countOf(ads.gtag, 'conversion') === 0 && ads.gtag.find((entry) => entry[1] === 'contact_click')[2].repeat === true, 'Going back to the address of an ad already seen does not start another visit');
+    verifyErrors();
+  } finally { await adVisit.close(); }
+
+  // ── Celular: el toque hecho antes de que cargue React se mide al montar, aunque la pestaña haya quedado congelada ──
+  ({ page, verifyErrors } = await openPage(browser, origin, 390, true, { delayEntryMs: 3000 }));
+  try {
+    await holdWhatsApp(page);
+    const loading = page.goto(`${origin}/?wa_line=a`, { waitUntil: 'load' });
+    await page.waitForSelector('.studio-wa');
+    await page.$eval('.studio-wa', (node) => node.click());
+    // Como quien vuelve de WhatsApp más de medio minuto después: el tope de 30 s es solo para el clic retenido.
+    assert.deepEqual(await page.evaluate(() => { window.__jcEarly.at -= 31000; return [window.__waClicks, window.__jcEarly.held]; }), [[false], false], 'On a phone the early tap goes on to WhatsApp');
+    await loading;
+    await page.waitForFunction(() => window.__jcMounted === true && window.dataLayer.some((entry) => entry[0] === 'event' && entry[1] === 'conversion'));
+    const measured = await page.evaluate(() => window.dataLayer.filter((entry) => entry[0] === 'event' && ['contact_click', 'conversion'].includes(entry[1])).map((entry) => [entry[1], entry[2].cta_id ?? entry[2].send_to]));
+    assert.deepEqual(measured, [['contact_click', 'Hero · Cotizar'], ['conversion', ADS_WHATSAPP]], 'The early tap is measured once when the page mounts, with no time limit');
+    assert.equal(await page.$('dialog.lead-dialog[open]'), null, 'On a phone no form opens: WhatsApp already did');
+    verifyErrors();
+  } finally { await page.close(); }
+
+  // ── Página de servicio con anuncio: todo marcado y calculado, el pedido entra en los 600 caracteres del portal ──
+  adVisit = await browser.createBrowserContext();
+  ({ page, verifyErrors } = await openPage(adVisit, origin, 1440));
+  try {
+    await page.evaluateOnNewDocument(() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); });
+    const webPage = routes.find((item) => item.type === 'service' && item.data.id === 'web-development' && item.language === 'en');
+    const webOffer = SERVICE_OFFERS['web-development'];
+    await navigate(page, `${origin}${webPage.path}?utm_source=google&utm_campaign=web-bookings-cr&wa_line=a`);
+    await page.waitForSelector('#senales input[type="checkbox"]');
+    await page.$$eval('#senales input[type="checkbox"]', (nodes) => nodes.forEach((node) => node.click()));
+    const field = webOffer.calculator.fields[0];
+    await page.click(`#calc-${field.id}`, { clickCount: 3 });
+    await page.type(`#calc-${field.id}`, String(field.value + 1));
+    const orderText = () => page.$eval('#oferta .so-wa', (node) => new URL(node.href).searchParams.get('text'));
+    await page.waitForFunction(() => new URL(document.querySelector('#oferta .so-wa').href).searchParams.get('text').includes('I estimated'));
+    const all = await orderText();
+    assert.ok(all.length + 121 <= 600, `The order leaves room for the business line (${all.length} characters)`);
+    assert.deepEqual(all.split('\n').slice(-2), ['(I saw the ad on Google · web-bookings-cr)', 'My business:'], 'The ad note and the open business line close the order');
+    assert.ok(all.includes(`All ${webOffer.en.signals.length} situations on this page happen to me.`) && all.includes('I estimated'), 'With everything ticked the situations are summed up and the calculation stays');
+    // El formulario corto recibe el pedido entero y lo que la persona escriba del negocio no se corta.
+    await page.$eval('#oferta .so-wa', (node) => node.click());
+    await page.waitForSelector('dialog.lead-dialog[open] #rapido-negocio');
+    const business = 'QA '.padEnd(120, 'x');
+    await page.type('#rapido-correo', 'qa@example.com');
+    await page.type('#rapido-negocio', business);
+    await delay(1600);
+    await page.click('.lead-dialog__submit');
+    await page.waitForSelector('.lead-dialog__panel[data-status="sent"]');
+    const long = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body).at(-1);
+    assert.ok(long.message.length <= 600 && long.message.endsWith(`My business: ${business}`), `The portal gets the whole order, business line included (${long.message.length} characters)`);
+    await page.click('.lead-dialog__close');
+    await page.waitForFunction(() => !document.querySelector('dialog.lead-dialog').open);
+    // Con una señal menos, o viajan sus textos o viajan sus números: nunca «algunas» sin decir cuáles.
+    await page.$eval('#senal-2', (node) => node.click());
+    await page.waitForFunction((count) => document.querySelector('.so-signals__verdict').dataset.count === String(count), {}, webOffer.en.signals.length - 1);
+    const partial = await orderText();
+    const kept = webOffer.en.signals.filter((_, index) => index !== 2);
+    assert.ok(partial.length + 121 <= 600 && (partial.includes('Situations 1, 2, 4 and 5 of the 5 on this page happen to me.') || kept.every((signal) => partial.includes(signal))), `A partial selection says which situations apply (${partial.length} characters)`);
+    verifyErrors();
+  } finally { await adVisit.close(); }
 
   // ── Celular: fila que se abre a la vista; detalle con cierre y botón siempre visibles; «atrás» lo cierra ──
   ({ page, verifyErrors } = await openPage(browser, origin, 390));
@@ -1351,7 +1558,7 @@ async function checkSecondRound(browser, origin) {
     assert.deepEqual(more, { label: 'none', box: 'none', cards: Object.keys(SERVICE_PRICING).length, variants: 0 }, 'Without JavaScript a phone lists every package, hides the unused expander and shows a single button label');
     verifyErrors();
   } finally { await page.close(); }
-  console.log('[check-site] PASS second round: sentence builder with price, package detail (address, pinned total, back, shared link, one-page PDF), short form over the detail, early click and phone layout');
+  console.log('[check-site] PASS second round: sentence builder with price, package detail (address, pinned total, back, shared link, one-page PDF), short form over the detail, early click (held, Ctrl+click, phone), one WhatsApp conversion per visit, return sheet, 600-character orders and phone layout');
 }
 
 async function checkJournalInteractions(browser, origin, language, width) {
