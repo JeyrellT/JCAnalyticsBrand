@@ -19,6 +19,9 @@ preguntas que solo puede responder el equipo.
   cambios: **5,8 de 10** (mínimo 4,5 en «celular» y «comprador PYME»).
 - **Verificación.** Cada hallazgo técnico se reprodujo por segunda vez contra el código y el sitio compilado
   antes de tocar nada: 49 de 49 confirmados (con matices de línea o de cifra, anotados).
+- **Segunda ronda.** Con los cambios aplicados, ocho revisores volvieron a recorrer el sitio compilado: promedio
+  **7,5 de 10**. Encontraron siete regresiones y unos cuarenta pendientes; lo que se hizo con cada uno está en
+  «Segunda ronda», más abajo.
 - **Restricciones respetadas.** Titular acordado, paleta, voseo, regla de contacto por dispositivo (celular →
   WhatsApp; computadora → formulario corto), ningún precio en la primera pantalla, ningún dato inventado
   (testimonios, plazos de pago, horarios), precios solo desde `portal/shared/service-pricing.js` y las claves
@@ -97,6 +100,116 @@ atajos; `utm_content=IA-2` no activa un paquete; cada enlace a WhatsApp tiene et
 portada apunta a las cinco páginas; el formulario llega sin nada marcado, avisa junto al campo y confirma con
 los pasos; y una consulta aceptada no vuelve a convertir por WhatsApp.
 
+## Segunda ronda · el panel revisa la versión nueva
+
+Con las cinco capas aplicadas, ocho revisores volvieron a recorrer el sitio compilado (copia congelada, solo
+lectura, cada uno con su navegador): cuatro de negocio y cuatro de ingeniería. La consigna fue distinta: qué
+quedó bien, qué se rompió y qué falta.
+
+| Lente | Puntaje |
+|---|---|
+| Conversión y economía conductual | 7,5 |
+| Redacción de respuesta directa y atención | 7,8 |
+| Ventas B2B · comprador corporativo simulado (computadora) | 7,5 |
+| Clienta PYME simulada (celular, con y sin anuncio) | 7,5 |
+| Oferta, precios y venta conversacional | 7,5 |
+| QA de enlaces, rutas y flujos | 7,0 |
+| Experiencia móvil y accesibilidad (WCAG 2.1 AA) | 7,8 |
+| Analítica, rendimiento y SEO técnico | 7,5 |
+| **Promedio** | **7,5** (la primera ronda: 5,8) |
+
+Lo que confirmaron y no hay que volver a tocar: cero enlaces rotos en 12 páginas, dos idiomas y dos
+dispositivos; las diez tarjetas, los diez detalles y las diez variantes `?p=` coinciden con el tarifario en
+precio, plazo, alcance, exclusiones y agregados; contraste sin fallos (antes 85 textos de 386); ningún objetivo
+táctil menor de 44 px; ningún dato personal hacia las plataformas de anuncios; `after_lead` evita la doble
+conversión; sin parpadeo de opacidad al montar.
+
+### Regresiones que encontraron (todas corregidas)
+
+| Qué se rompió con la primera ronda | Corrección | Dónde |
+|---|---|---|
+| La confirmación del formulario de contacto quedaba fuera de pantalla: el formulario largo se reemplaza por un bloque corto y la página se acorta bajo la persona | Al enviar, la confirmación se recoloca debajo de la barra y recibe el foco (portada y páginas de servicio) | `Contact.jsx`, `ServiceSales.jsx`, `scroll.js` |
+| El enlace al paquete de «Tu caso en una frase» caía 370 px pasado en celular y debajo de la barra en computadora | La tarjeta se recoloca con el diseño ya final y respetando su `scroll-margin-top`; en computadora el desplazamiento suave ya no ignora la barra en destinos que no son secciones (`#paquete-…`, `#proyecto`) | `Packages.jsx`, `App.jsx`, `scroll.js` |
+| Lista de paquetes de celular: al abrir una fila, su nombre y precio quedaban fuera de pantalla (se cierra la de arriba) | La fila recién abierta se recoloca si quedó tapada o demasiado abajo | `Packages.jsx` |
+| En celular la bajada del hero era solo el inventario de servicios | La única frase de celular dice qué resuelve, con palabras de quien compra; la lista queda para computadora | `Hero.jsx` |
+| El mensaje de WhatsApp del formulario de contacto no seguía el catálogo (otro saludo, frase de relleno) | Mismo patrón que `messages.js`; sin texto, invita a contar el caso | `Contact.jsx` |
+| En computadora el botón del hero cambiaba de «Cotizar por WhatsApp» a «Pedir cotización» al montar React y la pantalla saltaba 35 px | El HTML estático trae las dos variantes y un script en línea decide cuál se ve antes de pintar (`data-pointer`) | `index.html`, `pointer.jsx`, `boot.js`, `index.css` |
+| El punto final de la frase quedaba solo en una línea en celular | Se oculta cuando las listas ocupan todo el ancho | `CaseMatcher.jsx`, `categories.css` |
+
+### Lo que faltaba (aplicado)
+
+**Compra**
+
+| Hallazgo | Cambio | Dónde |
+|---|---|---|
+| En el detalle del paquete el total y el botón quedaban a dos pantallas en celular y cortados en un portátil | Barra pegada al borde inferior con el total en vivo y el único botón verde; en pantallas angostas las casillas van justo después de «Incluido»; el cierre acompaña el desplazamiento | `PackageSheet.jsx`, `package-sheet.css` |
+| «Atrás» con el detalle abierto sacaba a la persona del sitio | El detalle tiene su entrada en el historial: «atrás» lo cierra | `Packages.jsx` |
+| «Compartir con quien aprueba» y el botón Atrás perdían lo marcado | La selección viaja en el enlace: `#hoja-<clave>.ia.<agregado>`; se copia texto + enlace | `data/packages.js`, `PackageSheet.jsx` |
+| «Imprimir o guardar en PDF» generaba 19 páginas (18 en blanco) | Se imprime una copia del detalle, sola en el documento: una página, con los cuatro compromisos publicados | `PackageSheet.jsx`, `package-sheet.css` |
+| El pedido llegaba sin una palabra del caso: la primera respuesta del equipo era siempre otra pregunta | El mensaje cierra con «¿Me confirman si calza con mi caso?» y la línea abierta «Mi negocio:»; el formulario corto tiene un campo opcional de una línea, «¿Para qué negocio es?» | `data/packages.js`, `LeadDialog.jsx` |
+| El formulario mostraba otro monto sin decir por qué, y al cerrarlo se perdía lo marcado | «Incluye lo que marcaste: …»; en computadora el detalle queda abierto debajo del formulario | `LeadDialog.jsx`, `PackageSheet.jsx` |
+| Después de enviar, la persona no se quedaba con nada | La confirmación repite lo pedido con su total, dice qué ir juntando («Para empezar necesitamos») y deja volver al detalle para guardarlo | `LeadDialog.jsx` |
+| Los miles se escribían de tres maneras («$1 565», «₡806 000», «1.000 contactos») | Una sola función: punto en español, coma en inglés | `data/packages.js` |
+| Dashboard inicial no avisaba cuándo corresponde Power BI de gestión | Aviso con datos del tarifario y enlace al otro detalle | `data/packages.js`, `PackageSheet.jsx` |
+| El proyecto relacionado de los dashboards era un sistema de transporte, sin aclararlo | El enlace dice qué se ve de verdad («no es Power BI»); si la persona eligió su giro, se ofrece el proyecto de ese giro | `data/packages.js`, `PackageSheet.jsx` |
+| En celular no se sabía qué texto se iba a enviar | «Ver el mensaje que se abre en WhatsApp», dentro del detalle | `PackageSheet.jsx` |
+
+**«Tu caso en una frase»**
+
+| Hallazgo | Cambio | Dónde |
+|---|---|---|
+| La respuesta mandaba a navegar en vez de a cotizar y no mostraba el precio | Precio, colones y plazo en la respuesta; cotizar es el botón verde; «Ver qué incluye…» abre el detalle sin salir de la portada | `CaseMatcher.jsx`, `categories.css` |
+| Un restaurante veía un sistema de pedidos con pagos junto a un paquete de reservas que no los incluye | El proyecto se presenta como «más amplio que ese paquete: si querés algo así, te lo cotizamos por escrito» | `CaseMatcher.jsx` |
+| La frase se perdía al pedir un paquete o tocar «Cotizar» | La elección dura toda la visita: los pedidos y «Cotizar» salen con la frase, la tarjeta del paquete lleva «El de tu caso» y el explorador abre en el proyecto de ese giro. Solo vive en el navegador; a los anuncios no les llega | `case.js` (nuevo), `Hero.jsx`, `Nav.jsx`, `Packages.jsx`, `Work.jsx` |
+
+**Claridad**
+
+| Hallazgo | Cambio | Dónde |
+|---|---|---|
+| «Menos de 24 h» cuatro veces en la pantalla de contacto; el único dato necesario se pedía al final | Se dice una vez por modo; WhatsApp o correo van primero | `Contact.jsx` |
+| Dos líneas largas e idénticas bajo cada «Lo quiero»; «hoja del paquete» es jerga interna | Nota corta, enlace de texto («Ver todo lo que incluye y los agregados») y «Detalle del paquete» | `Packages.jsx`, `packages.css` |
+| Los paquetes de $60 y $180 no se veían en computadora | La introducción dice el rango y el botón, cuántos faltan y desde qué precio (calculado) | `Packages.jsx` |
+| Las dos primeras preguntas frecuentes hablaban en voz de estudio | Reescritas con los mismos hechos y variables | `seo/site.js` |
+| La burbuja de chat prometía WhatsApp donde el clic abre un formulario | En computadora, el icono de enviar | `ContactIcon.jsx` (nuevo) |
+| «Lo que construimos» de La Burrada estaba escrito para programadores; abrir el sitio real quedaba al final | Texto en términos de quien pide y quien cocina; la dirección de la barra del navegador es un enlace | `data/projects.js`, `Work.jsx` |
+| «Dominio y alojamiento aparte» sin explicar | Nota al pie con qué es cada uno | `Packages.jsx` |
+
+**Páginas de servicio**
+
+| Hallazgo | Cambio | Dónde |
+|---|---|---|
+| El mensaje citaba el titular de la página; la confirmación era una línea; el error no decía qué corregir | Mismo mensaje que la portada, confirmación con los tres pasos y aviso por campo con foco | `ServiceSales.jsx` |
+| El mismo paquete viajaba con otra clave, otra necesidad y sin leer `utm_content` | `data-package` es la clave del tarifario en todo el sitio, la necesidad es la del paquete y `utm_content` activa el paquete igual que en la portada | `ServiceSales.jsx`, `LeadDialog.jsx` |
+
+**Medición y técnica**
+
+| Hallazgo | Cambio | Dónde |
+|---|---|---|
+| El clic hecho antes de que monte React no se medía y en computadora se iba a WhatsApp Web | Se guarda, se detiene en computadora y se repite al montar (abre el formulario); en celular se mide | `index.html`, `early-click.js` (nuevo) |
+| El selector y las casillas no dejaban rastro | Llegan al portal como clics con la clave elegida («Caso · meta · numeros», «Hoja · Agregado whatsapp · sí»); también que la hoja de retorno se mostró | `site-tracker.js`, `WhatsAppReturn.jsx` |
+| Conteos dobles: ChatGPT recibía dos consultas por la hoja de retorno; «Volver a WhatsApp» convertía otra vez | Una conversión de WhatsApp por visita; los clics siguientes llevan `repeat: true` | `analytics.js` |
+| Las etiquetas de los botones llevaban el nombre traducido del paquete | Llevan la clave (`Paquetes · Lo quiero · pagina_web`) | `Packages.jsx`, `PackageSheet.jsx`, `Hero.jsx` |
+| Cambio de idioma: un ancla vieja le ganaba a la sección que se estaba leyendo | Manda lo que hay en pantalla; `#hoja-…` y `#paquete-…` se conservan | `LanguageSwitcher.jsx` |
+| Hoja de retorno: 89 px de campo a 320 px, invisible para lector de pantalla | Una columna a 320 px, foco al título, Escape la cierra | `WhatsAppReturn.jsx`, `whatsapp-return.css` |
+| Los flotantes tapaban un tercio de los enlaces secundarios de WhatsApp | También se retiran ante ellos | `Nav.jsx` |
+| Los precios y las preguntas no estaban en los datos estructurados | Cada servicio declara sus paquetes como ofertas (10) y la portada sus seis preguntas | `seo/site.js` |
+
+### Lo que la segunda ronda propuso y no se aplicó
+
+- **Reescribir alcances y agregados del tarifario** en lenguaje de cliente («Otro recurso, mismas reglas»,
+  «Anticipo por pasarela viable»). Son textos de `portal/shared/service-pricing.js`, la fuente del portal: cambiar
+  su significado sin el equipo sería inventar alcance. Queda como pregunta.
+- **Forma de pago y montos de dominio y alojamiento.** No hay ninguna fuente que los defina.
+- **Partir el JavaScript de entrada** (193 KB gzip; unos 160 KB sin comprimir son el texto de los artículos, que
+  llega por `content/catalog`) y autoalojar las fuentes. Es un cambio de arquitectura con riesgo sobre el blog
+  y el prerender: va como recomendación 2.
+- **Historial para el formulario corto** (que «atrás» lo cierre). Solo existe en computadora, donde se cierra con
+  Escape, la X o un clic fuera; compite con el historial del detalle del paquete.
+- **«IA» / «Inteligencia artificial» en la barra** y un desplegable de categorías en las páginas de servicio.
+- Tres ideas para una próxima iteración: casillas «Ya lo tengo» en «Para empezar necesitamos»; que el flotante
+  recuerde el pedido armado en el detalle; y medir «Sí, ya lo envié» de la hoja de retorno como señal de
+  calidad en las plataformas de anuncios (requiere crear la acción en cada una).
+
 ## Lo que no se pudo verificar
 
 - **El sitio publicado y los destinos externos** (`www.jcanalytic.com`, `portal.jcanalytic.com`, `wa.me`, los
@@ -106,6 +219,9 @@ los pasos; y una consulta aceptada no vuelve a convertir por WhatsApp.
   comprobó lo que el sitio les envía, no lo que ellos hacen con la página.
 - Lectores de pantalla reales (NVDA, VoiceOver, TalkBack), Safari de iOS y el navegador interno de
   Instagram/Facebook, donde llega buena parte del tráfico de Meta.
+- El botón o gesto «atrás» de un Android y de un iPhone reales con el detalle del paquete abierto (se probó con
+  el historial de Chromium), el diálogo de impresión de Safari y Firefox (el PDF de una página se verificó en
+  Chromium) y el salto de la lista de paquetes en Safari de iOS, que no compensa el desplazamiento como Chromium.
 
 ## Lo que se dejó como estaba, a propósito
 
@@ -119,8 +235,10 @@ medios ni condiciones de pago: no están definidos en ninguna fuente y no se inv
 1. **Autoalojar las fuentes** (hoy 258 KB desde Google, con una hoja de terceros que bloquea el primer pintado;
    85 KB bajan solo por el signo ₡ y la cursiva del titular es la causa del único salto de diseño).
 2. **Separar del bundle de la portada** el texto de los 12 artículos y de las páginas de servicio, y llevar a
-   hojas propias el CSS de las demos que ya no están en la portada (la hoja pesa 212 KB y la portada usa menos
-   de la mitad).
+   hojas propias el CSS de las demos que ya no están en la portada (la hoja pesa 221 KB y la portada usa menos
+   de la mitad). Medido en la segunda ronda: el JavaScript de entrada pesa 193 KB con gzip más 48 KB de
+   animaciones, y unos 160 KB sin comprimir son texto de artículos que la portada no muestra; la portada pide
+   20 imágenes fuera de pantalla antes de cualquier desplazamiento.
 3. **Página de precios indexable** (`/precios/`) generada desde el tarifario, con datos estructurados de oferta:
    casi ningún estudio local publica precios y es la búsqueda con más intención de compra.
 4. **Código de consulta en cada mensaje de WhatsApp** («Consulta K7F3») para unir el chat con la visita en el
@@ -156,6 +274,33 @@ medios ni condiciones de pago: no están definidos en ninguna fuente y no se inv
   conversión.
 - ¿Quién atiende cada una de las dos líneas de WhatsApp y en qué horario? Publicarlo ayudaría a cumplir «menos
   de 24 h».
+
+Nuevas, de la segunda ronda:
+
+- El «total preliminar» con agregados que arma el detalle del paquete, ¿es el que se respeta si el caso calza?
+  ¿Los agregados valen el precio publicado también después de la entrega? ¿Por cuánto tiempo vale un detalle
+  impreso?
+- ¿Cuánto cuestan al año, aproximadamente, el dominio y el alojamiento de una Web con reservas, y los puede
+  gestionar el estudio?
+- ¿Se pueden reescribir con el equipo los alcances y agregados del tarifario en palabras del cliente? Por
+  ejemplo, «Otro recurso, mismas reglas» y «Anticipo por pasarela viable» no se entienden sin explicación.
+- ¿Hay un tablero Power BI que se pueda mostrar con datos de demostración? Hoy la prueba para quien busca
+  dashboards es un sistema de transporte. ¿Se puede publicar que la licencia de Power BI la paga el cliente a
+  Microsoft?
+- En los paquetes más chicos (Excel, Dashboard inicial), ¿la conversación de 30 minutos es obligatoria o se
+  puede mandar el alcance por escrito directo?
+- ¿Quién escribe primero a la persona: siempre la misma o quien esté disponible? ¿Se pueden ofrecer franjas
+  para los 30 minutos? ¿La propuesta tiene un formato que se pueda mostrar como ejemplo?
+- ¿Algún anuncio apunta a una página de servicio usando `utm_content` para indicar el paquete? Desde este
+  cambio esa página muestra el paquete anunciado.
+- En Google Ads, ¿«Envío de formulario» cuenta una o todas las conversiones por clic? Una segunda consulta en
+  la misma visita todavía suma otra. ¿Quieren una acción secundaria «WhatsApp confirmado»? ¿Se guarda el
+  identificador de clic (gclid) para importar las ventas?
+- ¿Qué parte de las visitas de Meta entra desde iPhone, y hay a mano un iPhone y un Android de pantalla chica
+  para cinco minutos de prueba antes de publicar?
+- Si en Meta o en Google hay reglas o informes basados en el nombre del paquete en español
+  (`content_name` / `package_id` = «Web con reservas»), desde este cambio las páginas de servicio envían la
+  clave (`pagina_web`), igual que la portada.
 
 ## Cómo comprobarlo
 

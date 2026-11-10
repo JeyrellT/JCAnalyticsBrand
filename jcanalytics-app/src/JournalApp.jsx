@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { ArrowUpRight, ArrowRight, Search, Plus, Check, ArrowLeft, MessageCircle } from 'lucide-react';
+import { ArrowUpRight, ArrowRight, Search, Plus, Check, ArrowLeft } from 'lucide-react';
 import { articles, servicePages, topics } from './content/catalog';
 import { CATEGORIES, categoryName } from './content/categories';
 import { articlePath, servicePath, homePath, journalPath } from './seo/routes';
@@ -15,6 +15,7 @@ import './styles/journal.css';
 import { shotSrcSet } from './data/shots';
 import { SERVICES } from './data/cotizador';
 import { useDesktop } from './hooks/useDesktop';
+import ContactIcon from './components/site/ContactIcon';
 import { endBoot } from './boot';
 import { PORTAL_URL } from './components/site/links';
 import {
@@ -119,7 +120,7 @@ function ServiceQuickOffer({ item }) {
       </div>
       <div className="so-quick__action">
         <a className="so-wa" href={wa(message)} target="_blank" rel="noreferrer" data-need={item.need} data-track-label="Marketing · Armemos mi plan">
-          <MessageCircle size={18} aria-hidden="true" />{desktop ? t('Armemos mi plan de marketing', 'Build my marketing plan') : t('Armemos mi plan · WhatsApp', 'Build my plan · WhatsApp')}
+          <ContactIcon size={18} />{desktop ? t('Armemos mi plan de marketing', 'Build my marketing plan') : t('Armemos mi plan · WhatsApp', 'Build my plan · WhatsApp')}
         </a>
         <small>{t('Te respondemos en menos de 24 h. La primera conversación, de 30 minutos, no tiene costo.', 'We reply within 24 hours. The first 30-minute conversation is free.')}</small>
       </div>

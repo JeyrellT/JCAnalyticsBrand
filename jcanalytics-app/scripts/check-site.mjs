@@ -7,6 +7,7 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import { dirname, extname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
+import { gzipSync } from 'node:zlib';
 import puppeteer from 'puppeteer';
 import { articles } from '../src/content/catalog.js';
 import { routes, alternatePath, articlePath, servicePath } from '../src/seo/routes.js';
@@ -22,8 +23,8 @@ const COPY = {
   en: {
     path: '/en/', heading: 'Websites and systems delivered on time.', system: 'System / backend', website: 'Website',
     objective: 'What would you like to solve?', name: 'Your name',
-    faqQuestion: 'What can JC Analytics build for my business?', faqAnswer: 'We design websites and custom software',
-    emailPrefix: 'Inquiry:', messagePrefix: 'Hello', estimateLabel: 'Estimated investment',
+    faqQuestion: 'What can JC Analytics build for my business?', faqAnswer: 'Websites with bookings or orders',
+    emailPrefix: 'Inquiry:', messagePrefix: 'Hi JC Analytics', estimateLabel: 'Estimated investment',
     title: 'Web Development & AI in Costa Rica | JC Analytics', descriptionStart: 'Custom websites, software, Power BI',
     journalHeading: 'Good technology starts with a better question.',
     journalTitle: 'Business Insights: Data, Websites & AI | JC Analytics',
@@ -32,8 +33,8 @@ const COPY = {
   es: {
     path: '/', heading: 'Webs y sistemas con entrega a tiempo.', system: 'Sistema / backend', website: 'Página web',
     objective: '¿Qué querés resolver?', name: 'Tu nombre',
-    faqQuestion: '¿Qué puede desarrollar JC Analytics para mi negocio?', faqAnswer: 'Diseñamos páginas web y software a medida',
-    emailPrefix: 'Consulta:', messagePrefix: 'Hola', estimateLabel: 'Inversión estimada',
+    faqQuestion: '¿Qué puede desarrollar JC Analytics para mi negocio?', faqAnswer: 'Páginas web con reservas o pedidos',
+    emailPrefix: 'Consulta:', messagePrefix: 'Hola JC Analytics', estimateLabel: 'Inversión estimada',
     title: 'Diseño Web, Software e IA Costa Rica | JC Analytics', descriptionStart: 'Diseño web, software a medida, dashboards Power BI',
     journalHeading: 'La tecnología empieza con una buena pregunta.',
     journalTitle: 'Ideas para tu Negocio: Datos, Web e IA | JC Analytics',
@@ -101,6 +102,8 @@ async function openPage(browser, origin, width, javascript = true, options = {})
   await page.setRequestInterception(true);
   page.on('request', async (request) => {
     const url = new URL(request.url());
+    // `delayEntryMs`: retiene el JavaScript de entrada para probar la página antes de que React monte.
+    if (url.origin === origin && options.delayEntryMs && /\/assets\/index-[^/]+\.js$/.test(url.pathname)) await delay(options.delayEntryMs);
     if (url.origin === origin && options.delayJournalMs && /\/JournalApp-[^/]+\.js$/.test(url.pathname)) {
       delayedModule.requests += 1;
       delayedModule.waiting = true;
@@ -373,6 +376,10 @@ async function checkCallbackLead(page, language) {
   const sent = await page.$eval('#contacto .contact-sent', (node) => ({ text: node.innerText, steps: node.querySelectorAll('ol li').length, focused: node.contains(document.activeElement), status: Boolean(node.querySelector('[role="status"]')) }));
   assert.ok(sent.text.includes('24') && sent.steps === 3 && sent.status, 'The confirmation says when the team replies and what comes next');
   await page.waitForFunction(() => document.querySelector('#contacto .contact-sent h3') === document.activeElement);
+  // El formulario largo se reemplaza por un bloque corto: sin recolocar, «¡Listo!» quedaba fuera de pantalla.
+  await delay(300);
+  const sentTop = await page.$eval('#contacto .contact-sent h3', (node) => node.getBoundingClientRect().top);
+  assert.ok(sentTop >= 56 && sentTop < 700, `The confirmation is on screen after sending (title at ${Math.round(sentTop)} px)`);
   const [lead] = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body);
   assert.equal(lead.channel, 'devolucion');
   assert.equal(lead.phone, '8888-1234');
@@ -433,7 +440,7 @@ async function checkDesktopLeadFlow(browser, origin, language) {
     assert.ok((await page.$eval('#lead-dialog-title', (node) => node.textContent)).includes('24'));
     const [lead] = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body);
     assert.equal(lead.channel, 'paquete');
-    assert.equal(lead.package, packageName);
+    assert.equal(lead.package, pricing.label, 'The portal always receives the Spanish package name, also from the English page');
     assert.equal(lead.need, 'Página web', 'The portal receives the internal need value in Spanish');
     assert.equal(lead.page, copy.path);
     assert.equal(lead.phone, '8888-1234');
@@ -454,6 +461,9 @@ async function checkDesktopLeadFlow(browser, origin, language) {
     await page.$eval('#contacto form', (form) => form.requestSubmit());
     await page.waitForSelector('#contacto .contact-sent');
     assert.ok((await page.$eval('#contacto .contact-sent', (node) => node.innerText)).includes('24'), 'The confirmation says when the team replies');
+    await delay(300);
+    const sentTop = await page.$eval('#contacto .contact-sent h3', (node) => node.getBoundingClientRect().top);
+    assert.ok(sentTop >= 64 && sentTop < 700, `The confirmation is on screen after sending, not behind the fixed bar (title at ${Math.round(sentTop)} px)`);
     const contactLead = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body)[1];
     assert.equal(contactLead.channel, 'formulario');
     assert.equal(contactLead.need, 'Otro', 'With nothing chosen the inquiry arrives as «Otro», not as a service nobody picked');
@@ -490,11 +500,11 @@ async function checkDesktopLeadFlow(browser, origin, language) {
     const serviceLead = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body).at(-1);
     assert.equal(serviceLead.channel, 'paquete');
     assert.equal(serviceLead.need, route.data.need, 'The portal receives the service need in Spanish');
-    assert.equal(serviceLead.package, servicePackage);
+    assert.equal(serviceLead.package, servicePricing.label, 'The portal receives the Spanish package name');
     assert.equal(serviceLead.page, route.path);
     assert.equal(serviceLead.email, 'qa@example.com');
     assert.ok(serviceLead.message.includes(signal));
-    assertLeadCaptured(await readAdPixels(page), { form: 'contacto-rapido', section: 'oferta', packageId: servicePricing.label, value: servicePricing.base_usd });
+    assertLeadCaptured(await readAdPixels(page), { form: 'contacto-rapido', section: 'oferta', packageId: offer.packages[0], value: servicePricing.base_usd });
     await page.keyboard.press('Escape');
     await page.waitForFunction(() => !document.querySelector('dialog.lead-dialog').open);
     // El formulario de la página: «Enviar consulta» manda y WhatsApp Web es la alternativa directa.
@@ -792,7 +802,7 @@ async function checkStaticServiceSales(page, route) {
   const whatsapp = new URL(buy.href);
   assert.equal(whatsapp.origin, 'https://wa.me', 'The offer is requested with one WhatsApp tap');
   assert.ok(whatsapp.searchParams.get('text').includes(label), 'The WhatsApp message names the package');
-  assert.equal(buy.pkg, pricing.label, 'Package clicks carry the Spanish package id for the ad pixels');
+  assert.equal(buy.pkg, offer.packages[0], 'Package clicks carry the package key for the ad pixels, the same one the home page uses');
   assert.equal(buy.value, pricing.base_usd);
   assert.equal((await page.$$('#senales input[type="checkbox"]')).length, offer[language].signals.length, 'Every signal is in the static HTML');
   assert.ok(/\d\s?h/.test(await page.$eval('#calculadora .so-calc__result', (node) => node.innerText)), 'The calculator shows a default result without JavaScript');
@@ -848,7 +858,7 @@ async function checkServiceSales(browser, origin, language, width) {
     await page.waitForFunction(() => document.querySelector('.so-form__status').textContent.includes('24'));
     const [lead] = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body);
     assert.equal(lead.channel, 'devolucion');
-    assertLeadCaptured(await readAdPixels(page), { form: 'contacto-servicio', packageId: pricing.label, value: pricing.base_usd });
+    assertLeadCaptured(await readAdPixels(page), { form: 'contacto-servicio', packageId: offer.packages[0], value: pricing.base_usd });
     assert.equal(lead.need, route.data.need, 'The portal receives the service need in Spanish');
     assert.equal(lead.package, pricing.label, 'The portal receives the Spanish package name');
     assert.equal(lead.page, route.path, 'The portal knows which service page the inquiry came from');
@@ -930,6 +940,23 @@ async function checkSitemap(browser, origin) {
   const robots = await (await fetch(`${origin}/robots.txt`)).text();
   assert.ok(robots.includes(`Sitemap: ${PRODUCTION}/sitemap.xml`));
   console.log(`[check-site] PASS sitemap: all ${routes.length} routes with equivalent language alternates`);
+}
+
+// Tope de peso de lo que la portada descarga siempre: el JavaScript y la hoja de estilos de entrada. No es una
+// meta de rendimiento (la auditoría de noviembre de 2026 recomienda bajarlos partiendo el bundle): es un freno
+// para que no sigan creciendo sin que alguien lo decida. Si un cambio justificado lo supera, se sube el tope
+// en el mismo commit y se explica.
+const WEIGHT_BUDGET_KB = { script: 205, style: 50 }; // gzip · al fijarlo: 193 KB de JS y 45 KB de CSS
+async function checkWeightBudget() {
+  const html = await readFile(join(DIST, 'index.html'), 'utf8');
+  const entry = { script: /src="(\/assets\/index-[^"]+\.js)"/.exec(html)?.[1], style: /href="(\/assets\/index-[^"]+\.css)"/.exec(html)?.[1] };
+  const sizes = {};
+  for (const [kind, path] of Object.entries(entry)) {
+    assert.ok(path, `The home page declares its entry ${kind}`);
+    sizes[kind] = gzipSync(await readFile(join(DIST, path))).length / 1024;
+    assert.ok(sizes[kind] <= WEIGHT_BUDGET_KB[kind], `Entry ${kind} weighs ${sizes[kind].toFixed(1)} KB gzip, over the ${WEIGHT_BUDGET_KB[kind]} KB budget`);
+  }
+  console.log(`[check-site] PASS weight budget: entry script ${sizes.script.toFixed(0)} KB and stylesheet ${sizes.style.toFixed(0)} KB gzip, within ${WEIGHT_BUDGET_KB.script} / ${WEIGHT_BUDGET_KB.style} KB`);
 }
 
 async function checkPublicPrivacy() {
@@ -1090,6 +1117,163 @@ async function checkPurchasePaths(browser, origin) {
     }
   }
   console.log('[check-site] PASS purchase paths: each package lands on its own offer, the hero action fits a phone’s first screen, ads only activate exact packages and every WhatsApp link has a stable label');
+}
+
+// Segunda ronda de la auditoría (noviembre de 2026): candados de los flujos que se rompieron o faltaban.
+//   · «Tu caso en una frase» responde con precio, marca su paquete y su enlace no deja la tarjeta bajo la barra;
+//   · el detalle del paquete escribe su dirección, guarda lo marcado en ella, tiene el botón siempre a la vista,
+//     se cierra con «atrás», abre un enlace compartido con el mismo total y se imprime en una página;
+//   · el formulario corto se abre encima del detalle, nombra lo marcado y completa «Mi negocio:»;
+//   · el clic hecho antes de que cargue React abre el formulario en vez de irse a WhatsApp Web;
+//   · en celular la fila que se abre no queda tapada y el detalle conserva cierre y botón al desplazar.
+async function checkSecondRound(browser, origin) {
+  const pricing = SERVICE_PRICING.dashboard_inicial;
+  const extra = pricing.extras[0];
+  const pdfPages = (buffer) => (Buffer.from(buffer).toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length;
+  const box = (page, selector) => page.$eval(selector, (node) => { const r = node.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right }; });
+
+  // ── Computadora, con el desplazamiento suave activo (sin «reducir movimiento») ──
+  let { page, verifyErrors } = await openPage(browser, origin, 1440);
+  try {
+    await page.evaluateOnNewDocument(() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); });
+    await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }]);
+    await navigate(page, `${origin}/?wa_line=a`);
+    await page.waitForSelector('.case-matcher select');
+    const [business, goal] = await page.$$('.case-matcher select');
+    await business.select('distribuidora');
+    await page.waitForFunction(() => document.querySelector('.case-matcher__hint'));
+    await goal.select('numeros');
+    await page.waitForSelector('.case-matcher__verdict a');
+    const verdict = compact(await page.$eval('.case-matcher__verdict', (node) => node.textContent));
+    assert.ok(verdict.includes(`$${pricing.base_usd}`) && verdict.includes(pricing.label), 'The sentence builder answers with the closest package and its published price');
+    const quote = new URL(await page.$eval('.case-matcher__wa', (node) => node.href)).searchParams.get('text');
+    assert.ok(quote.includes('distribuidora') && quote.includes(pricing.label), 'The quote button carries the sentence and the package');
+    assert.ok(new URL(await page.$eval('.studio-wa', (node) => node.href)).searchParams.get('text').includes('distribuidora'), 'Once built, the sentence travels in the main quote button too');
+    await page.$eval('.case-matcher__verdict a', (node) => node.click());
+    await delay(2600); // desplazamiento suave
+    const title = await box(page, '#paquete-dashboard_inicial h3');
+    assert.ok(title.top >= 70 && title.top < 500, `The package card lands below the fixed bar (h3 at ${Math.round(title.top)} px)`);
+    assert.ok((await page.$eval('#paquete-dashboard_inicial .package-card__badge', (node) => node.textContent)).includes('El de tu caso'), 'The matched package is marked as the one for this visitor');
+    const order = new URL(await page.$eval('#paquete-dashboard_inicial .package-card__buy', (node) => node.href)).searchParams.get('text');
+    assert.ok(order.includes('Mi caso: tengo una distribuidora') && !order.includes('Mi negocio:'), 'A package order carries the sentence instead of the open business line');
+
+    // Detalle del paquete: dirección, selección, botón a la vista.
+    await page.$eval('#paquete-dashboard_inicial .package-card__sheet', (node) => node.click());
+    await page.waitForSelector('dialog.package-sheet[open]');
+    assert.equal(new URL(page.url()).hash, '#hoja-dashboard_inicial', 'Opening the package detail writes its address');
+    await page.$eval('.package-sheet__options label:nth-of-type(2) input', (node) => node.click());
+    await page.waitForFunction((key) => window.location.hash === `#hoja-dashboard_inicial.${key}`, {}, extra.key);
+    const total = `$${pricing.base_usd + extra.price_usd}`;
+    assert.equal(compact(await page.$eval('.package-sheet__bar .package-sheet__total strong', (node) => node.textContent)), total, 'Ticking an add-on updates the total in the pinned bar');
+    const [dialogBox, buyBox] = [await box(page, 'dialog.package-sheet'), await box(page, '.package-sheet__buy')];
+    assert.ok(buyBox.top >= dialogBox.top && buyBox.bottom <= dialogBox.bottom + 1, 'The order button is always inside the visible part of the detail');
+    assert.ok(compact(await page.$eval('.package-sheet__upgrade', (node) => node.textContent)).includes(SERVICE_PRICING.power_bi.label), 'The starter dashboard points to the bigger package when it applies');
+
+    // PDF de una página (antes: la hoja y 18 páginas en blanco).
+    await page.evaluate(() => { window.print = () => {}; });
+    await page.$eval('.package-sheet__tools button', (node) => node.click());
+    assert.ok(await page.$('body > .package-sheet--print'), 'Printing prepares a standalone copy of the detail');
+    assert.equal(pdfPages(await page.pdf({ format: 'Letter' })), 1, 'The package detail prints on a single page');
+    await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+    assert.equal(await page.$('.package-sheet--print'), null, 'The print copy is removed afterwards');
+
+    // El formulario corto se abre encima del detalle y nombra lo marcado.
+    await page.$eval('.package-sheet__buy', (node) => node.click());
+    await page.waitForSelector('dialog.lead-dialog[open]');
+    assert.ok(await page.$eval('dialog.package-sheet', (node) => node.open), 'The detail stays open under the short form');
+    assert.ok((await page.$eval('.lead-dialog__picked', (node) => node.textContent)).includes(extra.label), 'The short form names what was ticked');
+    assert.ok((await page.$eval('.lead-dialog__package', (node) => node.textContent)).includes(total), 'The short form shows the same total as the detail');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('dialog.lead-dialog').open);
+    assert.ok(await page.$eval('dialog.package-sheet', (node) => node.open), 'Closing the short form returns to the detail with the selection');
+    await page.goBack();
+    await page.waitForFunction(() => !document.querySelector('dialog.package-sheet').open);
+    assert.ok(!new URL(page.url()).hash.startsWith('#hoja-'), 'The browser Back button closes the detail instead of leaving the site');
+    verifyErrors();
+  } finally { await page.close(); }
+
+  // ── Enlace compartido con selección, y pedido sin frase: el campo «¿Para qué negocio es?» ──
+  ({ page, verifyErrors } = await openPage(browser, origin, 1440));
+  try {
+    const web = SERVICE_PRICING.pagina_web;
+    const reminder = web.extras.find((item) => item.key === 'whatsapp');
+    await page.evaluateOnNewDocument(() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); });
+    await navigate(page, `${origin}/en/?wa_line=a#hoja-pagina_web.ia.whatsapp.unknown`);
+    await page.waitForSelector('dialog.package-sheet[open]');
+    assert.equal(compact(await page.$eval('.package-sheet__bar .package-sheet__total strong', (node) => node.textContent)), `$${web.with_ai_usd + reminder.price_usd}`, 'A shared link opens the detail with the same total (AI replaces the base price, add-ons are added, unknown keys are ignored)');
+    assert.ok(await page.$('.package-sheet__shared'), 'The detail says the link came with options selected');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => window.location.hash === '#paquetes');
+    await page.$eval('#paquete-dashboard_inicial .package-card__buy', (node) => node.click());
+    await page.waitForSelector('dialog.lead-dialog[open] #rapido-negocio');
+    await page.type('#rapido-telefono', '8888-1234');
+    await page.type('#rapido-negocio', 'QA barbershop');
+    await delay(1600);
+    await page.click('.lead-dialog__submit');
+    await page.waitForSelector('.lead-dialog__panel[data-status="sent"]');
+    const lead = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body).at(-1);
+    assert.equal(lead.package, pricing.label, 'The portal gets the Spanish package name from the English page');
+    assert.ok(lead.message.includes('My business: QA barbershop'), 'The optional business line is filled into the inquiry');
+    const sent = compact(await page.$eval('.lead-dialog__panel', (node) => node.innerText));
+    assert.ok(sent.includes(`$${pricing.base_usd}`) && await page.$('.lead-dialog__ready'), 'The confirmation repeats the request with its total and says what to gather');
+    await page.$eval('.lead-dialog__actions a.lead-dialog__submit', (node) => node.click());
+    await page.waitForSelector('dialog.package-sheet[open]');
+    assert.equal(new URL(page.url()).hash, '#hoja-dashboard_inicial', 'The confirmation opens the detail of what was requested');
+    verifyErrors();
+  } finally { await page.close(); }
+
+  // ── Clic antes de que cargue React: en computadora abre el formulario, nunca WhatsApp Web ──
+  ({ page, verifyErrors } = await openPage(browser, origin, 1440, true, { delayEntryMs: 3000 }));
+  try {
+    await page.evaluateOnNewDocument(() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); });
+    // No se espera a la navegación: DOMContentLoaded llega recién cuando el módulo de entrada (retenido) corre.
+    const loading = page.goto(`${origin}/?wa_line=a`, { waitUntil: 'load' });
+    await page.waitForSelector('.studio-wa');
+    assert.ok(await page.evaluate(() => !window.__jcMounted), 'The static first screen is on screen before React mounts');
+    assert.equal(await page.$eval('html', (node) => node.dataset.pointer), 'fine', 'The device is known before React loads');
+    const staticLabel = await page.$eval('.studio-wa', (node) => node.innerText.trim());
+    assert.equal(staticLabel, 'Pedir cotización', 'On a computer the static first screen already shows the computer label');
+    assert.equal(await page.$eval('.studio-hero__invitation', (node) => getComputedStyle(node).display), 'none', 'The phone-only line is hidden on a computer before React loads');
+    await page.$eval('.studio-wa', (node) => node.click());
+    assert.ok(await page.evaluate(() => Boolean(window.__jcEarly?.label) && !window.__jcMounted), 'A click before the page is interactive is remembered, not lost');
+    await loading;
+    await page.waitForSelector('dialog.lead-dialog[open]');
+    const clicks = await page.evaluate(() => window.dataLayer.filter((entry) => entry[0] === 'event' && entry[1] === 'contact_click').map((entry) => entry[2]));
+    assert.ok(clicks.length === 1 && clicks[0].cta_mode === 'form' && clicks[0].cta_id === 'Hero · Cotizar', 'The early click opens the short form and is measured once');
+    assert.equal(await page.$eval('.studio-wa', (node) => node.innerText.trim()), staticLabel, 'The button label does not change when React mounts');
+    verifyErrors();
+  } finally { await page.close(); }
+
+  // ── Celular: fila que se abre a la vista; detalle con cierre y botón siempre visibles; «atrás» lo cierra ──
+  ({ page, verifyErrors } = await openPage(browser, origin, 390));
+  try {
+    await navigate(page, `${origin}/?wa_line=a`);
+    assert.equal(await page.$eval('.studio-hero__description', (node) => node.innerText.trim().split('. ').length), 1, 'On a phone the hero shows a single sentence under the headline');
+    await page.$eval('#paquetes', (node) => node.scrollIntoView({ block: 'start', behavior: 'instant' }));
+    await page.waitForSelector('#paquete-chatbot_atencion .package-card__toggle');
+    await page.$eval('#paquete-chatbot_atencion .package-card__toggle', (node) => { node.scrollIntoView({ block: 'center', behavior: 'instant' }); node.click(); });
+    await delay(500);
+    const row = await box(page, '#paquete-chatbot_atencion h3');
+    assert.ok(row.top >= 56 && row.top < 844 * 0.6, `The row that was just opened keeps its name on screen (h3 at ${Math.round(row.top)} px)`);
+    await page.$eval('#paquete-chatbot_atencion .package-card__sheet', (node) => node.click());
+    await page.waitForSelector('dialog.package-sheet[open]');
+    const [buy, bar] = [await box(page, '.package-sheet__buy'), await box(page, '.package-sheet__bar')];
+    assert.ok(buy.bottom <= 844 && buy.right <= 390 && bar.bottom <= 845, 'On a phone the total and the order button are pinned to the bottom of the detail');
+    const order = await page.$$eval('.package-sheet__body > *', (nodes) => nodes.slice(0, 2).map((node) => (node.querySelector('legend') ? 'options' : 'text')));
+    assert.deepEqual(order, ['text', 'options'], 'On a phone the options come right after what is included');
+    await page.$eval('dialog.package-sheet', (node) => { node.scrollTop = node.scrollHeight; });
+    await delay(150);
+    const close = await box(page, '.package-sheet__close');
+    assert.ok(close.top >= 0 && close.bottom <= 120, 'The close button follows the scroll inside the detail');
+    assert.ok((await box(page, '.package-sheet__buy')).bottom <= 844, 'The order button stays on screen at the end of the detail');
+    assert.equal(await page.$eval('dialog.package-sheet', (node) => node.scrollWidth - node.clientWidth), 0, 'The detail has no sideways scroll on a phone');
+    await page.goBack();
+    await page.waitForFunction(() => !document.querySelector('dialog.package-sheet').open);
+    assert.equal(new URL(page.url()).pathname, '/', 'The Back gesture closes the detail and stays on the site');
+    await checkWidth(page);
+    verifyErrors();
+  } finally { await page.close(); }
+  console.log('[check-site] PASS second round: sentence builder with price, package detail (address, pinned total, back, shared link, one-page PDF), short form over the detail, early click and phone layout');
 }
 
 async function checkJournalInteractions(browser, origin, language, width) {
@@ -1480,6 +1664,7 @@ async function checkWhatsAppLines(browser, origin) {
 async function main() {
   await Promise.all(routes.map((route) => stat(join(DIST, route.path, 'index.html'))));
   await checkPublicPrivacy();
+  await checkWeightBudget();
   const server = await startServer();
   const origin = `http://127.0.0.1:${server.address().port}`;
   let browser;
@@ -1496,6 +1681,8 @@ async function main() {
         ...(process.env.CI ? ['--no-sandbox', '--disable-setuid-sandbox'] : []),
       ],
     });
+    // CHECK_ONLY=second-round corre solo los candados de la segunda ronda (para iterar; CI corre todo).
+    if (process.env.CHECK_ONLY === 'second-round') { await checkSecondRound(browser, origin); return; }
     await checkSitemap(browser, origin);
     await checkDelayedArticleModule(browser, origin);
     const snapshots = new Map();
@@ -1504,6 +1691,7 @@ async function main() {
     await checkWhatsAppLines(browser, origin);
     await checkSiteTracking(browser, origin);
     await checkPurchasePaths(browser, origin);
+    await checkSecondRound(browser, origin);
     for (const language of ['es', 'en']) await checkDesktopLeadFlow(browser, origin, language);
     for (const width of [1440, 390]) {
       for (const language of ['en', 'es']) {

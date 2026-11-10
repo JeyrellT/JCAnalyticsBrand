@@ -79,11 +79,19 @@ consultas. Detalle y criterios en [estrategia de conversión](estrategia-convers
 | Clic a WhatsApp en computadora (abre el formulario corto) | solo `contact_click` con `cta_mode: form` | `Contact` | — |
 | Consulta aceptada por el portal (formulario corto, "Prefiero que me contacten", formulario de contacto en computadora, formulario de la página de servicio) | conversión "Envío de formulario" con el precio del paquete (o $10) + evento `lead_submit` | `Lead` con `content_name` = paquete o formulario, `value` = precio | `lead_created` |
 | «Prefiero que me contacten» en el formulario de contacto de celular | conversión "Envío de formulario" ($10) + `lead_submit` | `Lead` | `lead_created` |
-| Volver de WhatsApp y dejar el número en la hoja «¿Pudiste enviar tu mensaje?» (`whatsapp-retorno`) | solo `lead_submit` (el toque a WhatsApp ya contó) | `Lead` | `lead_created` |
+| Volver de WhatsApp y dejar el número en la hoja «¿Pudiste enviar tu mensaje?» (`whatsapp-retorno`) | solo `lead_submit` (el toque a WhatsApp ya contó) | `Lead` | — (el toque ya avisó) |
 | Clic a WhatsApp **después** de una consulta aceptada en la misma visita | solo `contact_click` con `after_lead: true` (no es otra persona) | — | — |
+| Segundo clic a WhatsApp en la misma visita (otro botón, o «Volver a WhatsApp» de la hoja de retorno) | solo `contact_click` con `repeat: true` | — | — |
+| Clic a WhatsApp hecho antes de que la página termine de cargar | se guarda y se mide al montar (en computadora abre el formulario corto) | igual que arriba | igual que arriba |
 
 Nunca viajan nombres, teléfonos, correos ni texto libre: solo canal, sección, paquete, idioma, fuente y la
-etiqueta estable del botón (`cta_id`, por ejemplo `Paquetes · Lo quiero · Web con reservas`). El píxel de Meta
+etiqueta estable del botón (`cta_id`, por ejemplo `Paquetes · Lo quiero · pagina_web`). Desde el 10 de noviembre
+de 2026 el paquete viaja siempre con su **clave del tarifario** (`pagina_web`, `dashboard_inicial`…), en la
+portada y en las páginas de servicio, en los dos idiomas: `package_id` en Google y `content_name` en Meta.
+Antes las páginas de servicio enviaban el nombre en español («Web con reservas») y las etiquetas llevaban el
+nombre traducido, así que un mismo paquete aparecía en dos o tres filas; el historial anterior a esa fecha
+conserva los nombres viejos. También desde esa fecha se cuenta **una conversión de «Clic WhatsApp» por
+visita**. El píxel de Meta
 tiene apagada la configuración automática (`autoConfig`): no lee por su cuenta el texto ni el destino de los
 botones, que en los enlaces de contacto incluyen el nombre y el mensaje de la persona.
 

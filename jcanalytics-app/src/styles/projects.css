@@ -37,6 +37,11 @@
 .works-browser__bar span { width: 7px; height: 7px; border-radius: 50%; background: #3b4a44; }
 .works-browser__bar span:first-child { background: var(--project-color, #c3f5db); }
 .works-browser__bar em { margin-left: 10px; font: 11px var(--font-mono); font-style: normal; color: #9fb2a6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* La dirección del sitio público es un enlace: se toca desde la misma captura. */
+.works-browser__bar a { display: inline-flex; align-items: center; gap: 5px; min-height: 30px; margin-left: 10px; font: 600 11.5px var(--font-mono); color: #c3f5db; text-decoration: underline; text-decoration-color: #c3f5db66; text-underline-offset: 3px; overflow: hidden; white-space: nowrap; }
+.works-browser__bar a:hover { color: #fff; }
+.works-browser__bar a:focus-visible { outline: 2px solid #c3f5db; outline-offset: 2px; }
+@media (pointer: coarse) { .works-browser__bar { height: 44px; } .works-browser__bar a { min-height: 44px; font-size: 12.5px; } }
 .works-browser__viewport { position: relative; aspect-ratio: 16 / 10; overflow: hidden; border: 1px solid #c3f5db25; border-radius: 0 0 8px 8px; background: #0b100e; box-shadow: 0 30px 60px -30px #000; }
 .works-browser__viewport img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .works-browser figcaption, .works-phone figcaption { margin-top: 10px; font-size: 13px; line-height: 1.55; color: #b3c4b8; }

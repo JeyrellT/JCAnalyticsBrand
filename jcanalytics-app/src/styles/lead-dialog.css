@@ -44,6 +44,10 @@
 .lead-dialog__next li { display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start; font-size: 14.5px; line-height: 1.5; color: #1e3d38; }
 .lead-dialog__next li > span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #132b2d; color: #c3f5db; font: 600 12px var(--font-mono); }
 .lead-field input[aria-invalid="true"] { border-width: 2px; }
+/* Segunda ronda: lo marcado en el detalle del paquete, qué ir juntando y el enlace de vuelta al detalle. */
+.lead-dialog__picked { margin-top: -6px; font-size: 13px; line-height: 1.5; color: #2f4d47; }
+.lead-dialog__ready { padding: 10px 12px; border-radius: 10px; background: #fff; font-size: 13.5px; line-height: 1.55; color: #1e3d38; }
+a.lead-dialog__submit { text-decoration: none; }
 @media (max-width: 767px) {
   .lead-dialog__panel { padding: 24px 18px 20px; }
   .lead-dialog__grid { grid-template-columns: 1fr; }

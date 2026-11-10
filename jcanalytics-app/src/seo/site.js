@@ -2,6 +2,7 @@ import { articles, topics } from '../content/catalog.js';
 import { SERVICE_PRICING } from '../../../portal/shared/service-pricing.js';
 import { alternatePath, homePath, journalPath, articlePath, servicePath, routes, resolveRoute } from './routes.js';
 import { categoryById } from '../content/categories.js';
+import { SERVICE_OFFERS } from '../content/service-offers.js';
 
 // Shared by the Vite HTML transform, the static build and the visible FAQ.
 // Keep claims and contact details consistent with the actual services on the site.
@@ -16,6 +17,32 @@ const PACKAGE_COUNT = PACKAGES.length;
 const MIN_PRICE = Math.min(...PACKAGES.map((item) => item.base_usd));
 const MIN_SUPPORT = Math.min(...PACKAGES.map((item) => item.support_monthly_usd).filter(Boolean));
 const { excel_vba: QUICKEST, software_medida: LONGEST, pagina_web: WEB } = SERVICE_PRICING;
+
+// Paquetes con precio publicado de una categoría, para los datos estructurados. Nombre, precio, alcance y
+// plazo salen del tarifario; el enlace abre ese paquete en la página de su categoría. Marketing no tiene
+// paquetes de pago único: no declara catálogo.
+const offerCatalog = (id, language) => {
+  const keys = SERVICE_OFFERS[id]?.packages ?? [];
+  if (!keys.length) return {};
+  const page = SITE_URL + servicePath(categoryById(id).page, language);
+  return {
+    hasOfferCatalog: {
+      '@type': 'OfferCatalog', name: language === 'es' ? 'Paquetes con precio publicado' : 'Packages with published pricing',
+      itemListElement: keys.map((key) => {
+        const pricing = SERVICE_PRICING[key];
+        return {
+          '@type': 'Offer', name: language === 'es' ? pricing.label : pricing.label_en,
+          description: language === 'es' ? pricing.scope : pricing.scope_en,
+          price: pricing.base_usd, priceCurrency: 'USD', url: `${page}?p=${key}#oferta`,
+          // Plazo publicado de entrega: días hábiles (DAY) o semanas (WEE), códigos UN/CEFACT.
+          deliveryLeadTime: pricing.days_min
+            ? { '@type': 'QuantitativeValue', minValue: pricing.days_min, maxValue: pricing.days_max, unitCode: 'DAY', unitText: 'business days' }
+            : { '@type': 'QuantitativeValue', minValue: pricing.weeks_min, maxValue: pricing.weeks_max, unitCode: 'WEE', unitText: 'weeks' },
+        };
+      }),
+    },
+  };
+};
 export const content = {
   en: {
     title: 'Web Development & AI in Costa Rica | JC Analytics',
@@ -29,8 +56,8 @@ export const content = {
       ['Digital marketing and content', 'Social media management, creative content, video editing and advertising campaigns.', 'digital-marketing'],
     ],
     faq: [
-      ['What can JC Analytics build for my business?', 'We design websites and custom software with the backend, dashboards and integrations your business needs. We also work on financial analysis, Power BI, process automation, machine learning and digital marketing, and we can improve or integrate the website and systems you already use. Start with a specific business problem and we will help define the scope.'],
-      ['How much does a custom website cost?', `The website with bookings package costs US$${WEB.base_usd}, or US$${WEB.with_ai_usd} with the specified AI advisor. It includes up to 5 sections, 10 services and 1 calendar, with client-supplied content. Taxes, domain, hosting, usage and monthly support are separate. There are ${PACKAGE_COUNT} published packages, starting at US$${MIN_PRICE}; larger projects and extras are quoted for the agreed scope.`],
+      ['What can JC Analytics build for my business?', 'Websites with bookings or orders, custom systems to organize your operation, Power BI dashboards, automation of repeated tasks, AI assistants and social media marketing. We also improve or connect the website and systems you already use. Tell us the problem and we will tell you where to start.'],
+      ['How much does a custom website cost?', `The website with bookings costs US$${WEB.base_usd}, or US$${WEB.with_ai_usd} with an AI assistant that guides your customers and gives them the booking link. It includes up to 5 sections, 10 services and 1 calendar; you supply text and images. Tax, domain, hosting, usage and monthly support are separate. There are ${PACKAGE_COUNT} published packages, starting at US$${MIN_PRICE}; anything that does not fit a package is quoted in writing.`],
       ['How long does a project take?', `Every package publishes its timeline: from ${QUICKEST.days_min} to ${QUICKEST.days_max} business days for Excel and automated reports, up to ${LONGEST.weeks_min} to ${LONGEST.weeks_max} weeks for custom software; the website with bookings takes ${WEB.weeks_min} to ${WEB.weeks_max} weeks. Those timelines assume content, data and access are ready. Meanwhile you see progress every 72 hours in your client portal.`],
       ['What if something is not right after delivery?', `Before we start you get in writing what the work includes, what it does not and how much it costs, and during the project you approve each deliverable in your client portal. After delivery you have 30 days of support: we fix defects within the delivered scope at no cost. After that, monthly support is optional, from US$${MIN_SUPPORT} a month on the packages that offer it.`],
       ['Do you work remotely and in English?', 'We are based in Costa Rica and can discuss your project in English or Spanish. We work remotely with businesses across Costa Rica. Tell us where your team is located so we can agree on communication and project logistics.'],
@@ -49,8 +76,8 @@ export const content = {
       ['Marketing digital y contenido', 'Gestión de redes sociales, contenido creativo, edición de video y campañas publicitarias.', 'digital-marketing'],
     ],
     faq: [
-      ['¿Qué puede desarrollar JC Analytics para mi negocio?', 'Diseñamos páginas web y software a medida con el backend, los dashboards y las integraciones que necesita tu negocio. También trabajamos en análisis financiero, Power BI, automatización, machine learning y marketing digital, y podemos mejorar o integrar la web y los sistemas que ya usás. Partimos de un problema concreto para ayudarte a definir el alcance.'],
-      ['¿Cuánto cuesta una página web a medida?', `La web con reservas cuesta US$${WEB.base_usd}, o US$${WEB.with_ai_usd} con el asesor de IA descrito. Incluye hasta 5 secciones, 10 servicios y 1 agenda, con contenidos entregados por el comprador. Impuestos, dominio, hosting, consumos y soporte mensual se cobran aparte. Hay ${PACKAGE_COUNT} paquetes publicados, desde US$${MIN_PRICE}; los proyectos más amplios y adicionales se cotizan según alcance.`],
+      ['¿Qué puede desarrollar JC Analytics para mi negocio?', 'Páginas web con reservas o pedidos, sistemas a medida para ordenar tu operación, dashboards en Power BI, automatización de tareas repetidas, asistentes de IA y marketing en redes. También mejoramos o conectamos la web y los sistemas que ya usás. Contanos el problema y te decimos por dónde empezar.'],
+      ['¿Cuánto cuesta una página web a medida?', `La web con reservas cuesta US$${WEB.base_usd}, o US$${WEB.with_ai_usd} con un asistente de IA que orienta a tus clientes y les pasa el enlace de reserva. Incluye hasta 5 secciones, 10 servicios y 1 agenda; vos entregás textos e imágenes. Van aparte el IVA, el dominio, el alojamiento, los consumos y el soporte mensual. Hay ${PACKAGE_COUNT} paquetes publicados, desde US$${MIN_PRICE}; lo que no calza en un paquete se cotiza por escrito.`],
       ['¿Cuánto tarda un proyecto?', `Cada paquete publica su plazo: de ${QUICKEST.days_min} a ${QUICKEST.days_max} días hábiles para Excel y reportes automatizados, hasta ${LONGEST.weeks_min} a ${LONGEST.weeks_max} semanas para software a medida; la web con reservas toma de ${WEB.weeks_min} a ${WEB.weeks_max} semanas. Esos plazos suponen contenidos, datos y accesos listos. Mientras tanto ves avances cada 72 horas en tu portal de clientes.`],
       ['¿Qué pasa si algo no queda bien después de la entrega?', `Antes de empezar recibís por escrito qué incluye el trabajo, qué no y cuánto cuesta, y durante el proyecto aprobás cada entregable en tu portal de clientes. Después de la entrega tenés 30 días de soporte: corregimos sin costo los defectos del alcance entregado. Luego el soporte mensual es opcional, desde US$${MIN_SUPPORT} al mes en los paquetes que lo ofrecen.`],
       ['¿Trabajan de forma remota y en inglés?', 'Estamos en Costa Rica y podemos conversar sobre tu proyecto en español o inglés. Trabajamos de forma remota con empresas de todo Costa Rica. Contanos dónde está tu equipo para acordar la comunicación y la logística del proyecto.'],
@@ -115,12 +142,21 @@ export function structuredData(language, route) {
   ];
 
   if (page.type === 'home') {
-    // Cada servicio apunta a su página (antes: anclas #plataformas, #finanzas… que la portada ya no tiene).
+    // Cada servicio apunta a su página (antes: anclas #plataformas, #finanzas… que la portada ya no tiene)
+    // y declara sus paquetes con precio: el precio publicado es el argumento central de la portada y antes
+    // solo se podía encontrar leyendo el texto (segunda ronda de la auditoría, noviembre de 2026).
     graph.push(...content[language].services.map(([name, description, id]) => ({
       '@type': 'Service', '@id': url + '#service-' + id, name, description,
       url: SITE_URL + servicePath(categoryById(id).page, language),
       provider: { '@id': organizationId }, areaServed: { '@type': 'Country', name: 'Costa Rica' },
+      ...offerCatalog(id, language),
     })));
+    // Las seis preguntas visibles, tal cual. Google muestra poco este resultado enriquecido: sirve sobre todo
+    // para que buscadores y asistentes lean precio, plazo y soporte sin interpretar la página.
+    graph.push({
+      '@type': 'FAQPage', '@id': url + '#faq', inLanguage: language, isPartOf: { '@id': url + '#webpage' },
+      mainEntity: content[language].faq.map(([question, answer]) => ({ '@type': 'Question', name: question, acceptedAnswer: { '@type': 'Answer', text: answer } })),
+    });
   } else {
     const crumbs = [{ name: language === 'es' ? 'Inicio' : 'Home', item: SITE_URL + homePath(language) }];
     if (page.type === 'article' || page.type === 'journal') crumbs.push({ name: language === 'es' ? 'Ideas' : 'Insights', item: SITE_URL + journalPath(language) });
@@ -163,6 +199,7 @@ export function structuredData(language, route) {
       name: service.title, description: service.summary,
       provider: { '@id': organizationId }, areaServed: { '@type': 'Country', name: 'Costa Rica' },
       mainEntityOfPage: { '@id': url + '#webpage' }, image: copy.image,
+      ...offerCatalog(page.data.id, language),
     });
   }
   return { '@context': 'https://schema.org', '@graph': graph };

@@ -29,4 +29,8 @@ mountPage()
     // (startSiteTracking ignora la segunda llamada).
     for (const type of ['pointerdown', 'keydown']) window.addEventListener(type, start, { once: true, capture: true, passive: true })
   })
-  .catch(error => console.error('Interactive page could not load; static content remains available.', error))
+  .catch(error => {
+    // El script en línea de index.html deja de retener los clics a WhatsApp: el HTML estático sigue sirviendo.
+    window.__jcFailed = true
+    console.error('Interactive page could not load; static content remains available.', error)
+  })

@@ -111,9 +111,18 @@ Qué recibe cada plataforma por acción (sin nombres, teléfonos, correos ni tex
 | Consulta aceptada por el portal (formulario corto, «Prefiero que me contacten», formularios de contacto y de servicio) | conversión «Envío de formulario» con el precio del paquete (o $10) + evento `lead_submit` | `Lead` (`content_name`, `value`) | `lead_created` |
 
 Parámetros de los eventos `contact_click` y `lead_submit` en Google: `contact_channel` (whatsapp, email,
-phone), `cta_mode` (form), `form_id`, `site_language` (es, en), `section_id` (sección de la página, por
-ejemplo `paquetes`, `oferta`, `contacto`), `traffic_source` (Google, Meta, ChatGPT o directo), `package_id`,
-`package_value` y `contact_line` (a o b). Sirven para segmentar en Google Ads o GA4 sin tocar el código.
+phone), `cta_mode` (form), `after_lead` y `repeat` (clic de alguien que ya dejó consulta o ya tocó WhatsApp en
+esta visita: se registra, no convierte), `cta_id` (etiqueta estable del botón), `form_id`, `site_language`
+(es, en), `section_id` (sección de la página, por ejemplo `paquetes`, `oferta`, `contacto`), `traffic_source`
+(Google, Meta, ChatGPT o directo), `package_id` (la clave del tarifario: `pagina_web`, `dashboard_inicial`…,
+igual en la portada y en las páginas de servicio desde el 10 de noviembre de 2026), `package_value` y
+`contact_line` (a o b). Sirven para segmentar en Google Ads o GA4 sin tocar el código.
+
+En el portal (**Web → Tráfico del sitio**) también quedan, como clics con su etiqueta, las elecciones que no
+son un botón: las dos listas de «Tu caso en una frase» (`Caso · negocio · restaurante`, `Caso · meta ·
+vender`), las casillas del detalle del paquete (`Hoja · Con IA · sí`, `Hoja · Agregado whatsapp · sí`), las
+señales de las páginas de servicio (`Señal 2 · sí`) y cada vez que aparece la hoja «¿Pudiste enviar tu
+mensaje?» (`Retorno · Se mostró`). Son claves internas del sitio, nunca texto escrito por la persona.
 
 ## 5. Líneas de WhatsApp y mensajes
 

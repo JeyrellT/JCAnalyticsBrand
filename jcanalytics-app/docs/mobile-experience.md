@@ -51,3 +51,16 @@ este documento ya no aplican. El hero muestra pantallas reales de proyectos dent
   quedaban debajo de los flotantes.
 - Objetivos táctiles de 44 px en atajos, pestañas, idioma y pie; campos a 16 px.
 
+### Segunda ronda (10 de noviembre de 2026)
+
+- La primera pantalla muestra una sola frase bajo el titular, la que dice qué resuelve; la lista de servicios
+  queda para computadora (en celular la repiten los atajos).
+- El detalle del paquete ocupa toda la pantalla con el cierre siempre arriba y una barra abajo con el total y
+  «Pedirlo por WhatsApp» (probada a 390, 360 y 320 px). El gesto «atrás» lo cierra. Antes de salir a WhatsApp
+  se puede ver el mensaje exacto.
+- En la lista de paquetes, la fila que se abre se recoloca si quedó tapada por la barra o demasiado abajo
+  (Safari de iOS no compensa el salto cuando se cierra la fila de arriba).
+- Las confirmaciones de los formularios se recolocan debajo de la barra al enviar.
+- La hoja «¿Pudiste enviar tu mensaje?» pasa a una columna por debajo de 360 px, recibe el foco al aparecer y
+  se cierra con Escape.
+- Los flotantes también se retiran ante los enlaces secundarios que abren WhatsApp.

@@ -17,13 +17,17 @@
 //    la persona ya dejó una consulta en esta visita, ni más de una vez.
 //  · La consulta no vuelve a contar como conversión de anuncios: el toque a
 //    WhatsApp ya contó (`ads: false`).
+//  · Al aparecer, el foco va a su título (sin abrir el teclado ni mover la
+//    página) para que un lector de pantalla la anuncie; Escape la cierra. El
+//    portal registra que se mostró: así se sabe cuántos de los que la ven dejan
+//    su número.
 // ============================================================================
 import { useEffect, useRef, useState } from 'react';
 import { MessageCircle, X } from 'lucide-react';
 import { t } from '../../i18n/locale';
 import { isDesktopPointer } from '../../hooks/useDesktop';
 import { phoneOk } from '../site/contact-rules';
-import { sendLead } from '../../seo/site-tracker';
+import { sendLead, trackEvent } from '../../seo/site-tracker';
 import { trackLeadCaptured } from '../../seo/analytics';
 import { resolveRoute } from '../../seo/routes';
 import '../../styles/whatsapp-return.css';
@@ -54,6 +58,7 @@ function pendingFrom(link) {
 export default function WhatsAppReturn() {
   const pending = useRef(null); // { ...contexto, leftAt }
   const startedAt = useRef(0);
+  const titleRef = useRef(null);
   const [context, setContext] = useState(null);
   const [phone, setPhone] = useState('');
   const [status, setStatus] = useState('idle'); // idle · invalid · sending · sent · error
@@ -78,6 +83,7 @@ export default function WhatsAppReturn() {
       pending.current = null;
       if (away < AWAY_MIN_MS || away > AWAY_MAX_MS || stored(SHOWN_KEY) || stored(LEAD_KEY)) return;
       remember(SHOWN_KEY);
+      trackEvent('click', { k: 'button', l: 'Retorno · Se mostró', s: waiting.section });
       startedAt.current = performance.now();
       setStatus('idle');
       setContext(waiting);
@@ -92,11 +98,17 @@ export default function WhatsAppReturn() {
     };
   }, []);
 
-  // Mientras la hoja está abierta los botones flotantes se retiran: ocupan la misma franja.
+  // Mientras la hoja está abierta los botones flotantes se retiran: ocupan la misma franja. Escape la cierra.
   useEffect(() => {
     document.body.classList.toggle('wa-return-open', Boolean(context));
-    return () => document.body.classList.remove('wa-return-open');
+    if (!context) return undefined;
+    const onKey = (event) => { if (event.key === 'Escape') setContext(null); };
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('keydown', onKey); document.body.classList.remove('wa-return-open'); };
   }, [context]);
+  // Al aparecer y al confirmar el envío, el foco va al título: se anuncia y no se pierde en el documento.
+  const sent = status === 'sent';
+  useEffect(() => { if (context) titleRef.current?.focus({ preventScroll: true }); }, [context, sent]);
 
   if (!context) return null;
   const close = () => setContext(null);
@@ -118,13 +130,13 @@ export default function WhatsAppReturn() {
       <button type="button" className="wa-return__close" onClick={close} aria-label={t('Cerrar', 'Close')} data-track-label="Retorno · Cerrar"><X size={18} aria-hidden="true" /></button>
       {status === 'sent' ? (
         <div role="status">
-          <p id="wa-return-title" className="wa-return__title">{t('¡Listo! Te escribimos en menos de 24 h.', 'Done! We’ll reach out within 24 hours.')}</p>
+          <p id="wa-return-title" ref={titleRef} tabIndex={-1} className="wa-return__title">{t('¡Listo! Te escribimos en menos de 24 h.', 'Done! We’ll reach out within 24 hours.')}</p>
           <p className="wa-return__text">{t('Tu consulta ya está con el equipo, con el mensaje que ibas a enviar.', 'Your inquiry is with the team, with the message you were about to send.')}</p>
           <button type="button" className="wa-return__secondary" onClick={close}>{t('Seguir viendo la página', 'Keep browsing')}</button>
         </div>
       ) : (
         <form onSubmit={submit} noValidate data-track={FORM}>
-          <p id="wa-return-title" className="wa-return__title">{t('¿Pudiste enviar tu mensaje?', 'Did your message go through?')}</p>
+          <p id="wa-return-title" ref={titleRef} tabIndex={-1} className="wa-return__title">{t('¿Pudiste enviar tu mensaje?', 'Did your message go through?')}</p>
           <p className="wa-return__text">{context.packageLabel
             ? t(`Si no, dejá tu número y te escribimos nosotros sobre ${context.packageLabel}.`, `If not, leave your number and we will write to you about ${context.packageLabel}.`)
             : t('Si no, dejá tu número y te escribimos nosotros en menos de 24 h.', 'If not, leave your number and we will write to you within 24 hours.')}</p>
@@ -133,7 +145,7 @@ export default function WhatsAppReturn() {
             <input id="retorno-telefono" type="tel" inputMode="tel" autoComplete="tel" maxLength={30} placeholder={t('Tu WhatsApp', 'Your WhatsApp')} value={phone}
               onChange={(event) => { setPhone(event.target.value); if (status !== 'sending') setStatus('idle'); }} aria-invalid={status === 'invalid'} aria-describedby="retorno-estado" />
             <button type="submit" className="wa-return__submit" disabled={status === 'sending'} data-track="contact" data-track-label="Retorno · Que me contacten">
-              {status === 'sending' ? t('Enviando…', 'Sending…') : t('Que me contacten', 'Contact me')}
+              {status === 'sending' ? t('Enviando…', 'Sending…') : t('Escríbanme ustedes', 'Message me instead')}
             </button>
           </div>
           <p id="retorno-estado" className="wa-return__status" role="status">

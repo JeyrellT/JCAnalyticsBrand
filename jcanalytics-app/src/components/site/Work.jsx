@@ -19,18 +19,20 @@
 // ============================================================================
 import { useEffect, useId, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowDown, ArrowUpRight, Check, Code2, GitCommitHorizontal, Layers3, MessageCircle, MonitorSmartphone } from 'lucide-react';
+import { ArrowDown, ArrowUpRight, Check, Code2, GitCommitHorizontal, Layers3, MonitorSmartphone } from 'lucide-react';
 import { t, locale } from '../../i18n/locale';
 import { EVIDENCE_DATE, EVIDENCE_TOTALS, FACT_LABELS, PROJECTS, PROJECT_KINDS, projectCode, projectEvidence, screenImage, shotSrcSet } from '../../data/projects';
-import { adPackage } from '../../data/packages';
+import { adPackage, thousands } from '../../data/packages';
 import { Label, MaskLines, Reveal } from './primitives';
 import { wa } from './links';
 import { MESSAGES } from './messages';
+import { getCase } from './case';
+import ContactIcon from './ContactIcon';
 import { useDesktop } from '../../hooks/useDesktop';
 import '../../styles/projects.css';
 
 const _MOTION = motion;
-const number = (value) => new Intl.NumberFormat(locale === 'es' ? 'es-CR' : 'en-US').format(value);
+const number = thousands; // mismo separador de miles que los precios (data/packages.js)
 const compact = (value) => value >= 10000 ? `${Math.round(value / 1000)}k` : number(value);
 const monthYear = (iso) => new Intl.DateTimeFormat(locale === 'es' ? 'es-CR' : 'en-US', { month: 'short', year: 'numeric' }).format(new Date(`${iso}T12:00:00`));
 const domain = (url) => url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/.*$/, '');
@@ -54,12 +56,16 @@ const TOTALS = [
 ];
 
 const WhatsApp = ({ href, children, className = '', ...rest }) => (
-  <a href={href} target="_blank" rel="noreferrer" className={`works-wa ${className}`} {...rest}><MessageCircle size={18} aria-hidden="true" />{children}</a>
+  <a href={href} target="_blank" rel="noreferrer" className={`works-wa ${className}`} {...rest}><ContactIcon size={18} />{children}</a>
 );
 
 const Browser = ({ project, screen }) => (
   <figure className="works-browser" style={{ '--project-color': project.accent }}>
-    <div className="works-browser__bar" aria-hidden="true"><span /><span /><span /><em>{project.url ? domain(project.url) : t('captura con datos de demostración', 'screenshot with demo data')}</em></div>
+    {/* Con sitio público, la dirección de la barra es un enlace: abrir el sistema real es la prueba más fuerte y
+        antes quedaba al final de la sección (segunda ronda de la auditoría). */}
+    <div className="works-browser__bar"><span aria-hidden="true" /><span aria-hidden="true" /><span aria-hidden="true" />{project.url
+      ? <a href={project.url} target="_blank" rel="noreferrer" data-track-label={`Proyectos · Abrir ${project.name} · barra`}>{domain(project.url)}<ArrowUpRight size={13} aria-hidden="true" /><span className="sr-only"> {t('(abre el sitio en otra pestaña)', '(opens the site in a new tab)')}</span></a>
+      : <em aria-hidden="true">{t('captura con datos de demostración', 'screenshot with demo data')}</em>}</div>
     <div className="works-browser__viewport">
       <AnimatePresence mode="wait" initial={false}>
         <motion.img key={`${project.id}-${screen.id}`} src={screenImage(project, screen.id, 'desktop')} srcSet={shotSrcSet(screenImage(project, screen.id, 'desktop'))} sizes="(max-width: 767px) 92vw, 900px" width={1600} height={1000} loading="lazy" decoding="async"
@@ -124,10 +130,11 @@ const Anatomy = ({ project }) => {
 };
 
 // Qué proyecto abre el explorador: el que pide la URL (?proyecto=<id>, desde las páginas de servicio), el
-// relacionado con el paquete del anuncio o, si no, el primero de la lista, que tiene sitio público.
+// relacionado con el paquete del anuncio, el del giro que la persona eligió en «Tu caso en una frase» o,
+// si no, el primero de la lista, que tiene sitio público.
 const fromQuery = (name) => (typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get(name));
 const indexOfProject = (id) => PROJECTS.findIndex((item) => item.id === id);
-const initialProject = () => Math.max(0, indexOfProject(fromQuery('proyecto')) >= 0 ? indexOfProject(fromQuery('proyecto')) : indexOfProject(adPackage?.related));
+const initialProject = () => Math.max(0, ...[fromQuery('proyecto'), adPackage?.related, getCase().project?.id].map(indexOfProject).filter((index) => index >= 0).slice(0, 1));
 const screenOf = (project, id) => Math.max(0, project.screens.findIndex((item) => item.id === id));
 
 const Work = () => {
@@ -135,7 +142,7 @@ const Work = () => {
   const desktop = useDesktop();
   const [active, setActive] = useState(initialProject);
   const [view, setView] = useState('screen');
-  const [screenIndex, setScreenIndex] = useState(() => screenOf(PROJECTS[initialProject()], fromQuery('pantalla')));
+  const [screenIndex, setScreenIndex] = useState(() => screenOf(PROJECTS[initialProject()], fromQuery('pantalla') ?? (fromQuery('proyecto') || adPackage?.related ? null : getCase().chosenBusiness?.screen)));
   const reduce = useReducedMotion();
   const descriptionId = useId();
   const tabs = useRef(null);
@@ -250,7 +257,7 @@ const Work = () => {
               <p className="works-summary__hook">{t('¿Querés algo así para tu negocio?', 'Want something like this for your business?')}</p>
               <WhatsApp href={wa(MESSAGES.project(project))} data-need={project.need} data-track-label={`Proyectos · Quiero algo así · ${project.name}`}>{desktop ? t('Quiero algo así', 'I want something like this') : t('Quiero algo así · WhatsApp', 'I want something like this · WhatsApp')}</WhatsApp>
               <p className="works-summary__after">{desktop
-                ? t('Dejás tu contacto y te escribimos en menos de 24 h. La primera conversación, de 30 minutos, no tiene costo.', 'Leave your contact and we’ll write within 24 hours. The first 30-minute conversation is free.')
+                ? t('Dejás tu contacto y te escribimos en menos de 24 h. La primera conversación, de 30 minutos, no tiene costo.', 'Leave your contact details and we’ll get back to you within 24 hours. The first 30-minute conversation is free.')
                 : t('El mensaje ya va escrito con el nombre del proyecto. Te respondemos en menos de 24 h.', 'The message is already written with the project name. We reply within 24 hours.')}</p>
               {project.url && <a href={project.url} target="_blank" rel="noreferrer" className="works-link" data-track-label={`Proyectos · Abrir ${project.name}`}>{t('Abrir', 'Open')} {domain(project.url)}<ArrowUpRight size={17} aria-hidden="true" /><span className="sr-only"> {t('(se abre en otra pestaña)', '(opens in a new tab)')}</span></a>}
             </div>

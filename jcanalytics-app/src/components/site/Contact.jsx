@@ -25,6 +25,7 @@ import { ArrowRight, ArrowUpRight, Check, MessageCircle, PhoneCall } from 'lucid
 import { Label, MaskLines, Reveal } from './primitives';
 import { wa, EMAIL, PHONE_DISPLAY } from './links';
 import { MESSAGES, NEXT_STEPS } from './messages';
+import { scrollToNode } from './scroll';
 import { emailOk, phoneOk } from './contact-rules';
 import { TEAM } from '../../data/team';
 import { sendLead } from '../../seo/site-tracker';
@@ -53,7 +54,7 @@ const PROBLEMS = {
 };
 // Después de enviar: quién escribe y qué sigue, con los compromisos ya publicados.
 const AFTER_SENDING = [
-  t('Una persona del equipo te escribe al WhatsApp o correo que dejaste.', 'A person from the team writes to the WhatsApp or email you left.'),
+  t('Una persona del equipo te escribe al WhatsApp o correo que dejaste.', 'Someone from the team will message you at the WhatsApp or email you left.'),
   ...NEXT_STEPS.slice(1),
 ];
 
@@ -91,18 +92,29 @@ const Contact = () => {
       window.removeEventListener('jca:contact-intent', receiveIntent);
     };
   }, []);
-  useEffect(() => { if (status === 'sent') sentTitle.current?.focus({ preventScroll: true }); }, [status]);
+  // Al enviar, el formulario largo se reemplaza por una confirmación más corta y la página se acorta bajo
+  // la persona: sin recolocar, «¡Listo!» quedaba detrás de la barra fija o fuera de pantalla y parecía que
+  // no había pasado nada (regresión detectada en la segunda ronda de la auditoría).
+  useEffect(() => {
+    if (status !== 'sent') return;
+    scrollToNode(sentTitle.current?.closest('.contact-sent'), { instant: true });
+    sentTitle.current?.focus({ preventScroll: true });
+  }, [status]);
 
   const person = name.trim();
-  const message = [
-    [
-      person ? t(`Hola, soy ${person}.`, `Hello, I'm ${person}.`) : t('Hola JC Analytics.', 'Hello JC Analytics.'),
-      need ? t(`Me interesa: ${needLabel(need)}.`, `I'm interested in: ${needLabel(need)}.`) : t('Quiero cotizar un proyecto para mi negocio.', 'I would like a quote for a project for my business.'),
-    ].join(' '),
-    objective.trim() ? t(`Quiero resolver: ${objective.trim()}`, `I'd like to solve: ${objective.trim()}`) : '',
-    source ? t(`Llegué desde: ${source}.`, `I came from: ${source}.`) : '',
-    t('Me gustaría conversar sobre el alcance y el siguiente paso.', 'I would like to discuss the scope and next steps.'),
-  ].filter(Boolean).join('\n\n');
+  const goal = objective.trim();
+  // Mismo patrón que el catálogo (messages.js): un solo saludo, la intención en primera persona y, si la
+  // persona no escribió nada, la invitación abierta a contar su caso. Antes este mensaje tenía otro saludo
+  // («Hola JC Analytics.» / «Hello») y cerraba con una frase de relleno que no ayudaba a responder.
+  const interest = need && need !== 'Otro'
+    ? t(`me interesa: ${needLabel(need)}.`, `I’m interested in: ${needLabel(need)}.`)
+    : t('quiero cotizar un proyecto para mi negocio.', 'I would like a quote for a project for my business.');
+  const opening = person
+    ? t(`Hola JC Analytics, soy ${person}. ${interest.charAt(0).toUpperCase()}${interest.slice(1)}`, `Hi JC Analytics, I’m ${person}. ${interest}`)
+    : t(`Hola JC Analytics, ${interest}`, `Hi JC Analytics, ${interest}`);
+  const message = goal
+    ? [opening, t(`Quiero resolver: ${goal}`, `I’d like to solve: ${goal}`), source ? t(`Llegué desde: ${source}.`, `I came from: ${source}.`) : ''].filter(Boolean).join('\n\n')
+    : `${opening} ${t('Les cuento qué necesito:', 'Here is what I need:')}`;
   const href = wa(message);
   const contact = { phone: phoneOk(phone) ? phone.trim() : '', email: emailOk(mail) ? mail.trim() : '' };
   // Lo que recibe el portal: el texto de la persona y, al final, desde qué botón llegó.
@@ -168,7 +180,7 @@ const Contact = () => {
       <div className="contact-atmosphere" aria-hidden="true" />
       <div className="closing-container contact-container">
         <div className="contact-eyebrow">
-          <Label>{t('¿Cómo empiezo? / Contacto', 'How do I start? / Contact')}</Label><span className="closing-kicker">{t('Respondemos en menos de 24 h.', 'We reply within 24 hours.')}</span>
+          <Label>{t('¿Cómo empiezo? / Contacto', 'How do I start? / Contact')}</Label><span className="closing-kicker">{t('Sin costo y sin compromiso.', 'No charge, no commitment.')}</span>
         </div>
         <div className="contact-heading">
           <h2 id="contact-title" className="font-display" tabIndex={-1}><MaskLines lines={[t('¿Hablamos?', 'Let’s talk.')]} /></h2>
@@ -184,15 +196,20 @@ const Contact = () => {
                 <a href={href} target="_blank" rel="noreferrer" className="contact-callback__button tap-press" data-wa-direct="" data-track-label="Contacto · WhatsApp después de enviar">
                   <MessageCircle size={17} aria-hidden="true" />{desktop ? t('¿Es urgente? Abrir WhatsApp Web', 'Is it urgent? Open WhatsApp Web') : t('¿Es urgente? Escribinos por WhatsApp', 'Is it urgent? Message us on WhatsApp')}
                 </a>
+                <a href="#trabajo" className="contact-sent__more" data-track-label="Contacto · Ver proyectos después de enviar">{t('Mientras tanto, ver proyectos reales', 'Meanwhile, see real projects')} <ArrowRight size={16} aria-hidden="true" /></a>
                 <p className="sr-only" role="status">{t('Consulta enviada. Te escribimos en menos de 24 h.', 'Inquiry sent. We’ll reach out within 24 hours.')}</p>
               </div>
             ) : (
               <>
-                <p className="contact-intro">{t('Contanos qué querés resolver. Te respondemos en menos de 24 h y la primera conversación, de 30 minutos, no tiene costo.', 'Tell us what you want to solve. We reply within 24 hours and the first 30-minute conversation is free.')}</p>
+                {/* «Menos de 24 h» se dice una vez por modo: acá en WhatsApp y en la nota bajo el botón en el formulario.
+                    Antes aparecía cuatro veces en la misma pantalla y dejaba de leerse (segunda ronda de la auditoría). */}
+                <p className="contact-intro">{formMode
+                  ? t('Dejá tu WhatsApp o tu correo y, si querés, contanos qué querés resolver. La primera conversación, de 30 minutos, no tiene costo.', 'Leave your WhatsApp or email and, if you like, tell us what you want to solve. The first 30-minute conversation is free.')
+                  : t('Contanos qué querés resolver. Te respondemos en menos de 24 h y la primera conversación, de 30 minutos, no tiene costo.', 'Tell us what you want to solve. We reply within 24 hours and the first 30-minute conversation is free.')}</p>
                 {/* noValidate: un correo a medio escribir no debe bloquear «Continuar en WhatsApp». */}
                 <form data-track="contacto" data-mode={formMode ? 'form' : 'whatsapp'} noValidate onSubmit={submit} className="contact-form">
-                  {/* Celular, cuando pidió que le escriban: el dato que hace falta va primero. */}
-                  {asked && !desktop && reach}
+                  {/* Formulario (computadora, o celular cuando pidió que le escriban): el único dato necesario va primero. */}
+                  {formMode && reach}
                   <fieldset>
                     <legend className="contact-form__label">{t('¿Qué necesitás?', 'What do you need?')} <small>{t('(opcional)', '(optional)')}</small></legend>
                     <div className="contact-needs">
@@ -218,7 +235,6 @@ const Contact = () => {
                     <label htmlFor="contacto-nombre" className="contact-form__label">{t('Tu nombre', 'Your name')} <small>{t('(opcional)', '(optional)')}</small></label>
                     <input id="contacto-nombre" type="text" autoComplete="name" maxLength={100} placeholder={t('¿Cómo te llamás?', 'What is your name?')} value={name} onChange={(event) => setName(event.target.value)} />
                   </div>
-                  {desktop && reach}
                   <button type="submit" className="contact-submit tap-press" disabled={status === 'sending'} data-track-label="Contacto · Enviar">
                     <span>{formMode
                       ? (status === 'sending' ? t('Enviando…', 'Sending…') : t('Enviar consulta', 'Send inquiry'))
@@ -260,7 +276,7 @@ const Contact = () => {
             <a href="#equipo" className="contact-people__link">{t('Conocelos', 'Meet them')} <ArrowRight size={17} aria-hidden="true" /></a>
             <p className="contact-people__response">
               <a href={wa(MESSAGES.footer)} target="_blank" rel="noreferrer" data-wa-direct="" data-track-label="Contacto · Número de WhatsApp">WhatsApp {PHONE_DISPLAY}</a>
-              <span>{t('Respondemos en menos de 24 h.', 'We reply within 24 hours.')}</span>
+              <span>{t('Lo lee el mismo equipo.', 'Read by the same team.')}</span>
             </p>
           </Reveal>
         </div>

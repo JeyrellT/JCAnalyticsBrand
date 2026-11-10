@@ -68,8 +68,8 @@ export const PROJECTS = [
       'A weekend burrito restaurant selling through WhatsApp needed to take orders without mandatory accounts, charge by SINPE without checking receipts by hand and let the kitchen see every order instantly.',
     ),
     built: t(
-      'Menú público con carrito y checkout donde el precio siempre lo calcula el servidor, una tablet de cocina en tiempo real, pagos con ONVO Pay, inventario por receta, lealtad con BurroCoins y ruleta, y un panel administrativo con analítica.',
-      'A public menu with cart and checkout where the server always computes the price, a real-time kitchen tablet, ONVO Pay payments, recipe-based inventory, loyalty with BurroCoins and a roulette, and an admin panel with analytics.',
+      'Un menú en línea donde el cliente arma su pedido desde el celular y paga sin que nadie revise comprobantes a mano. La cocina ve cada pedido al instante en una tablet, el inventario se descuenta según la receta de cada plato, hay un programa de puntos para clientes frecuentes y el dueño ve sus ventas en un panel.',
+      'An online menu where customers build their order on their phone and pay without anyone checking receipts by hand. The kitchen sees every order instantly on a tablet, stock is deducted by each dish’s recipe, there is a points program for regulars and the owner sees sales on a panel.',
     ),
     features: t(
       ['Cotización y pedido autoritativos en la API: el navegador nunca decide precios ni disponibilidad', 'Tablet de cocina con eventos en vivo (SSE), estaciones, alertas de audio y retrocesos permitidos', 'SINPE por ONVO Pay con emparejamiento por código, monto y teléfono; si hay duda, lo revisa una persona', 'Modo degradado: el menú sigue abierto aunque la API no responda'],

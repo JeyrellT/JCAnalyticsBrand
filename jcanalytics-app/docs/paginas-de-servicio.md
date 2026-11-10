@@ -13,7 +13,7 @@ En este orden, con su `id` (lo usa el índice de la página y la medición del p
 
 | Bloque | `id` | Qué hace |
 | --- | --- | --- |
-| Precio y paquete | `oferta` | Paquete con precio publicado, plazo, soporte y opción con IA. Por defecto el primero de la categoría; con `?p=<paquete>` (enlace de una tarjeta de la portada o de un anuncio), ese. Al lado, los demás paquetes de la categoría («Ver este paquete» cambia la oferta sin recargar). Botón «Lo quiero · WhatsApp». |
+| Precio y paquete | `oferta` | Paquete con precio publicado, plazo, soporte y opción con IA. Por defecto el primero de la categoría; con `?p=<paquete>` (enlace de una tarjeta de la portada o de un anuncio) o con `utm_content` igual a la clave o a un alias del paquete, ese (misma regla que la portada: `adPackage` en `data/packages.js`). Al lado, los demás paquetes de la categoría («Ver este paquete» cambia la oferta sin recargar). Botón «Lo quiero · WhatsApp». |
 | ¿Es para vos? | `senales` | Cinco situaciones habituales con casillas. El veredicto cambia según cuántas se marcan y lo marcado viaja en el mensaje. |
 | Calculadora de impacto | `calculadora` | Con los números de la persona (veces, minutos, personas, costo por hora) calcula horas al mes, costo al año y en cuántos meses de ese costo se cubre el paquete. |
 | Qué incluye | `incluye` | Alcance, opción con IA, exclusiones, soporte mensual y agregados con precio, tomados del tarifario compartido. |
@@ -57,15 +57,21 @@ en `src/content/services.js`. Sin entrada, la página se muestra como antes (sol
 
 ## Qué llega al portal
 
-- **Consulta:** `POST /ingest/lead` con `channel: 'devolucion'`, la necesidad del servicio (`need`, en español),
-  el nombre del paquete principal (`package`), la página (`page`) y el mensaje con lo marcado y lo calculado.
-  Aparece en **Web → Consultas** con su recorrido.
+- **Consulta:** `POST /ingest/lead` con `channel: 'devolucion'`, la necesidad del paquete (`need`, en español:
+  la misma con la que llega desde su tarjeta de la portada), el nombre del paquete en el tarifario (`package`),
+  la página (`page`) y el mensaje con lo marcado y lo calculado. Aparece en **Web → Consultas** con su recorrido.
+- **Mensaje:** el mismo de las tarjetas de la portada (`packageMessage`): «Hola JC Analytics, me interesa el
+  paquete … ($… + IVA).», las señales marcadas, lo calculado, «¿Me confirman si calza con mi caso?» y la línea
+  abierta «Mi negocio:» (o la frase de «Tu caso en una frase», si la persona la armó en la portada).
+- **Formulario:** el aviso dice qué campo corregir y lleva el foco ahí; al enviar, una confirmación con los tres
+  pasos que siguen reemplaza al formulario y queda a la vista.
 - **Medición:** cada bloque es una `<section id>`, así que el portal muestra tiempo y alcance por bloque en
   **Web → Tráfico del sitio**. Los botones llevan `data-track-label` legible («Oferta · WhatsApp · Automatización
   de procesos», «Barra · Que me contacten»…), y la barra fija declara su sección con `data-track-section`. El
   formulario se mide como `contacto-servicio`.
-- **Anuncios:** los botones de WhatsApp llevan `data-package` y `data-value`, así que Google Ads, Meta y ChatGPT
-  reciben el paquete y su precio como en la portada (ver [anuncios](anuncios.md)).
+- **Anuncios:** los botones de WhatsApp llevan `data-package` (la clave del tarifario, igual que en la portada)
+  y `data-value`, así que Google Ads, Meta y ChatGPT reciben el paquete y su precio como en la portada (ver
+  [anuncios](anuncios.md)).
 
 ## Verificación
 

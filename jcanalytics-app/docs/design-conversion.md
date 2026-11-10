@@ -136,3 +136,28 @@ Lo que cambia respecto de las secciones anteriores de este documento:
   ideas.
 - El hero rota una pantalla real por categoría (cinco), da una sola vuelta y se detiene.
 
+### Segunda ronda (10 de noviembre de 2026)
+
+- **Detalle del paquete** (`PackageSheet`; en los enlaces sigue siendo `#hoja-<clave>`): el total y el único
+  botón verde viven en una barra pegada al borde inferior; el cierre acompaña el desplazamiento; en pantallas
+  angostas las casillas van después de «Incluido». Lo marcado viaja en la dirección
+  (`#hoja-pagina_web.ia.whatsapp`), abrirlo agrega una entrada al historial («atrás» lo cierra) y el PDF sale en
+  una página con los cuatro compromisos.
+- **«Tu caso en una frase» dura toda la visita** (`components/site/case.js`, en `sessionStorage`): la respuesta
+  trae precio y plazo, cotizar es el botón verde, la tarjeta del paquete más cercano lleva «El de tu caso» y los
+  pedidos y «Cotizar» salen con la frase. Nada de eso llega a las plataformas de anuncios.
+- **Un solo mensaje de paquete** en portada, detalle y páginas de servicio (`packageMessage`): cierra con «¿Me
+  confirman si calza con mi caso?» y la línea abierta «Mi negocio:». En computadora el formulario corto ofrece
+  ese dato como campo opcional.
+- **Textos por dispositivo sin parpadeo:** el HTML estático trae las dos variantes («Cotizar por WhatsApp» /
+  «Pedir cotización») y `data-pointer`, puesto por un script en línea antes de pintar, decide cuál se ve
+  (`components/site/pointer.jsx`, `boot.js`). Con React montado se pinta una sola.
+- **Clic antes de tiempo:** el mismo script guarda el clic a WhatsApp hecho antes de que la página sea
+  interactiva; en computadora lo detiene y al montar se repite (abre el formulario corto), en celular se mide
+  (`components/ui/early-click.js`).
+- **Montos:** `money()` y `colones()` de `data/packages.js` separan miles con punto en español y coma en inglés;
+  no se usa `toLocaleString` para dinero.
+- **Desplazamiento a un elemento:** `components/site/scroll.js` (`scrollToNode`) respeta `scroll-margin-top`
+  también con el desplazamiento suave de computadora; lo usan las tarjetas de paquete, las confirmaciones de
+  los formularios y cualquier ancla que no sea una sección.
+

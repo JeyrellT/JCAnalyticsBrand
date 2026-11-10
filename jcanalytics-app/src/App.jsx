@@ -27,6 +27,7 @@ import './styles/discovery.css';
 import { t } from './i18n/locale';
 import { trackContactClicks } from './seo/analytics';
 import { useInitialFragment } from './components/useInitialFragment';
+import { afterLayout, registerSmoothScroll, scrollToNode } from './components/site/scroll';
 import { endBoot } from './boot';
 
 const App = () => {
@@ -43,6 +44,15 @@ const App = () => {
     let lenis = null;
     let frame = 0;
     let cancelled = false;
+    let unregister = () => {};
+    const onAnchor = (event) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const anchor = event.target.closest?.('a[href*="#"]');
+      if (!anchor || anchor.origin !== window.location.origin || anchor.pathname !== window.location.pathname || anchor.hash.length < 2) return;
+      let node = null;
+      try { node = document.getElementById(decodeURIComponent(anchor.hash.slice(1))); } catch { /* ancla mal formada */ }
+      if (node && node.tagName !== 'SECTION') afterLayout(() => scrollToNode(node));
+    };
     const menuState = (event) => { if (lenis) { if (event.detail.open) lenis.stop(); else lenis.start(); } };
     window.addEventListener('jca:menu-state', menuState);
     window.addEventListener('jca:assistant-state', menuState);
@@ -50,11 +60,19 @@ const App = () => {
     import('lenis').then(({ default: Lenis }) => {
       if (cancelled) return;
       lenis = new Lenis({ lerp: 0.09, smoothWheel: true, anchors: true });
+      // Quien necesita llegar a un elemento respetando la barra fija usa scroll.js, que pasa por acá.
+      unregister = registerSmoothScroll((top, { instant }) => lenis.scrollTo(top, { immediate: instant, force: true }));
+      // Lenis lleva cada ancla a y=0. A las secciones no les afecta (traen su propio aire arriba), pero una
+      // tarjeta de paquete o el explorador de proyectos quedaban debajo de la barra fija: esos destinos se
+      // recolocan respetando su `scroll-margin-top`.
+      document.addEventListener('click', onAnchor);
       const loop = (time) => { lenis.raf(time); frame = window.requestAnimationFrame(loop); };
       frame = window.requestAnimationFrame(loop);
     }).catch(() => { /* sin scroll suave: queda el nativo */ });
     return () => {
       cancelled = true;
+      unregister();
+      document.removeEventListener('click', onAnchor);
       window.cancelAnimationFrame(frame);
       window.removeEventListener('jca:menu-state', menuState);
       window.removeEventListener('jca:assistant-state', menuState);

@@ -14,11 +14,12 @@
 //      queda para quien ya es cliente, junto al compromiso que nombra el portal.
 // ============================================================================
 import { t, locale } from '../../i18n/locale';
-import { ArrowDown, ArrowUpRight, CalendarClock, FileSignature, LifeBuoy, MessageCircle, MessagesSquare } from 'lucide-react';
+import { ArrowDown, ArrowUpRight, CalendarClock, FileSignature, LifeBuoy, MessagesSquare } from 'lucide-react';
 import { WORK_PROMISES } from '../../content/service-offers';
 import { Label, MaskLines, Reveal } from './primitives';
 import { PORTAL_URL, wa } from './links';
 import { MESSAGES } from './messages';
+import ContactIcon from './ContactIcon';
 import { useDesktop } from '../../hooks/useDesktop';
 
 const ICONS = [MessagesSquare, FileSignature, CalendarClock, LifeBuoy];
@@ -76,7 +77,7 @@ const Process = () => {
         </ol>
         <Reveal delay={0.2} className="process-action">
           <a className="jca-wa" href={wa(MESSAGES.firstCall)} target="_blank" rel="noreferrer" data-need="Otro" data-track-label="Compromisos · 30 minutos">
-            <MessageCircle size={19} aria-hidden="true" />{desktop ? t('Pedir mis 30 minutos sin costo', 'Request my free 30 minutes') : t('Pedir mis 30 minutos · WhatsApp', 'Request my 30 minutes · WhatsApp')}
+            <ContactIcon size={19} />{desktop ? t('Pedir mis 30 minutos sin costo', 'Request my free 30 minutes') : t('Pedir mis 30 minutos · WhatsApp', 'Request my 30 minutes · WhatsApp')}
           </a>
           <p className="process-action__people">
             {t('Hablás con quien hace el trabajo: cinco personas, sin intermediarios.', 'You talk to the people doing the work: five people, no middlemen.')}{' '}

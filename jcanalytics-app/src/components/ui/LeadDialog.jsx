@@ -31,17 +31,29 @@
 //      ya escritos) se descartaba en el portal sin avisar.
 //    · El fondo no se desplaza y arrastrar una selección fuera del panel no lo
 //      cierra.
+//  Segunda ronda (noviembre de 2026):
+//    · En un pedido de paquete se ve lo que la persona marcó en el detalle y hay
+//      un campo opcional de una línea, «¿Para qué negocio es?»: sin ese dato la
+//      primera respuesta del equipo era siempre otra pregunta.
+//    · La confirmación repite lo pedido con su total, dice qué ir juntando (el
+//      «Para empezar necesitamos» del paquete) y deja volver al detalle para
+//      guardarlo o reenviarlo. En una consulta general ofrece ver los proyectos.
+//    · El paquete llega al portal siempre con el nombre del tarifario en español
+//      y a la medición con su clave, desde la portada y desde las páginas de
+//      servicio, en los dos idiomas.
 // ============================================================================
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, MessageCircle, Send, X } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, MessageCircle, Send, X } from 'lucide-react';
 import { locale, t } from '../../i18n/locale';
 import { isDesktopPointer } from '../../hooks/useDesktop';
 import { emailOk, phoneOk } from '../site/contact-rules';
 import { NEXT_STEPS } from '../site/messages';
+import { BUSINESS_PROMPT, PACKAGES, money, parseSheetHash, selectionLabel } from '../../data/packages';
 import { sendLead } from '../../seo/site-tracker';
 import { trackLeadCaptured } from '../../seo/analytics';
-import { resolveRoute } from '../../seo/routes';
+import { homePath, resolveRoute } from '../../seo/routes';
 import { lockScroll } from './scroll-lock';
+import { replayEarlyClick } from './early-click';
 import '../../styles/lead-dialog.css';
 
 export const LEAD_DIALOG_FORM = 'contacto-rapido';
@@ -52,24 +64,42 @@ const PROBLEMS = {
   email: t('Revisá el correo: le falta algo (ejemplo: nombre@empresa.com).', 'Check the email: something is missing (example: name@company.com).'),
 };
 const AFTER_SENDING = [
-  t('Una persona del equipo te escribe al WhatsApp o correo que dejaste.', 'A person from the team writes to the WhatsApp or email you left.'),
+  t('Una persona del equipo te escribe al WhatsApp o correo que dejaste.', 'Someone from the team will message you at the WhatsApp or email you left.'),
   ...NEXT_STEPS.slice(1),
 ];
 
-/** Contexto del enlace interceptado: mensaje armado, paquete, necesidad y sección donde estaba. */
+/** Contexto del enlace interceptado: mensaje armado, paquete, lo marcado, necesidad y sección donde estaba. */
 function contextFrom(link) {
   const url = new URL(link.href);
   const routeNeed = resolveRoute(window.location.pathname)?.data?.need ?? null;
+  // El paquete se busca por su clave: de ahí salen el nombre que lee el equipo y lo que hace falta para empezar.
+  const pack = PACKAGES.find((item) => item.key === link.dataset.package) ?? null;
+  const pick = pack ? parseSheetHash(link.dataset.packagePick) : null;
   return {
     href: link.href,
     message: (url.searchParams.get('text') ?? '').trim().slice(0, MESSAGE_MAX),
     packageId: link.dataset.package || '',
-    packageLabel: link.dataset.packageLabel || link.dataset.package || '',
+    packageLabel: link.dataset.packageLabel || pack?.name || link.dataset.package || '',
+    packageName: pack?.portalName || link.dataset.packageLabel || link.dataset.package || '',
     packageValue: Number(link.dataset.value) || 0,
+    pack,
+    picked: pick?.item === pack ? selectionLabel(pack, pick) : '',
+    sheet: pack ? link.dataset.packagePick || `#hoja-${pack.key}` : '',
     need: link.dataset.need || routeNeed,
     section: link.closest('[data-track-section]')?.dataset.trackSection ?? link.closest('section[id]')?.id ?? 'navigation',
   };
 }
+
+/** El mensaje que llega al portal: la línea abierta «Mi negocio:» se completa con lo escrito o se quita. */
+function withBusiness(text, business) {
+  const lines = text.split('\n');
+  const index = lines.findIndex((line) => line.trim() === BUSINESS_PROMPT);
+  const filled = business.trim() ? `${BUSINESS_PROMPT} ${business.trim()}` : '';
+  if (index >= 0) lines.splice(index, 1, ...(filled ? [filled] : []));
+  else if (filled) lines.push(filled);
+  return lines.join('\n').trim().slice(0, MESSAGE_MAX);
+}
+const lowerFirst = (text) => text.charAt(0).toLowerCase() + text.slice(1);
 
 const dialogState = (open) => window.dispatchEvent(new CustomEvent('jca:lead-dialog-state', { detail: { open } }));
 
@@ -80,9 +110,11 @@ export default function LeadDialog() {
   const titleRef = useRef(null);
   const release = useRef(null); // libera el bloqueo de desplazamiento del fondo
   const pressedBackdrop = useRef(false);
+  const keepSheet = useRef(false); // la persona eligió volver al detalle de su pedido: no se cierra con el formulario
   const startedAt = useRef(0); // primera apertura (el portal descarta envíos llenados en menos de 1,5 s)
   const [context, setContext] = useState(null);
   const [name, setName] = useState('');
+  const [business, setBusiness] = useState(''); // pedido de paquete: para qué negocio es (opcional)
   const [phone, setPhone] = useState('');
   const [mail, setMail] = useState('');
   const [message, setMessage] = useState('');
@@ -105,7 +137,9 @@ export default function LeadDialog() {
       setContext(next);
     };
     document.addEventListener('click', intercept, true);
-    return () => document.removeEventListener('click', intercept, true);
+    // Con la página ya interactiva, se atiende el clic a WhatsApp hecho antes de tiempo (ver early-click.js).
+    const replay = window.setTimeout(replayEarlyClick, 0);
+    return () => { window.clearTimeout(replay); document.removeEventListener('click', intercept, true); };
   }, []);
 
   useEffect(() => {
@@ -123,6 +157,10 @@ export default function LeadDialog() {
   const close = () => dialogRef.current?.close();
   const onClose = () => {
     dialogState(false);
+    // El detalle del paquete (site/PackageSheet.jsx) queda abierto debajo: se cierra con este formulario solo
+    // si el pedido ya salió y la persona no pidió volver a verlo.
+    window.dispatchEvent(new CustomEvent('jca:lead-dialog-closed', { detail: { sent: status === 'sent', keepSheet: keepSheet.current } }));
+    keepSheet.current = false;
     release.current?.();
     release.current = null;
     setContext(null);
@@ -139,8 +177,8 @@ export default function LeadDialog() {
     setStatus('sending');
     const ok = await sendLead({
       channel: context.packageLabel ? 'paquete' : 'formulario',
-      name: name.trim(), ...contact, need: context.need, message: message.trim(),
-      packageName: context.packageLabel || undefined, website, startedAt: startedAt.current,
+      name: name.trim(), ...contact, need: context.need, message: context.packageLabel ? withBusiness(message, business) : message.trim(),
+      packageName: context.packageName || undefined, website, startedAt: startedAt.current,
       form: LEAD_DIALOG_FORM, section: context.section,
     }).catch(() => false);
     if (ok) trackLeadCaptured({ form: LEAD_DIALOG_FORM, section: context.section, packageId: context.packageId || undefined, packageValue: context.packageValue || undefined });
@@ -160,6 +198,16 @@ export default function LeadDialog() {
   );
   const isPackage = Boolean(context?.packageLabel);
   const bad = Boolean(problem) || status === 'error';
+  // El campo del negocio aparece mientras el mensaje conserve su línea abierta («Mi negocio:»): si la persona
+  // ya armó «Tu caso en una frase», el mensaje trae esa frase y no hace falta preguntarlo otra vez.
+  const asksBusiness = isPackage && message.split('\n').some((line) => line.trim() === BUSINESS_PROMPT);
+  const home = homePath(locale);
+  // Volver al detalle del pedido: en la portada, si ya está abierto debajo, alcanza con cerrar este formulario.
+  const viewSheet = (event) => {
+    keepSheet.current = true;
+    if (window.location.pathname === home && window.location.hash === context.sheet) event.preventDefault();
+    close();
+  };
 
   return (
     <dialog ref={dialogRef} className="lead-dialog" aria-labelledby="lead-dialog-title" onClose={onClose} data-lenis-prevent
@@ -172,12 +220,22 @@ export default function LeadDialog() {
             <>
               <span className="lead-dialog__eyebrow">{isPackage ? t('PEDIDO RECIBIDO', 'REQUEST RECEIVED') : t('CONSULTA RECIBIDA', 'INQUIRY RECEIVED')}</span>
               <h2 id="lead-dialog-title" ref={titleRef} tabIndex={-1}>{t('¡Listo! Te escribimos en menos de 24 h.', 'Done! We’ll reach out within 24 hours.')}</h2>
-              <p className="lead-dialog__intro">{isPackage
-                ? t(`Tu pedido de ${context.packageLabel} ya está con el equipo. Esto es lo que sigue:`, `Your request for ${context.packageLabel} is with the team. Here is what comes next:`)
-                : t('Tu consulta ya está con el equipo. Esto es lo que sigue:', 'Your inquiry is with the team. Here is what comes next:')}</p>
+              {isPackage ? (
+                <p className="lead-dialog__intro">
+                  {t('Pediste:', 'You requested:')} <strong>{context.packageLabel}</strong>{context.packageValue > 0 && <> · {money(context.packageValue)} {t('+ IVA (total preliminar)', '+ tax (preliminary total)')}</>}{context.picked ? t(`, con ${context.picked}`, `, with ${context.picked}`) : ''}. {t('Ya está con el equipo. Esto es lo que sigue:', 'It is with the team. Here is what comes next:')}
+                </p>
+              ) : (
+                <p className="lead-dialog__intro">{t('Tu consulta ya está con el equipo. Esto es lo que sigue:', 'Your inquiry is with the team. Here is what comes next:')}</p>
+              )}
               <ol className="lead-dialog__next">{AFTER_SENDING.map((step, index) => <li key={step}><span aria-hidden="true">{index + 1}</span>{step}</li>)}</ol>
+              {/* Algo útil para hacer mientras tanto, con un dato que ya está publicado en el detalle del paquete. */}
+              {context.pack?.ready && <p className="lead-dialog__ready">{t('Para ganar tiempo, andá juntando:', 'To save time, start gathering:')} {lowerFirst(context.pack.ready)}</p>}
               <div className="lead-dialog__actions">
-                <button type="button" className="lead-dialog__submit" onClick={close}>{t('Seguir navegando', 'Keep browsing')}</button>
+                {context.pack
+                  ? <a className="lead-dialog__submit" href={`${home}${context.sheet}`} onClick={viewSheet} data-track-label="Formulario rápido · Ver mi pedido">{t('Ver o guardar el detalle de mi pedido', 'View or save my request details')}<ArrowRight size={17} aria-hidden="true" /></a>
+                  : isPackage
+                    ? <button type="button" className="lead-dialog__submit" onClick={close}>{t('Seguir navegando', 'Keep browsing')}</button>
+                    : <a className="lead-dialog__submit" href={`${home}#trabajo`} onClick={close} data-track-label="Formulario rápido · Ver proyectos">{t('Mientras tanto, ver proyectos reales', 'Meanwhile, see real projects')}<ArrowRight size={17} aria-hidden="true" /></a>}
                 {whatsappLink(t('¿Es urgente? Abrir WhatsApp Web', 'Is it urgent? Open WhatsApp Web'))}
               </div>
             </>
@@ -186,8 +244,10 @@ export default function LeadDialog() {
               <span className="lead-dialog__eyebrow">{isPackage ? t('TU PEDIDO', 'YOUR REQUEST') : t('COTIZACIÓN', 'QUOTE')}</span>
               <h2 id="lead-dialog-title">{t('¿A dónde te escribimos?', 'Where should we write to you?')}</h2>
               {isPackage && (
-                <p className="lead-dialog__package"><Check size={14} aria-hidden="true" />{t('Estás pidiendo:', 'You are asking for:')} <strong>{context.packageLabel}</strong>{context.packageValue > 0 && <> · ${context.packageValue.toLocaleString(locale === 'es' ? 'es-CR' : 'en-US')} {t('+ IVA', '+ tax')}</>}</p>
+                <p className="lead-dialog__package"><Check size={14} aria-hidden="true" />{t('Estás pidiendo:', 'You are asking for:')} <strong>{context.packageLabel}</strong>{context.packageValue > 0 && <> · {money(context.packageValue)} {t('+ IVA', '+ tax')}</>}</p>
               )}
+              {/* Si el total difiere del de la tarjeta, acá se ve por qué. */}
+              {context.picked && <p className="lead-dialog__picked">{t('Incluye lo que marcaste:', 'Includes what you ticked:')} {context.picked}</p>}
               <p className="lead-dialog__intro">{isPackage
                 ? t('Dejá tu WhatsApp o tu correo. En menos de 24 h una persona del equipo te confirma si el paquete calza con tu caso. No te cobra ni te compromete.', 'Leave your WhatsApp or your email. Within 24 hours a person from the team confirms whether the package fits your case. No charge and no commitment.')
                 : t('Dejá tu WhatsApp o tu correo. Te respondemos en menos de 24 h y la primera conversación, de 30 minutos, no tiene costo.', 'Leave your WhatsApp or your email. We reply within 24 hours and the first 30-minute conversation is free.')}</p>
@@ -202,10 +262,17 @@ export default function LeadDialog() {
                   <input ref={mailRef} id="rapido-correo" type="email" inputMode="email" autoComplete="email" maxLength={160} placeholder={t('Ej.: nombre@empresa.com', 'e.g. name@company.com')} value={mail}
                     onChange={edit(setMail)} aria-invalid={problem === 'email'} aria-describedby="rapido-estado" />
                 </div>
-                <div className="lead-field lead-field--wide">
+                <div className={`lead-field ${asksBusiness ? '' : 'lead-field--wide'}`}>
                   <label htmlFor="rapido-nombre">{t('Tu nombre', 'Your name')} <small>{t('(opcional)', '(optional)')}</small></label>
                   <input id="rapido-nombre" type="text" autoComplete="name" maxLength={100} value={name} onChange={(event) => setName(event.target.value)} />
                 </div>
+                {asksBusiness && (
+                  <div className="lead-field">
+                    <label htmlFor="rapido-negocio">{t('¿Para qué negocio es?', 'What business is it for?')} <small>{t('(opcional)', '(optional)')}</small></label>
+                    <input id="rapido-negocio" type="text" autoComplete="organization" maxLength={120} placeholder={t('Ej.: barbería con 3 sillas en Heredia', 'e.g. a three-chair barbershop in Heredia')} value={business} onChange={(event) => setBusiness(event.target.value)} aria-describedby="rapido-negocio-ayuda" />
+                    <span id="rapido-negocio-ayuda" className="sr-only">{t('Con una línea alcanza para confirmarte si el paquete calza.', 'One line is enough for us to confirm whether the package fits.')}</span>
+                  </div>
+                )}
                 {isPackage ? (
                   // Pedido de paquete: el mensaje ya dice todo y queda plegado; quien quiera lo abre y lo cambia.
                   <details className="lead-dialog__message lead-field--wide">

@@ -40,6 +40,7 @@
 .case-matcher__sentence select { max-width: 100%; min-height: 44px; margin: 2px 0; padding: 4px 36px 4px 12px; border: 0; border-bottom: 2px solid #34735b; border-radius: 8px 8px 0 0; background: #e3eddf url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2334735b' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center; color: #15372a; font: inherit; font-style: italic; appearance: none; cursor: pointer; }
 .case-matcher__sentence select:focus-visible { outline: 2px solid #34735b; outline-offset: 2px; }
 .case-matcher__result:empty { display: none; }
+.case-matcher__hint { margin-top: 2px; font-size: 14.5px; line-height: 1.5; color: #3d5546; }
 .case-matcher__answer { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 22px; align-items: center; margin-top: 4px; padding-top: 16px; border-top: 1px solid #c9d4c6; }
 .case-matcher__answer:has(.case-matcher__shot) { grid-template-columns: minmax(0, 1fr) 260px; }
 .case-matcher__answer:not(:has(.case-matcher__shot)) { grid-template-columns: 1fr; }
@@ -48,11 +49,14 @@
 .case-matcher__verdict a { display: inline; min-height: 0; font-size: inherit; font-weight: 600; color: #15372a; text-decoration: underline; text-underline-offset: 3px; }
 .case-matcher__proof { font-size: 14.5px; line-height: 1.55; color: #3d5546; }
 .case-matcher__proof span { color: #55695c; }
+/* Segunda ronda: cotizar con la frase es el botón verde sólido (el mismo de las tarjetas de paquete); ver qué
+   incluye el paquete va con borde, y lo demás son enlaces de texto. Antes el más fuerte sacaba de la portada. */
 .case-matcher__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 6px; }
-.case-matcher__go { padding: 0 18px; border-radius: 8px; background: #15372a; color: #e6f7ec !important; font-weight: 600; }
-.case-matcher__go:hover { background: #1f4d3a; }
-.case-matcher__wa { padding: 0 16px; border-radius: 8px; border: 1px solid #25d366; background: #25d3662b; color: #0b3b22 !important; font-weight: 600; }
-.case-matcher__wa:hover { background: #25d36647; }
+.case-matcher__wa { min-height: 50px !important; padding: 0 20px; border-radius: 8px; background: #25d366; color: #06301a !important; font-size: 15px !important; font-weight: 650; }
+.case-matcher__wa:hover { background: #3ee07a; }
+.case-matcher__go { min-height: 50px !important; padding: 0 18px; border: 1px solid #9fb6a5; border-radius: 8px; color: #15372a !important; font-weight: 600; }
+.case-matcher__go:hover { background: #e2ebdf; border-color: #34735b; }
+.case-matcher__more { display: flex; flex-wrap: wrap; gap: 4px 20px; }
 .case-matcher__link { font-weight: 550; text-decoration: underline !important; text-underline-offset: 4px; }
 .case-matcher__shot { display: block !important; min-height: 0 !important; overflow: hidden; border: 1px solid #c9d4c6; border-top: 3px solid var(--project-color, #34735b); border-radius: 10px; aspect-ratio: 1.6; }
 .case-matcher__shot img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
@@ -85,5 +89,7 @@
   .case-matcher__shot { order: -1; }
   .case-matcher__actions { flex-direction: column; align-items: stretch; }
   .case-matcher__actions a { justify-content: center; }
+  /* Las listas ocupan todo el ancho: el punto final quedaba solo en una línea. */
+  .case-matcher__dot { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .category-card > a, .category-card__link svg { transition: none; } }

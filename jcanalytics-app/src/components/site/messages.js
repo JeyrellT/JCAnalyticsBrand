@@ -20,6 +20,12 @@ export const MESSAGES = {
     'Hola JC Analytics, quiero cotizar un proyecto para mi negocio. Les cuento qué necesito:',
     'Hi JC Analytics, I would like a quote for a project for my business. Here is what I need:',
   ),
+  /** La misma cotización cuando la persona ya armó «Tu caso en una frase» (ver case.js): el equipo recibe el
+   *  giro y la necesidad sin preguntar. `pack`: el paquete publicado más cercano, como referencia. */
+  caseQuote: (sentence, pack = null) => t(
+    `Hola JC Analytics, ${sentence}.${pack ? ` Vi el paquete ${pack.name} (${pack.priceLabel} + IVA).` : ''} ¿Por dónde empezamos?`,
+    `Hi JC Analytics, ${sentence}.${pack ? ` I saw the ${pack.name} package (${pack.priceLabel} + tax).` : ''} Where do we start?`,
+  ),
   /** «No sé cuál me toca», en «Qué hacemos». */
   undecided: t(
     'Hola JC Analytics, no sé bien qué categoría me toca. Les cuento mi caso:',

@@ -14,7 +14,11 @@
 .packages-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin: 0; padding: 0; list-style: none; }
 .package-card { position: relative; display: flex; flex-direction: column; padding: 22px; border: 1px solid #c6d4c6; border-radius: 12px; background: #fbfcf8; scroll-margin-top: 96px; }
 .package-card--ad { border: 2px solid #25d366; box-shadow: 0 18px 40px -26px #0f5a2f; }
-.package-card:target { border-color: #34735b; box-shadow: 0 0 0 3px #34735b33; }
+/* El paquete más cercano a «Tu caso en una frase» (site/case.js) y la tarjeta a la que apunta un enlace. */
+.package-card--case { border: 2px solid #34735b; box-shadow: 0 18px 40px -28px #15372a; }
+.package-card--case .package-card__badge { background: #15372a; color: #d7f5e3; }
+.package-card:target { border-color: #34735b; box-shadow: 0 0 0 4px #34735b47; animation: package-card-target 1.6s ease-out 1; }
+@keyframes package-card-target { from { box-shadow: 0 0 0 10px #25d36666; } to { box-shadow: 0 0 0 4px #34735b47; } }
 .package-card__head { position: relative; display: flex; flex-direction: column; gap: 10px; }
 .package-card__category { font: 600 11px/1.4 var(--font-sans); letter-spacing: .08em; text-transform: uppercase; color: #52765f; }
 .package-card__top { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
@@ -35,9 +39,10 @@
 .package-card__body > .package-card__buy { margin-top: auto; }
 .package-card__buy:hover { background: #3ee07a; transform: translateY(-1px); }
 .package-card__after { margin-top: -2px; font-size: 12.5px; line-height: 1.5; color: #55695c; text-align: center; }
-.package-card__sheet { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border: 1px solid #b9cbb7; border-radius: 8px; font-size: 13px; font-weight: 550; line-height: 1.35; color: #1d4a33; transition: background .2s, border-color .2s; }
+/* Enlace de texto: el verde queda como único botón de la tarjeta (antes este enlace tenía borde y competía). */
+.package-card__sheet { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; font-size: 13.5px; font-weight: 550; line-height: 1.35; color: #1d4a33; text-decoration: underline; text-decoration-color: #9fb6a5; text-underline-offset: 4px; transition: color .2s, text-decoration-color .2s; }
 .package-card__sheet svg { flex: none; color: #34735b; }
-.package-card__sheet:hover { background: #e6efe2; border-color: #34735b; }
+.package-card__sheet:hover { color: #0f2e20; text-decoration-color: #34735b; }
 .package-card__buy:focus-visible, .package-card__sheet:focus-visible, .packages-more:focus-visible, .package-card__toggle:focus-visible { outline: 2px solid #34735b; outline-offset: 3px; }
 .package-card__toggle { display: none; }
 
@@ -85,7 +90,7 @@
   .package-card__buy { min-height: 54px; }
   .packages-foot { margin-top: 18px; }
 }
-@media (prefers-reduced-motion: reduce) { .package-card__buy, .package-card__toggle svg { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .package-card__buy, .package-card__sheet, .package-card__toggle svg { transition: none; } .package-card:target { animation: none; } }
 
 /* Hero: botón de acción principal. */
 .studio-wa { display: inline-flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 24px; border-radius: 6px; background: #25d366; color: #06301a; font-size: 15.5px; font-weight: 650; transition: background .2s, box-shadow .2s; }

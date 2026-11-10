@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
-import { ArrowDown, ArrowRight, Check, MessageCircle, Pause, Play } from 'lucide-react';
+import { ArrowDown, ArrowRight, Check, Pause, Play } from 'lucide-react';
 import { MaskLines, Reveal } from './primitives';
 import { CATEGORY_LINKS, prepareContact, wa } from './links';
 import { MESSAGES } from './messages';
-import { adPackage } from '../../data/packages';
+import { useCase } from './case';
+import ContactIcon from './ContactIcon';
+import { ByPointer } from './pointer';
+import { adPackage, packageMessage } from '../../data/packages';
 import { PROJECTS, screenImage } from '../../data/projects';
 import { useDesktop } from '../../hooks/useDesktop';
 import { shotSrcSet } from '../../data/shots';
-import { STATIC_BOOT } from '../../boot';
+import { COARSE_ONLY, STATIC_BOOT } from '../../boot';
 import '../../styles/packages.css';
 import '../../styles/hero.css';
 import { t } from '../../i18n/locale';
@@ -125,6 +128,8 @@ const Hero = () => {
   const reduce = useReducedMotion();
   // En computadora el botón abre el formulario corto (ui/LeadDialog.jsx), no WhatsApp Web: el texto lo dice.
   const desktop = useDesktop();
+  // Si la persona ya armó «Tu caso en una frase», el botón principal sale con esa frase (case.js).
+  const visit = useCase();
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
   const objectY = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : 90]);
   const still = STATIC_BOOT;
@@ -169,26 +174,28 @@ const Hero = () => {
         <div className="studio-hero__copy">
           <Reveal still={still} className="studio-hero__lead"><p className="studio-hero__eyebrow">{adPackage
             ? <>{t('Viste en el anuncio:', 'From the ad:')} <strong>{adPackage.name}</strong></>
-            : t('Para PYMES y equipos de finanzas y operaciones · Costa Rica', 'For small businesses and finance and operations teams · Costa Rica')}</p></Reveal>
+            : t('Para comercios, PYMES y equipos de finanzas · Costa Rica', 'For shops, small businesses and finance teams · Costa Rica')}</p></Reveal>
           {/* Titular acordado el 31 de octubre de 2026 (sin precio). */}
           <h1 id="hero-title"><MaskLines still={still} lines={[t('Webs y sistemas', 'Websites and systems'), <em key="time">{t('con entrega a tiempo.', 'delivered on time.')}</em>]} delay={0.1} /></h1>
           <Reveal still={still} delay={0.25} className="studio-hero__intro">
             {adPackage ? (
               <p className="studio-hero__description">{adPackage.pitch} {t(`Entrega en ${adPackage.time}, con alcance y precio fijo por escrito antes de empezar.`, `Delivered in ${adPackage.time}, with fixed scope and price in writing before we start.`)}</p>
             ) : (
-              // En celular se muestra solo la primera frase: lo de la segunda está en las tres líneas bajo el botón.
-              <p className="studio-hero__description">{t('Páginas web, sistemas a medida, dashboards Power BI, automatización, IA y marketing para tu negocio.', 'Websites, custom systems, Power BI dashboards, automation, AI and marketing for your business.')}<span className="studio-hero__description-more"> {t('Sabés el precio antes de empezar y ves avances cada 72 horas.', 'You know the price before we start and see progress every 72 hours.')}</span></p>
+              // La primera frase dice qué resuelve, con palabras de quien compra, y es la única en celular. La lista
+              // de servicios queda para computadora: en celular la repiten los atajos de abajo y, sola, se leía
+              // como un inventario del estudio (segunda ronda de la auditoría, noviembre de 2026).
+              <p className="studio-hero__description">{t('Para recibir pedidos y reservas en línea, dejar de repetir tareas a mano y ver tus números al día.', 'To take orders and bookings online, stop repeating tasks by hand and see your numbers up to date.')}<span className="studio-hero__description-more"> {t('Páginas web, sistemas a medida, dashboards Power BI, automatización, IA y marketing, con el precio por escrito antes de empezar.', 'Websites, custom systems, Power BI dashboards, automation, AI and marketing, with the price in writing before we start.')}</span></p>
             )}
           </Reveal>
 
           <Reveal still={still} delay={0.3} className="studio-hero__actions">
             {adPackage ? (
-              <a href={wa(adPackage.message)} target="_blank" rel="noreferrer" className="studio-wa" data-need={adPackage.need} data-package={adPackage.key} data-value={adPackage.price} data-package-label={adPackage.name} data-track-label={`Hero · Lo quiero · ${adPackage.name}`}>
-                <MessageCircle size={20} aria-hidden="true" /><span>{t('Lo quiero:', 'I want it:')} {adPackage.name}</span>
+              <a href={wa(visit.sentence ? packageMessage(adPackage, { sentence: visit.sentence }) : adPackage.message)} target="_blank" rel="noreferrer" className="studio-wa" data-need={adPackage.need} data-package={adPackage.key} data-value={adPackage.price} data-package-label={adPackage.name} data-track-label={`Hero · Lo quiero · ${adPackage.key}`}>
+                <ContactIcon size={20} /><span>{t('Lo quiero:', 'I want it:')} {adPackage.name}</span>
               </a>
             ) : (
-              <a href={wa(MESSAGES.quote)} target="_blank" rel="noreferrer" className="studio-wa" data-need="Otro" data-track-label="Hero · Cotizar">
-                <MessageCircle size={20} aria-hidden="true" /><span>{desktop ? t('Pedir cotización', 'Request a quote') : t('Cotizar por WhatsApp', 'Get a quote on WhatsApp')}</span>
+              <a href={wa(visit.sentence ? MESSAGES.caseQuote(visit.sentence, visit.pack) : MESSAGES.quote)} target="_blank" rel="noreferrer" className="studio-wa" data-need={visit.chosenGoal?.need ?? 'Otro'} data-track-label="Hero · Cotizar">
+                <ContactIcon size={20} /><span><ByPointer fine={t('Pedir cotización', 'Request a quote')} coarse={t('Cotizar por WhatsApp', 'Get a quote on WhatsApp')} /></span>
               </a>
             )}
             {adPackage && <a href={`#paquete-${adPackage.key}`} className="studio-hero__more" data-track-label="Hero · Ver el paquete del anuncio">{t('Ver qué incluye y el precio', 'See what is included and the price')} <ArrowDown size={14} aria-hidden="true" /></a>}
@@ -199,12 +206,13 @@ const Hero = () => {
             <li><Check size={14} aria-hidden="true" />{t('Primera conversación de 30 min sin costo', 'Free 30-minute first conversation')}</li>
             <li><Check size={14} aria-hidden="true" />{t('Alcance y precio fijo por escrito', 'Fixed scope and price in writing')}</li>
           </ul>
+          {/* Sin anuncio esta línea solo existe en celular: en el HTML estático queda oculta en computadora. */}
           {(adPackage || !desktop) && (
-            <p className="studio-hero__invitation">
+            <p className={`studio-hero__invitation ${adPackage ? '' : COARSE_ONLY}`}>
               {adPackage && <a href={wa(MESSAGES.quote)} target="_blank" rel="noreferrer" className="studio-hero__alt" data-need="Otro" data-track-label="Hero · Otro caso">{t('¿Tu caso es otro? Contanos y lo cotizamos', 'Different case? Tell us and we’ll quote it')}</a>}
               {adPackage && !desktop && ' · '}
               {/* En computadora el botón de arriba ya abre un formulario; esta alternativa solo existe en celular. */}
-              {!desktop && <a href="#contacto" className="studio-start studio-start--link" onClick={() => prepareContact({ source: t('Hero · formulario', 'Hero · form'), form: true })} data-track-label="Hero · Formulario">{t('¿Sin WhatsApp? Dejanos tu contacto', 'No WhatsApp? Leave your contact')}</a>}
+              {!desktop && <a href="#contacto" className="studio-start studio-start--link" onClick={() => prepareContact({ source: t('Hero · formulario', 'Hero · form'), form: true })} data-track-label="Hero · Formulario">{t('¿Sin WhatsApp? Dejanos tu contacto', 'No WhatsApp? Leave us your details')}</a>}
             </p>
           )}
 

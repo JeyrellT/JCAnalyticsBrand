@@ -16,6 +16,13 @@
 // ============================================================================
 export const STATIC_BOOT = typeof document !== 'undefined' && (document.getElementById('root')?.childElementCount ?? 0) > 0;
 
+// Verdadero solo mientras se genera el HTML estático (#root vacío en un navegador automatizado). Ahí los
+// textos que dependen del dispositivo se escriben en sus dos variantes (components/site/pointer.jsx).
+export const PRERENDER = !STATIC_BOOT && typeof navigator !== 'undefined' && navigator.webdriver === true;
+// Clase para un bloque que solo existe en celular: en el HTML estático queda oculto en computadora y en
+// celular conserva su propia caja (no es `display: contents`, que le quitaría márgenes y movería lo demás).
+export const COARSE_ONLY = PRERENDER ? 'only-coarse-block' : '';
+
 // Mientras dura ese primer montaje, si la visita ya bajó por la página (leyó el HTML estático y siguió),
 // tampoco se anima lo que tiene a la vista: Reveal y MaskLines consultan `bootScrolled()` una sola vez.
 // App.jsx y JournalApp.jsx llaman a `endBoot()` cuando el primer render ya quedó en pantalla; de ahí en

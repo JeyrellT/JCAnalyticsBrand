@@ -1,12 +1,13 @@
-import { useState } from 'react';
 import { t } from '../../i18n/locale';
-import { ArrowDown, ArrowRight, MessageCircle } from 'lucide-react';
+import { ArrowDown, ArrowRight } from 'lucide-react';
 import { shotSrcSet } from '../../data/shots';
 import { CATEGORIES } from '../../content/categories';
 import { Label, MaskLines, Reveal } from './primitives';
 import { CATEGORY_LINKS, wa } from './links';
 import { MESSAGES } from './messages';
 import CaseMatcher from './CaseMatcher';
+import { useCase } from './case';
+import ContactIcon from './ContactIcon';
 import { useDesktop } from '../../hooks/useDesktop';
 import '../../styles/categories.css';
 
@@ -52,7 +53,8 @@ const Card = ({ item, index, matched }) => {
 const Categories = () => {
   // En computadora el enlace de WhatsApp abre el formulario corto (ui/LeadDialog.jsx): el texto no promete WhatsApp.
   const desktop = useDesktop();
-  const [match, setMatch] = useState(null);
+  // La categoría de «Tu caso en una frase» se marca en su tarjeta (la elección dura toda la visita: case.js).
+  const match = useCase().chosenGoal?.category ?? null;
   return (
   <section id="servicios" className="categories-section scroll-mt-24" aria-labelledby="categories-title">
     <div className="categories-container">
@@ -69,9 +71,9 @@ const Categories = () => {
         {CARDS.map((item, index) => <Card key={item.id} item={item} index={index} matched={match === item.id} />)}
       </ul>
       <Reveal delay={0.1} className="categories-foot">
-        <CaseMatcher onMatch={setMatch} />
+        <CaseMatcher />
         <div className="categories-foot__links">
-          <a href={wa(MESSAGES.undecided)} target="_blank" rel="noreferrer" className="categories-foot__wa" data-need="Otro" data-track-label="Categorías · No sé cuál me toca"><MessageCircle size={16} aria-hidden="true" />{desktop ? t('O contanos tu caso y te orientamos', 'Or tell us your case and we’ll guide you') : t('O contanos tu caso por WhatsApp', 'Or tell us your case on WhatsApp')}</a>
+          <a href={wa(MESSAGES.undecided)} target="_blank" rel="noreferrer" className="categories-foot__wa" data-need="Otro" data-track-label="Categorías · No sé cuál me toca"><ContactIcon size={16} />{desktop ? t('O contanos tu caso y te orientamos', 'Or tell us your case and we’ll guide you') : t('O contanos tu caso por WhatsApp', 'Or tell us your case on WhatsApp')}</a>
           <a href="#paquetes" className="categories-foot__next" data-track-label="Categorías · Ver paquetes">{t('Ver paquetes con precio publicado', 'See packages with published pricing')} <ArrowDown size={15} aria-hidden="true" /></a>
         </div>
       </Reveal>

@@ -2,12 +2,13 @@
 // qué pasa después de escribir). El contenido vive en seo/site.js porque también alimenta el JSON-LD y el
 // asistente. Auditoría de noviembre de 2026: el botón pide la respuesta con el mensaje ya escrito
 // (WhatsApp en celular, formulario corto en computadora) en vez de bajar a otro formulario.
-import { MessageCircle, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { content } from '../../seo/site';
 import { locale, t } from '../../i18n/locale';
 import { Label, Reveal } from './primitives';
 import { wa } from './links';
 import { MESSAGES } from './messages';
+import ContactIcon from './ContactIcon';
 import { useDesktop } from '../../hooks/useDesktop';
 import '../../styles/discovery.css';
 
@@ -21,7 +22,7 @@ export default function FAQ() {
           <h2 id="faq-title">{t('Antes de escribirnos,', 'Before you write to us,')}{' '}<br /><em>{t('lo que más preguntan.', 'what people ask most.')}</em></h2>
           <p>{t('Seis respuestas cortas sobre precio, plazo y qué pasa después. Si la tuya no está, preguntanos: responde una persona del equipo.', 'Six short answers about price, timing and what happens next. If yours is not here, ask us: a person from the team replies.')}</p>
           <a className="jca-wa" href={wa(MESSAGES.question)} target="_blank" rel="noreferrer" data-need="Otro" data-track-label="Preguntas · Hacer mi pregunta">
-            <MessageCircle size={18} aria-hidden="true" />{desktop ? t('Hacer mi pregunta', 'Ask my question') : t('Hacer mi pregunta · WhatsApp', 'Ask my question · WhatsApp')}
+            <ContactIcon size={18} />{desktop ? t('Hacer mi pregunta', 'Ask my question') : t('Hacer mi pregunta · WhatsApp', 'Ask my question · WhatsApp')}
           </a>
         </Reveal>
         <div className="discovery-faq__questions">

@@ -56,9 +56,15 @@ export const prepareContact = ({ need = null, source = '', form = false } = {}) 
 // Link de WhatsApp con mensaje precargado: el visitante solo toca "enviar".
 // Si llegó desde un anuncio, el mensaje termina con la plataforma y campaña,
 // así el equipo sabe qué anuncio trajo cada conversación.
+// Cuando el mensaje tiene varias líneas y termina con una línea abierta («Mi negocio:»), la nota del anuncio
+// va antes de esa línea: así WhatsApp deja el cursor donde la persona tiene que seguir escribiendo.
 export const wa = (text) => {
   const note = attributionNote(locale);
-  const message = [text, note].filter(Boolean).join('\n\n');
+  const lines = String(text ?? '').split('\n');
+  const open = note && lines.length > 1 && lines[lines.length - 1].trim().endsWith(':');
+  const message = open
+    ? [...lines.slice(0, -1), note, lines[lines.length - 1]].join('\n')
+    : [text, note].filter(Boolean).join('\n\n');
   return `https://wa.me/${PHONE}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
 };
 

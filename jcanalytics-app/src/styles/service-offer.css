@@ -144,6 +144,17 @@
 .so-wa--quiet { background: transparent; border: 1px solid #25d366; color: #0b5a2e; }
 .so-wa--quiet:hover { background: #25d3661a; transform: none; }
 .so-form__status { grid-column: 1 / -1; min-height: 1.4em; font-size: 13px; line-height: 1.6; color: #31562f; }
+.so-form__status[data-tone="bad"] { color: #8a3a1f; font-weight: 600; }
+.so-form input[aria-invalid="true"] { border-color: #b4542f; border-width: 2px; }
+/* Confirmación después de enviar: la misma de la portada (título, tres pasos y salida urgente). */
+.so-sent { scroll-margin-top: 96px; display: grid; gap: 14px; padding: 24px; border-radius: 14px; background: #fff; }
+.so-sent .journal-eyebrow { color: #236c60; }
+.so-sent h3 { font: 500 clamp(24px, 2.6vw, 32px)/1.1 var(--font-display); letter-spacing: -.035em; color: #132b2d; outline: 0; }
+.so-sent > p { font-size: 15px; line-height: 1.6; color: #405f58; }
+.so-sent ol { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.so-sent li { display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start; font-size: 15px; line-height: 1.5; color: #1e3d38; }
+.so-sent li > span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #132b2d; color: #c3f5db; font: 600 12px var(--font-mono); }
+.so-sent .so-wa { width: fit-content; }
 
 /* Índice: los bloques de venta se distinguen del contenido editorial. */
 .document-toc .document-toc__sales { color: #236c60; font-weight: 600; }
@@ -185,6 +196,8 @@
   .so-form { padding: 22px 18px; border-radius: 16px; }
   .so-form form { grid-template-columns: 1fr; }
   .so-form__actions .so-wa, .so-form__actions .so-callback { width: 100%; }
+  .so-sent { padding: 18px 16px; }
+  .so-sent .so-wa { width: 100%; }
   .so-signals__list label { padding: 14px; font-size: 14px; }
 }
 @media (max-width: 359px) {
