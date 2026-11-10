@@ -148,3 +148,10 @@ Temas pendientes por falta de fuentes primarias verificadas (2026-10-20). Public
 - **Costa Rica y automatización (por verificar):** la búsqueda no devuelve nada fechado en noviembre. Reaparecen el estudio de Grupo CMA (43 %, vía Infobae Costa Rica y réplicas), el Plan Táctico 2026 de la Oficina de Suministros de la UCR (eje de automatización con tres módulos nuevos en GECO), una nota de La República sobre cómo la automatización aumenta el rendimiento, y una cifra de 28,5 % de población en edad de trabajar que usa IA generativa (AI Diffusion Report de Microsoft, T1 2026) citada solo en un perfil profesional: confirmar en el informe original de Microsoft.
 - **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001).
 - **Agentes de IA, técnicas sin tecnología:** sin cambios; siguen pendientes los anuncios oficiales de OpenAI, Salesforce, UiPath, Microsoft y Automation Anywhere. Revisar tras el congreso CICR del 18 nov.
+
+## Actualización 2026-11-10
+
+- **Sin entrada nueva hoy:** pmc.ncbi.nlm.nih.gov sigue sin resolverse desde este entorno (WebFetch: ENOTFOUND; hay que permitir ese dominio, además de justice.gov y openai.com, en la red de la sesión), así que no hay lectura directa del artículo del OIJ; se acumula para mañana.
+- **Costa Rica y automatización (por verificar):** la búsqueda no devuelve nada fechado en noviembre. Reaparecen el estudio de Grupo CMA (43 %, solo réplicas), el estudio de CINDE sobre talento, la nota de La Nación sobre centros de servicios, un artículo de delfino.cr sobre hiperautomatización (nov 2025, contexto) y la nota de El Financiero sobre ManpowerGroup. Leer los originales antes de citar.
+- **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001).
+- **Agentes de IA, técnicas sin tecnología:** sin cambios; siguen pendientes los anuncios oficiales de OpenAI, Salesforce, UiPath, Microsoft y Automation Anywhere. Revisar tras el congreso CICR del 18 nov.
