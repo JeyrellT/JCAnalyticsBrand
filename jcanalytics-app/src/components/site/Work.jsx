@@ -141,11 +141,13 @@ const Work = () => {
   // En computadora el botón abre el formulario corto, no WhatsApp Web: el texto lo dice.
   const desktop = useDesktop();
   const [active, setActive] = useState(initialProject);
+  const [shown, setShown] = useState(0); // cuántas veces otra parte de la portada pidió mostrar un proyecto
   const [view, setView] = useState('screen');
   const [screenIndex, setScreenIndex] = useState(() => screenOf(PROJECTS[initialProject()], fromQuery('pantalla') ?? (fromQuery('proyecto') || adPackage?.related ? null : getCase().chosenBusiness?.screen)));
   const reduce = useReducedMotion();
   const descriptionId = useId();
   const tabs = useRef(null);
+  const list = useRef(null);
   const project = PROJECTS[active];
   const screen = project.screens[screenIndex] || project.screens[0];
   const choose = (index, shot = 0) => { setActive(index); setScreenIndex(shot); };
@@ -158,10 +160,24 @@ const Work = () => {
       setActive(index);
       setScreenIndex(screenOf(PROJECTS[index], event.detail?.screen));
       setView('screen');
+      setShown((count) => count + 1);
     };
     window.addEventListener('jca:show-project', show);
     return () => window.removeEventListener('jca:show-project', show);
   }, []);
+  // Por debajo de 1024 px los proyectos son una tira horizontal. Cuando el proyecto elegido no está a la vista
+  // (lo eligió el detalle de un paquete, «Tu caso en una frase», el hero o un anuncio), la tira se corre sola
+  // hasta él: antes quedaba marcado y con el foco fuera de la tira, que seguía en los tres primeros (revisión de
+  // código, nov. 2026). Solo se mueve la tira, nunca la página.
+  useEffect(() => {
+    const strip = list.current;
+    const chosen = strip?.children[active];
+    if (!chosen || strip.scrollWidth <= strip.clientWidth) return;
+    const box = chosen.getBoundingClientRect();
+    const view = strip.getBoundingClientRect();
+    if (box.left >= view.left && box.right <= view.right) return;
+    strip.scrollLeft += box.left - view.left - Number.parseFloat(getComputedStyle(strip).paddingLeft || 0);
+  }, [active, shown]);
   // Pestañas: flechas, Inicio y Fin mueven la selección y el foco (patrón de pestañas de WAI-ARIA).
   const onTabKey = (event) => {
     const current = VIEWS.findIndex((item) => item.id === view);
@@ -199,7 +215,7 @@ const Work = () => {
             <span aria-hidden="true">{String(active + 1).padStart(2, '0')} — {String(PROJECTS.length).padStart(2, '0')}</span>
           </div>
           <div className="works-explorer__layout">
-            <div className="works-list" role="group" aria-label={t('Elegir proyecto', 'Choose a project')}>
+            <div className="works-list" ref={list} role="group" aria-label={t('Elegir proyecto', 'Choose a project')}>
               {PROJECTS.map((item, index) => (
                 <button key={item.id} type="button" aria-pressed={active === index} aria-controls={descriptionId} onClick={() => choose(index)} style={{ '--project-color': item.accent }} data-track-label={`Proyectos · Ver ${item.name}`}>
                   <img className="works-list__thumb" src={screenImage(item, item.screens[0].id, 'desktop')} srcSet={shotSrcSet(screenImage(item, item.screens[0].id, 'desktop'))} sizes="(max-width: 1023px) 140px, 72px" width={160} height={100} loading="lazy" decoding="async" alt="" />

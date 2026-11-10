@@ -211,7 +211,7 @@ anuncios, con «atrás», con teclado o cuando todo está marcado a la vez.
 | Los enlaces de la confirmación recargaban la portada en visitas de anuncio | Conservan la consulta de la dirección: son saltos de ancla | `LeadDialog.jsx` |
 | «Ver el mensaje» no mostraba la línea del anuncio; «…, con Con IA»; nombre traducido en la hoja de retorno | Se muestra lo que de verdad sale; «Incluye: Con IA»; nombre del tarifario | `PackageSheet.jsx`, `LeadDialog.jsx`, `WhatsAppReturn.jsx` |
 | Pasar al paquete mayor dejaba el título y el foco fuera de pantalla | Empieza arriba, con el foco en el título | `PackageSheet.jsx` |
-| La barra pegada tapaba el control enfocado | El detalle declara `scroll-padding` | `package-sheet.css` |
+| La barra pegada tapaba el control enfocado | El detalle reserva el lugar de la barra y del cierre mientras el foco se ve (teclado); con mouse o al tocar, no (ver la verificación, abajo) | `package-sheet.css` |
 | Foco perdido al ir al proyecto y al cerrar la hoja de retorno; ejemplos de campo a 3,09:1; anillo en títulos enfocados por programa; expansor inútil sin JavaScript | Foco al proyecto elegido y de vuelta al botón de origen; contraste 5,08:1; sin anillo; expansor oculto | `PackageSheet.jsx`, `WhatsAppReturn.jsx`, `lead-dialog.css`, `packages.css` |
 | «Sus indicadores de operación son reales» contradecía «captura con datos de demostración» | La nota dice que es el panel de un sistema real con datos de demostración, y que no es Power BI | `data/packages.js` |
 | El aviso del paquete mayor ofrecía «que cada persona vea lo suyo», que es un agregado de +$90 | Pregunta por dos fuentes o más de un perfil de acceso, que sí incluye | `data/packages.js` |
@@ -224,6 +224,25 @@ anuncios, con «atrás», con teclado o cuando todo está marcado a la vez.
 | Clic temprano: el de celular se descartaba pasados 30 s y un Ctrl+clic terminaba abriendo el formulario | El script anota si retuvo el clic; el que siguió su curso se mide siempre y no abre nada | `index.html`, `early-click.js`, `LeadDialog.jsx` |
 | Datos estructurados: «días hábiles» como día calendario, unidad en inglés y precio sin decir que es sin IVA | Unidad en el idioma de la página, sin código `DAY`, y `valueAddedTaxIncluded: false` desde el tarifario | `seo/site.js` |
 | Los candados no cubrían las reglas de medición nuevas | Candados para una conversión por visita, anuncio nuevo, hoja de retorno, clic temprano (retenido, Ctrl+clic, celular), etiquetas, ofertas y preguntas declaradas, pedido de 600 caracteres y confirmación a la vista con el desplazamiento suave; cuatro se verificaron rompiendo la regla a propósito | `scripts/check-site.mjs` |
+
+**Verificación de las correcciones.** Cada lente tenía un verificador que reproduce cada hallazgo sobre el sitio
+compilado, deshaciendo al vuelo solo la corrección correspondiente, para confirmar que el defecto existía y que
+la corrección lo quita. El de CSS y accesibilidad terminó: confirmó los siete y encontró dos restos, ya
+corregidos (los otros tres se cortaron por el límite de uso de la sesión y se volvieron a correr sobre la versión
+final; ver «Tercera verificación»):
+
+- **El margen fijo de la barra hacía saltar la lista.** Tocar la fila de una casilla también la enfoca, y con el
+  margen reservado todo el tiempo (más el de 100 px que celular da a los campos) la lista se movía bajo el dedo:
+  hasta 365 px en un celular y 200 px con el mouse. Ahora el margen vale solo con foco de teclado
+  (`:has(:focus-visible)`) y las casillas no llevan el de celular.
+- **En celular el proyecto elegido podía quedar fuera de la tira.** Por debajo de 1024 px los proyectos son una
+  tira horizontal: «Ver un proyecto real» del CRM (CAVIQ, el octavo) lo marcaba y enfocaba fuera de la vista.
+  Ahora la tira se corre sola hasta el proyecto que llega de afuera (detalle, «Tu caso en una frase», hero,
+  anuncio), sin mover la página.
+- Refuerzo: Safari no enfoca un enlace al tocarlo; al cerrar la hoja «¿Pudiste enviar tu mensaje?» el foco
+  vuelve igual al botón tocado.
+
+Los tres tienen candado en `checkSecondRound` y se comprobaron rompiendo la regla a propósito.
 
 ### Lo que la segunda ronda propuso y no se aplicó
 

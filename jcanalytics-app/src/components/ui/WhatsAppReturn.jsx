@@ -72,7 +72,8 @@ export default function WhatsAppReturn() {
       const link = event.target.closest?.('a[href^="https://wa.me/"]');
       // En computadora el clic abre el formulario corto (o WhatsApp Web a pedido): no hace falta esta red.
       if (!link || event.defaultPrevented || isDesktopPointer()) return;
-      pending.current = { ...pendingFrom(link), leftAt: 0 };
+      // `link`: a dónde vuelve el foco al cerrar la hoja si el navegador no enfocó el enlace al tocarlo (Safari).
+      pending.current = { ...pendingFrom(link), link, leftAt: 0 };
     };
     // El formulario de contacto abre WhatsApp con window.open y avisa con este evento.
     const onOpened = (event) => {
@@ -106,7 +107,9 @@ export default function WhatsAppReturn() {
   useEffect(() => {
     document.body.classList.toggle('wa-return-open', Boolean(context));
     if (!context) return undefined;
-    opener.current = document.activeElement;
+    // En Safari tocar un enlace no lo enfoca: ahí el foco estaría en <body> y se devuelve al botón tocado.
+    const focused = document.activeElement;
+    opener.current = focused && focused !== document.body ? focused : context.link ?? null;
     const onKey = (event) => { if (event.key === 'Escape') setContext(null); };
     document.addEventListener('keydown', onKey);
     return () => {

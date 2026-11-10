@@ -1225,7 +1225,28 @@ async function checkSecondRound(browser, origin) {
     const [dialogBox, buyBox] = [await box(page, 'dialog.package-sheet'), await box(page, '.package-sheet__buy')];
     assert.ok(buyBox.top >= dialogBox.top && buyBox.bottom <= dialogBox.bottom + 1, 'The order button is always inside the visible part of the detail');
     assert.ok(compact(await page.$eval('.package-sheet__upgrade', (node) => node.textContent)).includes(SERVICE_PRICING.power_bi.label), 'The starter dashboard points to the bigger package when it applies');
-    assert.notEqual(await page.$eval('dialog.package-sheet', (node) => getComputedStyle(node).scrollPaddingBottom), 'auto', 'The detail reserves room for its pinned bar when a control receives focus');
+    // Con el mouse, el texto de una fila marca su casilla sin mover la lista: el margen de la barra pegada vale solo
+    // con foco de teclado (fijo, la lista saltaba bajo el puntero al enfocar la casilla).
+    // La fila «Con IA» se deja a 30 px del borde superior: dentro de la zona que el margen fijo reservaba.
+    const row = '.package-sheet__options label:nth-of-type(1)';
+    const sheetTop = () => page.$eval('dialog.package-sheet', (node) => node.scrollTop);
+    const placed = await page.$eval('dialog.package-sheet', (dialog, selector) => {
+      const label = dialog.querySelector(selector);
+      dialog.scrollTop += label.getBoundingClientRect().top - dialog.getBoundingClientRect().top - 30;
+      return label.getBoundingClientRect().top - dialog.getBoundingClientRect().top;
+    }, row);
+    assert.ok(placed < 60, `The row sits near the top edge of the detail before the click (${Math.round(placed)} px)`);
+    const rowBefore = await sheetTop();
+    const spot = await page.$eval(`${row} span`, (node) => { const r = node.getBoundingClientRect(); return { x: r.left + 12, y: r.top + Math.min(10, r.height / 2) }; });
+    await page.mouse.click(spot.x, spot.y);
+    await delay(250);
+    const rowAfter = await sheetTop();
+    assert.ok(await page.$eval(`${row} input`, (node) => node.checked), 'Clicking the text of a row ticks its option');
+    assert.ok(Math.abs(rowAfter - rowBefore) <= 2, `Clicking a row does not move the list under the pointer (${Math.round(rowBefore)} → ${Math.round(rowAfter)} px)`);
+    await page.mouse.click(spot.x, spot.y); // se desmarca: el resto de la prueba sigue con un solo agregado
+    await page.waitForFunction((key) => window.location.hash === `#hoja-dashboard_inicial.${key}`, {}, extra.key);
+    await page.keyboard.press('Tab');
+    assert.notEqual(await page.$eval('dialog.package-sheet', (node) => getComputedStyle(node).scrollPaddingBottom), 'auto', 'With keyboard focus the detail reserves room for its pinned bar');
 
     // PDF de una página (antes: la hoja y 18 páginas en blanco).
     await page.evaluate(() => { window.print = () => {}; });
@@ -1433,6 +1454,17 @@ async function checkSecondRound(browser, origin) {
     ads = await readAdPixels(page);
     const fresh = ads.gtag.find((entry) => entry[1] === 'contact_click')[2];
     assert.ok(countOf(ads.gtag, 'conversion') === 1 && !fresh.repeat && !fresh.after_lead, 'A new ad click starts a new visit: its tap counts for that ad');
+    // La hoja de retorno vuelve a aparecer en la visita nueva. El botón se tocó sin recibir el foco (como en Safari,
+    // que no enfoca un enlace al tocarlo): al cerrar la hoja el foco vuelve igual a ese botón y no cae en <body>.
+    assert.equal(await page.evaluate(() => document.activeElement === document.body), true);
+    await away('hidden');
+    await delay(3200);
+    await away('visible');
+    await page.waitForSelector('.wa-return');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('.wa-return'));
+    await delay(150);
+    assert.ok(await page.evaluate(() => document.activeElement?.matches('.studio-wa')), 'Closing the return sheet gives the focus back to the button that was tapped, even when the browser did not focus it');
     // Recargar o volver a la dirección de un anuncio ya visto no empieza otra.
     await navigate(page, `${origin}/?gclid=qa-click-1&wa_line=a`);
     await stubAdPixels(page);
@@ -1517,6 +1549,21 @@ async function checkSecondRound(browser, origin) {
     assert.ok(buy.bottom <= 844 && buy.right <= 390 && bar.bottom <= 845, 'On a phone the total and the order button are pinned to the bottom of the detail');
     const order = await page.$$eval('.package-sheet__body > *', (nodes) => nodes.slice(0, 2).map((node) => (node.querySelector('legend') ? 'options' : 'text')));
     assert.deepEqual(order, ['text', 'options'], 'On a phone the options come right after what is included');
+    // Tocar la última fila visible (justo encima de la barra) marca la casilla sin que la lista salte bajo el dedo.
+    const barTop = (await box(page, '.package-sheet__bar')).top;
+    const tap = await page.$$eval('.package-sheet__options label', (nodes, limit) => {
+      const visible = nodes.map((node, index) => ({ index, r: node.getBoundingClientRect() })).filter(({ r }) => r.top >= 60 && r.bottom <= limit - 4);
+      const last = visible.at(-1);
+      return last && { index: last.index, x: last.r.left + 40, y: last.r.top + Math.min(12, last.r.height / 2) };
+    }, barTop);
+    assert.ok(tap, 'At least one option is visible above the pinned bar when the detail opens');
+    const phoneBefore = await page.$eval('dialog.package-sheet', (node) => node.scrollTop);
+    await page.mouse.click(tap.x, tap.y);
+    await delay(250);
+    const phoneAfter = await page.$eval('dialog.package-sheet', (node) => node.scrollTop);
+    assert.ok(await page.$$eval('.package-sheet__options input', (nodes, index) => nodes[index].checked, tap.index), 'Tapping a row ticks its option');
+    assert.ok(Math.abs(phoneAfter - phoneBefore) <= 2, `Tapping a row does not move the list under the finger (${Math.round(phoneBefore)} → ${Math.round(phoneAfter)} px)`);
+    await page.mouse.click(tap.x, tap.y);
     await page.$eval('dialog.package-sheet', (node) => { node.scrollTop = node.scrollHeight; });
     await delay(150);
     const close = await box(page, '.package-sheet__close');
@@ -1542,6 +1589,27 @@ async function checkSecondRound(browser, origin) {
     const after = await page.evaluate(() => ({ y: window.scrollY, open: document.querySelector('#paquete-power_bi .package-card__toggle').getAttribute('aria-expanded') }));
     assert.ok(Math.abs(after.y - before) <= 4 && after.open === 'true', `Closing a detail leaves the page and the open row as they were (scroll ${Math.round(before)} → ${Math.round(after.y)}, row open: ${after.open})`);
     await checkWidth(page);
+    verifyErrors();
+  } finally { await page.close(); }
+
+  // ── Celular: «Ver un proyecto real» lleva al proyecto y lo deja a la vista en la tira horizontal ──
+  ({ page, verifyErrors } = await openPage(browser, origin, 390));
+  try {
+    await navigate(page, `${origin}/?wa_line=a#hoja-crm_inicial`);
+    await page.waitForSelector('dialog.package-sheet[open]');
+    await page.$eval('.package-sheet__links a[href="#proyecto"]', (node) => node.click());
+    await page.waitForFunction(() => !document.querySelector('dialog.package-sheet').open && window.location.hash === '#proyecto');
+    await delay(900);
+    const strip = await page.evaluate(() => {
+      const list = document.querySelector('.works-list');
+      const chosen = list.querySelector('button[aria-pressed="true"]');
+      const [outer, inner] = [list.getBoundingClientRect(), chosen.getBoundingClientRect()];
+      return { inside: inner.left >= outer.left - 1 && inner.right <= outer.right + 1, focused: document.activeElement === chosen, index: [...list.children].indexOf(chosen), name: chosen.querySelector('.works-list__name').textContent, explorer: document.getElementById('proyecto').getBoundingClientRect().top, sideways: window.scrollX };
+    });
+    // CAVIQ, el proyecto relacionado con el CRM, está lejos en la tira: es el caso que quedaba fuera de la vista.
+    assert.ok(strip.name === 'CAVIQ' && strip.index >= 3, `The CRM detail leads to its related project, far along the strip (${strip.name}, index ${strip.index})`);
+    assert.ok(strip.inside && strip.focused, `The related project is focused and visible in the horizontal strip (index ${strip.index})`);
+    assert.ok(strip.explorer >= 0 && strip.explorer < 200 && strip.sideways === 0, 'The page lands on the projects without moving sideways');
     verifyErrors();
   } finally { await page.close(); }
 
