@@ -28,6 +28,9 @@
       n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
       t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
       document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      // Sin eventos automáticos: el píxel no lee el texto ni el destino de los botones (los enlaces de contacto
+      // llevan el nombre y el mensaje de la persona). Solo salen PageView, ViewContent, Contact y Lead, a mano.
+      fbq('set', 'autoConfig', false, '2307996859950052');
       fbq('init', '2307996859950052');
       fbq('track', 'PageView');
       if (/\/(services|servicios)\//.test(location.pathname)) fbq('track', 'ViewContent', { content_category: 'service' });

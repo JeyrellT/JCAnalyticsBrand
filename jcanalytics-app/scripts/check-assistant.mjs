@@ -47,6 +47,14 @@ try {
     });
     await page.goto(origin + (language === 'es' ? '/' : '/en/'), { waitUntil: 'networkidle0' });
     await page.waitForSelector('.assistant-launcher');
+    if (width < 768) {
+      // En celular los dos botones flotantes se retiran mientras hay un botón principal en pantalla (el del hero al
+      // cargar), para no taparlo ni duplicarlo. Vuelven en cualquier sección sin botón propio, como el equipo.
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('.assistant-launcher')).visibility === 'hidden');
+      assert.equal(await page.$eval('.mobile-wa', node => getComputedStyle(node).visibility), 'hidden', 'Floating buttons step aside while the hero action is on screen');
+      await page.$eval('#equipo', node => node.scrollIntoView({ block: 'start' }));
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('.assistant-launcher')).visibility === 'visible' && getComputedStyle(document.querySelector('.mobile-wa')).visibility === 'visible');
+    }
     assert.equal(await page.$eval('.assistant-launcher', node => !node.inert && node.getBoundingClientRect().bottom <= innerHeight), true);
     if (width < 768) {
       assert.equal(await page.evaluate(() => {

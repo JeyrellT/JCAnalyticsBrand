@@ -13,12 +13,12 @@ En este orden, con su `id` (lo usa el índice de la página y la medición del p
 
 | Bloque | `id` | Qué hace |
 | --- | --- | --- |
-| Precio y paquete | `oferta` | Paquete principal con precio publicado, plazo, soporte, opción con IA y un segundo paquete «de otra escala». Botón «Lo quiero · WhatsApp». |
+| Precio y paquete | `oferta` | Paquete con precio publicado, plazo, soporte y opción con IA. Por defecto el primero de la categoría; con `?p=<paquete>` (enlace de una tarjeta de la portada o de un anuncio), ese. Al lado, los demás paquetes de la categoría («Ver este paquete» cambia la oferta sin recargar). Botón «Lo quiero · WhatsApp». |
 | ¿Es para vos? | `senales` | Cinco situaciones habituales con casillas. El veredicto cambia según cuántas se marcan y lo marcado viaja en el mensaje. |
 | Calculadora de impacto | `calculadora` | Con los números de la persona (veces, minutos, personas, costo por hora) calcula horas al mes, costo al año y en cuántos meses de ese costo se cubre el paquete. |
 | Qué incluye | `incluye` | Alcance, opción con IA, exclusiones, soporte mensual y agregados con precio, tomados del tarifario compartido. |
 | Cómo trabajamos | `como-trabajamos` | Primera conversación sin costo, precio fijo por escrito, avances cada 72 h en el portal de clientes y 30 días de soporte. Enlace al portal de clientes. |
-| Un ejemplo real | `ejemplo` | Pantalla real de un proyecto del estudio, con enlace al explorador de la portada (`/?proyecto=<id>#trabajo`) y al sitio si es público. |
+| Un ejemplo real | `ejemplo` | Pantalla real de un proyecto del estudio, con enlace al explorador de la portada (`/?proyecto=<id>#proyecto`) y al sitio si es público. |
 | Preguntas frecuentes | `preguntas-servicio` | Cuatro respuestas por servicio en `<details>` nativos. |
 | Formulario corto | `contacto-servicio` | Nombre opcional, WhatsApp o correo y mensaje. «Continuar en WhatsApp» o «Prefiero que me contacten». |
 
@@ -30,6 +30,10 @@ formulario corto (`src/components/ui/LeadDialog.jsx`, medido como `contacto-rapi
 la persona deja su WhatsApp o correo y la consulta llega al portal con canal «Paquete con precio», la
 necesidad del servicio y el paquete. En el formulario de la página, «Enviar consulta» pasa a ser el botón
 principal y «Seguir en WhatsApp Web» queda como enlace directo. Ver [estrategia de conversión](estrategia-conversion.md).
+
+**Marketing** no tiene paquete de precio fijo (el plan mensual se arma con cada negocio). Desde el 10 de
+noviembre de 2026 muestra bajo el titular un bloque propio (`contacto-servicio`) con el precio «desde» que ya
+publicaba el texto y el botón «Armemos mi plan de marketing»; «Hablemos» apunta a ese bloque.
 
 Todo el bloque comparte estado: lo que se marca en «¿Es para vos?» y lo que se calcula se agrega al mensaje de
 WhatsApp y al texto de la consulta que llega al portal. La calculadora es una estimación con los números de la

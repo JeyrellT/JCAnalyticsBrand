@@ -26,7 +26,9 @@ const RATE_FIELD = {
 
 export const SERVICE_OFFERS = {
   'web-development': {
-    packages: ['pagina_web', 'software_medida'],
+    // CRM e inventario son sistemas: se ofrecen acá (antes no tenían página y sus tarjetas enlazaban a
+    // una que no los nombraba). Con ?p=<paquete> la página presenta ese paquete como oferta principal.
+    packages: ['pagina_web', 'software_medida', 'crm_inicial', 'inventario_inicial'],
     example: { project: 'laburrada', screen: 'home' },
     calculator: {
       fields: [
@@ -255,6 +257,8 @@ export const EXTRA_LABELS_EN = {
   'chatbot_atencion.booking': 'Calendar with availability', 'chatbot_atencion.crm': 'CRM logging', 'chatbot_atencion.reminders': 'Approved reminders', 'chatbot_atencion.orders': 'Order status via API',
   'pagina_web.resource': 'Another resource, same rules', 'pagina_web.whatsapp': 'WhatsApp reminders', 'pagina_web.payment': 'Deposit via a viable gateway', 'pagina_web.membership': 'Memberships or packages',
   'software_medida.form': 'Form over existing data', 'software_medida.module': 'Module with new rules', 'software_medida.api': 'API integration', 'software_medida.portal': 'Client portal',
+  'crm_inicial.lead_form': 'Lead capture form', 'crm_inicial.quote': 'PDF quote, 1 template', 'crm_inicial.email': 'Email follow-up', 'crm_inicial.whatsapp': 'WhatsApp, 1 use case',
+  'inventario_inicial.scanner': 'Compatible barcode reader', 'inventario_inicial.warehouse': 'Second warehouse and transfers', 'inventario_inicial.batches': 'Batches and expiry dates', 'inventario_inicial.purchases': 'Purchasing and suppliers',
   'asistente_ia_documental.collection': 'Another equivalent collection', 'asistente_ia_documental.sync': 'Repository sync', 'asistente_ia_documental.permissions': 'Per-department permissions', 'asistente_ia_documental.crm_actions': 'Controlled CRM actions',
 };
 

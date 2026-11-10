@@ -207,7 +207,6 @@
 .studio-v4 .team-signature { border-color: #b9cbb7; }
 .studio-v4 .team-signature p { font-size: clamp(23px,3vw,42px); }
 .studio-v4 .process-section { background: #e4eadd; }
-.studio-v4 .process-step__number { color: #9ead95; font-family: var(--font-serif); font-style: italic; }
 .studio-v4 .process-step__icon { background: #dae5d4; border-color: #b9cbb7; color: #446e4c; }
 .studio-v4 .process-step__line span { background: #668b62; }
 .studio-v4 .process-step__line::before { background: #668b62; }

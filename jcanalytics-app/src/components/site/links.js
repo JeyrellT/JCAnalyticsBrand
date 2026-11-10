@@ -7,7 +7,7 @@
 import { t, locale } from '../../i18n/locale';
 import { attributionNote } from '../../seo/attribution';
 import { servicePath } from '../../seo/routes';
-import { servicePages } from '../../content/catalog';
+import { CATEGORIES } from '../../content/categories';
 
 // Dos líneas de WhatsApp atienden las consultas. Cada visitante queda asignado
 // al azar (50/50) a una de ellas y la conserva en todo el sitio y en visitas
@@ -45,8 +45,12 @@ export const EMAIL = 'gerencia@jcanalytic.com';
 // Se puede cambiar al compilar con VITE_PORTAL_URL sin tocar el código.
 export const PORTAL_URL = import.meta.env.VITE_PORTAL_URL || 'https://portal.jcanalytic.com';
 
-export const prepareContact = ({ need, source = '' }) => {
-  window.dispatchEvent(new CustomEvent('jca:contact-intent', { detail: { need, source } }));
+// Avisa al formulario de contacto desde dónde llega la persona y, solo si ella lo eligió, qué necesita.
+// Sin `need` el formulario no marca nada: antes todo acceso genérico llegaba como «Sistema / backend».
+// `form: true` = la persona pidió un formulario (en celular, «¿Sin WhatsApp?»): el botón principal del
+// formulario envía la consulta al portal en vez de abrir WhatsApp.
+export const prepareContact = ({ need = null, source = '', form = false } = {}) => {
+  window.dispatchEvent(new CustomEvent('jca:contact-intent', { detail: { need, source, form } }));
 };
 
 // Link de WhatsApp con mensaje precargado: el visitante solo toca "enviar".
@@ -63,14 +67,13 @@ export const EASE = [0.19, 1, 0.22, 1];
 
 // Menú principal (reunión del 31 de octubre de 2026): cada categoría abre su propia página en vez
 // de un ancla del one-page; la portada conserva los proyectos reales arriba y los precios más abajo.
-// `key` identifica el capítulo (icono y detalle del menú de celular en Nav.jsx).
-const service = (id) => servicePath(servicePages.find((item) => item.id === id), locale);
+// `key` identifica el capítulo (icono y detalle del menú de celular en Nav.jsx). Los nombres y el orden
+// de las categorías salen de content/categories.js, igual que en el hero, «Qué hacemos» y el pie.
+export const CATEGORY_LINKS = CATEGORIES.map((category) => ({
+  key: category.key, id: category.id, label: category.name[locale], short: category.short[locale], href: servicePath(category.page, locale),
+}));
 export const NAV_LINKS = [
-  { key: 'projects', label: t('Proyectos', 'Projects'), href: '#trabajo' },
-  { key: 'systems', label: t('Webs y sistemas', 'Websites & systems'), href: service('web-development') },
-  { key: 'automation', label: t('Automatización', 'Automation'), href: service('process-automation') },
-  { key: 'finance', label: t('Finanzas & BI', 'Finance & BI'), href: service('business-intelligence') },
-  { key: 'intelligence', label: t('IA & ML', 'AI & ML'), href: service('ai-integration') },
-  { key: 'marketing', label: 'Marketing', href: service('digital-marketing') },
-  { key: 'pricing', label: t('Precios', 'Pricing'), href: '#paquetes' },
+  ...CATEGORY_LINKS,
+  { key: 'projects', label: t('Proyectos', 'Projects'), short: t('Proyectos', 'Projects'), href: '#trabajo' },
+  { key: 'pricing', label: t('Precios', 'Pricing'), short: t('Precios', 'Pricing'), href: '#paquetes' },
 ];

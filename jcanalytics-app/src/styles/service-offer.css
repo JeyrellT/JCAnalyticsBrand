@@ -35,6 +35,14 @@
 .so-offer__alt p strong { font: 600 26px/1 var(--font-display); letter-spacing: -.03em; color: #132b2d; }
 .so-offer__alt-scope { font-size: 13px; }
 .so-offer__alt .so-text-link { margin-top: auto; }
+/* Los demás paquetes de la categoría: cada uno cambia la oferta de la página a ese paquete. */
+.so-offer__others { display: grid; gap: 8px; margin: 2px 0 6px; padding: 0; list-style: none; }
+.so-offer__others a { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; min-height: 60px; padding: 10px 14px; border: 1px solid #132b2d24; border-radius: 12px; background: #f5f8f4; color: #132b2d; transition: border-color .2s, background .2s; }
+.so-offer__others a:hover { border-color: #236c60; background: #fff; }
+.so-offer__others a:focus-visible { outline: 2px solid #087783; outline-offset: 2px; }
+.so-offer__others strong { display: block; font: 600 15px/1.25 var(--font-display); letter-spacing: -.02em; }
+.so-offer__others small { display: block; margin-top: 3px; font-size: 13px; color: #405f58; }
+.so-offer__others em { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-style: normal; font-weight: 600; color: #236c60; white-space: nowrap; }
 
 /* Señales. */
 .so-signals__list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
@@ -184,3 +192,13 @@
   .so-bar__callback { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .so-wa, .so-bar, .so-faq summary > svg, .so-signals__list label, .so-check { transition: none; } }
+
+/* Categoría sin paquete de precio fijo (marketing): precio «desde» y botón debajo del titular. */
+.so-quick { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: center; gap: 22px 36px; max-width: 990px; margin: 0 auto 36px; padding: 28px; border: 1px solid #132b2d20; border-radius: 20px; background: #132b2d; color: #f5f7f4; scroll-margin-top: 110px; }
+.so-quick .journal-eyebrow { color: #9cdfc6; }
+.so-quick h2 { margin-top: 10px; font: 500 clamp(26px, 3vw, 36px)/1.1 var(--font-display); letter-spacing: -.04em; }
+.so-quick__copy p { margin-top: 12px; font-size: 15px; line-height: 1.6; color: #cfdcd6; }
+.so-quick__action { display: grid; gap: 10px; }
+.so-quick__action .so-wa { justify-content: center; }
+.so-quick__action small { font-size: 13px; line-height: 1.5; color: #b8c8c1; text-align: center; }
+@media (max-width: 899px) { .so-quick { grid-template-columns: 1fr; padding: 22px; border-radius: 16px; } }

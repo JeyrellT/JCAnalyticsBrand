@@ -1,5 +1,4 @@
 import { t } from '../../i18n/locale';
-import { ArrowUpRight } from 'lucide-react';
 import { TEAM } from '../../data/team';
 import { Label, MaskLines, Reveal } from './primitives';
 import MobileRail from './MobileRail';
@@ -9,10 +8,6 @@ const TeamCard = ({ person, index }) => (
   <Reveal delay={index * 0.08} className={`team-member team-member--${index + 1}`}>
     <div className="team-member__portrait" style={{ background: person.portraitBg }}>
       <img src={person.portrait} alt={`${person.name}, ${person.role}`} width={720} height={960} loading="lazy" decoding="async" className="team-member__image" />
-      <div className="team-member__caption" aria-hidden="true">
-        <span>JC / {String(index + 1).padStart(2, '0')}</span>
-        <ArrowUpRight size={17} />
-      </div>
     </div>
     <div className="team-member__details">
       <p className="team-member__area">{person.area}</p>
@@ -28,14 +23,14 @@ const Team = () => (
     <div className="closing-container">
       <div className="closing-heading team-heading">
         <div>
-          <Label className="closing-label">{t("Las personas / Equipo", "The people / Team")}</Label>
+          <Label className="closing-label">{t("¿Quién me va a atender? / Equipo", "Who will I work with? / Team")}</Label>
           <h2 id="team-title" className="closing-title font-display">
             <MaskLines lines={[t("Las personas", "The people"), <span key="people" className="font-serif italic font-normal">{t("detrás.", "behind it.")}</span>]} />
           </h2>
         </div>
         <Reveal delay={0.15} className="team-heading__intro">
           <span className="closing-kicker">{t("Cercanía, de principio a fin.", "Personal, from start to finish.")}</span>
-          <p>{t("Cinco personas, sin intermediarios. Con la que hablás es la que hace el trabajo; el contacto es uno solo, más abajo.", "Five people, no middlemen. The person you talk to is the person doing the work; there is one point of contact, below.")}</p>
+          <p>{t("Cinco personas, sin intermediarios: con la que hablás es la que hace el trabajo. Escribís a un solo contacto y te responde quien corresponde.", "Five people, no middlemen: the person you talk to is the person doing the work. You write to a single contact and the right person replies.")}</p>
         </Reveal>
       </div>
       <MobileRail className="team-grid" label={t("Personas del equipo", "Meet the team")}>

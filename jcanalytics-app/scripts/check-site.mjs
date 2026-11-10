@@ -201,6 +201,13 @@ async function checkMetadata(page, language, route = homeRoute(language)) {
     assert.equal(services[0].name, copy.title);
     assert.equal(services[0].url, url);
   }
+  if (route.type === 'home') {
+    // Cada servicio de la portada apunta a su página (antes: anclas que la portada ya no tiene).
+    const services = graph.filter((item) => item['@type'] === 'Service');
+    const servicePages = routes.filter((item) => item.type === 'service' && item.language === language).map((item) => `${PRODUCTION}${item.path}`);
+    assert.equal(services.length, servicePages.length, 'The home page declares one Service per category page');
+    assert.deepEqual(services.map((item) => item.url).sort(), [...servicePages].sort(), 'Each Service points to its own category page');
+  }
 }
 
 async function checkSelector(page, language, scope = 'header', route = homeRoute(language)) {
@@ -285,11 +292,18 @@ async function checkContact(page, language) {
     window.__testContactIntent = null;
     window.addEventListener('jca:contact-intent', (event) => { window.__testContactIntent = event.detail; }, { once: true });
   });
-  // Use the real CTA: it must preserve the Spanish internal need value.
+  // Use the real CTA («¿Sin WhatsApp? Dejanos tu contacto»): it asks for the form and chooses no need on the
+  // visitor's behalf. Before the November 2026 audit every generic entry arrived as «Sistema / backend».
   await page.click('.studio-start');
   await page.waitForFunction(() => window.__testContactIntent !== null);
-  assert.equal(await page.evaluate(() => window.__testContactIntent.need), 'Sistema / backend');
-  assert.equal(compact(await page.$eval('.contact-selection strong', (node) => node.textContent)), copy.system);
+  assert.deepEqual(await page.evaluate(() => ({ need: window.__testContactIntent.need, form: window.__testContactIntent.form })), { need: null, form: true });
+  await page.waitForSelector('#contacto form[data-mode="form"] #contacto-telefono');
+  assert.equal(await page.$('.contact-selection strong'), null, 'Nothing is preselected');
+  assert.equal(await page.$$eval('.contact-needs button[aria-pressed="true"]', (nodes) => nodes.length), 0);
+  // Back to the phone default (WhatsApp with the message ready) to exercise that path first.
+  await page.click('.contact-callback__button');
+  await page.waitForSelector('#contacto form[data-mode="whatsapp"]');
+  assert.equal(await page.$('#contacto-telefono'), null, 'On a phone the contact fields only appear when the visitor asks to be written to');
   const chosen = await clickButtonText(page, '.contact-needs button', copy.website);
   assert.equal(await chosen.evaluate((node) => node.getAttribute('aria-pressed')), 'true');
   assert.equal(compact(await page.$eval('.contact-selection strong', (node) => node.textContent)), copy.website);
@@ -337,26 +351,36 @@ function assertLeadCaptured(ads, { form, section, packageId, value, conversions 
   for (const privateValue of ['8888-1234', 'Browser QA', 'qa@example.com']) assert.ok(!serialized.includes(privateValue), 'Ad platforms never receive personal data');
 }
 
-// "Prefiero que me contacten": exige WhatsApp o correo, deja la consulta en el portal del equipo y,
-// cuando el portal la acepta, cuenta como consulta captada en las plataformas de anuncios.
+// «Prefiero que me contacten»: en celular muestra WhatsApp y correo, exige uno de los dos (el aviso sale junto
+// al campo y lleva el foco ahí), deja la consulta en el portal del equipo y, cuando el portal la acepta,
+// muestra la confirmación con lo que sigue y cuenta como consulta captada en las plataformas de anuncios.
 async function checkCallbackLead(page, language) {
-  const status = () => page.$eval('.contact-callback__status', (node) => node.textContent.trim());
   await page.click('.contact-callback__button');
-  assert.ok((await status()).includes(language === 'es' ? 'WhatsApp o tu correo' : 'WhatsApp or email'), 'Without a contact the request is not sent');
+  await page.waitForSelector('#contacto form[data-mode="form"] #contacto-telefono');
+  assert.ok(!(await page.$eval('#contacto-sitio', (node) => node.closest('.contact-trap').getBoundingClientRect().left >= 0)), 'The bot trap is off screen');
+  await page.$eval('#contacto form', (form) => form.requestSubmit());
+  await page.waitForFunction(() => document.querySelector('#contacto-reach-error').textContent.trim() !== '' && document.activeElement?.id === 'contacto-telefono');
+  const problem = await page.$eval('#contacto-reach-error', (node) => ({ text: node.textContent, role: node.getAttribute('role') }));
+  assert.ok(problem.text.includes(language === 'es' ? 'WhatsApp o tu correo' : 'WhatsApp or your email') && problem.role === 'alert', 'Without a contact the request is not sent and the error names the missing detail');
+  assert.equal(await page.$eval('#contacto-telefono', (node) => node.getAttribute('aria-invalid')), 'true', 'The missing field is marked after trying to send');
   assert.equal(page.ingest.filter((r) => r.path === '/ingest/lead').length, 0);
   await page.type('#contacto-telefono', '8888-1234');
+  assert.equal(await page.$eval('#contacto-reach-error', (node) => node.textContent), '', 'The error clears as soon as the visitor corrects the field');
   await stubAdPixels(page);
   await delay(CONVERSION_GAP_MS); // la conversión del clic a WhatsApp (checkContactTelemetry) fue hace instantes
-  await page.click('.contact-callback__button');
-  await page.waitForFunction(() => document.querySelector('.contact-callback__status').textContent.includes('24'));
+  await page.$eval('#contacto form', (form) => form.requestSubmit());
+  await page.waitForSelector('#contacto .contact-sent');
+  const sent = await page.$eval('#contacto .contact-sent', (node) => ({ text: node.innerText, steps: node.querySelectorAll('ol li').length, focused: node.contains(document.activeElement), status: Boolean(node.querySelector('[role="status"]')) }));
+  assert.ok(sent.text.includes('24') && sent.steps === 3 && sent.status, 'The confirmation says when the team replies and what comes next');
+  await page.waitForFunction(() => document.querySelector('#contacto .contact-sent h3') === document.activeElement);
   const [lead] = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body);
   assert.equal(lead.channel, 'devolucion');
   assert.equal(lead.phone, '8888-1234');
   assert.equal(lead.name, 'Browser QA');
   assert.equal(lead.need, 'Página web', 'The portal receives the internal need value in Spanish');
+  assert.ok(lead.message.includes('Test project scope'), 'The visitor’s own words reach the portal');
   assert.equal(lead.website, '', 'The bot trap stays empty for people');
   assert.ok(/^[a-z0-9]{16,40}$/.test(lead.sid) && lead.lang === language && lead.elapsed >= 1500);
-  assert.ok(!(await page.$eval('#contacto-sitio', (node) => node.closest('.contact-trap').getBoundingClientRect().left >= 0)), 'The bot trap is off screen');
   assertLeadCaptured(await readAdPixels(page), { form: 'contacto', value: 10 });
 }
 
@@ -428,26 +452,26 @@ async function checkDesktopLeadFlow(browser, origin, language) {
     await page.type('#contacto-telefono', '8888-1234');
     await delay(CONVERSION_GAP_MS);
     await page.$eval('#contacto form', (form) => form.requestSubmit());
-    await page.waitForFunction(() => document.querySelector('.contact-callback__status').textContent.includes('24'));
+    await page.waitForSelector('#contacto .contact-sent');
+    assert.ok((await page.$eval('#contacto .contact-sent', (node) => node.innerText)).includes('24'), 'The confirmation says when the team replies');
     const contactLead = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body)[1];
     assert.equal(contactLead.channel, 'formulario');
-    assert.equal(contactLead.need, 'Sistema / backend');
+    assert.equal(contactLead.need, 'Otro', 'With nothing chosen the inquiry arrives as «Otro», not as a service nobody picked');
     assert.equal(contactLead.phone, '8888-1234');
     ads = await readAdPixels(page);
     assert.equal(ads.opens.length, 0, 'Submitting the contact form on a computer never opens WhatsApp Web');
     assertLeadCaptured(ads, { form: 'contacto', value: 10, conversions: 2 });
 
-    // 3. Un enlace directo (data-wa-direct) no abre el formulario: sigue a WhatsApp Web y cuenta como clic a WhatsApp.
+    // 3. Un enlace directo (data-wa-direct) no abre el formulario: sigue a WhatsApp Web. Como esta persona ya
+    //    envió su consulta, el clic queda registrado como intención (after_lead) y no suma otra conversión.
     await delay(CONVERSION_GAP_MS);
     await page.evaluate(() => document.addEventListener('click', (event) => { if (event.target.closest?.('[data-wa-direct]')) event.preventDefault(); }));
     await page.click('#contacto .contact-callback__button');
     await delay(300);
     assert.ok(!(await page.$eval('dialog.lead-dialog', (node) => node.open)), 'Direct links do not open the form');
     ads = await readAdPixels(page);
-    const direct = ads.gtag.filter(([, name]) => name === 'conversion');
-    assert.equal(direct.length, 3, 'The direct WhatsApp link converts as a WhatsApp click');
-    assert.equal(direct[2][2].send_to, ADS_WHATSAPP);
-    assert.ok(ads.gtag.some(([, name, p]) => name === 'contact_click' && p.contact_channel === 'whatsapp' && !p.cta_mode && p.section_id === 'contacto'));
+    assert.equal(ads.gtag.filter(([, name]) => name === 'conversion').length, 2, 'A WhatsApp click after an accepted inquiry is the same person: no second conversion');
+    assert.ok(ads.gtag.some(([, name, p]) => name === 'contact_click' && p.contact_channel === 'whatsapp' && !p.cta_mode && p.after_lead === true && p.section_id === 'contacto'));
 
     // 4. Página de servicio: «Lo quiero» abre el formulario con la necesidad, el paquete y lo marcado.
     await navigate(page, `${origin}${route.path}?wa_line=a`);
@@ -512,6 +536,8 @@ async function checkSiteTracking(browser, origin) {
       document.querySelector('#paquetes .package-card__buy').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       document.querySelector('#contacto-nombre').focus();
       document.querySelector('#contacto-nombre').value = 'Persona Privada';
+      // «Empezado» = la persona escribió algo (antes bastaba enfocar un campo).
+      document.querySelector('#contacto-nombre').dispatchEvent(new Event('input', { bubbles: true }));
       window.dispatchEvent(new Event('pagehide'));
     });
     await page.waitForFunction(() => window.__beacons.length > 0);
@@ -580,7 +606,9 @@ async function checkContactTelemetry(page, language, preparedBody) {
     await page.click('#contacto .contact-email a');
     await page.waitForFunction(() => window.__testContactTelemetry.events.length >= 3);
     const events = await page.evaluate(() => window.__testContactTelemetry.events);
-    assert.deepEqual(events, [event('whatsapp'), conversion, event('email')], 'Email click records the correct channel exactly once');
+    const emailEvent = event('email');
+    emailEvent[2] = { contact_channel: 'email', cta_id: 'Contacto · Correo', site_language: language, section_id: 'contacto', traffic_source: 'directo' };
+    assert.deepEqual(events, [event('whatsapp'), conversion, emailEvent], 'Email click records the correct channel and its stable button id exactly once');
     assert.equal(page.url(), beforeEmail, 'Email navigation stays suppressed in the check');
     const serialized = JSON.stringify(events);
     for (const privateValue of ['Browser QA', 'qa-private@example.invalid', 'Test project scope', preparedBody]) {
@@ -706,7 +734,10 @@ async function checkStaticRoute(browser, origin, route, snapshots) {
       assert.ok(await page.$eval('#preguntas details:first-child p', (node) => node.getBoundingClientRect().height > 0));
       const projects = compact(await page.$eval('#trabajo', (node) => node.innerText));
       assert.ok(projects.includes('La Burrada') && projects.includes('Transporte Luz de Luna'), 'Real projects are named in the static HTML');
-      assert.ok(projects.includes(language === 'es' ? 'Escribinos por WhatsApp' : 'Message us on WhatsApp'), 'WhatsApp call to action is present in the visitor’s language');
+      assert.ok(projects.includes(language === 'es' ? 'Quiero algo así · WhatsApp' : 'I want something like this · WhatsApp'), 'WhatsApp call to action is present in the visitor’s language');
+      // innerText aplica text-transform: los rótulos van en mayúsculas en pantalla.
+      const story = projects.toLowerCase();
+      assert.ok(story.includes(language === 'es' ? 'el problema' : 'the problem') && story.includes(language === 'es' ? 'lo que construimos' : 'what we built'), 'Each project tells the business problem and what was built');
       const projectImages = await page.$$eval('#trabajo img[src*="/projects/"]', (nodes) => nodes.length);
       assert.ok(projectImages >= PROJECTS.length, 'Every project ships a real screenshot in the static page');
     } else if (route.type === 'journal') {
@@ -963,6 +994,102 @@ async function checkProjects(page, language) {
   assert.equal(whatsapp.origin, 'https://wa.me', 'Project summary offers a direct WhatsApp message');
   assert.ok(whatsapp.searchParams.get('text')?.includes(await page.$eval('.works-summary h3', (node) => node.textContent)), 'WhatsApp message names the chosen project');
   await checkWidth(page);
+}
+
+// Candados de la auditoría de noviembre de 2026 sobre el camino de compra: cada tarjeta de paquete lleva a su
+// propio paquete, el botón del hero entra en la primera pantalla de un celular con barras del navegador, los
+// flotantes no tapan los atajos, un anuncio no activa un paquete por parecerse su nombre y todo botón de
+// WhatsApp se identifica con una etiqueta estable.
+async function checkPurchasePaths(browser, origin) {
+  const { page, verifyErrors } = await openPage(browser, origin, 1440);
+  try {
+    await navigate(page, `${origin}/`);
+    const cards = await page.$$eval('#paquetes .package-card', (nodes) => nodes.map((node) => ({
+      key: node.id.replace('paquete-', ''),
+      name: node.querySelector('h3').textContent.trim(),
+      price: node.querySelector('.package-card__price strong').textContent.trim(),
+      sheet: node.querySelector('.package-card__sheet').getAttribute('href'),
+      buy: node.querySelector('.package-card__buy').dataset.package,
+    })));
+    assert.deepEqual(cards.map((card) => card.key).sort(), Object.keys(SERVICE_PRICING).sort(), 'Every published package is in the static page');
+    for (const card of cards) {
+      assert.equal(card.buy, card.key, 'The buy button carries its own package');
+      assert.ok(card.sheet.endsWith(`?p=${card.key}#oferta`), `${card.name} links to its own package on its category page`);
+      await navigate(page, `${origin}${card.sheet}`);
+      await page.waitForFunction((name) => document.querySelector('#so-offer-title')?.textContent.trim() === name, {}, card.name);
+      const offer = await page.evaluate(() => ({
+        price: document.querySelector('#oferta .so-offer__price strong').textContent.trim(),
+        buy: document.querySelector('#oferta .so-wa').dataset.packageLabel,
+        includes: document.querySelector('#so-includes-title').textContent,
+        others: Array.from(document.querySelectorAll('.so-offer__others a'), (node) => node.getAttribute('href')),
+      }));
+      assert.equal(offer.price, card.price, `${card.name}: the category page shows the same price as the card`);
+      assert.equal(offer.buy, card.name, `${card.name}: «Lo quiero» on the category page asks for that package`);
+      assert.ok(offer.includes.includes(card.name), `${card.name}: «Qué incluye» describes that package`);
+      assert.ok(offer.others.every((href) => /^\?p=[a-z_]+#oferta$/.test(href)) && !offer.others.includes(`?p=${card.key}#oferta`), 'The other packages of the category are one click away');
+    }
+    // Un paquete de otra categoría no cambia la oferta de la página.
+    const webRoute = routes.find((item) => item.type === 'service' && item.data.id === 'web-development' && item.language === 'es');
+    await navigate(page, `${origin}${webRoute.path}?p=dashboard`);
+    await delay(400);
+    assert.equal(await page.$eval('#so-offer-title', (node) => node.textContent.trim()), SERVICE_PRICING.pagina_web.label);
+
+    // El nombre de un anuncio (utm_content) solo activa un paquete si es exactamente su clave o alias.
+    await navigate(page, `${origin}/?utm_content=IA-2`);
+    assert.equal(await page.$$eval('.package-card--ad', (nodes) => nodes.length), 0, 'An ad called «IA-2» does not announce a package the visitor never saw');
+    assert.equal(await page.$eval('.studio-wa', (node) => node.dataset.package ?? ''), '');
+    await navigate(page, `${origin}/?p=crm`);
+    const adHero = await page.$eval('.studio-wa', (node) => ({ pkg: node.dataset.package, text: node.textContent, message: new URL(node.href).searchParams.get('text') }));
+    const crm = SERVICE_PRICING.crm_inicial;
+    assert.equal(adHero.pkg, 'crm_inicial');
+    assert.ok(adHero.text.includes(crm.label) && adHero.message.includes(crm.label) && adHero.message.includes(`$${crm.base_usd}`), 'With ?p= the hero button names the package it asks for');
+    assert.equal(await page.$eval('#paquetes .package-card', (node) => node.id), 'paquete-crm_inicial', 'The advertised package comes first');
+
+    // Medición: cada enlace a WhatsApp de la portada tiene una etiqueta propia que no depende del texto visible.
+    await navigate(page, `${origin}/`);
+    const labels = await page.$$eval('a[href^="https://wa.me/"]', (nodes) => nodes.map((node) => node.dataset.trackLabel ?? ''));
+    assert.ok(labels.length >= 15 && labels.every(Boolean), `Every WhatsApp link carries data-track-label (${labels.filter((label) => !label).length} missing)`);
+    assert.equal(new Set(labels).size, labels.length, 'No two WhatsApp links share a label');
+    const html = await readFile(join(DIST, 'index.html'), 'utf8');
+    assert.ok(html.includes("fbq('set', 'autoConfig', false") && html.indexOf('autoConfig') < html.indexOf("fbq('init'"), 'The Meta pixel does not read buttons or link destinations on its own');
+    verifyErrors();
+  } finally {
+    await page.close();
+  }
+
+  // Primera pantalla en un celular con las barras del navegador a la vista (390×664 y 360×740).
+  for (const [width, height] of [[390, 664], [360, 740]]) {
+    const { page: phone, verifyErrors: verifyPhone } = await openPage(browser, origin, width);
+    try {
+      await phone.setViewport({ width, height, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+      await navigate(phone, `${origin}/`);
+      await phone.waitForFunction(() => document.body.classList.contains('cta-in-view'));
+      const fold = await phone.evaluate(() => {
+        const box = (selector) => document.querySelector(selector).getBoundingClientRect();
+        const chips = Array.from(document.querySelectorAll('.studio-hero__paths a'));
+        return {
+          button: box('.studio-wa').bottom, promises: box('.studio-hero__assurances').bottom, viewport: innerHeight,
+          floating: ['.mobile-wa', '.assistant-launcher'].map((selector) => getComputedStyle(document.querySelector(selector)).visibility),
+          covered: chips.filter((chip) => {
+            const rect = chip.getBoundingClientRect();
+            if (rect.bottom > innerHeight || rect.top < 0) return false;
+            const top = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            return top !== chip && !chip.contains(top);
+          }).length,
+          small: chips.filter((chip) => chip.getBoundingClientRect().height < 44).length,
+        };
+      });
+      assert.ok(fold.button <= fold.viewport, `The hero action fits the first screen at ${width}×${height} (bottom at ${Math.round(fold.button)})`);
+      assert.ok(fold.promises <= fold.viewport, `What happens after the tap is visible without scrolling at ${width}×${height}`);
+      assert.deepEqual(fold.floating, ['hidden', 'hidden'], 'Floating buttons step aside while the hero action is on screen');
+      assert.equal(fold.covered, 0, 'No category shortcut is covered by another control');
+      assert.equal(fold.small, 0, 'Category shortcuts are at least 44 px tall');
+      verifyPhone();
+    } finally {
+      await phone.close();
+    }
+  }
+  console.log('[check-site] PASS purchase paths: each package lands on its own offer, the hero action fits a phone’s first screen, ads only activate exact packages and every WhatsApp link has a stable label');
 }
 
 async function checkJournalInteractions(browser, origin, language, width) {
@@ -1376,6 +1503,7 @@ async function main() {
     await checkInternalLinks(origin, snapshots);
     await checkWhatsAppLines(browser, origin);
     await checkSiteTracking(browser, origin);
+    await checkPurchasePaths(browser, origin);
     for (const language of ['es', 'en']) await checkDesktopLeadFlow(browser, origin, language);
     for (const width of [1440, 390]) {
       for (const language of ['en', 'es']) {

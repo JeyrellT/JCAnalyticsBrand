@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion, useScroll } from 'framer-motion';
 import { Menu, X, ArrowUpRight, ArrowRight, Layers3, ChartNoAxesCombined, BrainCircuit, PanelsTopLeft, Sparkles, MessageCircle, LockKeyhole, Tag, Workflow } from 'lucide-react';
 import { wa, EASE, PHONE, PHONE_DISPLAY, EMAIL, NAV_LINKS, PORTAL_URL } from './links';
+import { MESSAGES } from './messages';
+import { adPackage } from '../../data/packages';
+import { useDesktop } from '../../hooks/useDesktop';
+import { STATIC_BOOT } from '../../boot';
 import '../../styles/navigation.css';
 import { t, locale } from '../../i18n/locale';
 import { journalPath } from '../../seo/routes';
@@ -18,7 +22,14 @@ const CHAPTERS = {
   marketing: { icon: Sparkles, detail: t('Redes, contenido y Meta Ads', 'Social media, content and Meta Ads') },
   pricing: { icon: Tag, detail: t('Paquetes con precio publicado', 'Packages with published pricing') },
 };
-const SECTION_NAMES = { top: t('El estudio', 'The studio'), servicios: t('Servicios', 'Services'), equipo: t('El equipo', 'The team'), proceso: t('El proceso', 'Our process'), paquetes: t('Precios', 'Pricing'), ideas: t('Ideas', 'Insights'), preguntas: t('Preguntas', 'Questions'), contacto: t('Contacto', 'Contact') };
+const SECTION_NAMES = { top: t('El estudio', 'The studio'), servicios: t('Servicios', 'Services'), equipo: t('El equipo', 'The team'), proceso: t('Compromisos', 'Commitments'), paquetes: t('Precios', 'Pricing'), ideas: t('Ideas', 'Insights'), preguntas: t('Preguntas', 'Questions'), contacto: t('Contacto', 'Contact') };
+
+// Mensaje del botón flotante de celular según lo que la persona está mirando. Antes se armaba con el nombre
+// interno de la sección («estoy viendo El estudio y quiero cotizar»): nadie escribe así.
+const FLOATING_MESSAGES = { '#trabajo': MESSAGES.projects, '#paquetes': MESSAGES.packages, '#proceso': MESSAGES.firstCall };
+// Botones de acción principal: mientras uno está en pantalla, los flotantes de celular se retiran para no
+// taparlo ni duplicarlo (antes cubrían los chips del hero y el enlace de cada paquete).
+const PRIMARY_ACTIONS = '.studio-wa, .package-card__buy, .works-wa, .jca-wa, .case-matcher__wa, .contact-submit';
 
 const Brand = ({ onClick, className = '' }) => (
   <a href="#top" onClick={onClick} className={`jca-brand ${className}`} aria-label={t('JC Analytics — inicio', 'JC Analytics — home')}>
@@ -61,6 +72,26 @@ const Nav = () => {
     window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule);
     return () => { window.cancelAnimationFrame(frame); window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); };
+  }, []);
+
+  useEffect(() => {
+    if (!('IntersectionObserver' in window)) return undefined;
+    const visible = new Set();
+    const sync = () => document.body.classList.toggle('cta-in-view', visible.size > 0);
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) { if (entry.isIntersecting) visible.add(entry.target); else visible.delete(entry.target); }
+      sync();
+    }, { threshold: 0.6 });
+    const watch = () => {
+      // Un botón que salió del documento estando a la vista (el formulario al confirmarse) deja de contar.
+      for (const node of visible) if (!node.isConnected) visible.delete(node);
+      sync();
+      document.querySelectorAll(PRIMARY_ACTIONS).forEach((node) => observer.observe(node));
+    };
+    watch();
+    // Los paquetes que se despliegan después («Ver los 10») y las tarjetas que cambian también cuentan.
+    const late = window.setInterval(watch, 2500);
+    return () => { window.clearInterval(late); observer.disconnect(); document.body.classList.remove('cta-in-view'); };
   }, []);
 
   useEffect(() => {
@@ -153,30 +184,34 @@ const Nav = () => {
   const visit = (event, href) => { if (!href.startsWith('#')) { setOpen(false); return; } event.preventDefault(); destinationRef.current = href; setOpen(false); };
   const currentIndex = NAV_LINKS.findIndex(link => link.href === active);
   const currentName = NAV_LINKS[currentIndex]?.label ?? SECTION_NAMES[active.slice(1)] ?? t('El estudio', 'The studio');
+  // En computadora el botón abre el formulario corto: el rótulo no promete WhatsApp.
+  const desktop = useDesktop();
+  // Quien llegó por el anuncio de un paquete conserva ese pedido en el flotante; el resto, según la sección.
+  const floating = adPackage
+    ? { href: wa(adPackage.message), 'data-need': adPackage.need, 'data-package': adPackage.key, 'data-value': adPackage.price, 'data-package-label': adPackage.name }
+    : { href: wa(FLOATING_MESSAGES[active] ?? MESSAGES.quote), 'data-need': 'Otro' };
 
   return (
     <>
-      <motion.header initial={reduce ? false : { y: -24, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+      <motion.header initial={reduce || STATIC_BOOT ? false : { y: -24, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, ease: EASE, delay: 0.12 }}
-        className={`jca-navigation ${scrolled ? 'jca-navigation--scrolled' : ''}`} aria-hidden={open || undefined} inert={open || undefined}>
+        className={`jca-navigation ${scrolled ? 'jca-navigation--scrolled' : ''}`} aria-hidden={open || undefined} inert={open || undefined} data-track-section="menu">
         <div className="jca-navigation__bar">
           <Brand />
           <span className="jca-navigation__chapter" aria-hidden="true">{currentName}</span>
           <nav className="jca-navigation__links" aria-label={t('Navegación principal', 'Main navigation')}>
             {NAV_LINKS.map((link) => (
               <a key={link.href} href={link.href} className="jca-navigation__link" aria-current={active === link.href ? 'location' : undefined}>
-                {link.label}<span aria-hidden="true" />
+                {link.short}<span aria-hidden="true" />
               </a>
             ))}
           </nav>
+          {/* La barra es de quien viene a comprar: categorías, proyectos, precios, idioma y una acción. El ingreso
+              del equipo y las ideas viven en el pie y en el menú de celular (auditoría, nov. 2026). */}
           <div className="jca-navigation__actions">
-            <a className="jca-nav-portal" href={PORTAL_URL} aria-label={t('Portal del equipo: ingresar', 'Team portal: sign in')} title={t('Portal del equipo', 'Team portal')}>
-              <LockKeyhole size={16} strokeWidth={2} aria-hidden="true" /><span>{t('Portal', 'Portal')}</span>
-            </a>
-            <a className="nav-insights" href={journalPath(locale)}>{t('Ideas', 'Insights')}</a>
             <LanguageSwitcher />
-            <a href={wa(t('Hola, quiero cotizar un proyecto con JC Analytics.', 'Hi, I would like a project estimate from JC Analytics.'))} target="_blank" rel="noreferrer" className="jca-nav-contact">
-              {t('Hablemos', "Let's talk")}<span aria-hidden="true"><ArrowUpRight size={17} strokeWidth={2.1} /></span>
+            <a href={wa(MESSAGES.quote)} target="_blank" rel="noreferrer" className="jca-nav-contact" data-need="Otro" data-track-label="Menú · Cotizar">
+              {desktop ? t('Pedir cotización', 'Request a quote') : t('Cotizar', 'Get a quote')}<span aria-hidden="true"><ArrowUpRight size={17} strokeWidth={2.1} /></span>
             </a>
             <button type="button" onClick={openMenu} aria-label={t('Abrir menú', 'Open menu')} aria-expanded={open} aria-controls="menu-movil" className="jca-menu-button">
               <Menu size={21} strokeWidth={1.6} />
@@ -186,14 +221,15 @@ const Nav = () => {
         </div>
       </motion.header>
 
-      {/* En celular no hay barra inferior: un solo botón de WhatsApp, pequeño y pegado a la esquina. */}
-      <a className="mobile-wa" href={wa(t(`Hola JC Analytics, estoy viendo ${currentName} y quiero cotizar.`, `Hi JC Analytics, I am looking at ${currentName} and want a quote.`))} target="_blank" rel="noreferrer" aria-label={t('Escribir por WhatsApp', 'Message on WhatsApp')} aria-hidden={open || editing || undefined} inert={open || editing || undefined}><MessageCircle size={26} aria-hidden="true" /></a>
+      {/* En celular no hay barra inferior: un botón de WhatsApp con nombre, pegado a la esquina. Se retira
+          mientras hay un botón principal en pantalla (body.cta-in-view) y dentro del formulario de contacto. */}
+      <a className="mobile-wa" {...floating} target="_blank" rel="noreferrer" data-track-section="flotante" data-track-label={`Flotante · WhatsApp · ${active.slice(1) || 'top'}`} aria-label={t('Cotizar por WhatsApp', 'Get a quote on WhatsApp')} aria-hidden={open || editing || active === '#contacto' || undefined} inert={open || editing || active === '#contacto' || undefined}><MessageCircle size={22} aria-hidden="true" /><span>{t('Cotizar', 'Quote')}</span></a>
 
       <AnimatePresence>
         {open && (
           <motion.div className="jca-menu-layer" key="menu-layer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduce ? 0 : .2 }}>
           <div className="jca-menu-backdrop" aria-hidden="true" onClick={() => setOpen(false)} />
-          <motion.div key="menu-movil" ref={menuRef} id="menu-movil" role="dialog" aria-modal="true" aria-label={t('Menú principal', 'Main menu')} data-lenis-prevent
+          <motion.div key="menu-movil" ref={menuRef} id="menu-movil" data-track-section="menu-celular" role="dialog" aria-modal="true" aria-label={t('Menú principal', 'Main menu')} data-lenis-prevent
             initial={reduce ? { opacity: 0 } : { opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={reduce ? { opacity: 0 } : { opacity: 0, y: -16 }}
             transition={{ duration: reduce ? 0.12 : 0.4, ease: EASE }} className="jca-menu">
             <div className="jca-menu__top">
@@ -202,8 +238,9 @@ const Nav = () => {
             </div>
             <div className="jca-menu__access">
               <LanguageSwitcher />
-              <a className="jca-menu__portal" href={PORTAL_URL} onClick={() => setOpen(false)}>
-                <LockKeyhole size={16} strokeWidth={2} aria-hidden="true" />{t('Portal del equipo', 'Team portal')}<ArrowUpRight size={16} aria-hidden="true" />
+              {/* Para quien ya es cliente. El ingreso del equipo quedó en el pie. */}
+              <a className="jca-menu__portal" href={`${PORTAL_URL}/cliente`} target="_blank" rel="noreferrer" onClick={() => setOpen(false)} data-track-label="Menú de celular · Portal de clientes">
+                <LockKeyhole size={16} strokeWidth={2} aria-hidden="true" />{t('Portal de clientes', 'Client portal')}<ArrowUpRight size={16} aria-hidden="true" />
               </a>
             </div>
             <div className="jca-menu__eyebrow"><span aria-hidden="true" />{t('ESTÁS EN:', 'YOU ARE HERE:')} {currentName}</div>
@@ -218,8 +255,8 @@ const Nav = () => {
             </nav>
             <div className="jca-menu__shortcuts"><a href="#proceso" onClick={(event) => visit(event, '#proceso')}>{t('Cómo trabajamos', 'How we work')} <ArrowRight size={15} aria-hidden="true" /></a><a href="#contacto" onClick={(event) => visit(event, '#contacto')}>{t('Contacto', 'Contact')} <ArrowRight size={15} aria-hidden="true" /></a><a href="#equipo" onClick={(event) => visit(event, '#equipo')}>{t('El equipo', 'The team')} <ArrowRight size={15} aria-hidden="true" /></a><a href={journalPath(locale)} onClick={() => setOpen(false)}>{t('Ideas', 'Insights')} <ArrowRight size={15} aria-hidden="true" /></a></div>
             <div className="jca-menu__bottom">
-              <a href={wa(t('Hola, quiero cotizar un proyecto con JC Analytics.', 'Hi, I would like a project estimate from JC Analytics.'))} target="_blank" rel="noreferrer" onClick={() => setOpen(false)} className="jca-menu__contact">
-                {t('Conversemos sobre tu idea', "Let's talk about your idea")}<span aria-hidden="true"><ArrowUpRight size={21} /></span>
+              <a href={wa(MESSAGES.quote)} target="_blank" rel="noreferrer" onClick={() => setOpen(false)} className="jca-menu__contact" data-need="Otro" data-track-label="Menú de celular · Cotizar">
+                {desktop ? t('Pedir cotización', 'Request a quote') : t('Cotizar por WhatsApp', 'Get a quote on WhatsApp')}<span aria-hidden="true"><ArrowUpRight size={21} /></span>
               </a>
               <div className="jca-menu__details"><a href={`mailto:${EMAIL}`}>{EMAIL}</a><a href={`tel:+${PHONE}`}>{PHONE_DISPLAY}</a></div>
               <span className="jca-menu__location">{t('Costa Rica · Ideas sin fronteras', 'Costa Rica · Ideas without borders')}</span>

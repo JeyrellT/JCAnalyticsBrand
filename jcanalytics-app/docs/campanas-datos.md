@@ -21,9 +21,13 @@
 | Webs y sistemas | `https://www.jcanalytic.com/servicios/desarrollo-web-costa-rica/` | `https://www.jcanalytic.com/en/services/web-development-costa-rica/` | Web con reservas · $570 | Software a medida · $540 |
 | Automatización | `https://www.jcanalytic.com/servicios/automatizacion-de-procesos/` | `https://www.jcanalytic.com/en/services/business-process-automation/` | Automatización de procesos · $165 | Excel y reportes · $60 |
 | Finanzas y dashboards | `https://www.jcanalytic.com/servicios/dashboards-power-bi-costa-rica/` | `https://www.jcanalytic.com/en/services/power-bi-dashboards-costa-rica/` | Dashboard inicial · $135 | Power BI de gestión · $240 |
-| IA y machine learning | `https://www.jcanalytic.com/servicios/integracion-ia-costa-rica/` | `https://www.jcanalytic.com/en/services/ai-integration-costa-rica/` | Asistente de IA documental · $420 | Chatbot de atención · $180 |
+| Inteligencia artificial | `https://www.jcanalytic.com/servicios/integracion-ia-costa-rica/` | `https://www.jcanalytic.com/en/services/ai-integration-costa-rica/` | Asistente de IA documental · $420 | Chatbot de atención · $180 |
 | Marketing | `https://www.jcanalytic.com/servicios/marketing-digital-costa-rica/` | `https://www.jcanalytic.com/en/services/digital-marketing-costa-rica/` | Sin paquete (botón a WhatsApp) | — |
 | Portada (genérica) | `https://www.jcanalytic.com/` | `https://www.jcanalytic.com/en/` | Seis destacados en `#paquetes` | — |
+
+Desde el 10 de noviembre de 2026 cada página acepta `?p=<paquete>` para abrir en un paquete que no sea el
+principal (por ejemplo `/servicios/desarrollo-web-costa-rica/?p=crm` para CRM comercial inicial, o `?p=inventario`).
+La tabla completa de paquetes por página está en [anuncios](anuncios.md).
 
 Precios en USD, pago único, IVA aparte. Las páginas de servicio disparan además `ViewContent` (Meta) y
 `contents_viewed` (ChatGPT); la portada no.
@@ -122,7 +126,8 @@ Para probar una línea: `?wa_line=a` o `?wa_line=b` en cualquier URL del sitio. 
 dice cuál recibió cada contacto. Los mensajes van prearmados, por ejemplo:
 
 ```
-Hola JC Analytics, quiero el paquete Web con reservas ($570). ¿Qué necesitan para empezar?
+Hola JC Analytics, me interesa el paquete Web con reservas ($570 + IVA).
+¿Me confirman si calza con mi caso y qué necesitan para empezar?
 
 (Vi el anuncio en Google · web-nov)
 ```

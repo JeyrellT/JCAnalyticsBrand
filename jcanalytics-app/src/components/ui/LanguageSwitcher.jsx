@@ -5,9 +5,16 @@ import { resolveRoute, alternatePath } from '../../seo/routes';
 export default function LanguageSwitcher() {
   const route = resolveRoute(window.location.pathname);
   const languagePath = (language) => alternatePath(route, language);
-  // Real links work without JavaScript. With JS, retain the visitor's section.
+  // Real links work without JavaScript. With JS, retain the visitor's section: the hash in the address, or,
+  // when the visitor got there by scrolling (no hash), the section currently under the header.
+  const visibleSection = () => {
+    if (window.scrollY < 200) return '';
+    const sections = [...document.querySelectorAll('main section[id]')];
+    const current = sections.filter((section) => section.getBoundingClientRect().top <= 140).pop();
+    return current && current.id !== 'top' ? `#${current.id}` : '';
+  };
   const keepSection = (event) => {
-    event.currentTarget.href = `${languagePath(event.currentTarget.lang)}${window.location.search}${window.location.hash}`;
+    event.currentTarget.href = `${languagePath(event.currentTarget.lang)}${window.location.search}${window.location.hash || visibleSection()}`;
   };
   return (
     <nav className="language-switcher" aria-label={t('Idioma del sitio', 'Website language')}>

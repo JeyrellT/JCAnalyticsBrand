@@ -113,3 +113,26 @@ Pendientes de la reunión: colores y redacción definitiva del eslogan.
 Pruebas: `check:site` ya no ejercita el cotizador y comprueba que `#cotizar` no exista en el HTML estático de la
 portada. La asistente se sincronizó con los textos nuevos (`sync:assistant`). Los datos para las campañas están
 en [campañas: datos exactos](campanas-datos.md).
+
+## Auditoría completa de la portada (10 de noviembre de 2026)
+
+Dieciocho revisiones independientes (negocio e ingeniería) y cinco capas de cambios: enrutamiento y verdad,
+claridad y jerarquía, compra, confianza y pulido técnico con medición. El detalle, lo que no se pudo verificar y
+las preguntas para el equipo están en [auditoría de la portada](auditoria-portada-2026-11.md).
+
+Lo que cambia respecto de las secciones anteriores de este documento:
+
+- **Los botones flotantes de celular sí se retiran** mientras hay un botón principal en pantalla o se escribe en
+  un formulario. La medición mostró que el botón del hero quedaba debajo del pliegue y que los flotantes tapaban
+  atajos y enlaces de paquetes.
+- **El formulario ofrece siete opciones**, con palabras de negocio, y nada viene marcado; las claves que recibe
+  el portal son las mismas nueve (`Finanzas` y `Machine learning` siguen siendo válidas cuando llegan desde un
+  enlace).
+- **Proyectos tiene un solo selector** con la miniatura de cada sistema; la galería de una pantalla por proyecto
+  salió. La prueba automática sigue exigiendo una captura real por proyecto en el HTML estático.
+- **Cada tarjeta de paquete abre su hoja** (`PackageSheet`) y, sin JavaScript, la página de su categoría con ese
+  paquete (`?p=<clave>#oferta`).
+- **Orden de la portada:** categorías → proyectos → compromisos → paquetes → preguntas → equipo → contacto →
+  ideas.
+- El hero rota una pantalla real por categoría (cinco), da una sola vuelta y se detiene.
+

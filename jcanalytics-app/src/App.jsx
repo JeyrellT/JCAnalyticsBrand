@@ -1,12 +1,12 @@
-// JC Analytics, portada corta (reunión del 31 de octubre de 2026): qué hacemos por categoría →
-// proyectos reales → cómo trabajamos → precios → equipo → ideas → preguntas → contacto.
+// JC Analytics, portada corta (reunión del 31 de octubre de 2026). Cada sección responde una pregunta de
+// quien compra, en el orden en que se la hace (auditoría de noviembre de 2026): ¿cuál es mi caso? → ¿ya lo
+// hicieron? → ¿qué arriesgo? → ¿cuánto cuesta? → ¿qué más debería saber? → ¿quién me atiende? → contacto.
+// El cuaderno de ideas va al final: es lectura para quien todavía no va a escribir.
 // Las demos de sistemas, finanzas, IA y marketing viven ahora en la página de cada servicio (ServiceDemo).
 // El cotizador en vivo salió de la portada el 3 de noviembre de 2026: los precios publicados viven en
 // Paquetes y en la página de cada categoría (con su calculadora); lo demás se cotiza conversando.
 import { useEffect } from 'react';
 import { useReducedMotion } from 'framer-motion';
-import Lenis from 'lenis';
-import gsap from 'gsap';
 
 import Nav from './components/site/Nav';
 import Hero from './components/site/Hero';
@@ -27,31 +27,39 @@ import './styles/discovery.css';
 import { t } from './i18n/locale';
 import { trackContactClicks } from './seo/analytics';
 import { useInitialFragment } from './components/useInitialFragment';
+import { endBoot } from './boot';
 
 const App = () => {
   useInitialFragment();
   const reduce = useReducedMotion();
   useEffect(trackContactClicks, []);
+  useEffect(endBoot, []);
 
-  // Scroll suave (Lenis) solo en desktop con puntero fino: en táctil queda el
-  // scroll nativo del sistema. gsap.ticker conduce el rAF en un único loop.
+  // Scroll suave (Lenis) solo en computadora con puntero fino: en táctil queda el scroll nativo del sistema
+  // y la librería ni se descarga. Antes Lenis y GSAP completo (usado solo como reloj) bajaban para todos.
   useEffect(() => {
     const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     if (!fine || reduce) return undefined;
-    const lenis = new Lenis({ lerp: 0.09, smoothWheel: true, anchors: true });
-    const tick = (t) => lenis.raf(t * 1000);
-    const menuState = (event) => event.detail.open ? lenis.stop() : lenis.start();
+    let lenis = null;
+    let frame = 0;
+    let cancelled = false;
+    const menuState = (event) => { if (lenis) { if (event.detail.open) lenis.stop(); else lenis.start(); } };
     window.addEventListener('jca:menu-state', menuState);
     window.addEventListener('jca:assistant-state', menuState);
     window.addEventListener('jca:lead-dialog-state', menuState);
-    gsap.ticker.add(tick);
-    gsap.ticker.lagSmoothing(0);
+    import('lenis').then(({ default: Lenis }) => {
+      if (cancelled) return;
+      lenis = new Lenis({ lerp: 0.09, smoothWheel: true, anchors: true });
+      const loop = (time) => { lenis.raf(time); frame = window.requestAnimationFrame(loop); };
+      frame = window.requestAnimationFrame(loop);
+    }).catch(() => { /* sin scroll suave: queda el nativo */ });
     return () => {
-      gsap.ticker.remove(tick);
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
       window.removeEventListener('jca:menu-state', menuState);
       window.removeEventListener('jca:assistant-state', menuState);
       window.removeEventListener('jca:lead-dialog-state', menuState);
-      lenis.destroy();
+      lenis?.destroy();
     };
   }, [reduce]);
 
@@ -69,10 +77,10 @@ const App = () => {
         <Work />
         <Process />
         <Packages />
-        <Team />
-        <KnowledgePreview />
         <FAQ />
+        <Team />
         <Contact />
+        <KnowledgePreview />
       </main>
 
       <Footer />

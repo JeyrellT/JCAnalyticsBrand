@@ -28,6 +28,13 @@ const CONVERSION_DEDUPE_MS = 3000;
 let lastConversion = 0;
 let lastLead = 0; // ChatGPT Ads: una sola `lead_created` por persona y acción
 
+// Una consulta ya captada en esta pestaña. Si después la misma persona abre WhatsApp (por ejemplo desde la
+// confirmación del formulario), ese clic se sigue registrando como intención pero no vuelve a contar como
+// conversión: antes una sola persona sumaba «Envío de formulario» y «Clic WhatsApp» (auditoría, nov. 2026).
+const LEAD_KEY = 'jc_lead';
+const leadCaptured = () => { try { return window.sessionStorage.getItem(LEAD_KEY) === '1'; } catch { return false; } };
+const rememberLead = () => { try { window.sessionStorage.setItem(LEAD_KEY, '1'); } catch { /* sin almacenamiento: vale la ventana de 3 s */ } };
+
 const trafficSource = () => ATTRIBUTION?.source ?? 'directo';
 const eventId = (prefix) => `${prefix}_${window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
 
@@ -56,14 +63,18 @@ const packageParams = (packageId, packageValue) => (packageId ? { package_id: pa
  * `mode: 'form'` = en computadora el botón de WhatsApp abrió el formulario corto en vez de WhatsApp Web.
  * Se registra la intención, pero la conversión de Google Ads y ChatGPT se mide al enviar ese formulario.
  */
-export function trackContactIntent({ channel, section = 'navigation', packageId, packageValue, mode = 'direct' }) {
-  const direct = channel === 'whatsapp' && mode === 'direct';
-  metaEvent('Contact', { packageId, fallbackName: channel, packageValue });
+export function trackContactIntent({ channel, section = 'navigation', packageId, packageValue, mode = 'direct', cta }) {
+  const afterLead = leadCaptured();
+  const direct = channel === 'whatsapp' && mode === 'direct' && !afterLead;
+  if (!afterLead) metaEvent('Contact', { packageId, fallbackName: channel, packageValue });
   if (direct) chatgptLead('wa');
   if (typeof window.gtag !== 'function') return;
   window.gtag('event', 'contact_click', {
     contact_channel: channel,
     ...(mode === 'form' ? { cta_mode: 'form' } : {}),
+    ...(afterLead ? { after_lead: true } : {}),
+    // Etiqueta estable del botón (data-track-label): no cambia con el idioma ni con el texto visible.
+    ...(cta ? { cta_id: cta } : {}),
     site_language: locale,
     section_id: section,
     traffic_source: trafficSource(),
@@ -80,6 +91,7 @@ export function trackContactIntent({ channel, section = 'navigation', packageId,
  * `ads: false` cuando la misma acción ya contó como "Clic WhatsApp" (celular: abrió WhatsApp y además dejó su contacto).
  */
 export function trackLeadCaptured({ form, section, packageId, packageValue, ads = true }) {
+  rememberLead();
   metaEvent('Lead', { packageId, fallbackName: form, packageValue });
   chatgptLead('form');
   if (typeof window.gtag !== 'function') return;
@@ -114,6 +126,7 @@ export function trackContactClicks() {
       packageId: link.dataset.package,
       packageValue: Number(link.dataset.value) || undefined,
       mode: channel === 'whatsapp' && event.defaultPrevented ? 'form' : 'direct',
+      cta: link.dataset.trackLabel,
     });
   };
   document.addEventListener('click', track);

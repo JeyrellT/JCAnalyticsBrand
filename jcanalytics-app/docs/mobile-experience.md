@@ -36,3 +36,18 @@ La emulación no sustituye una revisión en un iPhone o Android físico. No se a
 El cotizador en vivo y su barra inferior salieron de la portada; las referencias a la «barra del cotizador» de
 este documento ya no aplican. El hero muestra pantallas reales de proyectos dentro de un teléfono (captura a
 390 px) y, en computadora, dentro de una laptop (captura a 1440 px). Ver [diseño y recorrido](design-conversion.md).
+
+## Auditoría de noviembre de 2026
+
+- **Primera pantalla:** para quién, titular, una frase, el botón de WhatsApp y qué pasa después entran en
+  390×664 y 360×740 (un celular con las barras del navegador a la vista). `check:site` lo mide.
+- **Flotantes:** el de WhatsApp tiene nombre («Cotizar») y los dos se retiran mientras hay un botón principal en
+  pantalla, al escribir en un formulario y con la hoja de retorno abierta.
+- **Paquetes:** lista de los diez nombres y precios, cada uno desplegable (antes, un carrusel que mostraba uno).
+- **Categorías:** filas compactas con miniatura; las cinco caben en pantalla y media.
+- **Proyectos:** tira de miniaturas, tres pestañas en una fila y el teléfono al lado de su leyenda.
+- **Menú:** el botón de contacto queda a la vista al abrirlo; el titular decorativo salió.
+- Las flechas de las galerías que quedan (equipo, ejemplos de marketing) van a la izquierda: a la derecha
+  quedaban debajo de los flotantes.
+- Objetivos táctiles de 44 px en atajos, pestañas, idioma y pie; campos a 16 px.
+

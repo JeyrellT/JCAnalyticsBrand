@@ -21,6 +21,7 @@ import { SERVICE_PRICING } from '../../../../portal/shared/service-pricing.js';
 import { EXTRA_LABELS_EN, SERVICE_OFFERS, WORK_PROMISES } from '../../content/service-offers';
 import { PROJECTS, PROJECT_KINDS, screenImage, shotSrcSet } from '../../data/projects';
 import { CURRENCIES } from '../../data/currencies';
+import { PACKAGES } from '../../data/packages';
 import { homePath } from '../../seo/routes';
 import { PORTAL_URL, wa } from './links';
 import { emailOk, phoneOk } from './contact-rules';
@@ -43,11 +44,33 @@ const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const SalesContext = createContext(null);
 const useSales = () => useContext(SalesContext);
 
+// Paquete que la página desarrolla: el primero de la categoría o, si la URL trae ?p=<clave o alias> y ese
+// paquete se ofrece en esta página, ese. Así el enlace de una tarjeta de la portada (o de un anuncio)
+// aterriza en su propio paquete; antes seis de las diez tarjetas llegaban a una página que vendía otro
+// (auditoría de noviembre de 2026). El HTML estático no cambia: se genera sin parámetro.
+const requestedPackage = (offer) => {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  const wanted = (params.get('p') || params.get('paquete') || '').toLowerCase().replace(/[^a-z_]/g, '');
+  if (!wanted) return null;
+  const match = PACKAGES.find((pkg) => pkg.key === wanted || pkg.aliases.includes(wanted));
+  return match && offer.packages.includes(match.key) ? match.key : null;
+};
+
 export function ServiceSalesProvider({ item, children }) {
   const offer = SERVICE_OFFERS[item.id];
   const copy = offer[locale];
-  const main = SERVICE_PRICING[offer.packages[0]];
-  const alt = offer.packages[1] ? SERVICE_PRICING[offer.packages[1]] : null;
+  const [mainKey, setMainKey] = useState(() => requestedPackage(offer) ?? offer.packages[0]);
+  const main = SERVICE_PRICING[mainKey];
+  const others = offer.packages.filter((key) => key !== mainKey).map((key) => ({ key, pkg: SERVICE_PRICING[key] }));
+  // Cambiar de paquete sin recargar: la dirección queda con ?p=<clave> para poder compartirla.
+  const choosePackage = (key) => {
+    setMainKey(key);
+    const params = new URLSearchParams(window.location.search);
+    params.set('p', key);
+    window.history.replaceState(null, '', `${window.location.pathname}?${params}#oferta`);
+    document.getElementById('oferta')?.scrollIntoView({ block: 'start' });
+  };
   const [picked, setPicked] = useState([]);
   const [values, setValues] = useState(() => Object.fromEntries(offer.calculator.fields.map((field) => [field.id, String(field.value)])));
   const [touched, setTouched] = useState(false);
@@ -70,12 +93,12 @@ export function ServiceSalesProvider({ item, children }) {
   }, [picked, touched, calc, copy]);
 
   const whatsapp = (extraLines = []) => wa([
-    t(`Hola JC Analytics, estoy en «${item[locale].title}» y quiero cotizar el paquete ${label(main)} (US$${main.base_usd}).`, `Hi JC Analytics, I am reading “${item[locale].title}” and I want a quote for the ${label(main)} package (US$${main.base_usd}).`),
+    t(`Hola JC Analytics, estoy en «${item[locale].title}» y quiero el paquete ${label(main)} (${money(main.base_usd)} + IVA).`, `Hi JC Analytics, I am reading “${item[locale].title}” and I want the ${label(main)} package (${money(main.base_usd)} + tax).`),
     ...summary, ...extraLines,
   ].filter(Boolean).join('\n\n'));
 
   const value = {
-    item, offer, copy, main, alt, picked, values, calc, touched, summary, whatsapp,
+    item, offer, copy, main, mainKey, others, choosePackage, picked, values, calc, touched, summary, whatsapp,
     toggleSignal: (index) => setPicked((list) => (list.includes(index) ? list.filter((i) => i !== index) : [...list, index].sort())),
     setValue: (id, raw) => { setTouched(true); setValues((current) => ({ ...current, [id]: raw })); },
   };
@@ -95,7 +118,7 @@ const WhatsAppLink = ({ href, pkg, children, className = '', trackLabel, direct 
 
 // ── Oferta ──────────────────────────────────────────────────────────────────
 export function OfferStrip() {
-  const { main, alt, whatsapp } = useSales();
+  const { main, others, choosePackage, whatsapp } = useSales();
   const desktop = useDesktop();
   return (
     <section id="oferta" className="so-offer" aria-labelledby="so-offer-title">
@@ -116,13 +139,21 @@ export function OfferStrip() {
           ? t('Tu consulta sale lista con el paquete; solo dejás tu WhatsApp o correo. Si marcás señales o usás la calculadora, también van.', 'Your inquiry is ready with the package; you only leave your WhatsApp or email. If you tick signals or use the calculator, they go too.')
           : t('El mensaje sale listo con el paquete. Si marcás señales o usás la calculadora, también van en el mensaje.', 'The message is ready with the package. If you tick signals or use the calculator, they go in the message too.')}</p>
       </div>
-      {alt && (
-        <aside className="so-offer__alt">
-          <span className="journal-eyebrow">{t('¿NECESITÁS OTRA ESCALA?', 'NEED ANOTHER SCALE?')}</span>
-          <h3>{label(alt)}</h3>
-          <p><strong>{money(alt.base_usd)}</strong> · {timeLabel(alt)}</p>
-          <p className="so-offer__alt-scope">{locale === 'es' ? alt.scope : alt.scope_en}</p>
-          <a className="so-text-link" href={`${homePath(locale)}#paquetes`}>{t('Ver todos los paquetes', 'See all packages')} <ArrowUpRight size={15} aria-hidden="true" /></a>
+      {others.length > 0 && (
+        <aside className="so-offer__alt" aria-label={t('Otros paquetes de esta categoría', 'Other packages in this category')}>
+          <span className="journal-eyebrow">{t('OTROS PAQUETES DE ESTA CATEGORÍA', 'OTHER PACKAGES IN THIS CATEGORY')}</span>
+          <ul className="so-offer__others">
+            {others.map(({ key, pkg }) => (
+              <li key={key}>
+                {/* Sin JavaScript el enlace recarga la página; con JavaScript cambia el paquete en el lugar. */}
+                <a href={`?p=${key}#oferta`} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); choosePackage(key); }} data-track-label={`Oferta · Ver paquete · ${key}`}>
+                  <span><strong>{label(pkg)}</strong><small>{money(pkg.base_usd)} · {timeLabel(pkg)}</small></span>
+                  <em>{t('Ver este paquete', 'See this package')}<ArrowRight size={14} aria-hidden="true" /></em>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <a className="so-text-link" href={`${homePath(locale)}#paquetes`}>{t('Comparar los 10 paquetes', 'Compare all 10 packages')} <ArrowUpRight size={15} aria-hidden="true" /></a>
         </aside>
       )}
     </section>
@@ -195,8 +226,7 @@ export function ImpactCalculator() {
 
 // ── Qué incluye ─────────────────────────────────────────────────────────────
 export function Includes() {
-  const { main, offer } = useSales();
-  const key = offer.packages[0];
+  const { main, mainKey: key } = useSales();
   const extraLabel = (extra) => (locale === 'es' ? extra.label : EXTRA_LABELS_EN[`${key}.${extra.key}`] ?? extra.label);
   return (
     <section id="incluye" className="so-block so-includes" aria-labelledby="so-includes-title">
@@ -270,7 +300,7 @@ export function RealExample() {
           <p>{project.tagline}</p>
           <ul>{project.features.slice(0, 2).map((feature) => <li key={feature}><Check size={13} aria-hidden="true" />{feature}</li>)}</ul>
           <div className="so-example__links">
-            <a className="so-text-link" href={`${homePath(locale)}?proyecto=${project.id}#trabajo`}>{t('Ver pantallas, código y cifras', 'See screens, code and figures')} <ArrowUpRight size={15} aria-hidden="true" /></a>
+            <a className="so-text-link" href={`${homePath(locale)}?proyecto=${project.id}#proyecto`}>{t('Ver pantallas, código y cifras', 'See screens, code and figures')} <ArrowUpRight size={15} aria-hidden="true" /></a>
             {project.url && <a className="so-text-link" href={project.url} target="_blank" rel="noreferrer">{t('Abrir el sitio', 'Open the site')} <ArrowUpRight size={15} aria-hidden="true" /></a>}
           </div>
         </div>
