@@ -63,6 +63,11 @@ const Packages = () => {
   // «Ver los que faltan» es una casilla nativa: el despliegue lo hace el CSS y funciona sin JavaScript.
   const allRef = useRef(null);
   const showAll = () => { if (allRef.current) allRef.current.checked = true; };
+  // ¿La entrada actual del historial es un detalle (#hoja-…)? Al volver de una (cierre, botón o gesto «atrás») el
+  // navegador restauraba el desplazamiento viejo de la entrada anterior, la posición del ancla con que se llegó
+  // (#paquetes desde el menú, #paquete-…), y la página saltaba hasta 1.340 px al cerrar el detalle. Con el detalle
+  // abierto la página no se movió: al volver no hay nada que restaurar (verificación de las correcciones, nov. 2026).
+  const onSheetEntry = useRef(false);
   useEffect(() => {
     const query = window.matchMedia('(max-width: 767px)');
     const sync = () => setMobile(query.matches);
@@ -76,6 +81,7 @@ const Packages = () => {
     // El detalle sigue a la dirección. Devuelve true si la dirección es un detalle.
     const syncSheet = (initial) => {
       const linked = parseSheetHash(window.location.hash);
+      onSheetEntry.current = Boolean(linked);
       if (!linked) { setSheet(null); return false; }
       if (initial) { document.getElementById('paquetes')?.scrollIntoView({ block: 'start' }); showAll(); }
       // Un enlace dentro de la página (por ejemplo desde «Tu caso en una frase») crea una entrada propia
@@ -97,8 +103,13 @@ const Packages = () => {
     // «Atrás» avisa dos veces (popstate y hashchange). El detalle se sincroniza con los dos; la tarjeta se
     // busca solo con hashchange y nunca al volver de un detalle (`oldURL` dice de dónde se viene): cerrar un
     // detalle no mueve la página ni cambia la fila abierta, aunque la dirección anterior fuera #paquete-….
-    const onPop = () => { syncSheet(false); };
+    const onPop = () => {
+      // El navegador restaura el desplazamiento entre popstate y hashchange: se le pide que no lo haga.
+      if (onSheetEntry.current && !parseSheetHash(window.location.hash)) window.history.scrollRestoration = 'manual';
+      syncSheet(false);
+    };
     const onHash = (event) => {
+      if (window.history.scrollRestoration === 'manual') window.history.scrollRestoration = 'auto';
       if (syncSheet(false)) return;
       let fromSheet = false;
       try { fromSheet = /^#hoja-/.test(new URL(event.oldURL).hash); } catch { /* sin dirección anterior */ }
@@ -126,19 +137,22 @@ const Packages = () => {
     event.preventDefault();
     // Entrada propia en el historial: el botón o el gesto de «atrás» cierra el detalle en vez de salir del sitio.
     window.history.pushState({ jcaSheet: true }, '', `${here()}#hoja-${item.key}`);
+    onSheetEntry.current = true;
     setSheet({ item, withAi: false, picked: [], shared: false });
   };
   const closeSheet = () => {
     setSheet(null);
-    if (!/^#hoja-/.test(window.location.hash)) return; // ya lo cerró el historial
-    if (window.history.state?.jcaSheet) window.history.back();
-    else window.history.replaceState(null, '', `${here()}#paquetes`); // llegó por un enlace compartido: no hay «atrás» dentro del sitio
+    if (!/^#hoja-/.test(window.location.hash)) { onSheetEntry.current = false; return; } // ya lo cerró el historial
+    if (window.history.state?.jcaSheet) { window.history.back(); return; } // `onSheetEntry` sigue hasta el popstate
+    window.history.replaceState(null, '', `${here()}#paquetes`); // llegó por un enlace compartido: no hay «atrás» dentro del sitio
+    onSheetEntry.current = false;
   };
   // Del detalle de un paquete al de su paquete mayor, sin sumar entradas al historial.
   const switchSheet = (key) => {
     const item = PACKAGES.find((candidate) => candidate.key === key);
     if (!item) return;
     window.history.replaceState(window.history.state, '', `${here()}#hoja-${item.key}`);
+    onSheetEntry.current = true;
     setSheet({ item, withAi: false, picked: [], shared: false });
   };
   const moreLabel = HIDDEN.length

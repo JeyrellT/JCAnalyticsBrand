@@ -108,21 +108,11 @@ export function ServiceSalesProvider({ item, children }) {
     if (touched) lines.push(t(`Calculé unas ${integer(calc.hours)} h al mes en esto (≈ US$${integer(calc.costYear)} al año).`, `I estimated about ${integer(calc.hours)} h a month on this (≈ US$${integer(calc.costYear)} a year).`));
     return lines;
   }, [picked, touched, calc, copy]);
-
-  // Mismo mensaje que las tarjetas de la portada (data/packages.js), con lo marcado y lo calculado en esta
-  // página y, si la persona armó «Tu caso en una frase», con esa frase.
-  const visit = useCase();
-  const pack = PACKAGES.find((pkg) => pkg.key === mainKey);
-  const whatsapp = (extraLines = []) => {
-    const build = (lines) => packageMessage(pack, { lines: [...lines, ...extraLines], sentence: visit.packSentence });
-    const full = build(summary);
-    // El portal corta el mensaje en 600 caracteres. Con las cinco señales marcadas, la calculadora y la nota
-    // del anuncio se pasaba y el formulario corto cortaba el cierre a la mitad («Mi neg»): ahí las señales van
-    // por número (el equipo las lee en la página del paquete pedido), sin perder cuáles son. Se mide lo que de
-    // verdad sale (con la nota del anuncio) y se deja lugar para lo que la persona escriba en «¿Para qué negocio
-    // es?» (120 caracteres y su espacio), salvo que la frase del caso ya lo diga.
-    const fits = waMessage(full).length + (visit.packSentence ? 0 : 121) <= MESSAGE_MAX;
-    if (fits || !picked.length) return wa(full);
+  // La misma información con las situaciones por número («Me pasan las situaciones 1, 2 y 4 de las 5 de esta
+  // página.»): la versión corta para cuando el texto entero no entra en los 600 caracteres del portal. El equipo
+  // lee las frases en la página del paquete pedido.
+  const shortSummary = useMemo(() => {
+    if (!picked.length) return summary;
     const total = copy.signals.length;
     const numbers = listOf(picked.map((index) => String(index + 1)));
     const numbered = picked.length === total
@@ -130,7 +120,27 @@ export function ServiceSalesProvider({ item, children }) {
       : picked.length === 1
         ? t(`Me pasa la situación ${numbers} de las ${total} de esta página.`, `Situation ${numbers} of the ${total} on this page happens to me.`)
         : t(`Me pasan las situaciones ${numbers} de las ${total} de esta página.`, `Situations ${numbers} of the ${total} on this page happen to me.`);
-    return wa(build([numbered, ...summary.slice(1)]));
+    return [numbered, ...summary.slice(1)];
+  }, [picked, summary, copy]);
+
+  // Mismo mensaje que las tarjetas de la portada (data/packages.js), con lo marcado y lo calculado en esta
+  // página y, si la persona armó «Tu caso en una frase», con esa frase.
+  const visit = useCase();
+  const desktop = useDesktop();
+  const pack = PACKAGES.find((pkg) => pkg.key === mainKey);
+  const whatsapp = (extraLines = []) => {
+    const build = (lines) => packageMessage(pack, { lines: [...lines, ...extraLines], sentence: visit.packSentence });
+    const full = build(summary);
+    // El portal corta el mensaje en 600 caracteres. Con las cinco señales marcadas, la calculadora y la nota
+    // del anuncio se pasaba y el formulario corto cortaba el cierre a la mitad («Mi neg»): ahí las señales van
+    // por número, sin perder cuáles son. Se mide lo que de verdad sale (con la nota del anuncio). En computadora
+    // se deja además lugar para lo que la persona escriba en «¿Para qué negocio es?» (120 caracteres y su
+    // espacio), salvo que la frase del caso ya lo diga; en celular ese campo no existe y los 600 son los de la
+    // hoja «¿Pudiste enviar tu mensaje?» (antes la reserva corría también ahí y cambiaba por números pedidos que
+    // entraban enteros).
+    const room = desktop && !visit.packSentence ? 121 : 0;
+    if (waMessage(full).length + room <= MESSAGE_MAX || !picked.length) return wa(full);
+    return wa(build(shortSummary));
   };
 
   const value = {
@@ -138,7 +148,7 @@ export function ServiceSalesProvider({ item, children }) {
     // tarjeta de la portada (antes «Web con reservas» llegaba como «Página web» desde la portada y como
     // «Sistema / backend» desde esta página). `sentence`: la frase de «Tu caso en una frase», para los
     // envíos que van directo al portal.
-    item, offer, copy, main, mainKey, need: pack.need, sentence: visit.sentence, others, choosePackage, picked, values, calc, touched, summary, whatsapp,
+    item, offer, copy, main, mainKey, need: pack.need, sentence: visit.sentence, others, choosePackage, picked, values, calc, touched, summary, shortSummary, whatsapp,
     toggleSignal: (index) => setPicked((list) => (list.includes(index) ? list.filter((i) => i !== index) : [...list, index].sort())),
     setValue: (id, raw) => { setTouched(true); setValues((current) => ({ ...current, [id]: raw })); },
   };
@@ -370,7 +380,7 @@ export function ServiceFaq() {
 
 // ── Formulario corto ────────────────────────────────────────────────────────
 export function ServiceLeadForm() {
-  const { main, mainKey, need, sentence, summary, whatsapp } = useSales();
+  const { main, mainKey, need, sentence, summary, shortSummary, whatsapp } = useSales();
   // Computadora: «Enviar consulta» es el botón principal y WhatsApp Web queda como alternativa.
   const desktop = useDesktop();
   const [name, setName] = useState('');
@@ -391,10 +401,20 @@ export function ServiceLeadForm() {
     sentTitle.current?.focus({ preventScroll: true });
   }, [status]);
   const contact = { phone: phoneOk(phone) ? phone.trim() : '', email: emailOk(mail) ? mail.trim() : '' };
+  // Lo escrito, lo marcado, lo calculado y, si la armó en la portada, la frase de su caso (igual que en WhatsApp).
+  // El portal guarda 600 caracteres: lo que arma la página entra entero (con las situaciones por número si hace
+  // falta) y se recorta solo lo escrito por la persona, como en el formulario de contacto. Antes el recorte caía
+  // al final y se llevaba la frase del caso o dejaba un monto a medias («≈ US$1.»).
+  const portalMessage = () => {
+    const own = message.trim();
+    const tailOf = (lines) => [...lines, sentence ? caseLine(sentence) : ''].filter(Boolean).join('\n');
+    let tail = tailOf(summary);
+    if (own.length + 1 + tail.length > MESSAGE_MAX) tail = tailOf(shortSummary);
+    return [own.slice(0, Math.max(0, MESSAGE_MAX - tail.length - 1)), tail].filter(Boolean).join('\n').slice(0, MESSAGE_MAX);
+  };
   const lead = (channel) => sendLead({
     channel, name: name.trim(), ...contact, need, packageName: main.label, website, startedAt: startedAt.current,
-    // Lo escrito, lo marcado, lo calculado y, si la armó en la portada, la frase de su caso (igual que en WhatsApp).
-    message: [message.trim(), ...summary, sentence ? caseLine(sentence) : ''].filter(Boolean).join('\n').slice(0, MESSAGE_MAX), form: 'contacto-servicio', section: 'contacto-servicio',
+    message: portalMessage(), form: 'contacto-servicio', section: 'contacto-servicio',
   });
   const requestCallback = async () => {
     if (status === 'sending') return;

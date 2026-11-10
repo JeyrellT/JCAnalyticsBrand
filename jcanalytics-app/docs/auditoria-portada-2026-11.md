@@ -244,6 +244,30 @@ final; ver «Tercera verificación»):
 
 Los tres tienen candado en `checkSecondRound` y se comprobaron rompiendo la regla a propósito.
 
+**Tercera verificación, sobre la versión corregida.** Los cuatro verificadores volvieron a correr completos, con
+navegador, sobre el build congelado de la versión corregida: reprodujeron los 29 hallazgos y buscaron efectos
+secundarios de las correcciones. 22 quedaron corregidos sin resto; 7 dejaron un resto o un efecto secundario, y
+aparecieron 9 casos nuevos en la zona de las correcciones (dos de severidad media). Sin repetir son doce
+arreglos, todos aplicados:
+
+- **Medición.** Un anuncio nuevo en la misma pestaña reinicia también la sesión y la fuente del portal: antes la
+  consulta de esa visita llegaba con la campaña de la anterior. En celular, el pedido de la página de servicio ya
+  no reserva lugar para un campo que solo existe en computadora (cambiaba por números pedidos que entraban
+  enteros). El formulario de esa página recorta solo lo escrito por la persona: antes se llevaba la frase del caso
+  o dejaba un monto a medias («≈ US$1.»). El toque hecho antes de que cargue la página se mide con el paquete
+  del mensaje que de verdad se abrió y recibe la hoja «¿Pudiste enviar tu mensaje?» (antes nunca).
+- **Flujo.** Cerrar el detalle después de llegar por un ancla (menú «Precios», `#paquete-…`) ya no hace saltar la
+  página: el navegador restauraba la posición vieja del ancla, hasta 1.340 px. El clic temprano en una pregunta
+  de un artículo con anuncio ya no se pierde, y un toque anterior que ya siguió a WhatsApp no queda pisado.
+- **Textos.** La insignia «El más cercano a tu caso» baja debajo del nombre cuando no cabe (se salía de la
+  tarjeta a 768 px y pisaba el precio a 320 px). Con el giro «transporte», el detalle de los dashboards conserva
+  su nota («No es Power BI», «datos de demostración»).
+- **Accesibilidad.** El margen de la barra pegada también vale al leer con Espacio después de un clic en el texto
+  (el foco queda en el propio diálogo). Al cerrar la hoja de retorno, si el botón tocado ya no existe, el foco va a
+  la tarjeta del paquete. Un toque en la tarjeta a medio ver de la tira de proyectos ya no la corre bajo el dedo.
+
+Cada uno tiene candado en `checkSecondRound`, comprobado rompiendo la regla a propósito sobre una copia del build.
+
 ### Lo que la segunda ronda propuso y no se aplicó
 
 - **Reescribir alcances y agregados del tarifario** en lenguaje de cliente («Otro recurso, mismas reglas»,

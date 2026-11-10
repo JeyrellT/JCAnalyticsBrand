@@ -58,9 +58,29 @@
           // `held`: el clic quedó retenido (computadora, clic simple en un enlace que abre el formulario corto).
           // El que siguió su curso (celular, enlace directo, Ctrl+clic) ya abrió WhatsApp: al montar solo se mide.
           var held = fine && !link.hasAttribute('data-wa-direct') && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
-          window.__jcEarly = { label: link.getAttribute('data-track-label') || '', text: (link.getAttribute('href') || '').split('text=')[1] || '', cls: link.className || '', held: held, at: Date.now() };
+          // También lo que tenía el enlace tocado: al montar, ese lugar puede tener otro botón (con ?p= cambia el
+          // paquete). El toque que siguió su curso se mide con esto y la hoja de retorno lo usa al volver.
+          var get = function (name) { return link.getAttribute(name) || ''; };
+          var tagged = link.closest('[data-track-section]');
+          var area = link.closest('section[id]');
+          var prev = window.__jcEarly;
+          window.__jcEarly = {
+            label: get('data-track-label'), text: get('href').split('text=')[1] || '', cls: link.className || '', held: held, at: Date.now(),
+            href: link.href, pkg: get('data-package'), pkgLabel: get('data-package-label'), value: get('data-value'), need: get('data-need'),
+            section: tagged ? tagged.getAttribute('data-track-section') : area ? area.id : 'navigation'
+          };
+          // Un toque anterior que ya siguió a WhatsApp no se pisa: queda encadenado para medirlo al montar.
+          if (prev && !prev.held) window.__jcEarly.prev = prev;
           if (held) event.preventDefault();
         }, true);
+        // Cuándo salió a WhatsApp y cuándo volvió quien tocó antes de que la página montara: en un celular la
+        // pestaña puede quedar congelada hasta la vuelta, y la hoja «¿Pudiste enviar tu mensaje?» necesita los dos.
+        document.addEventListener('visibilitychange', function () {
+          var early = window.__jcEarly;
+          if (window.__jcMounted || !early || early.held) return;
+          if (document.visibilityState === 'hidden') early.leftAt = Date.now();
+          else if (early.leftAt) early.backAt = Date.now();
+        });
       })();
     </script>
     <!-- Existing Google tag. Contact events never include form contents. -->
@@ -94,9 +114,9 @@
       oaiq('measure', 'page_viewed', { type: 'contents', contents: [{ id: location.pathname, name: document.title || location.pathname, content_type: 'page' }] });
       if (/\/(services|servicios)\//.test(location.pathname)) oaiq('measure', 'contents_viewed', { type: 'contents', contents: [{ id: location.pathname, name: document.title || location.pathname, content_type: 'service' }] });
     </script>
-    <script type="module" crossorigin src="/assets/index-Dg22fqS2.js"></script>
+    <script type="module" crossorigin src="/assets/index-CT_wMX5C.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor-motion-DylZqzOY.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-C3oG9lJG.css">
+    <link rel="stylesheet" crossorigin href="/assets/index-BknNrPGu.css">
   <link rel="stylesheet" href="/assets/JournalApp-DAmZWAVi.css" />
 </head>
   <body>

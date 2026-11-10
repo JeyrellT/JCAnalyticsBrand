@@ -148,15 +148,17 @@ const Work = () => {
   const descriptionId = useId();
   const tabs = useRef(null);
   const list = useRef(null);
+  const reveal = useRef(true); // ¿correr la tira hasta el proyecto elegido? Al montar y cuando llega de afuera
   const project = PROJECTS[active];
   const screen = project.screens[screenIndex] || project.screens[0];
-  const choose = (index, shot = 0) => { setActive(index); setScreenIndex(shot); };
+  const choose = (index, shot = 0) => { reveal.current = false; setActive(index); setScreenIndex(shot); };
   // La portada, «tu caso en una frase» o la hoja de un paquete pueden pedir «ver este proyecto» (y una
   // pantalla concreta) sin recargar la página.
   useEffect(() => {
     const show = (event) => {
       const index = indexOfProject(event.detail?.id);
       if (index < 0) return;
+      reveal.current = true;
       setActive(index);
       setScreenIndex(screenOf(PROJECTS[index], event.detail?.screen));
       setView('screen');
@@ -168,8 +170,10 @@ const Work = () => {
   // Por debajo de 1024 px los proyectos son una tira horizontal. Cuando el proyecto elegido no está a la vista
   // (lo eligió el detalle de un paquete, «Tu caso en una frase», el hero o un anuncio), la tira se corre sola
   // hasta él: antes quedaba marcado y con el foco fuera de la tira, que seguía en los tres primeros (revisión de
-  // código, nov. 2026). Solo se mueve la tira, nunca la página.
+  // código, nov. 2026). Solo se mueve la tira, nunca la página. Un toque en la propia tira no la corre: alineaba a
+  // la izquierda la tarjeta a medio ver que se tocaba y dejaba otro proyecto bajo el dedo (verificación, nov. 2026).
   useEffect(() => {
+    if (!reveal.current) return;
     const strip = list.current;
     const chosen = strip?.children[active];
     if (!chosen || strip.scrollWidth <= strip.clientWidth) return;

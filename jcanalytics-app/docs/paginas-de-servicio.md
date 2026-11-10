@@ -63,9 +63,11 @@ en `src/content/services.js`. Sin entrada, la página se muestra como antes (sol
 - **Mensaje:** el mismo de las tarjetas de la portada (`packageMessage`): «Hola JC Analytics, me interesa el
   paquete … ($… + IVA).», las señales marcadas, lo calculado, «¿Me confirman si calza con mi caso?» y la línea
   abierta «Mi negocio:» (o la frase de «Tu caso en una frase», si la persona la armó en la portada). El portal
-  corta los mensajes en 600 caracteres: se mide el mensaje tal como sale (con la nota del anuncio) y se deja
-  lugar para lo que la persona escriba del negocio; si con todo marcado no entra, las situaciones viajan por
-  número («Me pasan las situaciones 1, 2 y 4 de las 5 de esta página.») en vez de cortarse.
+  corta los mensajes en 600 caracteres: se mide el mensaje tal como sale (con la nota del anuncio) y, en
+  computadora, se deja lugar para lo que la persona escriba en «¿Para qué negocio es?» (en celular ese campo no
+  existe); si con todo marcado no entra, las situaciones viajan por número («Me pasan las situaciones 1, 2 y 4
+  de las 5 de esta página.») en vez de cortarse. El formulario de la página hace lo mismo: lo que arma la página
+  entra entero y, si hace falta, se recorta solo lo que escribió la persona.
 - **Formulario:** el aviso dice qué campo corregir y lleva el foco ahí; al enviar, una confirmación con los tres
   pasos que siguen reemplaza al formulario y queda a la vista.
 - **Medición:** cada bloque es una `<section id>`, así que el portal muestra tiempo y alcance por bloque en

@@ -34,7 +34,7 @@ import { PACKAGES } from '../../data/packages';
 import '../../styles/whatsapp-return.css';
 
 const FORM = 'whatsapp-retorno';
-const SHOWN_KEY = 'jc_wa_return'; // analytics.js la borra cuando la visita llega por un clic nuevo en un anuncio
+const SHOWN_KEY = 'jc_wa_return'; // seo/attribution.js la borra cuando la visita llega por un clic nuevo en un anuncio
 const LEAD_KEY = 'jc_lead'; // lo escribe analytics.js cuando el portal acepta una consulta
 const AWAY_MIN_MS = 3000; // menos que esto no fue ir a WhatsApp: fue un cambio de pestaña o un toque fallido
 const AWAY_MAX_MS = 30 * 60 * 1000;
@@ -43,26 +43,39 @@ const stored = (key) => { try { return window.sessionStorage.getItem(key) === '1
 const remember = (key) => { try { window.sessionStorage.setItem(key, '1'); } catch { /* vale solo para esta página */ } };
 
 /** Lo que la persona iba a enviar: mensaje, paquete, necesidad y sección del botón. */
-function pendingFrom(link) {
-  const url = new URL(link.href);
+function describe({ href, pkg = '', pkgLabel = '', value = '', need = '', section = '' }) {
+  const url = new URL(href);
   return {
-    href: link.href,
+    href,
     message: (url.searchParams.get('text') ?? '').trim().slice(0, MESSAGE_MAX),
-    packageId: link.dataset.package || '',
-    packageLabel: link.dataset.packageLabel || link.dataset.package || '',
+    packageId: pkg,
+    packageLabel: pkgLabel || pkg,
     // Lo que lee el equipo en el portal: siempre el nombre del tarifario en español (igual que ui/LeadDialog.jsx).
-    packageName: PACKAGES.find((item) => item.key === link.dataset.package)?.portalName || link.dataset.packageLabel || link.dataset.package || '',
-    packageValue: Number(link.dataset.value) || 0,
-    need: link.dataset.need || resolveRoute(window.location.pathname)?.data?.need || 'Otro',
-    section: link.closest('[data-track-section]')?.dataset.trackSection ?? link.closest('section[id]')?.id ?? 'navigation',
+    packageName: PACKAGES.find((item) => item.key === pkg)?.portalName || pkgLabel || pkg,
+    packageValue: Number(value) || 0,
+    need: need || resolveRoute(window.location.pathname)?.data?.need || 'Otro',
+    section: section || 'navigation',
   };
 }
+// Si el toque fue dentro del detalle de un paquete, el detalle se cierra y se desmonta en el mismo clic: el foco
+// puede volver a su tarjeta. La clave sale del propio enlace («Pedirlo» lleva data-package; «Tengo una duda», la
+// lleva al final de su etiqueta), porque cuando este listener corre el enlace puede estar ya fuera del documento.
+const cardsOf = (link) => {
+  if (!/\bpackage-sheet__/.test(link.className)) return [];
+  const key = link.dataset.package || /· ([a-z_]+)$/.exec(link.dataset.trackLabel ?? '')?.[1];
+  const card = key ? document.getElementById(`paquete-${key}`) : null;
+  return card ? [card.querySelector('.package-card__sheet'), card.querySelector('.package-card__toggle')].filter(Boolean) : [];
+};
+const pendingFrom = (link) => describe({
+  href: link.href, pkg: link.dataset.package, pkgLabel: link.dataset.packageLabel, value: link.dataset.value, need: link.dataset.need,
+  section: link.closest('[data-track-section]')?.dataset.trackSection ?? link.closest('section[id]')?.id,
+});
 
 export default function WhatsAppReturn() {
   const pending = useRef(null); // { ...contexto, leftAt }
   const startedAt = useRef(0);
   const titleRef = useRef(null);
-  const opener = useRef(null); // dónde estaba el foco cuando apareció la hoja (se le devuelve al cerrarla)
+  const opener = useRef(null); // adónde vuelve el foco al cerrar la hoja: candidatos en orden
   const [context, setContext] = useState(null);
   const [phone, setPhone] = useState('');
   const [status, setStatus] = useState('idle'); // idle · invalid · sending · sent · error
@@ -73,19 +86,14 @@ export default function WhatsAppReturn() {
       // En computadora el clic abre el formulario corto (o WhatsApp Web a pedido): no hace falta esta red.
       if (!link || event.defaultPrevented || isDesktopPointer()) return;
       // `link`: a dónde vuelve el foco al cerrar la hoja si el navegador no enfocó el enlace al tocarlo (Safari).
-      pending.current = { ...pendingFrom(link), link, leftAt: 0 };
+      pending.current = { ...pendingFrom(link), link, cards: cardsOf(link), leftAt: 0 };
     };
     // El formulario de contacto abre WhatsApp con window.open y avisa con este evento.
     const onOpened = (event) => {
       if (isDesktopPointer()) return;
       pending.current = { href: event.detail?.href ?? '', message: String(event.detail?.message ?? '').slice(0, MESSAGE_MAX), packageId: '', packageLabel: '', packageName: '', packageValue: 0, need: event.detail?.need || 'Otro', section: event.detail?.section ?? 'contacto', leftAt: 0 };
     };
-    const onVisibility = () => {
-      const waiting = pending.current;
-      if (!waiting) return;
-      if (document.visibilityState === 'hidden') { waiting.leftAt = Date.now(); return; }
-      const away = waiting.leftAt ? Date.now() - waiting.leftAt : 0;
-      pending.current = null;
+    const show = (waiting, away) => {
       if (away < AWAY_MIN_MS || away > AWAY_MAX_MS || stored(SHOWN_KEY) || stored(LEAD_KEY)) return;
       remember(SHOWN_KEY);
       trackEvent('click', { k: 'button', l: 'Retorno · Se mostró', s: waiting.section });
@@ -93,12 +101,34 @@ export default function WhatsAppReturn() {
       setStatus('idle');
       setContext(waiting);
     };
+    const onVisibility = () => {
+      const waiting = pending.current;
+      if (!waiting) return;
+      if (document.visibilityState === 'hidden') { waiting.leftAt = Date.now(); return; }
+      pending.current = null;
+      show(waiting, waiting.leftAt ? Date.now() - waiting.leftAt : 0);
+    };
+    // El toque hecho antes de que la página montara (ui/early-click.js): WhatsApp ya se abrió con el mensaje del
+    // HTML estático y este listener todavía no existía. Si la persona ya volvió (en un celular la pestaña puede
+    // quedar congelada hasta la vuelta), la hoja sale ahora; si no, queda esperando como cualquier otro toque.
+    // Antes ese toque, el de la visita más decidida, nunca recibía la hoja (revisión de código, nov. 2026).
+    const onEarly = (event) => {
+      const early = event.detail;
+      if (!early?.href || isDesktopPointer()) return;
+      const waiting = { ...describe(early), link: early.link ?? null, leftAt: early.leftAt || 0 };
+      const back = early.backAt || (waiting.leftAt && document.visibilityState === 'visible' ? Date.now() : 0);
+      if (back) { pending.current = null; show(waiting, back - waiting.leftAt); return; }
+      if (document.visibilityState === 'hidden' && !waiting.leftAt) waiting.leftAt = Date.now();
+      pending.current = waiting;
+    };
     document.addEventListener('click', onClick);
     window.addEventListener('jca:whatsapp-opened', onOpened);
+    window.addEventListener('jca:whatsapp-early', onEarly);
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
       document.removeEventListener('click', onClick);
       window.removeEventListener('jca:whatsapp-opened', onOpened);
+      window.removeEventListener('jca:whatsapp-early', onEarly);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);
@@ -107,19 +137,33 @@ export default function WhatsAppReturn() {
   useEffect(() => {
     document.body.classList.toggle('wa-return-open', Boolean(context));
     if (!context) return undefined;
-    // En Safari tocar un enlace no lo enfoca: ahí el foco estaría en <body> y se devuelve al botón tocado.
+    // Adónde vuelve el foco al cerrar la hoja, en orden: lo que lo tenía al aparecer; el botón tocado (Safari no
+    // enfoca un enlace al tocarlo); y, si el toque fue dentro del detalle de un paquete, su tarjeta.
     const focused = document.activeElement;
-    opener.current = focused && focused !== document.body ? focused : context.link ?? null;
+    opener.current = [focused && focused !== document.body ? focused : null, context.link, ...(context.cards ?? [])].filter(Boolean);
     const onKey = (event) => { if (event.key === 'Escape') setContext(null); };
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.classList.remove('wa-return-open');
-      // La hoja se cierra desmontándose: si el foco se perdió con ella, vuelve al botón desde donde la persona
-      // salió a WhatsApp. A quien ya siguió navegando no se le quita.
-      const back = opener.current;
+      // La hoja se cierra desmontándose: si el foco se perdió con ella, vuelve al primer candidato que todavía
+      // pueda recibirlo (un flotante se oculta cuando hay un botón principal a la vista; el detalle se desmonta) y,
+      // si ninguno, al primer botón de WhatsApp a la vista. A quien ya siguió navegando no se le quita.
+      const candidates = opener.current ?? [];
       opener.current = null;
-      window.requestAnimationFrame(() => { if (back?.isConnected && (!document.activeElement || document.activeElement === document.body)) back.focus({ preventScroll: true }); });
+      window.requestAnimationFrame(() => {
+        if (document.activeElement && document.activeElement !== document.body) return;
+        for (const node of candidates) {
+          if (!node.isConnected) continue;
+          node.focus({ preventScroll: true });
+          if (document.activeElement === node) return;
+        }
+        const onScreen = [...document.querySelectorAll('a[href^="https://wa.me/"]')].find((node) => {
+          const box = node.getBoundingClientRect();
+          return box.width > 0 && box.bottom > 0 && box.top < window.innerHeight && getComputedStyle(node).visibility !== 'hidden';
+        });
+        onScreen?.focus({ preventScroll: true });
+      });
     };
   }, [context]);
   // Al aparecer y al confirmar el envío, el foco va al título: se anuncia y no se pierde en el documento.

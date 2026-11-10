@@ -21,9 +21,11 @@
 @keyframes package-card-target { from { box-shadow: 0 0 0 10px #25d36666; } to { box-shadow: 0 0 0 4px #34735b47; } }
 .package-card__head { position: relative; display: flex; flex-direction: column; gap: 10px; }
 .package-card__category { font: 600 11px/1.4 var(--font-sans); letter-spacing: .08em; text-transform: uppercase; color: #52765f; }
-.package-card__top { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+/* La insignia baja debajo del nombre cuando no cabe al lado («El más cercano a tu caso» se salía de la tarjeta a
+   768–784 px y en celular pisaba el precio a 320 px). */
+.package-card__top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: start; gap: 6px 12px; }
 .package-card h3 { font: 500 22px/1.15 var(--font-display); letter-spacing: -.03em; }
-.package-card__badge { flex-shrink: 0; padding: 5px 9px; border-radius: 999px; background: #d7f5e3; color: #1d5a39; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.package-card__badge { flex-shrink: 0; max-width: 100%; padding: 5px 9px; border-radius: 999px; background: #d7f5e3; color: #1d5a39; font-size: 12px; font-weight: 600; white-space: nowrap; }
 .package-card--ad .package-card__badge { background: #25d366; color: #06301a; }
 .package-card__pitch { font-size: 14.5px; line-height: 1.5; color: #3d5546; }
 .package-card__price { display: grid; gap: 3px; }
@@ -81,7 +83,7 @@
   .package-card__category { grid-column: 1 / -1; font-size: 10.5px; }
   .package-card__top { grid-column: 1; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
   .package-card h3 { font-size: 18px; }
-  .package-card__badge { padding: 3px 8px; font-size: 11px; }
+  .package-card__badge { padding: 3px 8px; font-size: 11px; white-space: normal; border-radius: 12px; }
   .package-card__pitch { grid-column: 1; font-size: 13px; }
   .package-card__price { grid-column: 2; grid-row: 2 / span 2; justify-items: end; text-align: right; }
   .package-card__price strong { font-size: 26px; }

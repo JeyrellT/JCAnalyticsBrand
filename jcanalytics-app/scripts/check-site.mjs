@@ -1247,6 +1247,15 @@ async function checkSecondRound(browser, origin) {
     await page.waitForFunction((key) => window.location.hash === `#hoja-dashboard_inicial.${key}`, {}, extra.key);
     await page.keyboard.press('Tab');
     assert.notEqual(await page.$eval('dialog.package-sheet', (node) => getComputedStyle(node).scrollPaddingBottom), 'auto', 'With keyboard focus the detail reserves room for its pinned bar');
+    // Un clic en el texto deja el foco en el propio diálogo; desde ahí se lee con Espacio o AvPág, y el margen
+    // también tiene que estar (`:has(:focus-visible)` no mira al diálogo mismo).
+    await page.$eval('dialog.package-sheet', (node) => { node.scrollTop = 0; });
+    const pitch = await page.$eval('.package-sheet__pitch', (node) => { const r = node.getBoundingClientRect(); return { x: r.left + 20, y: r.top + Math.min(8, r.height / 2) }; });
+    await page.mouse.click(pitch.x, pitch.y);
+    assert.equal(await page.$eval('dialog.package-sheet', (node) => document.activeElement === node), true, 'A click on the text of the detail leaves the focus on the dialog itself');
+    await page.keyboard.press('PageDown');
+    assert.notEqual(await page.$eval('dialog.package-sheet', (node) => getComputedStyle(node).scrollPaddingBottom), 'auto', 'Reading the detail with the keyboard from its text keeps room for the pinned bar');
+    await page.$eval('dialog.package-sheet', (node) => { node.scrollTop = 0; });
 
     // PDF de una página (antes: la hoja y 18 páginas en blanco).
     await page.evaluate(() => { window.print = () => {}; });
@@ -1405,6 +1414,44 @@ async function checkSecondRound(browser, origin) {
     verifyErrors();
   } finally { await page.close(); }
 
+  // ── Computadora: un Ctrl+clic temprano y después un clic simple en otro botón. El primero ya abrió WhatsApp Web:
+  //    se mide igual (antes el segundo lo pisaba); el segundo abre el formulario al montar ──
+  ({ page, verifyErrors } = await openPage(browser, origin, 1440, true, { delayEntryMs: 3000 }));
+  try {
+    await page.evaluateOnNewDocument(() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); });
+    await holdWhatsApp(page);
+    const loading = page.goto(`${origin}/?wa_line=a`, { waitUntil: 'load' });
+    await page.waitForSelector('#paquetes .package-card__buy');
+    await page.$eval('.studio-wa', (node) => node.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true, button: 0 })));
+    const second = await page.$eval('#paquetes .package-card__buy', (node) => { node.click(); return node.dataset.trackLabel; });
+    assert.deepEqual(await page.evaluate(() => [window.__waClicks, Boolean(window.__jcEarly.prev)]), [[false, true], true], 'The Ctrl+click goes on and the later simple click is held, without losing the first one');
+    await loading;
+    await page.waitForSelector('dialog.lead-dialog[open]');
+    const measured = await page.evaluate(() => window.dataLayer.filter((entry) => entry[0] === 'event' && ['contact_click', 'conversion'].includes(entry[1])).map((entry) => [entry[1], entry[2].cta_id ?? entry[2].send_to, entry[2].cta_mode ?? null]));
+    assert.deepEqual(measured, [['contact_click', 'Hero · Cotizar', null], ['conversion', ADS_WHATSAPP, null], ['contact_click', second, 'form']], 'Both early clicks are measured: the direct one with its conversion and the held one as the form it opens');
+    verifyErrors();
+  } finally { await page.close(); }
+
+  // ── Computadora, artículo con anuncio: el clic temprano en una pregunta (enlace sin etiqueta ni clase) abre el
+  //    formulario al montar. El mensaje montado trae la nota del anuncio y antes no se lo reconocía: se perdía.
+  //    Contexto aparte: la fuente del anuncio queda 30 días guardada y se colaría en las pruebas siguientes ──
+  const articleVisit = await browser.createBrowserContext();
+  ({ page, verifyErrors } = await openPage(articleVisit, origin, 1440, true, { delayEntryMs: 3000 }));
+  try {
+    await page.evaluateOnNewDocument(() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); });
+    await holdWhatsApp(page);
+    const article = routes.find((item) => item.type === 'article' && item.language === 'es');
+    const loading = page.goto(`${origin}${article.path}?utm_source=google&utm_campaign=qa-articulo&wa_line=a`, { waitUntil: 'load' });
+    await page.waitForSelector('.document-discussion a[href^="https://wa.me/"]');
+    await page.$eval('.document-discussion a[href^="https://wa.me/"]', (node) => node.click());
+    assert.deepEqual(await page.evaluate(() => [window.__waClicks, window.__jcEarly.held]), [[true], true], 'The early click on the article question is held on a computer');
+    await loading;
+    await page.waitForSelector('dialog.lead-dialog[open]');
+    const clicks = await page.evaluate(() => window.dataLayer.filter((entry) => entry[0] === 'event' && entry[1] === 'contact_click').map((entry) => entry[2].cta_mode));
+    assert.deepEqual(clicks, ['form'], 'With an ad note in the mounted message the early click still opens the short form, measured once');
+    verifyErrors();
+  } finally { await articleVisit.close(); }
+
   // ── Celular: una conversión de WhatsApp por visita, la hoja de retorno y un anuncio nuevo ──
   // Las visitas «con anuncio» corren en un contexto de navegador aparte: la fuente del anuncio queda 30 días en
   // localStorage (seo/attribution.js) y, en el contexto compartido, la nota «(Vi el anuncio…)» se colaba en los
@@ -1448,19 +1495,28 @@ async function checkSecondRound(browser, origin) {
     assert.ok(!JSON.stringify(ads).includes('8888-1234'), 'Ad platforms never receive the phone number');
 
     // Otro clic en un anuncio empieza otra visita: la pestaña de un celular vive días.
-    await navigate(page, `${origin}/?gclid=qa-click-2&wa_line=a`);
+    await navigate(page, `${origin}/?gclid=qa-click-2&utm_campaign=qa-campaign-2&wa_line=a`);
     await stubAdPixels(page);
     await page.$eval('.studio-wa', (node) => node.click());
     ads = await readAdPixels(page);
     const fresh = ads.gtag.find((entry) => entry[1] === 'contact_click')[2];
     assert.ok(countOf(ads.gtag, 'conversion') === 1 && !fresh.repeat && !fresh.after_lead, 'A new ad click starts a new visit: its tap counts for that ad');
-    // La hoja de retorno vuelve a aparecer en la visita nueva. El botón se tocó sin recibir el foco (como en Safari,
-    // que no enfoca un enlace al tocarlo): al cerrar la hoja el foco vuelve igual a ese botón y no cae en <body>.
+    // La hoja de retorno vuelve a aparecer en la visita nueva, y la consulta llega al portal como de esa visita:
+    // su sesión y su campaña, no las de la anterior (antes la pegaba a la primera fuente de la pestaña).
     assert.equal(await page.evaluate(() => document.activeElement === document.body), true);
     await away('hidden');
     await delay(3200);
     await away('visible');
     await page.waitForSelector('.wa-return');
+    await page.type('#retorno-telefono', '8888-2222');
+    await delay(1700);
+    await page.$eval('.wa-return__submit', (node) => node.click());
+    await page.waitForSelector('.wa-return div[role="status"]');
+    const newVisitLead = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body).at(-1);
+    assert.equal(newVisitLead.phone, '8888-2222');
+    assert.ok(newVisitLead.sid !== returned.sid && newVisitLead.src?.campaign === 'qa-campaign-2' && newVisitLead.src?.source === 'Google', `The inquiry of the new visit carries its own session and campaign (${JSON.stringify(newVisitLead.src)})`);
+    // El botón se tocó sin recibir el foco (como en Safari, que no enfoca un enlace al tocarlo): al cerrar la hoja
+    // el foco vuelve igual a ese botón y no cae en <body>.
     await page.keyboard.press('Escape');
     await page.waitForFunction(() => !document.querySelector('.wa-return'));
     await delay(150);
@@ -1474,8 +1530,9 @@ async function checkSecondRound(browser, origin) {
     verifyErrors();
   } finally { await adVisit.close(); }
 
-  // ── Celular: el toque hecho antes de que cargue React se mide al montar, aunque la pestaña haya quedado congelada ──
-  ({ page, verifyErrors } = await openPage(browser, origin, 390, true, { delayEntryMs: 3000 }));
+  // ── Celular: el toque hecho antes de que cargue React se mide al montar, aunque la pestaña haya quedado congelada,
+  //    y recibe la hoja «¿Pudiste enviar tu mensaje?» como cualquier otro toque ──
+  ({ page, verifyErrors } = await openPage(browser, origin, 390, true, { delayEntryMs: 7000 }));
   try {
     await holdWhatsApp(page);
     const loading = page.goto(`${origin}/?wa_line=a`, { waitUntil: 'load' });
@@ -1483,11 +1540,73 @@ async function checkSecondRound(browser, origin) {
     await page.$eval('.studio-wa', (node) => node.click());
     // Como quien vuelve de WhatsApp más de medio minuto después: el tope de 30 s es solo para el clic retenido.
     assert.deepEqual(await page.evaluate(() => { window.__jcEarly.at -= 31000; return [window.__waClicks, window.__jcEarly.held]; }), [[false], false], 'On a phone the early tap goes on to WhatsApp');
+    // Sale a WhatsApp y vuelve antes de que la página monte (la pestaña quedó congelada hasta la vuelta).
+    const visibility = (state) => page.evaluate((value) => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => value });
+      document.dispatchEvent(new Event('visibilitychange'));
+    }, state);
+    await visibility('hidden');
+    await delay(3200);
+    await visibility('visible');
+    assert.ok(await page.evaluate(() => !window.__jcMounted && window.__jcEarly.backAt - window.__jcEarly.leftAt >= 3000), 'The way out to WhatsApp and back is noted before the page mounts');
     await loading;
     await page.waitForFunction(() => window.__jcMounted === true && window.dataLayer.some((entry) => entry[0] === 'event' && entry[1] === 'conversion'));
     const measured = await page.evaluate(() => window.dataLayer.filter((entry) => entry[0] === 'event' && ['contact_click', 'conversion'].includes(entry[1])).map((entry) => [entry[1], entry[2].cta_id ?? entry[2].send_to]));
     assert.deepEqual(measured, [['contact_click', 'Hero · Cotizar'], ['conversion', ADS_WHATSAPP]], 'The early tap is measured once when the page mounts, with no time limit');
     assert.equal(await page.$('dialog.lead-dialog[open]'), null, 'On a phone no form opens: WhatsApp already did');
+    await page.waitForSelector('.wa-return');
+    assert.ok((await page.$eval('.wa-return', (node) => node.textContent)).length > 0, 'The early tap also gets the «Did your message go through?» sheet when the visitor comes back');
+    verifyErrors();
+  } finally { await page.close(); }
+
+  // ── Celular, página de servicio con ?p=: el toque temprano se mide con el paquete del mensaje que se abrió ──
+  ({ page, verifyErrors } = await openPage(browser, origin, 390, true, { delayEntryMs: 3000 }));
+  try {
+    await holdWhatsApp(page);
+    const webService = routes.find((item) => item.type === 'service' && item.data.id === 'web-development' && item.language === 'es');
+    const loading = page.goto(`${origin}${webService.path}?p=crm&wa_line=a`, { waitUntil: 'load' });
+    await page.waitForSelector('#oferta .so-wa');
+    const tapped = await page.$eval('#oferta .so-wa', (node) => { node.click(); return { pkg: node.dataset.package, label: node.dataset.trackLabel }; });
+    assert.equal(tapped.pkg, 'pagina_web', 'Before mounting, the static offer is the first package of the page');
+    await loading;
+    await page.waitForFunction(() => window.__jcMounted === true && window.dataLayer.some((entry) => entry[0] === 'event' && entry[1] === 'contact_click'));
+    const click = await page.evaluate(() => window.dataLayer.find((entry) => entry[0] === 'event' && entry[1] === 'contact_click')[2]);
+    assert.deepEqual([click.package_id, click.package_value, click.cta_id], ['pagina_web', SERVICE_PRICING.pagina_web.base_usd, tapped.label], 'An early tap is measured with the package of the message that opened, not with the one that takes its place');
+    assert.equal(await page.$eval('#oferta .so-wa', (node) => node.dataset.package), 'crm_inicial', 'After mounting the page shows the advertised package');
+    verifyErrors();
+  } finally { await page.close(); }
+
+  // ── Celular, página de servicio sin anuncio: con todo marcado el pedido conserva las frases si entra en 600;
+  //    el formulario directo recorta solo lo escrito y deja entera la frase del caso ──
+  ({ page, verifyErrors } = await openPage(browser, origin, 390));
+  try {
+    const webService = routes.find((item) => item.type === 'service' && item.data.id === 'web-development' && item.language === 'es');
+    const webOffer = SERVICE_OFFERS['web-development'];
+    const tickAll = async () => {
+      await page.waitForSelector('#senales input[type="checkbox"]');
+      await page.$$eval('#senales input[type="checkbox"]', (nodes) => nodes.forEach((node) => node.click()));
+      const field = webOffer.calculator.fields[0];
+      await page.click(`#calc-${field.id}`, { clickCount: 3 });
+      await page.type(`#calc-${field.id}`, String(field.value + 1));
+      await page.waitForFunction(() => new URL(document.querySelector('#oferta .so-wa').href).searchParams.get('text').includes('Calculé'));
+    };
+    await navigate(page, `${origin}${webService.path}?wa_line=a`);
+    await tickAll();
+    const phoneOrder = await page.$eval('#oferta .so-wa', (node) => new URL(node.href).searchParams.get('text'));
+    assert.ok(phoneOrder.length <= 600 && webOffer.es.signals.every((signal) => phoneOrder.includes(signal)), `On a phone the order keeps the ticked situations in words when it fits in 600 characters (${phoneOrder.length})`);
+    // Con «Tu caso en una frase» armado en la portada y mucho texto propio, el formulario directo.
+    await page.evaluate(() => window.sessionStorage.setItem('jc_case', JSON.stringify({ business: 'transporte', goal: 'vender' })));
+    await navigate(page, `${origin}${webService.path}?wa_line=a`);
+    await tickAll();
+    await page.type('#servicio-mensaje', 'Q'.repeat(200));
+    await page.type('#servicio-telefono', '8888-1234');
+    await delay(1700);
+    await page.$eval('#contacto-servicio form', (form) => form.requestSubmit());
+    await page.waitForSelector('.so-sent');
+    const direct = page.ingest.filter((r) => r.path === '/ingest/lead').map((r) => r.body).at(-1);
+    const caseText = 'Mi caso: tengo una empresa de transporte y quiero recibir pedidos o reservas en línea.';
+    assert.ok(direct.message.length <= 600 && direct.message.endsWith(caseText) && direct.message.startsWith('Q'.repeat(200)), `The direct form keeps what the visitor wrote and the whole case sentence (${direct.message.length} characters)`);
+    assert.ok(/Calculé unas \d+ h al mes en esto \(≈ US\$[\d.]+ al año\)\./.test(direct.message), 'The calculated amount arrives whole');
     verifyErrors();
   } finally { await page.close(); }
 
@@ -1610,6 +1729,99 @@ async function checkSecondRound(browser, origin) {
     assert.ok(strip.name === 'CAVIQ' && strip.index >= 3, `The CRM detail leads to its related project, far along the strip (${strip.name}, index ${strip.index})`);
     assert.ok(strip.inside && strip.focused, `The related project is focused and visible in the horizontal strip (index ${strip.index})`);
     assert.ok(strip.explorer >= 0 && strip.explorer < 200 && strip.sideways === 0, 'The page lands on the projects without moving sideways');
+    // Un toque en la tarjeta a medio ver de la tira la elige sin correr la tira bajo el dedo.
+    await page.$eval('.works-list', (list) => { list.scrollLeft = 0; });
+    await delay(300);
+    const tap = await page.$eval('.works-list', (list) => {
+      const outer = list.getBoundingClientRect();
+      const index = [...list.children].findIndex((node) => { const r = node.getBoundingClientRect(); return r.left < outer.right - 20 && r.right > outer.right + 4; });
+      const r = list.children[index].getBoundingClientRect();
+      return { index, x: (r.left + outer.right) / 2, y: r.top + r.height / 2, scroll: list.scrollLeft };
+    });
+    assert.ok(tap.index > 0, 'One project card is half visible at the edge of the strip');
+    await page.mouse.click(tap.x, tap.y);
+    await delay(400);
+    const tapped = await page.$eval('.works-list', (list, index) => ({ scroll: list.scrollLeft, pressed: list.children[index].getAttribute('aria-pressed') }), tap.index);
+    assert.ok(tapped.pressed === 'true' && Math.abs(tapped.scroll - tap.scroll) <= 2, `Tapping a half-visible project picks it and leaves the strip under the finger (${tap.scroll} → ${tapped.scroll})`);
+    verifyErrors();
+  } finally { await page.close(); }
+
+  // ── Cerrar el detalle no mueve la página aunque se haya llegado por un ancla (menú «Precios» → #paquetes, o
+  //    #paquete-…): el navegador restauraba la posición vieja del ancla y la página saltaba hasta 1.340 px ──
+  for (const [width, arrival] of [[390, '#paquetes'], [390, '#paquete-pagina_web'], [1440, '#paquetes']]) {
+    ({ page, verifyErrors } = await openPage(browser, origin, width));
+    try {
+      if (width > 1000) {
+        await page.evaluateOnNewDocument(() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); });
+        await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }]);
+      }
+      await navigate(page, `${origin}/?wa_line=a`);
+      await page.evaluate((hash) => { window.location.hash = hash; }, arrival);
+      await delay(1500);
+      if (width < 768) await page.$eval('#paquete-power_bi .package-card__toggle', (node) => { node.scrollIntoView({ block: 'center', behavior: 'instant' }); node.click(); });
+      else await page.$eval('#paquete-power_bi', (node) => node.scrollIntoView({ block: 'center', behavior: 'instant' }));
+      await delay(900);
+      const opened = await page.evaluate(() => window.scrollY);
+      await page.$eval('#paquete-power_bi .package-card__sheet', (node) => node.click());
+      await page.waitForSelector('dialog.package-sheet[open]');
+      await page.$eval('.package-sheet__close', (node) => node.click());
+      await page.waitForFunction((hash) => !document.querySelector('dialog.package-sheet').open && window.location.hash === hash, {}, arrival);
+      await delay(1200);
+      const closed = await page.evaluate(() => window.scrollY);
+      assert.ok(Math.abs(closed - opened) <= 4, `Closing a detail after arriving by ${arrival} at ${width} px leaves the page where it was (${Math.round(opened)} → ${Math.round(closed)})`);
+      verifyErrors();
+    } finally { await page.close(); }
+  }
+
+  // ── La insignia «El más cercano a tu caso» cabe en su tarjeta y no pisa el precio (320 y 768 px) ──
+  for (const [width, goal, key] of [[320, 'ia', 'asistente_ia_documental'], [768, 'automatizar', 'power_automate']]) {
+    ({ page, verifyErrors } = await openPage(browser, origin, width));
+    try {
+      await page.evaluateOnNewDocument((chosen) => window.sessionStorage.setItem('jc_case', JSON.stringify({ business: 'taller', goal: chosen })), goal);
+      await navigate(page, `${origin}/?wa_line=a`);
+      await page.waitForSelector(`#paquete-${key} .package-card__badge`);
+      const fit = await page.$eval(`#paquete-${key}`, (card) => {
+        const [badge, box, price] = [card.querySelector('.package-card__badge'), card, card.querySelector('.package-card__price')].map((node) => node.getBoundingClientRect());
+        const overlap = !(badge.right <= price.left || price.right <= badge.left || badge.bottom <= price.top || price.bottom <= badge.top);
+        return { inside: badge.left >= box.left - 0.5 && badge.right <= box.right + 0.5, overlap, text: card.querySelector('.package-card__badge').textContent };
+      });
+      assert.ok(fit.text.includes('El más cercano a tu caso') && fit.inside && !fit.overlap, `At ${width} px the case badge fits its card without covering the price (${JSON.stringify(fit)})`);
+      verifyErrors();
+    } finally { await page.close(); }
+  }
+
+  // ── Con el giro «una empresa de transporte», el detalle de los dashboards conserva su nota («No es Power BI») ──
+  ({ page, verifyErrors } = await openPage(browser, origin, 390));
+  try {
+    await page.evaluateOnNewDocument(() => window.sessionStorage.setItem('jc_case', JSON.stringify({ business: 'transporte', goal: 'numeros' })));
+    await navigate(page, `${origin}/?wa_line=a#hoja-power_bi`);
+    await page.waitForSelector('dialog.package-sheet[open]');
+    const note = compact(await page.$eval('.package-sheet__links a[href="#proyecto"]', (node) => node.textContent));
+    assert.ok(note.includes('Transporte Luz de Luna') && note.includes('No es Power BI') && note.includes('datos de demostración'), `The dashboard detail keeps its own note when the visitor's project is the package's own (${note})`);
+    verifyErrors();
+  } finally { await page.close(); }
+
+  // ── Celular: «Pedirlo por WhatsApp» del detalle, tocado sin recibir el foco (Safari); al cerrar la hoja de retorno
+  //    el foco vuelve a la tarjeta del paquete (el botón tocado se desmontó con el detalle) ──
+  ({ page, verifyErrors } = await openPage(browser, origin, 390));
+  try {
+    await holdWhatsApp(page);
+    await navigate(page, `${origin}/?wa_line=a#hoja-pagina_web`);
+    await page.waitForSelector('dialog.package-sheet[open]');
+    await page.$eval('.package-sheet__buy', (node) => node.click());
+    await page.waitForFunction(() => !document.querySelector('dialog.package-sheet').open);
+    const visibility = (state) => page.evaluate((value) => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => value });
+      document.dispatchEvent(new Event('visibilitychange'));
+    }, state);
+    await visibility('hidden');
+    await delay(3200);
+    await visibility('visible');
+    await page.waitForSelector('.wa-return');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('.wa-return'));
+    await delay(150);
+    assert.ok(await page.evaluate(() => Boolean(document.activeElement?.closest('#paquete-pagina_web'))), `Closing the return sheet gives the focus to the package card when the tapped button is gone (${await page.evaluate(() => document.activeElement?.className || document.activeElement?.tagName)})`);
     verifyErrors();
   } finally { await page.close(); }
 

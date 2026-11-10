@@ -64,3 +64,17 @@ este documento ya no aplican. El hero muestra pantallas reales de proyectos dent
 - La hoja «¿Pudiste enviar tu mensaje?» pasa a una columna por debajo de 360 px, recibe el foco al aparecer y
   se cierra con Escape.
 - Los flotantes también se retiran ante los enlaces secundarios que abren WhatsApp.
+
+### Revisión de código y verificación (10 de noviembre de 2026)
+
+- Tocar la fila de un agregado en el detalle ya no hace saltar la lista: el margen que reserva el lugar de la
+  barra pegada vale solo con teclado, y las casillas del detalle no llevan el margen de 100 px de los campos.
+- Cerrar el detalle deja la página donde estaba, también si se llegó por el menú «Precios» o por un enlace a un
+  paquete (el navegador restauraba la posición del ancla: hasta 1.340 px de salto).
+- La tira de proyectos se corre sola hasta el proyecto que llega de afuera (detalle de un paquete, «Tu caso en
+  una frase», hero, anuncio). Un toque en la propia tira no la mueve.
+- La insignia «El más cercano a tu caso» se parte en dos líneas si no cabe al lado del precio (320 px).
+- El toque a WhatsApp hecho antes de que cargue la página también recibe la hoja «¿Pudiste enviar tu mensaje?»,
+  aunque la pestaña haya quedado congelada mientras la persona estaba en WhatsApp.
+- Al cerrar esa hoja el foco vuelve al botón tocado, o a la tarjeta del paquete si el botón era del detalle (que ya
+  se cerró); Safari no enfoca un enlace al tocarlo y antes el foco caía al principio de la página.

@@ -303,7 +303,7 @@ function Sheet({ item, initial, close, onSwitch }) {
             {related && (
               <a href="#proyecto" onClick={goToProject} data-track-label={`Hoja · Proyecto ${related.id}`}>
                 {visit.project ? t(`Ver un proyecto real de tu giro: ${related.name}`, `See a real project in your line of business: ${related.name}`) : t(`Ver un proyecto real relacionado: ${related.name}`, `See a related real project: ${related.name}`)} <ArrowDown size={14} aria-hidden="true" />
-                <small>{(!visit.project && item.relatedNote) || (visit.project && visit.chosenBusiness?.note) || t('Es un sistema más amplio que este paquete.', 'It is a broader system than this package.')}</small>
+                <small>{(related.id === item.related && item.relatedNote) || (visit.project && visit.chosenBusiness?.note) || t('Es un sistema más amplio que este paquete.', 'It is a broader system than this package.')}</small>
               </a>
             )}
           </div>

@@ -87,7 +87,9 @@ https://www.jcanalytic.com/servicios/desarrollo-web-costa-rica/?utm_source=meta&
 
 La fuente y la campaña se guardan 30 días en el navegador de la persona (`jc_attr`), sin datos personales.
 Por eso el WhatsApp termina con «(Vi el anuncio en Google · web-nov)» aunque la persona vuelva otro día sin
-pasar por el anuncio, y la consulta del portal trae fuente, campaña y dispositivo.
+pasar por el anuncio, y la consulta del portal trae fuente, campaña y dispositivo. Si vuelve por **otro**
+anuncio, esa llegada es otra visita también para el portal: sesión nueva y la fuente y campaña del anuncio
+nuevo (ver [anuncios](anuncios.md), «una conversión por visita»).
 
 ## 4. Identificadores y eventos de cada píxel
 
