@@ -156,6 +156,8 @@ export default function LeadDialog() {
 
   const close = () => dialogRef.current?.close();
   const onClose = () => {
+    // Aviso de un cierre anterior que llega cuando el formulario ya se volvió a abrir: no es de esta apertura.
+    if (dialogRef.current?.open) return;
     dialogState(false);
     // El detalle del paquete (site/PackageSheet.jsx) queda abierto debajo: se cierra con este formulario solo
     // si el pedido ya salió y la persona no pidió volver a verlo.
@@ -202,6 +204,9 @@ export default function LeadDialog() {
   // ya armó «Tu caso en una frase», el mensaje trae esa frase y no hace falta preguntarlo otra vez.
   const asksBusiness = isPackage && message.split('\n').some((line) => line.trim() === BUSINESS_PROMPT);
   const home = homePath(locale);
+  // En la portada el enlace conserva la query (?p=, utm_, gclid): así es un salto de ancla y no una recarga
+  // (con tráfico de anuncios se recargaba la página y se repetían los eventos de visita).
+  const homeHref = (hash) => `${home}${window.location.pathname === home ? window.location.search : ''}${hash}`;
   // Volver al detalle del pedido: en la portada, si ya está abierto debajo, alcanza con cerrar este formulario.
   const viewSheet = (event) => {
     keepSheet.current = true;
@@ -222,7 +227,7 @@ export default function LeadDialog() {
               <h2 id="lead-dialog-title" ref={titleRef} tabIndex={-1}>{t('¡Listo! Te escribimos en menos de 24 h.', 'Done! We’ll reach out within 24 hours.')}</h2>
               {isPackage ? (
                 <p className="lead-dialog__intro">
-                  {t('Pediste:', 'You requested:')} <strong>{context.packageLabel}</strong>{context.packageValue > 0 && <> · {money(context.packageValue)} {t('+ IVA (total preliminar)', '+ tax (preliminary total)')}</>}{context.picked ? t(`, con ${context.picked}`, `, with ${context.picked}`) : ''}. {t('Ya está con el equipo. Esto es lo que sigue:', 'It is with the team. Here is what comes next:')}
+                  {t('Pediste:', 'You requested:')} <strong>{context.packageLabel}</strong>{context.packageValue > 0 && <> · {money(context.packageValue)} {t('+ IVA (total preliminar)', '+ tax (preliminary total)')}</>}{context.picked ? t(`. Incluye: ${context.picked}`, `. Includes: ${context.picked}`) : ''}. {t('Ya está con el equipo. Esto es lo que sigue:', 'It is with the team. Here is what comes next:')}
                 </p>
               ) : (
                 <p className="lead-dialog__intro">{t('Tu consulta ya está con el equipo. Esto es lo que sigue:', 'Your inquiry is with the team. Here is what comes next:')}</p>
@@ -232,10 +237,10 @@ export default function LeadDialog() {
               {context.pack?.ready && <p className="lead-dialog__ready">{t('Para ganar tiempo, andá juntando:', 'To save time, start gathering:')} {lowerFirst(context.pack.ready)}</p>}
               <div className="lead-dialog__actions">
                 {context.pack
-                  ? <a className="lead-dialog__submit" href={`${home}${context.sheet}`} onClick={viewSheet} data-track-label="Formulario rápido · Ver mi pedido">{t('Ver o guardar el detalle de mi pedido', 'View or save my request details')}<ArrowRight size={17} aria-hidden="true" /></a>
+                  ? <a className="lead-dialog__submit" href={homeHref(context.sheet)} onClick={viewSheet} data-track-label="Formulario rápido · Ver mi pedido">{t('Ver o guardar el detalle de mi pedido', 'View or save my request details')}<ArrowRight size={17} aria-hidden="true" /></a>
                   : isPackage
                     ? <button type="button" className="lead-dialog__submit" onClick={close}>{t('Seguir navegando', 'Keep browsing')}</button>
-                    : <a className="lead-dialog__submit" href={`${home}#trabajo`} onClick={close} data-track-label="Formulario rápido · Ver proyectos">{t('Mientras tanto, ver proyectos reales', 'Meanwhile, see real projects')}<ArrowRight size={17} aria-hidden="true" /></a>}
+                    : <a className="lead-dialog__submit" href={homeHref('#trabajo')} onClick={close} data-track-label="Formulario rápido · Ver proyectos">{t('Mientras tanto, ver proyectos reales', 'Meanwhile, see real projects')}<ArrowRight size={17} aria-hidden="true" /></a>}
                 {whatsappLink(t('¿Es urgente? Abrir WhatsApp Web', 'Is it urgent? Open WhatsApp Web'))}
               </div>
             </>

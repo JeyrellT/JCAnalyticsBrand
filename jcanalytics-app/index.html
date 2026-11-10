@@ -33,7 +33,7 @@
           if (window.__jcMounted || window.__jcFailed || performance.now() > 12000) return;
           var link = event.target && event.target.closest && event.target.closest('a[href^="https://wa.me/"]');
           if (!link) return;
-          window.__jcEarly = { label: link.getAttribute('data-track-label') || '', at: Date.now() };
+          window.__jcEarly = { label: link.getAttribute('data-track-label') || '', text: (link.getAttribute('href') || '').split('text=')[1] || '', cls: link.className || '', at: Date.now() };
           if (fine && !link.hasAttribute('data-wa-direct') && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) event.preventDefault();
         }, true);
       })();

@@ -27,7 +27,7 @@ import { locale, t } from '../../i18n/locale';
 import { SERVICE_PRICING } from '../../../../portal/shared/service-pricing.js';
 import { EXTRA_LABELS_EN, SERVICE_OFFERS, WORK_PROMISES } from '../../content/service-offers';
 import { PROJECTS, PROJECT_KINDS, screenImage, shotSrcSet } from '../../data/projects';
-import { PACKAGES, adPackage, colones, money, packageMessage, thousands as integer } from '../../data/packages';
+import { PACKAGES, adPackage, caseLine, colones, money, packageMessage, thousands as integer } from '../../data/packages';
 import { homePath } from '../../seo/routes';
 import { PORTAL_URL, wa } from './links';
 import { NEXT_STEPS } from './messages';
@@ -40,6 +40,7 @@ import { trackLeadCaptured } from '../../seo/analytics';
 import { useDesktop } from '../../hooks/useDesktop';
 import '../../styles/service-offer.css';
 
+const MESSAGE_MAX = 600; // límite del portal (LEAD_LIMITS.message)
 const numberLocale = locale === 'es' ? 'es-CR' : 'en-US';
 const oneDecimal = (value) => value.toLocaleString(numberLocale, { maximumFractionDigits: value < 10 ? 1 : 0 });
 const timeLabel = (p) => (p.days_min
@@ -110,13 +111,22 @@ export function ServiceSalesProvider({ item, children }) {
   // página y, si la persona armó «Tu caso en una frase», con esa frase.
   const visit = useCase();
   const pack = PACKAGES.find((pkg) => pkg.key === mainKey);
-  const whatsapp = (extraLines = []) => wa(packageMessage(pack, { lines: [...summary, ...extraLines], sentence: visit.sentence }));
+  const whatsapp = (extraLines = []) => {
+    const build = (lines) => packageMessage(pack, { lines: [...lines, ...extraLines], sentence: visit.packSentence });
+    const full = build(summary);
+    // El portal corta el mensaje en 600 caracteres. Con las cinco señales marcadas, la calculadora y la frase
+    // del caso se pasaba y el formulario corto cortaba el cierre a la mitad: ahí las señales van contadas.
+    if (full.length <= MESSAGE_MAX || !picked.length) return wa(full);
+    const counted = t(`Me pasan ${picked.length} de las ${copy.signals.length} situaciones de esta página.`, `${picked.length} of the ${copy.signals.length} situations on this page happen to me.`);
+    return wa(build([counted, ...summary.slice(1)]));
+  };
 
   const value = {
     // `need`: la necesidad con la que el pedido llega al portal es la del paquete, la misma que usa su
     // tarjeta de la portada (antes «Web con reservas» llegaba como «Página web» desde la portada y como
-    // «Sistema / backend» desde esta página).
-    item, offer, copy, main, mainKey, need: pack.need, others, choosePackage, picked, values, calc, touched, summary, whatsapp,
+    // «Sistema / backend» desde esta página). `sentence`: la frase de «Tu caso en una frase», para los
+    // envíos que van directo al portal.
+    item, offer, copy, main, mainKey, need: pack.need, sentence: visit.sentence, others, choosePackage, picked, values, calc, touched, summary, whatsapp,
     toggleSignal: (index) => setPicked((list) => (list.includes(index) ? list.filter((i) => i !== index) : [...list, index].sort())),
     setValue: (id, raw) => { setTouched(true); setValues((current) => ({ ...current, [id]: raw })); },
   };
@@ -347,7 +357,7 @@ export function ServiceFaq() {
 
 // ── Formulario corto ────────────────────────────────────────────────────────
 export function ServiceLeadForm() {
-  const { main, mainKey, need, summary, whatsapp } = useSales();
+  const { main, mainKey, need, sentence, summary, whatsapp } = useSales();
   // Computadora: «Enviar consulta» es el botón principal y WhatsApp Web queda como alternativa.
   const desktop = useDesktop();
   const [name, setName] = useState('');
@@ -370,7 +380,8 @@ export function ServiceLeadForm() {
   const contact = { phone: phoneOk(phone) ? phone.trim() : '', email: emailOk(mail) ? mail.trim() : '' };
   const lead = (channel) => sendLead({
     channel, name: name.trim(), ...contact, need, packageName: main.label, website, startedAt: startedAt.current,
-    message: [message.trim(), ...summary].filter(Boolean).join('\n'), form: 'contacto-servicio', section: 'contacto-servicio',
+    // Lo escrito, lo marcado, lo calculado y, si la armó en la portada, la frase de su caso (igual que en WhatsApp).
+    message: [message.trim(), ...summary, sentence ? caseLine(sentence) : ''].filter(Boolean).join('\n').slice(0, MESSAGE_MAX), form: 'contacto-servicio', section: 'contacto-servicio',
   });
   const requestCallback = async () => {
     if (status === 'sending') return;

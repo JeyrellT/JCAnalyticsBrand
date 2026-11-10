@@ -145,6 +145,8 @@
 .so-wa--quiet:hover { background: #25d3661a; transform: none; }
 .so-form__status { grid-column: 1 / -1; min-height: 1.4em; font-size: 13px; line-height: 1.6; color: #31562f; }
 .so-form__status[data-tone="bad"] { color: #8a3a1f; font-weight: 600; }
+.so-field :is(input, textarea)::placeholder { color: #5c736e; opacity: 1; }
+.so-sent h3:focus-visible { box-shadow: none; }
 .so-form input[aria-invalid="true"] { border-color: #b4542f; border-width: 2px; }
 /* Confirmación después de enviar: la misma de la portada (título, tres pasos y salida urgente). */
 .so-sent { scroll-margin-top: 96px; display: grid; gap: 14px; padding: 24px; border-radius: 14px; background: #fff; }

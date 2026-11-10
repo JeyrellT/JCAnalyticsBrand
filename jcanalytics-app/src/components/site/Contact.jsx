@@ -26,6 +26,8 @@ import { Label, MaskLines, Reveal } from './primitives';
 import { wa, EMAIL, PHONE_DISPLAY } from './links';
 import { MESSAGES, NEXT_STEPS } from './messages';
 import { scrollToNode } from './scroll';
+import { useCase } from './case';
+import { caseLine } from '../../data/packages';
 import { emailOk, phoneOk } from './contact-rules';
 import { TEAM } from '../../data/team';
 import { sendLead } from '../../seo/site-tracker';
@@ -60,6 +62,7 @@ const AFTER_SENDING = [
 
 const Contact = () => {
   const desktop = useDesktop();
+  const visit = useCase();
   const [need, setNeed] = useState(null);
   const [name, setName] = useState('');
   const [objective, setObjective] = useState('');
@@ -112,20 +115,24 @@ const Contact = () => {
   const opening = person
     ? t(`Hola JC Analytics, soy ${person}. ${interest.charAt(0).toUpperCase()}${interest.slice(1)}`, `Hi JC Analytics, I’m ${person}. ${interest}`)
     : t(`Hola JC Analytics, ${interest}`, `Hi JC Analytics, ${interest}`);
+  // Si la persona armó «Tu caso en una frase» (case.js), esa frase viaja también desde este formulario: por
+  // WhatsApp y al portal. Sin nada marcado acá, la necesidad es la de la meta que eligió.
+  const ownCase = visit.sentence ? caseLine(visit.sentence) : '';
   const message = goal
-    ? [opening, t(`Quiero resolver: ${goal}`, `I’d like to solve: ${goal}`), source ? t(`Llegué desde: ${source}.`, `I came from: ${source}.`) : ''].filter(Boolean).join('\n\n')
-    : `${opening} ${t('Les cuento qué necesito:', 'Here is what I need:')}`;
+    ? [opening, t(`Quiero resolver: ${goal}`, `I’d like to solve: ${goal}`), ownCase, source ? t(`Llegué desde: ${source}.`, `I came from: ${source}.`) : ''].filter(Boolean).join('\n\n')
+    : ownCase ? `${opening} ${ownCase}` : `${opening} ${t('Les cuento qué necesito:', 'Here is what I need:')}`;
   const href = wa(message);
   const contact = { phone: phoneOk(phone) ? phone.trim() : '', email: emailOk(mail) ? mail.trim() : '' };
-  // Lo que recibe el portal: el texto de la persona y, al final, desde qué botón llegó.
+  const portalNeed = need || visit.chosenGoal?.need || 'Otro';
+  // Lo que recibe el portal: el texto de la persona y, al final, su caso y desde qué botón llegó.
   const portalMessage = () => {
-    const origin = source ? `\n(${t('Desde', 'From')}: ${source})` : '';
-    return `${objective.trim().slice(0, MESSAGE_MAX - origin.length)}${origin}`.trim();
+    const tail = [ownCase, source ? `(${t('Desde', 'From')}: ${source})` : ''].filter(Boolean).join('\n');
+    return [objective.trim().slice(0, Math.max(0, MESSAGE_MAX - tail.length - 1)), tail].filter(Boolean).join('\n').trim();
   };
   // Deja la consulta en el portal y, si llega, la cuenta como consulta captada en las plataformas de anuncios.
   const captureLead = async (channel) => {
     const ok = await sendLead({
-      channel, name: person, ...contact, need: need || 'Otro', message: portalMessage(), website, startedAt: startedAt.current,
+      channel, name: person, ...contact, need: portalNeed, message: portalMessage(), website, startedAt: startedAt.current,
     }).catch(() => false);
     if (ok) trackLeadCaptured({ form: 'contacto', section: 'contacto' });
     return ok;
@@ -148,7 +155,7 @@ const Contact = () => {
     trackContactIntent({ channel: 'whatsapp', section: 'contacto' });
     window.open(href, '_blank', 'noopener,noreferrer');
     // Si vuelve sin haber enviado el mensaje, ui/WhatsAppReturn.jsx le ofrece dejar su número.
-    window.dispatchEvent(new CustomEvent('jca:whatsapp-opened', { detail: { href, message: portalMessage(), need: need || 'Otro', section: 'contacto' } }));
+    window.dispatchEvent(new CustomEvent('jca:whatsapp-opened', { detail: { href, message: portalMessage(), need: portalNeed, section: 'contacto' } }));
   };
   const edit = (setter) => (event) => { setter(event.target.value); if (problem) setProblem(null); if (status === 'error') setStatus('idle'); };
 

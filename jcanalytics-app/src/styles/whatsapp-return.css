@@ -14,7 +14,8 @@
 .wa-return__foot { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 6px; }
 .wa-return__secondary { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; font: 600 13.5px var(--font-sans); color: #c3f5db; text-decoration: underline; text-underline-offset: 4px; background: transparent; cursor: pointer; }
 .wa-return :is(button, a, input):focus-visible { outline: 2px solid #c3f5db; outline-offset: 2px; }
-.wa-return .wa-return__title:focus, .studio-v4 .wa-return .wa-return__title:focus-visible { outline: 0; }
+.wa-return .wa-return__title:focus { outline: 0; box-shadow: none; }
+.wa-return__row input::placeholder { color: #536863; opacity: 1; }
 /* A 320 px el campo quedaba de 89 px de ancho: el número no se veía entero al escribirlo. */
 @media (max-width: 359px) { .wa-return__row { grid-template-columns: 1fr; } }
 body.wa-return-open :is(.mobile-wa, .assistant-launcher) { visibility: hidden; opacity: 0; pointer-events: none; }

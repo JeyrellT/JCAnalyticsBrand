@@ -70,6 +70,9 @@
   .packages-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 767px) {
+  /* Los diez ya están listados: sin casilla ni etiqueta «Ver los que faltan», también sin JavaScript (el HTML
+     estático se genera en ancho de computadora y las traía visibles). */
+  .packages-all, .packages-more { display: none; }
   /* Lista de precios de un vistazo: nombre, para qué y precio; el detalle se despliega. */
   .packages-heading h2 { font-size: clamp(38px, 11vw, 56px); }
   .packages-grid { gap: 8px; }

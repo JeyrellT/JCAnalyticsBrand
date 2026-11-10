@@ -40,7 +40,7 @@ import { locale, t } from '../../i18n/locale';
 import { PACKAGES, colones, money, packageMessage, packageTotal, selectionLabel, sheetHash } from '../../data/packages';
 import { WORK_PROMISES } from '../../content/service-offers';
 import { PROJECTS } from '../../data/projects';
-import { CATEGORY_LINKS, wa } from './links';
+import { CATEGORY_LINKS, wa, waMessage } from './links';
 import { NEXT_STEPS } from './messages';
 import { useCase } from './case';
 import { afterLayout, scrollToNode } from './scroll';
@@ -82,8 +82,14 @@ export default function PackageSheet({ sheet, onClose, onSwitch }) {
     return lockScroll();
   }, [open]);
   const item = sheet?.item ?? null;
-  // El foco va al título cada vez que se muestra un paquete (también al pasar al paquete mayor).
-  useEffect(() => { if (item) dialogRef.current?.querySelector('h2')?.focus({ preventScroll: true }); }, [item]);
+  // El foco va al título cada vez que se muestra un paquete. Al pasar al paquete mayor el <dialog> es el mismo
+  // nodo y conservaba su desplazamiento: se vuelve arriba para que ese título (y el foco) queden a la vista.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!item || !dialog) return;
+    dialog.scrollTop = 0;
+    dialog.querySelector('h2')?.focus({ preventScroll: true });
+  }, [item]);
   // Pedido enviado desde el formulario corto y confirmación cerrada: el detalle ya cumplió.
   useEffect(() => {
     const leadClosed = (event) => { if (event.detail?.sent && !event.detail.keepSheet) dialogRef.current?.close(); };
@@ -91,7 +97,9 @@ export default function PackageSheet({ sheet, onClose, onSwitch }) {
     return () => window.removeEventListener('jca:lead-dialog-closed', leadClosed);
   }, []);
   const close = () => dialogRef.current?.close();
-  const closed = () => { sheetState(false); onClose(); };
+  // El aviso de cierre llega un instante después de cerrar: si para entonces el detalle ya se volvió a abrir
+  // (otro paquete, o el mismo), ese aviso es viejo y no debe cerrar el nuevo ni tocar el historial.
+  const closed = () => { if (dialogRef.current?.open) return; sheetState(false); onClose(); };
   return (
     <dialog ref={dialogRef} className="package-sheet" aria-labelledby="package-sheet-title" data-lenis-prevent onClose={closed}
       onClick={(event) => { if (event.target === event.currentTarget) close(); }}>
@@ -112,7 +120,7 @@ function Sheet({ item, initial, close, onSwitch }) {
 
   const extras = item.extras.filter((extra) => picked.includes(extra.key));
   const total = packageTotal(item, { withAi, extras });
-  const message = packageMessage(item, { withAi, extras, sentence: visit.sentence });
+  const message = packageMessage(item, { withAi, extras, sentence: visit.packSentence });
   const marks = selectionLabel(item, { withAi, picked });
   const question = t(
     `Hola JC Analytics, estoy viendo el paquete ${item.name} (${item.priceLabel}) y tengo una duda antes de decidir:`,
@@ -140,8 +148,7 @@ function Sheet({ item, initial, close, onSwitch }) {
   const print = (event) => {
     document.querySelector('.package-sheet--print')?.remove();
     const copy = document.createElement('div');
-    copy.className = 'package-sheet package-sheet--print';
-    copy.setAttribute('aria-hidden', 'true');
+    copy.className = 'package-sheet package-sheet--print'; // en pantalla, display: none (no la ve nadie ni la lee un lector)
     copy.append(event.currentTarget.closest('.package-sheet__frame').cloneNode(true));
     copy.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));
     document.body.append(copy);
@@ -169,7 +176,13 @@ function Sheet({ item, initial, close, onSwitch }) {
     window.history.replaceState(null, '', `${here()}#proyecto`);
     close();
     showProject(related.id, relatedScreen);
-    afterLayout(() => scrollToNode(document.getElementById('proyecto')));
+    afterLayout(() => {
+      const target = document.getElementById('proyecto');
+      scrollToNode(target);
+      // El foco acompaña al salto: si no, al cerrarse el detalle vuelve a la tarjeta que lo abrió y el siguiente
+      // Tab se lleva la página de vuelta a Paquetes.
+      target?.querySelector('.works-list button[aria-pressed="true"]')?.focus({ preventScroll: true });
+    });
   };
 
   const included = (
@@ -238,7 +251,7 @@ function Sheet({ item, initial, close, onSwitch }) {
       {!desktop && (
         <details className="package-sheet__preview">
           <summary data-track-label="Hoja · Ver el mensaje"><ChevronDown size={16} aria-hidden="true" />{t('Ver el mensaje que se abre en WhatsApp', 'See the message that opens in WhatsApp')}</summary>
-          <p className="package-sheet__bubble">{message}</p>
+          <p className="package-sheet__bubble">{waMessage(message)}</p>
           <p className="package-sheet__preview-note">{t('Lo podés cambiar antes de enviarlo.', 'You can edit it before sending.')}</p>
         </details>
       )}

@@ -4,7 +4,7 @@ import { Menu, X, ArrowUpRight, ArrowRight, Layers3, ChartNoAxesCombined, BrainC
 import { wa, EASE, PHONE, PHONE_DISPLAY, EMAIL, NAV_LINKS, PORTAL_URL } from './links';
 import { MESSAGES } from './messages';
 import { useCase } from './case';
-import { adPackage } from '../../data/packages';
+import { adPackage, packageMessage } from '../../data/packages';
 import { useDesktop } from '../../hooks/useDesktop';
 import { STATIC_BOOT } from '../../boot';
 import '../../styles/navigation.css';
@@ -199,7 +199,7 @@ const Nav = () => {
   const quoteNeed = ownCase.chosenGoal?.need ?? 'Otro';
   // Quien llegó por el anuncio de un paquete conserva ese pedido en el flotante; el resto, según la sección.
   const floating = adPackage
-    ? { href: wa(adPackage.message), 'data-need': adPackage.need, 'data-package': adPackage.key, 'data-value': adPackage.price, 'data-package-label': adPackage.name }
+    ? { href: wa(ownCase.packSentence ? packageMessage(adPackage, { sentence: ownCase.packSentence }) : adPackage.message), 'data-need': adPackage.need, 'data-package': adPackage.key, 'data-value': adPackage.price, 'data-package-label': adPackage.name }
     : { href: wa(FLOATING_MESSAGES[active] ?? quote), 'data-need': FLOATING_MESSAGES[active] ? 'Otro' : quoteNeed };
 
   return (

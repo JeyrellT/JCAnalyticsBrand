@@ -12,7 +12,7 @@
 //  no, deja su número y la consulta llega al portal como «Pidió que lo
 //  contacten», con el mismo mensaje y el mismo paquete que iba a enviar.
 //
-//  · No es un modal: no bloquea la página ni roba el foco, y se cierra con un toque.
+//  · No es un modal: no bloquea la página y se cierra con un toque o con Escape.
 //  · No aparece en computadora (ahí los botones abren el formulario corto), ni si
 //    la persona ya dejó una consulta en esta visita, ni más de una vez.
 //  · La consulta no vuelve a contar como conversión de anuncios: el toque a
@@ -30,6 +30,7 @@ import { phoneOk } from '../site/contact-rules';
 import { sendLead, trackEvent } from '../../seo/site-tracker';
 import { trackLeadCaptured } from '../../seo/analytics';
 import { resolveRoute } from '../../seo/routes';
+import { PACKAGES } from '../../data/packages';
 import '../../styles/whatsapp-return.css';
 
 const FORM = 'whatsapp-retorno';
@@ -49,6 +50,8 @@ function pendingFrom(link) {
     message: (url.searchParams.get('text') ?? '').trim().slice(0, MESSAGE_MAX),
     packageId: link.dataset.package || '',
     packageLabel: link.dataset.packageLabel || link.dataset.package || '',
+    // Lo que lee el equipo en el portal: siempre el nombre del tarifario en español (igual que ui/LeadDialog.jsx).
+    packageName: PACKAGES.find((item) => item.key === link.dataset.package)?.portalName || link.dataset.packageLabel || link.dataset.package || '',
     packageValue: Number(link.dataset.value) || 0,
     need: link.dataset.need || resolveRoute(window.location.pathname)?.data?.need || 'Otro',
     section: link.closest('[data-track-section]')?.dataset.trackSection ?? link.closest('section[id]')?.id ?? 'navigation',
@@ -59,6 +62,7 @@ export default function WhatsAppReturn() {
   const pending = useRef(null); // { ...contexto, leftAt }
   const startedAt = useRef(0);
   const titleRef = useRef(null);
+  const opener = useRef(null); // dónde estaba el foco cuando apareció la hoja (se le devuelve al cerrarla)
   const [context, setContext] = useState(null);
   const [phone, setPhone] = useState('');
   const [status, setStatus] = useState('idle'); // idle · invalid · sending · sent · error
@@ -73,7 +77,7 @@ export default function WhatsAppReturn() {
     // El formulario de contacto abre WhatsApp con window.open y avisa con este evento.
     const onOpened = (event) => {
       if (isDesktopPointer()) return;
-      pending.current = { href: event.detail?.href ?? '', message: String(event.detail?.message ?? '').slice(0, MESSAGE_MAX), packageId: '', packageLabel: '', packageValue: 0, need: event.detail?.need || 'Otro', section: event.detail?.section ?? 'contacto', leftAt: 0 };
+      pending.current = { href: event.detail?.href ?? '', message: String(event.detail?.message ?? '').slice(0, MESSAGE_MAX), packageId: '', packageLabel: '', packageName: '', packageValue: 0, need: event.detail?.need || 'Otro', section: event.detail?.section ?? 'contacto', leftAt: 0 };
     };
     const onVisibility = () => {
       const waiting = pending.current;
@@ -102,9 +106,18 @@ export default function WhatsAppReturn() {
   useEffect(() => {
     document.body.classList.toggle('wa-return-open', Boolean(context));
     if (!context) return undefined;
+    opener.current = document.activeElement;
     const onKey = (event) => { if (event.key === 'Escape') setContext(null); };
     document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('keydown', onKey); document.body.classList.remove('wa-return-open'); };
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.classList.remove('wa-return-open');
+      // La hoja se cierra desmontándose: si el foco se perdió con ella, vuelve al botón desde donde la persona
+      // salió a WhatsApp. A quien ya siguió navegando no se le quita.
+      const back = opener.current;
+      opener.current = null;
+      window.requestAnimationFrame(() => { if (back?.isConnected && (!document.activeElement || document.activeElement === document.body)) back.focus({ preventScroll: true }); });
+    };
   }, [context]);
   // Al aparecer y al confirmar el envío, el foco va al título: se anuncia y no se pierde en el documento.
   const sent = status === 'sent';
@@ -119,7 +132,7 @@ export default function WhatsAppReturn() {
     setStatus('sending');
     const ok = await sendLead({
       channel: 'devolucion', phone: phone.trim(), need: context.need, message: context.message,
-      packageName: context.packageLabel || undefined, website: '', startedAt: startedAt.current, form: FORM, section: context.section,
+      packageName: context.packageName || undefined, website: '', startedAt: startedAt.current, form: FORM, section: context.section,
     }).catch(() => false);
     if (ok) trackLeadCaptured({ form: FORM, section: context.section, packageId: context.packageId || undefined, packageValue: context.packageValue || undefined, ads: false });
     setStatus(ok ? 'sent' : 'error');

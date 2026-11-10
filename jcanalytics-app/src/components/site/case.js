@@ -46,13 +46,16 @@ export const GOALS = [
   { id: 'clientes', label: t('que más gente conozca mi negocio', 'get more people to know my business'), category: 'digital-marketing', need: 'Marketing digital', pkg: null },
 ];
 
-const EMPTY = Object.freeze({ business: '', goal: '', chosenBusiness: null, chosenGoal: null, category: null, project: null, pack: null, sentence: '' });
+const EMPTY = Object.freeze({ business: '', goal: '', chosenBusiness: null, chosenGoal: null, category: null, project: null, pack: null, sentence: '', packSentence: '' });
 
 /** De las dos elecciones a todo lo que la portada puede decir con ellas. Sin meta no hay frase ni paquete. */
 function resolve({ business = '', goal = '' } = {}) {
   const chosenBusiness = BUSINESSES.find((item) => item.id === business) ?? null;
   const chosenGoal = GOALS.find((item) => item.id === goal) ?? null;
   if (!chosenBusiness && !chosenGoal) return EMPTY;
+  const sentence = chosenGoal
+    ? t(`tengo ${chosenBusiness?.label ?? 'un negocio'} y quiero ${chosenGoal.label}`, `I have ${chosenBusiness?.label ?? 'a business'} and I want to ${chosenGoal.label}`)
+    : '';
   return {
     business: chosenBusiness?.id ?? '',
     goal: chosenGoal?.id ?? '',
@@ -61,9 +64,12 @@ function resolve({ business = '', goal = '' } = {}) {
     category: chosenGoal ? CATEGORY_LINKS.find((item) => item.id === chosenGoal.category) ?? null : null,
     project: chosenBusiness?.project ? PROJECTS.find((item) => item.id === chosenBusiness.project) ?? null : null,
     pack: chosenGoal?.pkg ? PACKAGES.find((item) => item.key === chosenGoal.pkg) ?? null : null,
-    sentence: chosenGoal
-      ? t(`tengo ${chosenBusiness?.label ?? 'un negocio'} y quiero ${chosenGoal.label}`, `I have ${chosenBusiness?.label ?? 'a business'} and I want to ${chosenGoal.label}`)
-      : '',
+    // Para «Cotizar»: vale con solo la meta («tengo un negocio y quiero…»).
+    sentence,
+    // Para los pedidos de paquete: solo cuando dice el giro. Con «otro tipo de negocio» o sin giro elegido el
+    // pedido conserva su línea abierta «Mi negocio:» y el formulario corto, su campo: «tengo un negocio» no le
+    // dice al equipo para qué negocio es, y la meta ya la dice el paquete pedido.
+    packSentence: chosenBusiness?.project ? sentence : '',
   };
 }
 

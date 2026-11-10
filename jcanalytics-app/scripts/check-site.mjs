@@ -1168,6 +1168,7 @@ async function checkSecondRound(browser, origin) {
     const [dialogBox, buyBox] = [await box(page, 'dialog.package-sheet'), await box(page, '.package-sheet__buy')];
     assert.ok(buyBox.top >= dialogBox.top && buyBox.bottom <= dialogBox.bottom + 1, 'The order button is always inside the visible part of the detail');
     assert.ok(compact(await page.$eval('.package-sheet__upgrade', (node) => node.textContent)).includes(SERVICE_PRICING.power_bi.label), 'The starter dashboard points to the bigger package when it applies');
+    assert.notEqual(await page.$eval('dialog.package-sheet', (node) => getComputedStyle(node).scrollPaddingBottom), 'auto', 'The detail reserves room for its pinned bar when a control receives focus');
 
     // PDF de una página (antes: la hoja y 18 páginas en blanco).
     await page.evaluate(() => { window.print = () => {}; });
@@ -1189,6 +1190,27 @@ async function checkSecondRound(browser, origin) {
     await page.goBack();
     await page.waitForFunction(() => !document.querySelector('dialog.package-sheet').open);
     assert.ok(!new URL(page.url()).hash.startsWith('#hoja-'), 'The browser Back button closes the detail instead of leaving the site');
+
+    // Pasar al paquete mayor empieza por su título (el diálogo conservaba el desplazamiento del anterior).
+    await page.$eval('#paquete-dashboard_inicial .package-card__sheet', (node) => node.click());
+    await page.waitForSelector('dialog.package-sheet[open]');
+    await page.$eval('dialog.package-sheet', (node) => { node.scrollTop = 400; });
+    await page.$eval('.package-sheet__upgrade button', (node) => node.click());
+    await page.waitForFunction(() => window.location.hash === '#hoja-power_bi');
+    const switched = await page.$eval('dialog.package-sheet', (node) => ({ top: node.scrollTop, title: node.querySelector('h2').textContent, focused: document.activeElement === node.querySelector('h2') }));
+    assert.deepEqual(switched, { top: 0, title: SERVICE_PRICING.power_bi.label, focused: true }, 'Switching to the bigger package starts at its title, with the focus on it');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('dialog.package-sheet').open);
+
+    // Sin giro conocido («otro tipo de negocio») el pedido conserva «Mi negocio:» y el formulario, su campo.
+    await business.select('otro');
+    await page.waitForFunction(() => new URL(document.querySelector('#paquete-dashboard_inicial .package-card__buy').href).searchParams.get('text').includes('Mi negocio:'));
+    assert.ok(new URL(await page.$eval('.case-matcher__wa', (node) => node.href)).searchParams.get('text').includes('otro tipo de negocio'), 'The quote still carries the sentence when the business is not one of the listed ones');
+    await page.$eval('#paquete-dashboard_inicial .package-card__buy', (node) => node.click());
+    await page.waitForSelector('dialog.lead-dialog[open]');
+    assert.ok(await page.$('#rapido-negocio'), 'Without a known line of business the short form still asks what business it is for');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('dialog.lead-dialog').open);
     verifyErrors();
   } finally { await page.close(); }
 
@@ -1202,7 +1224,18 @@ async function checkSecondRound(browser, origin) {
     await page.waitForSelector('dialog.package-sheet[open]');
     assert.equal(compact(await page.$eval('.package-sheet__bar .package-sheet__total strong', (node) => node.textContent)), `$${web.with_ai_usd + reminder.price_usd}`, 'A shared link opens the detail with the same total (AI replaces the base price, add-ons are added, unknown keys are ignored)');
     assert.ok(await page.$('.package-sheet__shared'), 'The detail says the link came with options selected');
-    await page.keyboard.press('Escape');
+    // Pedido con IA: la confirmación lo dice sin repetir la preposición («…, con Con IA»).
+    await page.$eval('.package-sheet__buy', (node) => node.click());
+    await page.waitForSelector('dialog.lead-dialog[open]');
+    await page.type('#rapido-correo', 'qa@example.com');
+    await delay(1600);
+    await page.click('.lead-dialog__submit');
+    await page.waitForSelector('.lead-dialog__panel[data-status="sent"]');
+    const withAi = compact(await page.$eval('.lead-dialog__intro', (node) => node.textContent));
+    assert.ok(withAi.includes('Includes: With AI') && !/with With/i.test(withAi), `The confirmation lists what was ticked in plain words (${withAi})`);
+    await page.click('.lead-dialog__close');
+    // Pedido enviado y confirmación cerrada: el detalle se cierra con ella.
+    await page.waitForFunction(() => !document.querySelector('dialog.lead-dialog').open && !document.querySelector('dialog.package-sheet').open);
     await page.waitForFunction(() => window.location.hash === '#paquetes');
     await page.$eval('#paquete-dashboard_inicial .package-card__buy', (node) => node.click());
     await page.waitForSelector('dialog.lead-dialog[open] #rapido-negocio');
@@ -1216,9 +1249,25 @@ async function checkSecondRound(browser, origin) {
     assert.ok(lead.message.includes('My business: QA barbershop'), 'The optional business line is filled into the inquiry');
     const sent = compact(await page.$eval('.lead-dialog__panel', (node) => node.innerText));
     assert.ok(sent.includes(`$${pricing.base_usd}`) && await page.$('.lead-dialog__ready'), 'The confirmation repeats the request with its total and says what to gather');
+    await page.evaluate(() => { window.__sameDocument = true; });
     await page.$eval('.lead-dialog__actions a.lead-dialog__submit', (node) => node.click());
     await page.waitForSelector('dialog.package-sheet[open]');
     assert.equal(new URL(page.url()).hash, '#hoja-dashboard_inicial', 'The confirmation opens the detail of what was requested');
+    assert.ok(new URL(page.url()).search.includes('wa_line=a') && await page.evaluate(() => window.__sameDocument === true), 'That link keeps the query string, so it is an anchor jump and not a reload (ad visits carry ?p= and utm_)');
+    verifyErrors();
+  } finally { await page.close(); }
+
+  // ── Clic temprano con anuncio (?p=): la etiqueta del botón cambia al montar y el clic no se pierde ──
+  ({ page, verifyErrors } = await openPage(browser, origin, 1440, true, { delayEntryMs: 3000 }));
+  try {
+    await page.evaluateOnNewDocument(() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); });
+    const loading = page.goto(`${origin}/?p=web&wa_line=a`, { waitUntil: 'load' });
+    await page.waitForSelector('.studio-wa');
+    await page.$eval('.studio-wa', (node) => node.click());
+    assert.ok(await page.evaluate(() => Boolean(window.__jcEarly) && !window.__jcMounted), 'The early click on an ad landing is remembered');
+    await loading;
+    await page.waitForSelector('dialog.lead-dialog[open]');
+    assert.ok((await page.$eval('.lead-dialog__package', (node) => node.textContent)).includes(SERVICE_PRICING.pagina_web.label), 'After mounting, the early click orders the advertised package even though the button label changed');
     verifyErrors();
   } finally { await page.close(); }
 
@@ -1270,7 +1319,36 @@ async function checkSecondRound(browser, origin) {
     await page.goBack();
     await page.waitForFunction(() => !document.querySelector('dialog.package-sheet').open);
     assert.equal(new URL(page.url()).pathname, '/', 'The Back gesture closes the detail and stays on the site');
+
+    // Cerrar un detalle no mueve la página ni cambia la fila abierta, aunque la dirección anterior fuera #paquete-….
+    await page.evaluate(() => { window.location.hash = '#paquete-pagina_web'; });
+    await page.waitForSelector('#paquete-pagina_web .package-card__toggle[aria-expanded="true"]');
+    await delay(500);
+    await page.$eval('#paquete-power_bi .package-card__toggle', (node) => { node.scrollIntoView({ block: 'center', behavior: 'instant' }); node.click(); });
+    await delay(600);
+    const before = await page.evaluate(() => window.scrollY);
+    await page.$eval('#paquete-power_bi .package-card__sheet', (node) => node.click());
+    await page.waitForSelector('dialog.package-sheet[open]');
+    await page.$eval('.package-sheet__close', (node) => node.click());
+    await page.waitForFunction(() => !document.querySelector('dialog.package-sheet').open && window.location.hash === '#paquete-pagina_web');
+    await delay(900);
+    const after = await page.evaluate(() => ({ y: window.scrollY, open: document.querySelector('#paquete-power_bi .package-card__toggle').getAttribute('aria-expanded') }));
+    assert.ok(Math.abs(after.y - before) <= 4 && after.open === 'true', `Closing a detail leaves the page and the open row as they were (scroll ${Math.round(before)} → ${Math.round(after.y)}, row open: ${after.open})`);
     await checkWidth(page);
+    verifyErrors();
+  } finally { await page.close(); }
+
+  // ── Sin JavaScript, en celular: los diez paquetes ya están listados y no hay «Ver los que faltan» ──
+  ({ page, verifyErrors } = await openPage(browser, origin, 390, false));
+  try {
+    await navigate(page, `${origin}/`);
+    const more = await page.evaluate(() => ({
+      label: getComputedStyle(document.querySelector('.packages-more')).display,
+      box: getComputedStyle(document.querySelector('#packages-all')).display,
+      cards: [...document.querySelectorAll('#paquetes .package-card')].filter((node) => getComputedStyle(node).display !== 'none').length,
+      variants: [...document.querySelectorAll('.studio-wa .only-fine')].filter((node) => getComputedStyle(node).display !== 'none').length,
+    }));
+    assert.deepEqual(more, { label: 'none', box: 'none', cards: Object.keys(SERVICE_PRICING).length, variants: 0 }, 'Without JavaScript a phone lists every package, hides the unused expander and shows a single button label');
     verifyErrors();
   } finally { await page.close(); }
   console.log('[check-site] PASS second round: sentence builder with price, package detail (address, pinned total, back, shared link, one-page PDF), short form over the detail, early click and phone layout');

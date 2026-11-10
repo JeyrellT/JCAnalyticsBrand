@@ -63,10 +63,6 @@ const Packages = () => {
   // «Ver los que faltan» es una casilla nativa: el despliegue lo hace el CSS y funciona sin JavaScript.
   const allRef = useRef(null);
   const showAll = () => { if (allRef.current) allRef.current.checked = true; };
-  // ¿La dirección anterior era un detalle? Al volver de un detalle a una dirección #paquete-… la página no se
-  // mueve: la persona sigue donde estaba (si no, cerrar un detalle abierto desde otra sección la llevaba de
-  // un salto a la tarjeta de un enlace anterior).
-  const fromSheet = useRef(false);
   useEffect(() => {
     const query = window.matchMedia('(max-width: 767px)');
     const sync = () => setMobile(query.matches);
@@ -77,33 +73,40 @@ const Packages = () => {
   // La dirección manda: #hoja-<clave>[.ia.<agregado>…] abre ese detalle con lo marcado y #paquete-<clave>
   // muestra una tarjeta que estaba plegada. Se lee al cargar, al seguir un enlace y al ir atrás o adelante.
   useEffect(() => {
-    const read = (initial) => {
+    // El detalle sigue a la dirección. Devuelve true si la dirección es un detalle.
+    const syncSheet = (initial) => {
       const linked = parseSheetHash(window.location.hash);
-      const leavingSheet = fromSheet.current;
-      fromSheet.current = Boolean(linked);
-      if (linked) {
-        if (initial) { document.getElementById('paquetes')?.scrollIntoView({ block: 'start' }); showAll(); }
-        // Un enlace dentro de la página (por ejemplo desde «Tu caso en una frase») crea una entrada propia
-        // del historial: se marca para que cerrar el detalle vuelva atrás en vez de dejarla huérfana.
-        else if (!window.history.state?.jcaSheet) window.history.replaceState({ jcaSheet: true }, '', window.location.href);
-        setSheet((now) => (now?.item === linked.item ? now : { ...linked, shared: initial && (linked.withAi || linked.picked.length > 0) }));
-        return;
-      }
-      setSheet(null);
-      const card = /^#paquete-([a-z_]+)$/.exec(window.location.hash);
-      if (card && PACKAGES.some((item) => item.key === card[1])) {
-        showAll();
-        setOpen(card[1]);
-        // Con el diseño ya final: la fila abierta antes se cierra y, en computadora, el desplazamiento suave
-        // no descuenta la barra fija.
-        if (!leavingSheet) afterLayout(() => scrollToNode(document.getElementById(`paquete-${card[1]}`), { instant: initial }));
-      }
+      if (!linked) { setSheet(null); return false; }
+      if (initial) { document.getElementById('paquetes')?.scrollIntoView({ block: 'start' }); showAll(); }
+      // Un enlace dentro de la página (por ejemplo desde «Tu caso en una frase») crea una entrada propia
+      // del historial: se marca para que cerrar el detalle vuelva atrás en vez de dejarla huérfana.
+      else if (!window.history.state?.jcaSheet) window.history.replaceState({ jcaSheet: true }, '', window.location.href);
+      setSheet((now) => (now?.item === linked.item ? now : { ...linked, shared: initial && (linked.withAi || linked.picked.length > 0) }));
+      return true;
     };
-    read(true);
-    const onChange = () => read(false);
-    window.addEventListener('hashchange', onChange);
-    window.addEventListener('popstate', onChange);
-    return () => { window.removeEventListener('hashchange', onChange); window.removeEventListener('popstate', onChange); };
+    // Muestra la tarjeta de #paquete-<clave> y la deja debajo de la barra, con el diseño ya final (la fila
+    // abierta antes se cierra y, en computadora, el desplazamiento suave no descuenta la barra fija).
+    const showCard = (initial) => {
+      const card = /^#paquete-([a-z_]+)$/.exec(window.location.hash);
+      if (!card || !PACKAGES.some((item) => item.key === card[1])) return;
+      showAll();
+      setOpen(card[1]);
+      afterLayout(() => scrollToNode(document.getElementById(`paquete-${card[1]}`), { instant: initial }));
+    };
+    if (!syncSheet(true)) showCard(true);
+    // «Atrás» avisa dos veces (popstate y hashchange). El detalle se sincroniza con los dos; la tarjeta se
+    // busca solo con hashchange y nunca al volver de un detalle (`oldURL` dice de dónde se viene): cerrar un
+    // detalle no mueve la página ni cambia la fila abierta, aunque la dirección anterior fuera #paquete-….
+    const onPop = () => { syncSheet(false); };
+    const onHash = (event) => {
+      if (syncSheet(false)) return;
+      let fromSheet = false;
+      try { fromSheet = /^#hoja-/.test(new URL(event.oldURL).hash); } catch { /* sin dirección anterior */ }
+      if (!fromSheet) showCard(false);
+    };
+    window.addEventListener('popstate', onPop);
+    window.addEventListener('hashchange', onHash);
+    return () => { window.removeEventListener('popstate', onPop); window.removeEventListener('hashchange', onHash); };
   }, []);
   // Lista de celular: al abrir una fila se cierra la que estaba abierta, y todo lo de abajo sube. Sin
   // recolocar, el nombre y el precio del paquete recién tocado quedaban fuera de pantalla (Safari de iOS no
@@ -123,14 +126,13 @@ const Packages = () => {
     event.preventDefault();
     // Entrada propia en el historial: el botón o el gesto de «atrás» cierra el detalle en vez de salir del sitio.
     window.history.pushState({ jcaSheet: true }, '', `${here()}#hoja-${item.key}`);
-    fromSheet.current = true;
     setSheet({ item, withAi: false, picked: [], shared: false });
   };
   const closeSheet = () => {
     setSheet(null);
     if (!/^#hoja-/.test(window.location.hash)) return; // ya lo cerró el historial
     if (window.history.state?.jcaSheet) window.history.back();
-    else { fromSheet.current = false; window.history.replaceState(null, '', `${here()}#paquetes`); } // llegó por un enlace compartido: no hay «atrás» dentro del sitio
+    else window.history.replaceState(null, '', `${here()}#paquetes`); // llegó por un enlace compartido: no hay «atrás» dentro del sitio
   };
   // Del detalle de un paquete al de su paquete mayor, sin sumar entradas al historial.
   const switchSheet = (key) => {
@@ -188,7 +190,7 @@ const Packages = () => {
                   <p className="package-card__fact"><Check size={14} aria-hidden="true" /><span>{item.scope}</span></p>
                   <p className="package-card__fact package-card__fact--note"><Info size={14} aria-hidden="true" /><span>{t('A tener en cuenta:', 'Keep in mind:')} {item.exclusions}</span></p>
                   <p className="package-card__fact"><ShieldCheck size={14} aria-hidden="true" /><span>{t('30 días de soporte incluidos', '30 days of support included')}</span></p>
-                  <a className="package-card__buy" href={wa(visit.sentence ? packageMessage(item, { sentence: visit.sentence }) : item.message)} target="_blank" rel="noreferrer" data-package={item.key} data-value={item.price} data-package-label={item.name} data-need={item.need} data-track-label={`Paquetes · Lo quiero · ${item.key}`}>
+                  <a className="package-card__buy" href={wa(visit.packSentence ? packageMessage(item, { sentence: visit.packSentence }) : item.message)} target="_blank" rel="noreferrer" data-package={item.key} data-value={item.price} data-package-label={item.name} data-need={item.need} data-track-label={`Paquetes · Lo quiero · ${item.key}`}>
                     <ContactIcon size={18} />{desktop ? t('Lo quiero', 'I want it') : t('Lo quiero · WhatsApp', 'I want it · WhatsApp')}<span className="sr-only"> · {item.name}</span>
                   </a>
                   <p className="package-card__after">{t('Sin cobro ni compromiso: primero recibís el alcance por escrito.', 'No charge, no commitment: you get the scope in writing first.')}</p>

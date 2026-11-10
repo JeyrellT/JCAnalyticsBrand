@@ -190,7 +190,7 @@ const Hero = () => {
 
           <Reveal still={still} delay={0.3} className="studio-hero__actions">
             {adPackage ? (
-              <a href={wa(visit.sentence ? packageMessage(adPackage, { sentence: visit.sentence }) : adPackage.message)} target="_blank" rel="noreferrer" className="studio-wa" data-need={adPackage.need} data-package={adPackage.key} data-value={adPackage.price} data-package-label={adPackage.name} data-track-label={`Hero · Lo quiero · ${adPackage.key}`}>
+              <a href={wa(visit.packSentence ? packageMessage(adPackage, { sentence: visit.packSentence }) : adPackage.message)} target="_blank" rel="noreferrer" className="studio-wa" data-need={adPackage.need} data-package={adPackage.key} data-value={adPackage.price} data-package-label={adPackage.name} data-track-label={`Hero · Lo quiero · ${adPackage.key}`}>
                 <ContactIcon size={20} /><span>{t('Lo quiero:', 'I want it:')} {adPackage.name}</span>
               </a>
             ) : (

@@ -1,8 +1,11 @@
 /* Detalle del paquete (site/PackageSheet.jsx): el alcance por escrito antes de escribir. Mismo lenguaje que el
    formulario corto (lead-dialog.css). Se puede imprimir o guardar en PDF.
    Estructura: dialog.package-sheet (desplaza) > .package-sheet__frame > article.package-sheet__panel + .package-sheet__bar.
-   La barra (total + botón) es hermana del panel para poder quedar pegada al borde inferior del diálogo. */
-.package-sheet { margin: auto; padding: 0; border: 0; border-radius: 22px; width: min(1000px, calc(100vw - 32px)); max-height: min(94vh, 900px); background: #f5f7f2; color: #132b2d; box-shadow: 0 30px 80px -30px #0a1f1a99; overflow: hidden auto; overscroll-behavior: contain; }
+   La barra (total + botón) es hermana del panel para poder quedar pegada al borde inferior del diálogo.
+   `scroll-padding-block`: el cierre (arriba) y la barra (abajo) quedan pegados dentro del contenedor que
+   desplaza; con ese margen el navegador no deja detrás de ellos el control que recibe el foco ni se saltea
+   renglones al avanzar con AvPág o la barra espaciadora. */
+.package-sheet { margin: auto; padding: 0; border: 0; border-radius: 22px; width: min(1000px, calc(100vw - 32px)); max-height: min(94vh, 900px); background: #f5f7f2; color: #132b2d; box-shadow: 0 30px 80px -30px #0a1f1a99; overflow: hidden auto; overscroll-behavior: contain; scroll-padding-block: 64px 108px; }
 .package-sheet::backdrop { background: #0a1f1aa6; backdrop-filter: blur(4px); }
 .package-sheet[open] { animation: package-sheet-in .28s cubic-bezier(.19, 1, .22, 1); }
 @keyframes package-sheet-in { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
@@ -80,10 +83,10 @@
 .package-sheet :is(button, a, input, summary):focus-visible { outline: 2px solid #087783; outline-offset: 2px; }
 /* El título recibe el foco por programa (para que se anuncie): no es un control y no lleva anillo. La regla
    general de celular (.studio-v4 :focus-visible, en mobile.css) se lo ponía al abrir un enlace compartido. */
-.studio-v4 .package-sheet h2:focus-visible, .package-sheet h2:focus-visible { outline: 0; }
+.studio-v4 .package-sheet h2:focus-visible, .package-sheet h2:focus-visible { outline: 0; box-shadow: none; }
 
 @media (max-width: 860px) {
-  .package-sheet { width: 100vw; max-width: none; max-height: 100dvh; height: 100dvh; margin: 0; border-radius: 0; }
+  .package-sheet { width: 100vw; max-width: none; max-height: 100dvh; height: 100dvh; margin: 0; border-radius: 0; scroll-padding-block: 60px calc(86px + env(safe-area-inset-bottom)); }
   .package-sheet__frame { min-height: 100%; display: flex; flex-direction: column; }
   .package-sheet__panel { flex: 1; align-content: start; gap: 18px; padding: 22px 18px 22px; }
   .package-sheet__body { grid-template-columns: 1fr; gap: 18px; }
