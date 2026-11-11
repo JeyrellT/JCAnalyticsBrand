@@ -447,5 +447,110 @@ export const blogArticles = [
         { title: 'SailPoint — Horizons of Identity Security report: AI adoption gap', url: 'https://www.sailpoint.com/press-releases/sailpoint-horizons-identity-security-ai-adoption-gap' }
       ]
     }
+  },
+  {
+    id: 'cr-manufacturing-ai-survey-2026',
+    topic: 'intelligence',
+    image: '/projects/caviq/reports-desktop.webp',
+    minutes: 5,
+    published: '2026-11-11',
+    en: {
+      slug: 'ai-in-costa-rican-manufacturing-2026',
+      title: 'AI in Costa Rican manufacturing: what the 2026 CICR survey found',
+      summary: 'Half of the manufacturers surveyed by the Cámara de Industrias already use some AI, mostly in administration and sales. The gap is skills, not access.',
+      takeaway: 'The first useful AI in a company tends to sit in back-office processes. Start there, with a process that is already written down, and train the people who run it.',
+      sections: [
+        {
+          id: 'figures',
+          heading: 'What the survey reports',
+          paragraphs: [
+            'The Cámara de Industrias de Costa Rica (CICR) added a module on artificial intelligence to its annual survey "Perspectivas Empresariales y Valoración de Factores de Competitividad de la Industria Manufacturera, 2026". According to the chamber, 115 companies from the formal industrial sector answered between 9 April and 15 July 2026.',
+            '53 % of the companies said they currently use some AI system or software, and 47 % said they do not. Use is higher in free trade zones (71.4 %) than in the definitive regime (47.1 %). Within the definitive regime, 38.9 % of SMEs use AI, compared with 60.6 % of large companies.'
+          ]
+        },
+        {
+          id: 'where',
+          heading: 'Where it is used: offices before the plant floor',
+          paragraphs: [
+            'Among the companies that use AI, the most common uses are organizing administrative or business management processes (54.1 %) and marketing or sales (52.5 %). The CICR links this to another result: 95.1 % of the companies that use AI say their number of workers did not change after adopting it. Because AI is concentrated in administrative and commercial areas, not on the production line, it has not yet changed staffing on the plant floor.',
+            'This is a survey of one sector and reflects what companies say about themselves. It does not measure productivity gains, and it does not say which tools are used or how well.'
+          ]
+        },
+        {
+          id: 'barrier',
+          heading: 'The main barrier is knowledge',
+          paragraphs: [
+            'Among companies that do not use AI yet, the main barrier reported is the lack of specialized knowledge inside the organization. That matches what we see in smaller teams: the tool is rarely the hard part. The hard part is knowing which step of a process to hand over, how to check the result and who is responsible when it is wrong.',
+            'For SMEs, the 38.9 % figure is a reminder that the gap with large companies is real. It is also an opportunity: the most common uses in the survey, administration and sales, are exactly the processes a small company can map in an afternoon.'
+          ]
+        },
+        {
+          id: 'start',
+          heading: 'A practical starting point',
+          paragraphs: [
+            'Synthetic example: a fictional packaging workshop spends several hours a week copying purchase orders from email into a spreadsheet. Before trying any AI tool, the team writes the five steps on one page, agrees on which fields are mandatory and counts how many orders need correction. Only then does it test an assistant on the copying step, with a person reviewing every order for the first month.',
+            'The sequence matters more than the tool: write the process down, measure it, automate one step, keep a human check and measure again. It is the same continuous improvement loop the CICR promotes in its Lean and excellence programs, now applied to AI.'
+          ]
+        }
+      ],
+      discussion: [
+        'Which administrative process in your company is repeated every week and already follows clear steps?',
+        'Who on your team would need training before you could trust an AI tool with one of those steps?',
+        'How would you measure whether the result improved after the change?'
+      ],
+      sources: [
+        { title: 'CICR — Uso de la Inteligencia Artificial gana terreno en la industria manufacturera, pero persisten brechas en su adopción', url: 'https://cicr.com/cicr-uso-de-la-inteligencia-artificial-gana-terreno-en-la-industria-manufacturera-pero-persisten-brechas-en-su-adopcion/' },
+        { title: 'Revista Summa — Costa Rica: Uso de la IA gana terreno en la industria manufacturera, pero persisten brechas', url: 'https://revistasumma.com/costa-rica-uso-de-la-ia-gana-terreno-en-la-industria-manufacturera-pero-persisten-brechas/' }
+      ]
+    },
+    es: {
+      slug: 'ia-en-la-manufactura-costarricense-2026',
+      title: 'IA en la manufactura costarricense: lo que encontró la encuesta 2026 de la CICR',
+      summary: 'La mitad de las industrias consultadas por la Cámara de Industrias ya usa alguna IA, sobre todo en administración y ventas. La brecha está en el conocimiento, no en el acceso.',
+      takeaway: 'La primera IA útil en una empresa suele estar en los procesos de oficina. Empezá ahí, con un proceso que ya esté escrito, y capacitá a quienes lo ejecutan.',
+      sections: [
+        {
+          id: 'figures',
+          heading: 'Lo que reporta la encuesta',
+          paragraphs: [
+            'La Cámara de Industrias de Costa Rica (CICR) agregó un módulo sobre inteligencia artificial a su encuesta anual "Perspectivas Empresariales y Valoración de Factores de Competitividad de la Industria Manufacturera, 2026". Según la cámara, respondieron 115 empresas del sector industrial formal entre el 9 de abril y el 15 de julio de 2026.',
+            'El 53 % de las empresas indicó que usa actualmente algún sistema o software de IA y el 47 % que todavía no. El uso es mayor en zona franca (71,4 %) que en el régimen definitivo (47,1 %). Dentro del régimen definitivo, el 38,9 % de las pymes usa IA, frente al 60,6 % de las empresas grandes.'
+          ]
+        },
+        {
+          id: 'where',
+          heading: 'Dónde se usa: primero la oficina, después la planta',
+          paragraphs: [
+            'Entre las empresas que usan IA, los usos más extendidos son la organización de procesos de administración o gestión empresarial (54,1 %) y marketing o ventas (52,5 %). La CICR relaciona esto con otro resultado: el 95,1 % de las empresas que usan IA dice que la cantidad de trabajadores no cambió tras incorporarla. Como la IA se concentra en áreas administrativas y comerciales, y no en la línea de producción, todavía no ha cambiado la planilla en planta.',
+            'Es una encuesta de un solo sector y refleja lo que las empresas dicen de sí mismas. No mide ganancias de productividad ni dice qué herramientas se usan ni qué tan bien.'
+          ]
+        },
+        {
+          id: 'barrier',
+          heading: 'La principal barrera es el conocimiento',
+          paragraphs: [
+            'Entre las empresas que aún no usan IA, la principal barrera reportada es la falta de conocimientos especializados dentro de la organización. Coincide con lo que vemos en equipos pequeños: la herramienta casi nunca es lo difícil. Lo difícil es saber qué paso del proceso delegar, cómo revisar el resultado y quién responde cuando sale mal.',
+            'Para las pymes, el 38,9 % recuerda que la brecha con las grandes es real. También es una oportunidad: los usos más comunes de la encuesta, administración y ventas, son justo los procesos que una empresa pequeña puede mapear en una tarde.'
+          ]
+        },
+        {
+          id: 'start',
+          heading: 'Un punto de partida práctico',
+          paragraphs: [
+            'Ejemplo sintético: un taller ficticio de empaques dedica varias horas por semana a copiar órdenes de compra del correo a una hoja de cálculo. Antes de probar cualquier herramienta de IA, el equipo escribe los cinco pasos en una página, acuerda qué campos son obligatorios y cuenta cuántas órdenes necesitan corrección. Solo entonces prueba un asistente en el paso de copiado, con una persona revisando cada orden durante el primer mes.',
+            'El orden importa más que la herramienta: escribir el proceso, medirlo, automatizar un paso, mantener una revisión humana y volver a medir. Es el mismo ciclo de mejora continua que la CICR promueve en sus programas Lean y de excelencia, ahora aplicado a la IA.'
+          ]
+        }
+      ],
+      discussion: [
+        '¿Qué proceso administrativo de su empresa se repite cada semana y ya sigue pasos claros?',
+        '¿Quién de su equipo necesitaría capacitación antes de confiarle uno de esos pasos a una herramienta de IA?',
+        '¿Cómo medirían si el resultado mejoró después del cambio?'
+      ],
+      sources: [
+        { title: 'CICR — Uso de la Inteligencia Artificial gana terreno en la industria manufacturera, pero persisten brechas en su adopción', url: 'https://cicr.com/cicr-uso-de-la-inteligencia-artificial-gana-terreno-en-la-industria-manufacturera-pero-persisten-brechas-en-su-adopcion/' },
+        { title: 'Revista Summa — Costa Rica: Uso de la IA gana terreno en la industria manufacturera, pero persisten brechas', url: 'https://revistasumma.com/costa-rica-uso-de-la-ia-gana-terreno-en-la-industria-manufacturera-pero-persisten-brechas/' }
+      ]
+    }
   }
 ];
