@@ -155,3 +155,10 @@ Temas pendientes por falta de fuentes primarias verificadas (2026-10-20). Public
 - **Costa Rica y automatización (por verificar):** la búsqueda no devuelve nada fechado en noviembre. Reaparecen el estudio de Grupo CMA (43 %, solo réplicas), el estudio de CINDE sobre talento, la nota de La Nación sobre centros de servicios, un artículo de delfino.cr sobre hiperautomatización (nov 2025, contexto) y la nota de El Financiero sobre ManpowerGroup. Leer los originales antes de citar.
 - **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001).
 - **Agentes de IA, técnicas sin tecnología:** sin cambios; siguen pendientes los anuncios oficiales de OpenAI, Salesforce, UiPath, Microsoft y Automation Anywhere. Revisar tras el congreso CICR del 18 nov.
+
+## Actualización 2026-11-11
+
+- **Publicado:** "IA en la manufactura costarricense: lo que encontró la encuesta 2026 de la CICR" (ES/EN). Fuente primaria: comunicado de la CICR en cicr.com, con Revista Summa como réplica. Las cifras (53 % usa IA; 71,4 % zona franca frente a 47,1 % régimen definitivo; 38,9 % pymes frente a 60,6 % grandes; usos 54,1 % gestión administrativa y 52,5 % marketing o ventas; 95,1 % sin cambio en planilla; 115 empresas, 9 abr-15 jul 2026) coinciden en el extracto indexado del comunicado y en CRHoy, La República, El Financiero, Summa y E&N. cicr.com no se pudo abrir desde este entorno (DNS); verificar el texto completo cuando el dominio esté permitido. Se omitió un 62,5 % sobre falta de conocimiento que no aparece en el comunicado.
+- **Costa Rica y automatización:** El Mundo CR publicó el estudio de Grupo CMA (43 % prioriza automatizar procesos). Es un medio, pero el dato sigue siendo de un proveedor con 21 organizaciones; no se pudo abrir (DNS).
+- **Lean Six Sigma / OIJ:** sigue listo para publicar en cuanto se abra el texto completo (PMC7219196, DOI 10.1016/j.fsisyn.2020.02.001). pmc.ncbi.nlm.nih.gov, elmundo.cr, crhoy.com, larepublica.net y cicr.com no resuelven en este entorno.
+- **Agentes de IA, técnicas sin tecnología:** sin cambios. Revisar tras el congreso CICR del 18 nov.
