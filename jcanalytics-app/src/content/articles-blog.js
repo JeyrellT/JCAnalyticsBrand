@@ -552,5 +552,116 @@ export const blogArticles = [
         { title: 'Revista Summa — Costa Rica: Uso de la IA gana terreno en la industria manufacturera, pero persisten brechas', url: 'https://revistasumma.com/costa-rica-uso-de-la-ia-gana-terreno-en-la-industria-manufacturera-pero-persisten-brechas/' }
       ]
     }
+  },
+  {
+    id: 'jidoka-andon-office',
+    topic: 'operations',
+    image: '/projects/crimson/levantamientos-desktop.webp',
+    minutes: 5,
+    published: '2026-11-12',
+    en: {
+      slug: 'jidoka-andon-stop-when-something-fails',
+      title: 'Jidoka and andon: automating means knowing when to stop',
+      summary: 'Toyota calls it automation with a human touch: the process stops itself when something is abnormal and calls for help. The idea works in an office with paper, and it is also the right rule for AI agents.',
+      takeaway: 'A good automation, with or without technology, does not just run faster. It detects when something is wrong, stops before passing the defect on and makes the problem visible to someone who can fix it.',
+      sections: [
+        {
+          id: 'origin',
+          heading: 'Where the idea comes from',
+          paragraphs: [
+            'Jidoka is one of the two pillars of the Toyota Production System, together with just-in-time. Toyota describes it as stopping a machine automatically when an abnormality occurs, so that defective products are not made and a person does not have to watch each machine all the time. The Lean Enterprise Institute notes that Toyota\'s own material translates it as "automation with a human touch".',
+            'The origin is a loom. Sakichi Toyoda built looms that stopped by themselves when a thread broke or ran out, instead of continuing to weave defective cloth. One person could then look after several machines, because the machine itself signaled when it needed attention.'
+          ]
+        },
+        {
+          id: 'andon',
+          heading: 'Andon: making the problem visible',
+          paragraphs: [
+            'Andon is the signal that goes with jidoka. On a Toyota line, a worker who finds a problem pulls a cord or presses a button, a board lights up and a team leader comes to help. According to the Lean Enterprise Institute, any worker can stop the process when they face a problem they cannot solve within a preset time. The line does not always stop at once: it continues to a fixed position, and the team leader decides whether it stops.',
+            'Two things matter here. Stopping is not a punishment, it is how the process asks for help. And the decision to stop belongs to the person closest to the work, not to a report at the end of the month.'
+          ]
+        },
+        {
+          id: 'office',
+          heading: 'Jidoka without technology in an office',
+          paragraphs: [
+            'You do not need sensors to apply the idea. You need three things written down: what counts as abnormal, where the work stops and who is called. A red card on the desk, a column called "stopped" on a paper board or a rule that says "do not send the invoice if the order number is missing" are all forms of jidoka.',
+            'Synthetic example: a fictional distribution office often dispatches orders with incomplete addresses that come back days later. The team agrees on one rule: if the address lacks a district or a reference, the order goes to a red tray and is not packed. Twice a day the coordinator empties the tray and calls the customer. In the first weeks the tray fills up, which is uncomfortable but useful: it shows where the incomplete data comes from, and that is the problem to fix next.',
+            'The tray is not the goal. Each stop should lead to a question about the cause, otherwise the team only gets used to a full tray.'
+          ]
+        },
+        {
+          id: 'ai',
+          heading: 'The same rule for AI and software',
+          paragraphs: [
+            'Software automation and AI agents fail differently from people: they can repeat the same mistake hundreds of times without getting tired. That is why jidoka is a good design rule for them. Before automating a step, define which conditions should stop it, for example a missing field, an amount above a limit or a low-confidence answer, and send those cases to a person instead of letting the flow continue.',
+            'If the manual version of the rule already works with a red tray, you have a clear specification for the software: the same conditions, the same stop and the same person who gets the alert. Automating without that rule is how a small error turns into a large one.'
+          ]
+        }
+      ],
+      discussion: [
+        'Which defect in your process is usually discovered only at the end, when it is expensive to fix?',
+        'What would be your "red tray": the place where work waits when something is abnormal?',
+        'If you automated a step tomorrow, which conditions should make it stop and call a person?'
+      ],
+      sources: [
+        { title: 'Toyota — Toyota Production System', url: 'https://global.toyota/en/company/vision-and-philosophy/production-system/' },
+        { title: 'Toyota — Virtual plant tour: Toyota Production System', url: 'https://global.toyota/en/company/plant-tours/production-system/' },
+        { title: 'Lean Enterprise Institute — Toyota Production System (lexicon)', url: 'https://www.lean.org/lexicon-terms/toyota-production-system/' },
+        { title: 'Lean Enterprise Institute — Lean Roundup: Jidoka', url: 'https://www.lean.org/the-lean-post/articles/lean-roundup-jidoka/' }
+      ]
+    },
+    es: {
+      slug: 'jidoka-andon-detenerse-cuando-algo-falla',
+      title: 'Jidoka y andon: automatizar también es saber cuándo detenerse',
+      summary: 'Toyota lo llama automatización con toque humano: el proceso se detiene solo cuando algo es anormal y pide ayuda. La idea funciona en una oficina con papel, y también es la regla correcta para los agentes de IA.',
+      takeaway: 'Una buena automatización, con o sin tecnología, no solo va más rápido. Detecta cuando algo está mal, se detiene antes de pasar el defecto y hace visible el problema para alguien que pueda resolverlo.',
+      sections: [
+        {
+          id: 'origin',
+          heading: 'De dónde viene la idea',
+          paragraphs: [
+            'El jidoka es uno de los dos pilares del Sistema de Producción Toyota, junto con el justo a tiempo. Toyota lo describe como detener una máquina de forma automática cuando ocurre una anormalidad, para no fabricar productos defectuosos y para que una persona no tenga que vigilar cada máquina todo el tiempo. El Lean Enterprise Institute señala que el propio material de Toyota lo traduce como "automatización con toque humano".',
+            'El origen es un telar. Sakichi Toyoda construyó telares que se detenían solos cuando un hilo se rompía o se acababa, en lugar de seguir tejiendo tela defectuosa. Así una persona podía atender varias máquinas, porque la máquina misma avisaba cuándo necesitaba atención.'
+          ]
+        },
+        {
+          id: 'andon',
+          heading: 'Andon: hacer visible el problema',
+          paragraphs: [
+            'El andon es la señal que acompaña al jidoka. En una línea de Toyota, quien encuentra un problema jala una cuerda o presiona un botón, se enciende un tablero y llega un líder de equipo a ayudar. Según el Lean Enterprise Institute, cualquier trabajador puede detener el proceso cuando enfrenta un problema que no logra resolver en un tiempo preestablecido. La línea no siempre se detiene de inmediato: avanza hasta una posición fija y el líder de equipo decide si se para.',
+            'Aquí importan dos cosas. Detenerse no es un castigo, es la forma en que el proceso pide ayuda. Y la decisión de parar le corresponde a la persona más cercana al trabajo, no a un informe a fin de mes.'
+          ]
+        },
+        {
+          id: 'office',
+          heading: 'Jidoka sin tecnología en una oficina',
+          paragraphs: [
+            'No hacen falta sensores para aplicar la idea. Hacen falta tres cosas por escrito: qué se considera anormal, dónde se detiene el trabajo y a quién se llama. Una tarjeta roja en el escritorio, una columna "detenido" en un tablero de papel o una regla que dice "no se envía la factura si falta el número de orden" son formas de jidoka.',
+            'Ejemplo sintético: una oficina ficticia de distribución despacha con frecuencia pedidos con direcciones incompletas que vuelven días después. El equipo acuerda una sola regla: si la dirección no tiene distrito o una seña, el pedido va a una bandeja roja y no se empaca. Dos veces al día la coordinadora vacía la bandeja y llama al cliente. Las primeras semanas la bandeja se llena, lo cual es incómodo pero útil: muestra de dónde vienen los datos incompletos, y ese es el siguiente problema a resolver.',
+            'La bandeja no es la meta. Cada detención debe llevar a una pregunta sobre la causa; si no, el equipo solo se acostumbra a una bandeja llena.'
+          ]
+        },
+        {
+          id: 'ai',
+          heading: 'La misma regla para la IA y el software',
+          paragraphs: [
+            'La automatización con software y los agentes de IA fallan distinto que las personas: pueden repetir el mismo error cientos de veces sin cansarse. Por eso el jidoka es una buena regla de diseño para ellos. Antes de automatizar un paso, definí qué condiciones deben detenerlo, por ejemplo un campo vacío, un monto mayor a un límite o una respuesta con poca confianza, y enviá esos casos a una persona en lugar de dejar que el flujo continúe.',
+            'Si la versión manual de la regla ya funciona con una bandeja roja, tenés una especificación clara para el software: las mismas condiciones, la misma detención y la misma persona que recibe el aviso. Automatizar sin esa regla es la forma en que un error pequeño se vuelve grande.'
+          ]
+        }
+      ],
+      discussion: [
+        '¿Qué defecto de su proceso se descubre casi siempre al final, cuando ya es caro corregirlo?',
+        '¿Cuál sería su "bandeja roja": el lugar donde espera el trabajo cuando algo es anormal?',
+        'Si mañana automatizaran un paso, ¿qué condiciones deberían detenerlo y llamar a una persona?'
+      ],
+      sources: [
+        { title: 'Toyota — Toyota Production System', url: 'https://global.toyota/en/company/vision-and-philosophy/production-system/' },
+        { title: 'Toyota — Virtual plant tour: Toyota Production System', url: 'https://global.toyota/en/company/plant-tours/production-system/' },
+        { title: 'Lean Enterprise Institute — Toyota Production System (lexicon)', url: 'https://www.lean.org/lexicon-terms/toyota-production-system/' },
+        { title: 'Lean Enterprise Institute — Lean Roundup: Jidoka', url: 'https://www.lean.org/the-lean-post/articles/lean-roundup-jidoka/' }
+      ]
+    }
   }
 ];
