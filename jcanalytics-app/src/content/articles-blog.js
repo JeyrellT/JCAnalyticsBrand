@@ -663,5 +663,114 @@ export const blogArticles = [
         { title: 'Lean Enterprise Institute — Lean Roundup: Jidoka', url: 'https://www.lean.org/the-lean-post/articles/lean-roundup-jidoka/' }
       ]
     }
+  },
+  {
+    id: 'world-bank-ai-transition-lac-2026',
+    topic: 'intelligence',
+    image: '/projects/caviq/technology-desktop.webp',
+    minutes: 5,
+    published: '2026-11-13',
+    en: {
+      slug: 'world-bank-ai-adoption-is-about-processes',
+      title: 'The World Bank on AI in Latin America: the barrier is not the price, it is the process',
+      summary: 'The World Bank\'s October 2026 regional update is about AI. Its message for companies is uncomfortable and useful: firms already use AI, but rarely in their core processes, and what holds them back is know-how and organization more than the cost of the tools.',
+      takeaway: 'Buying an AI tool is the easy part. The value appears when a company knows which process it wants to change, has its data in order and reorganizes the work around it.',
+      sections: [
+        {
+          id: 'report',
+          heading: 'What was published',
+          paragraphs: [
+            'On October 6, 2026, the World Bank published its Latin America and the Caribbean Economic Update, titled "Harnessing the AI Transition" (in Spanish, "Aprovechando la transición de la IA"). It projects regional growth of 2.2 % for 2026 and devotes its analysis to how AI could become a new source of productivity.',
+            'According to the press release, a median of 17 % of working-age adults in the region say they use generative AI tools, about half the rate seen in the United States and Canada. The release also states that firms are already adopting AI widely, but rarely integrate it into the core activities of their business processes.'
+          ]
+        },
+        {
+          id: 'barriers',
+          heading: 'The barriers are inside the company',
+          paragraphs: [
+            'A World Bank blog post on the regional updates sums up the obstacles in Latin America as weak managerial know-how, organizational capital and data capabilities. In other words, the limit is not access to the tool but knowing how to use it and having the information it needs.',
+            'The same post points out that more than four in ten digitally connected workers cannot write a prompt that an AI system can usefully act on. Among the policy ideas it mentions are technology extension services for smaller firms and the state acting as an anchor client through agile public procurement.'
+          ]
+        },
+        {
+          id: 'costa-rica',
+          heading: 'And Costa Rica?',
+          paragraphs: [
+            'According to El Financiero\'s coverage of the report, Costa Rica shows relatively favorable conditions to adopt AI, but faces barriers to integrate it into companies, and digital infrastructure is its largest gap against its comparison group. The same outlet notes that Costa Rica and Colombia show individual adoption of generative AI above what their income level would predict. We could not open the full report from our environment, so these country details come from the press coverage.',
+            'This fits what local surveys already showed. The Costa Rican Chamber of Industries reported in 2026 that 53 % of the manufacturing companies it consulted use AI, mostly in administration and marketing. That survey was answered by affiliated companies and is not a probability sample, so it describes those firms, not the whole sector.'
+          ]
+        },
+        {
+          id: 'practice',
+          heading: 'What it means for an SME',
+          paragraphs: [
+            'If the bottleneck is organization, the first step is not a license. It is choosing one process that matters to the business, drawing it as it really works today, and measuring how long it takes and how often it fails. With that map, it becomes clear whether AI helps, whether a simple rule or form is enough, or whether the data must be cleaned first.',
+            'The report also highlights "small AI": low-cost applications adapted to local needs, which already show promising results in education, telemedicine and public services. For a small company that is the right scale: one well-defined task, with a person reviewing the result and a clear measure of whether it improved.'
+          ]
+        }
+      ],
+      discussion: [
+        'In which process does your team use AI today: a side task or a core part of the business?',
+        'Do you have that process drawn and measured, or does it live in the heads of two or three people?',
+        'Which "small AI" task could you test this month with a person reviewing every result?'
+      ],
+      sources: [
+        { title: 'World Bank — Latin America and the Caribbean Holds Steady While Top Performers Show a Path to Higher Growth (press release, Oct 6, 2026)', url: 'https://www.worldbank.org/en/news/press-release/2026/10/06/latin-america-caribbean-economic-update' },
+        { title: 'World Bank — Latin America & the Caribbean Economic Update: Harnessing the AI Transition (PDF)', url: 'https://documents1.worldbank.org/curated/en/099100526213586183/pdf/P516409-efd581da-b8cd-4b2c-a393-00b61ed67105.pdf' },
+        { title: 'World Bank Blogs — The AI wave is global. Readiness is not.', url: 'https://blogs.worldbank.org/en/developmenttalk/the-ai-wave-is-global--readiness-is-not--here-s-what-the-latest-' },
+        { title: 'El Financiero — Todo lo que dijo el Banco Mundial sobre la IA', url: 'https://www.elfinancierocr.com/economia-y-politica/todo-lo-que-dijo-el-banco-mundial-sobre-la/THJI2GRDLBEJTCOPOOPAOG4OOA/story/' }
+      ]
+    },
+    es: {
+      slug: 'banco-mundial-ia-adopcion-es-cuestion-de-procesos',
+      title: 'El Banco Mundial y la IA en América Latina: la barrera no es el precio, es el proceso',
+      summary: 'El informe regional de octubre 2026 del Banco Mundial trata sobre IA. Su mensaje para las empresas es incómodo y útil: las firmas ya usan IA, pero casi nunca en sus procesos centrales, y lo que las frena es el conocimiento y la organización más que el costo de las herramientas.',
+      takeaway: 'Comprar una herramienta de IA es la parte fácil. El valor aparece cuando la empresa sabe qué proceso quiere cambiar, tiene sus datos en orden y reorganiza el trabajo alrededor de eso.',
+      sections: [
+        {
+          id: 'report',
+          heading: 'Qué se publicó',
+          paragraphs: [
+            'El 6 de octubre de 2026 el Banco Mundial publicó su Panorama económico de América Latina y el Caribe, titulado "Aprovechando la transición de la IA". Proyecta un crecimiento regional de 2,2 % para 2026 y dedica su análisis a cómo la IA podría convertirse en una nueva fuente de productividad.',
+            'Según el comunicado de prensa, una mediana del 17 % de los adultos en edad de trabajar de la región dice usar herramientas de IA generativa, cerca de la mitad de la tasa de Estados Unidos y Canadá. El comunicado también afirma que las empresas ya adoptan ampliamente la IA, aunque rara vez la integran en las actividades centrales de sus procesos de negocio.'
+          ]
+        },
+        {
+          id: 'barriers',
+          heading: 'Las barreras están dentro de la empresa',
+          paragraphs: [
+            'Una entrada del blog del Banco Mundial sobre los informes regionales resume los obstáculos en América Latina como poco conocimiento gerencial, poco capital organizacional y pocas capacidades de datos. Es decir, el límite no es el acceso a la herramienta, sino saber usarla y tener la información que necesita.',
+            'La misma entrada señala que más de cuatro de cada diez trabajadores conectados no logran escribir una instrucción con la que un sistema de IA pueda trabajar de forma útil. Entre las ideas de política que menciona están los servicios de extensión tecnológica para empresas pequeñas y el Estado como cliente ancla mediante compras públicas ágiles.'
+          ]
+        },
+        {
+          id: 'costa-rica',
+          heading: '¿Y Costa Rica?',
+          paragraphs: [
+            'Según la cobertura de El Financiero, el informe ubica a Costa Rica con condiciones relativamente favorables para adoptar IA, pero con barreras para integrarla en las empresas, y la infraestructura digital es su mayor distancia frente a su grupo de referencia. El mismo medio indica que Costa Rica y Colombia muestran un uso individual de IA generativa mayor al que predice su nivel de ingreso. No pudimos abrir el informe completo desde nuestro entorno, así que estos datos del país vienen de la prensa.',
+            'Esto coincide con lo que ya mostraban las encuestas locales. La Cámara de Industrias de Costa Rica reportó en 2026 que el 53 % de las empresas manufactureras consultadas usa IA, sobre todo en gestión administrativa y mercadeo. Esa encuesta la respondieron empresas afiliadas y no es una muestra probabilística, así que describe a esas firmas y no a todo el sector.'
+          ]
+        },
+        {
+          id: 'practice',
+          heading: 'Qué significa para una pyme',
+          paragraphs: [
+            'Si el cuello de botella es la organización, el primer paso no es una licencia. Es elegir un proceso que importe al negocio, dibujarlo como funciona hoy de verdad y medir cuánto tarda y cada cuánto falla. Con ese mapa se ve si la IA ayuda, si basta una regla o un formulario sencillo, o si primero hay que limpiar los datos.',
+            'El informe también destaca la "IA a pequeña escala": aplicaciones de bajo costo adaptadas a necesidades locales, que ya muestran resultados prometedores en educación, telemedicina y servicios públicos. Para una empresa pequeña esa es la escala correcta: una tarea bien definida, con una persona que revisa el resultado y una medida clara de si mejoró.'
+          ]
+        }
+      ],
+      discussion: [
+        '¿En qué proceso usa hoy su equipo la IA: una tarea lateral o una parte central del negocio?',
+        '¿Tienen ese proceso dibujado y medido, o vive en la cabeza de dos o tres personas?',
+        '¿Qué tarea de "IA a pequeña escala" podrían probar este mes con una persona revisando cada resultado?'
+      ],
+      sources: [
+        { title: 'Banco Mundial — América Latina y el Caribe se mantiene estable mientras las economías con mejor desempeño marcan el camino hacia un mayor crecimiento (comunicado, 6 oct 2026)', url: 'https://www.bancomundial.org/es/news/press-release/2026/10/06/latin-america-caribbean-economic-update' },
+        { title: 'Banco Mundial — Panorama económico de América Latina y el Caribe: Aprovechando la transición de la IA (PDF)', url: 'https://documents1.worldbank.org/curated/en/099100526213531870/pdf/P516409-0a0e0187-a3c9-4e09-aad6-541490db4d3f.pdf' },
+        { title: 'Blogs del Banco Mundial — The AI wave is global. Readiness is not.', url: 'https://blogs.worldbank.org/en/developmenttalk/the-ai-wave-is-global--readiness-is-not--here-s-what-the-latest-' },
+        { title: 'El Financiero — Todo lo que dijo el Banco Mundial sobre la IA', url: 'https://www.elfinancierocr.com/economia-y-politica/todo-lo-que-dijo-el-banco-mundial-sobre-la/THJI2GRDLBEJTCOPOOPAOG4OOA/story/' }
+      ]
+    }
   }
 ];
