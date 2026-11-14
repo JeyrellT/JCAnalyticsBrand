@@ -13,12 +13,12 @@ En este orden, con su `id` (lo usa el índice de la página y la medición del p
 
 | Bloque | `id` | Qué hace |
 | --- | --- | --- |
-| Precio y paquete | `oferta` | Paquete principal con precio publicado, plazo, soporte, opción con IA y un segundo paquete «de otra escala». Botón «Lo quiero · WhatsApp». |
+| Precio y paquete | `oferta` | Paquete con precio publicado, plazo, soporte y opción con IA. Por defecto el primero de la categoría; con `?p=<paquete>` (enlace de una tarjeta de la portada o de un anuncio) o con `utm_content` igual a la clave o a un alias del paquete, ese (misma regla que la portada: `adPackage` en `data/packages.js`). Al lado, los demás paquetes de la categoría («Ver este paquete» cambia la oferta sin recargar). Botón «Lo quiero · WhatsApp». |
 | ¿Es para vos? | `senales` | Cinco situaciones habituales con casillas. El veredicto cambia según cuántas se marcan y lo marcado viaja en el mensaje. |
 | Calculadora de impacto | `calculadora` | Con los números de la persona (veces, minutos, personas, costo por hora) calcula horas al mes, costo al año y en cuántos meses de ese costo se cubre el paquete. |
 | Qué incluye | `incluye` | Alcance, opción con IA, exclusiones, soporte mensual y agregados con precio, tomados del tarifario compartido. |
 | Cómo trabajamos | `como-trabajamos` | Primera conversación sin costo, precio fijo por escrito, avances cada 72 h en el portal de clientes y 30 días de soporte. Enlace al portal de clientes. |
-| Un ejemplo real | `ejemplo` | Pantalla real de un proyecto del estudio, con enlace al explorador de la portada (`/?proyecto=<id>#trabajo`) y al sitio si es público. |
+| Un ejemplo real | `ejemplo` | Pantalla real de un proyecto del estudio, con enlace al explorador de la portada (`/?proyecto=<id>#proyecto`) y al sitio si es público. |
 | Preguntas frecuentes | `preguntas-servicio` | Cuatro respuestas por servicio en `<details>` nativos. |
 | Formulario corto | `contacto-servicio` | Nombre opcional, WhatsApp o correo y mensaje. «Continuar en WhatsApp» o «Prefiero que me contacten». |
 
@@ -30,6 +30,10 @@ formulario corto (`src/components/ui/LeadDialog.jsx`, medido como `contacto-rapi
 la persona deja su WhatsApp o correo y la consulta llega al portal con canal «Paquete con precio», la
 necesidad del servicio y el paquete. En el formulario de la página, «Enviar consulta» pasa a ser el botón
 principal y «Seguir en WhatsApp Web» queda como enlace directo. Ver [estrategia de conversión](estrategia-conversion.md).
+
+**Marketing** no tiene paquete de precio fijo (el plan mensual se arma con cada negocio). Desde el 10 de
+noviembre de 2026 muestra bajo el titular un bloque propio (`contacto-servicio`) con el precio «desde» que ya
+publicaba el texto y el botón «Armemos mi plan de marketing»; «Hablemos» apunta a ese bloque.
 
 Todo el bloque comparte estado: lo que se marca en «¿Es para vos?» y lo que se calcula se agrega al mensaje de
 WhatsApp y al texto de la consulta que llega al portal. La calculadora es una estimación con los números de la
@@ -53,15 +57,27 @@ en `src/content/services.js`. Sin entrada, la página se muestra como antes (sol
 
 ## Qué llega al portal
 
-- **Consulta:** `POST /ingest/lead` con `channel: 'devolucion'`, la necesidad del servicio (`need`, en español),
-  el nombre del paquete principal (`package`), la página (`page`) y el mensaje con lo marcado y lo calculado.
-  Aparece en **Web → Consultas** con su recorrido.
+- **Consulta:** `POST /ingest/lead` con `channel: 'devolucion'`, la necesidad del paquete (`need`, en español:
+  la misma con la que llega desde su tarjeta de la portada), el nombre del paquete en el tarifario (`package`),
+  la página (`page`) y el mensaje con lo marcado y lo calculado. Aparece en **Web → Consultas** con su recorrido.
+- **Mensaje:** el mismo de las tarjetas de la portada (`packageMessage`): «Hola JC Analytics, me interesa el
+  paquete … ($… + IVA).», las señales marcadas, lo calculado, «¿Me confirman si calza con mi caso?» y la línea
+  abierta «Mi negocio:» (o la frase de «Tu caso en una frase», si la persona la armó en la portada). El portal
+  corta los mensajes en 600 caracteres: se mide el mensaje tal como sale (con la nota del anuncio) y, en
+  computadora, se deja lugar para lo que la persona escriba en «¿Para qué negocio es?» (en celular ese campo no
+  existe); si con todo marcado no entra, las situaciones viajan por número («Me pasan las situaciones 1, 2 y 4
+  de las 5 de esta página.») en vez de cortarse. El formulario de la página hace lo mismo: lo que arma la página
+  entra entero y, si hace falta, se recorta solo lo que escribió la persona.
+- **Formulario:** el aviso dice qué campo corregir y lleva el foco ahí; al enviar, una confirmación con los tres
+  pasos que siguen reemplaza al formulario y queda a la vista.
 - **Medición:** cada bloque es una `<section id>`, así que el portal muestra tiempo y alcance por bloque en
   **Web → Tráfico del sitio**. Los botones llevan `data-track-label` legible («Oferta · WhatsApp · Automatización
   de procesos», «Barra · Que me contacten»…), y la barra fija declara su sección con `data-track-section`. El
-  formulario se mide como `contacto-servicio`.
-- **Anuncios:** los botones de WhatsApp llevan `data-package` y `data-value`, así que Google Ads, Meta y ChatGPT
-  reciben el paquete y su precio como en la portada (ver [anuncios](anuncios.md)).
+  formulario se mide como `contacto-servicio`. Cada señal marcada llega con la clave de su página (`Señal ·
+  web-development · 2 · sí`): la señal 2 es una frase distinta en cada servicio.
+- **Anuncios:** los botones de WhatsApp llevan `data-package` (la clave del tarifario, igual que en la portada)
+  y `data-value`, así que Google Ads, Meta y ChatGPT reciben el paquete y su precio como en la portada (ver
+  [anuncios](anuncios.md)).
 
 ## Verificación
 

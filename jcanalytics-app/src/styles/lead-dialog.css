@@ -30,6 +30,25 @@
 .lead-dialog__status { min-height: 1.4em; font-size: 13px; line-height: 1.6; color: #31562f; }
 .lead-dialog__status[data-tone="bad"] { color: #8a3a1f; }
 .lead-dialog :is(button, a, input, textarea):focus-visible { outline: 2px solid #087783; outline-offset: 2px; }
+/* Auditoría de noviembre de 2026: mensaje plegado en los pedidos de paquete, pasos después de enviar y título enfocable. */
+.lead-dialog { overflow: hidden auto; overscroll-behavior: contain; }
+.lead-dialog h2:focus { outline: none; box-shadow: none; }
+.lead-field :is(input, textarea)::placeholder { color: #5c736e; opacity: 1; }
+.lead-dialog__message { border: 1px solid #132b2d24; border-radius: 10px; background: #ffffff8c; }
+.lead-dialog__message summary { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; font-size: 13.5px; font-weight: 600; color: #236c60; cursor: pointer; list-style: none; }
+.lead-dialog__message summary::-webkit-details-marker { display: none; }
+.lead-dialog__message summary svg { transition: transform .2s; }
+.lead-dialog__message[open] summary svg { transform: rotate(180deg); }
+.lead-dialog__message summary:focus-visible { outline: 2px solid #087783; outline-offset: 2px; border-radius: 10px; }
+.lead-dialog__message .lead-field { padding: 0 10px 10px; }
+.lead-dialog__next { display: grid; gap: 10px; margin: 2px 0 4px; padding: 0; list-style: none; }
+.lead-dialog__next li { display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start; font-size: 14.5px; line-height: 1.5; color: #1e3d38; }
+.lead-dialog__next li > span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #132b2d; color: #c3f5db; font: 600 12px var(--font-mono); }
+.lead-field input[aria-invalid="true"] { border-width: 2px; }
+/* Segunda ronda: lo marcado en el detalle del paquete, qué ir juntando y el enlace de vuelta al detalle. */
+.lead-dialog__picked { margin-top: -6px; font-size: 13px; line-height: 1.5; color: #2f4d47; }
+.lead-dialog__ready { padding: 10px 12px; border-radius: 10px; background: #fff; font-size: 13.5px; line-height: 1.55; color: #1e3d38; }
+a.lead-dialog__submit { text-decoration: none; }
 @media (max-width: 767px) {
   .lead-dialog__panel { padding: 24px 18px 20px; }
   .lead-dialog__grid { grid-template-columns: 1fr; }

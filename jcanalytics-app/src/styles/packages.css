@@ -1,57 +1,106 @@
-/* Paquetes y precios: tarjetas de compra con un solo botón de WhatsApp. */
+/* Paquetes y precios: cómo se compra, tarjetas con un solo botón verde y la hoja de cada paquete.
+   En celular las tarjetas son una lista que se despliega (auditoría de noviembre de 2026). */
 .packages-section { background: #eff1e9; color: #15261a; padding: 80px 0 70px; scroll-margin-top: 85px; }
 .packages-container { width: min(100% - 32px, 1336px); margin-inline: auto; }
 .packages-heading { display: grid; gap: 26px; margin-bottom: 36px; }
-.packages-heading .font-mono { color: #657866; font-size: 10px; }
+.packages-heading .font-mono { color: #55695c; font-size: 11px; letter-spacing: .12em; }
 .packages-heading h2 { font: 500 clamp(44px, 6vw, 84px)/.98 var(--font-display); letter-spacing: -.05em; margin-top: 20px; }
 .packages-heading h2 em { color: #52765f; font: italic 400 1.05em/1 var(--font-serif); }
-.packages-steps { display: grid; gap: 10px; list-style: none; align-self: end; }
-.packages-steps li { display: flex; align-items: center; gap: 12px; font-size: 14px; color: #3d5546; }
-.packages-steps span { display: grid; place-items: center; flex: 0 0 28px; height: 28px; border-radius: 50%; background: #15372a; color: #c3f5db; font: 12px var(--font-mono); }
+.packages-intro p { max-width: 52ch; font-size: 15px; line-height: 1.6; color: #3d5546; }
+.packages-steps { display: grid; gap: 10px; margin: 14px 0 0; padding: 0; list-style: none; max-width: 56ch; }
+.packages-steps li { display: grid; grid-template-columns: 28px 1fr; align-items: start; gap: 12px; font-size: 14.5px; line-height: 1.5; color: #2c4335; }
+.packages-steps span { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #15372a; color: #c3f5db; font: 600 12px var(--font-mono); }
 
-.packages-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; list-style: none; }
-.package-card { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 22px; border: 1px solid #c6d4c6; border-radius: 10px; background: #fbfcf8; }
+.packages-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin: 0; padding: 0; list-style: none; }
+.package-card { position: relative; display: flex; flex-direction: column; padding: 22px; border: 1px solid #c6d4c6; border-radius: 12px; background: #fbfcf8; scroll-margin-top: 96px; }
 .package-card--ad { border: 2px solid #25d366; box-shadow: 0 18px 40px -26px #0f5a2f; }
-.package-card__top { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+/* El paquete más cercano a «Tu caso en una frase» (site/case.js) y la tarjeta a la que apunta un enlace. */
+.package-card--case { border: 2px solid #34735b; box-shadow: 0 18px 40px -28px #15372a; }
+.package-card--case .package-card__badge { background: #15372a; color: #d7f5e3; }
+.package-card:target { border-color: #34735b; box-shadow: 0 0 0 4px #34735b47; animation: package-card-target 1.6s ease-out 1; }
+@keyframes package-card-target { from { box-shadow: 0 0 0 10px #25d36666; } to { box-shadow: 0 0 0 4px #34735b47; } }
+.package-card__head { position: relative; display: flex; flex-direction: column; gap: 10px; }
+.package-card__category { font: 600 11px/1.4 var(--font-sans); letter-spacing: .08em; text-transform: uppercase; color: #52765f; }
+/* La insignia baja debajo del nombre cuando no cabe al lado («El más cercano a tu caso» se salía de la tarjeta a
+   768–784 px y en celular pisaba el precio a 320 px). */
+.package-card__top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: start; gap: 6px 12px; }
 .package-card h3 { font: 500 22px/1.15 var(--font-display); letter-spacing: -.03em; }
-.package-card__badge { flex-shrink: 0; padding: 4px 8px; border-radius: 999px; background: #d7f5e3; color: #1d5a39; font-size: 10px; font-weight: 600; white-space: nowrap; }
+.package-card__badge { flex-shrink: 0; max-width: 100%; padding: 5px 9px; border-radius: 999px; background: #d7f5e3; color: #1d5a39; font-size: 12px; font-weight: 600; white-space: nowrap; }
 .package-card--ad .package-card__badge { background: #25d366; color: #06301a; }
-.package-card__pitch { font-size: 14px; line-height: 1.5; color: #4c6153; }
-.package-card__price { display: grid; gap: 2px; }
+.package-card__pitch { font-size: 14.5px; line-height: 1.5; color: #3d5546; }
+.package-card__price { display: grid; gap: 3px; }
 .package-card__price strong { font: 600 40px/1 var(--font-display); letter-spacing: -.04em; color: #11241a; }
-.package-card__price span { font-size: 12px; color: #6b7d70; }
-.package-card__time, .package-card__scope { display: flex; gap: 8px; align-items: start; font-size: 13px; line-height: 1.5; color: #3d5546; }
-.package-card__time svg, .package-card__scope svg { flex-shrink: 0; margin-top: 3px; color: #34735b; }
-.package-card__extras { font-size: 12px; color: #6b7d70; }
+.package-card__price span { font-size: 13px; color: #55695c; }
+.package-card__body { display: flex; flex: 1; flex-direction: column; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #dfe7dc; }
+.package-card__body[hidden] { display: none; }
+.package-card__fact { display: flex; gap: 9px; align-items: start; font-size: 13.5px; line-height: 1.5; color: #2c4335; }
+.package-card__fact svg { flex-shrink: 0; margin-top: 3px; color: #34735b; }
+.package-card__fact--note { color: #55695c; }
+.package-card__fact--note svg { color: #7a8f80; }
 .package-card__buy { margin-top: auto; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; border-radius: 8px; background: #25d366; color: #06301a; font-size: 15px; font-weight: 650; transition: background .2s, transform .2s; }
+.package-card__body > .package-card__buy { margin-top: auto; }
 .package-card__buy:hover { background: #3ee07a; transform: translateY(-1px); }
-.package-card__buy:focus-visible, .package-card__example:focus-visible, .packages-more:focus-visible { outline: 2px solid #34735b; outline-offset: 3px; }
-.package-card__example { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; font-size: 12px; color: #34735b; text-decoration: underline; text-underline-offset: 3px; }
+.package-card__after { margin-top: -2px; font-size: 12.5px; line-height: 1.5; color: #55695c; text-align: center; }
+/* Enlace de texto: el verde queda como único botón de la tarjeta (antes este enlace tenía borde y competía). */
+.package-card__sheet { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; font-size: 13.5px; font-weight: 550; line-height: 1.35; color: #1d4a33; text-decoration: underline; text-decoration-color: #9fb6a5; text-underline-offset: 4px; transition: color .2s, text-decoration-color .2s; }
+.package-card__sheet svg { flex: none; color: #34735b; }
+.package-card__sheet:hover { color: #0f2e20; text-decoration-color: #34735b; }
+.package-card__buy:focus-visible, .package-card__sheet:focus-visible, .packages-more:focus-visible, .package-card__toggle:focus-visible { outline: 2px solid #34735b; outline-offset: 3px; }
+.package-card__toggle { display: none; }
 
-.packages-foot { display: grid; justify-items: center; gap: 14px; margin-top: 26px; text-align: center; }
-.packages-more { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 22px; border: 1px solid #9fb6a5; border-radius: 8px; font-size: 14px; color: #15372a; cursor: pointer; }
+.packages-foot { display: grid; justify-items: center; gap: 12px; margin-top: 26px; text-align: center; }
+.packages-more { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 22px; border: 1px solid #9fb6a5; border-radius: 8px; font-size: 14px; font-weight: 550; color: #15372a; cursor: pointer; }
 .packages-more:hover { background: #e2ebdf; }
-.packages-foot p { font-size: 13px; line-height: 1.6; color: #5f7365; }
+.packages-all:focus-visible ~ .packages-foot .packages-more { outline: 2px solid #34735b; outline-offset: 3px; }
+.packages-foot p { max-width: 78ch; font-size: 14px; line-height: 1.6; color: #3d5546; }
 .packages-foot a { color: #15372a; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.packages-foot .packages-foot__terms { font-size: 12.5px; color: #55695c; }
 
 @media (min-width: 700px) {
   .packages-container { width: min(100% - 64px, 1336px); }
   .packages-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 }
+@media (min-width: 768px) {
+  /* Seis destacados a la vista; los otros cuatro siguen en el HTML y aparecen con la casilla «Ver los 10»
+     o cuando un enlace apunta a ellos (:target). Donde :has() no exista se muestran los diez. */
+  .packages-container:not(:has(.packages-all:checked)) .package-card--more:not(:target) { display: none; }
+  .packages-container:has(.packages-all:checked) .packages-more { display: none; }
+}
+@media (min-width: 900px) { .packages-heading { grid-template-columns: 1.05fr .95fr; align-items: end; gap: 60px; } }
 @media (min-width: 1100px) {
   .packages-section { padding: 110px 0 90px; }
-  .packages-heading { grid-template-columns: 1.2fr .8fr; align-items: end; gap: 60px; }
   .packages-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
-@media (prefers-reduced-motion: reduce) { .package-card__buy { transition: none; } }
+@media (max-width: 767px) {
+  /* Los diez ya están listados: sin casilla ni etiqueta «Ver los que faltan», también sin JavaScript (el HTML
+     estático se genera en ancho de computadora y las traía visibles). */
+  .packages-all, .packages-more { display: none; }
+  /* Lista de precios de un vistazo: nombre, para qué y precio; el detalle se despliega. */
+  .packages-heading h2 { font-size: clamp(38px, 11vw, 56px); }
+  .packages-grid { gap: 8px; }
+  .package-card { padding: 14px 16px; }
+  .package-card__head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 14px; align-items: center; padding-right: 30px; }
+  .package-card__category { grid-column: 1 / -1; font-size: 10.5px; }
+  .package-card__top { grid-column: 1; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+  .package-card h3 { font-size: 18px; }
+  .package-card__badge { padding: 3px 8px; font-size: 11px; white-space: normal; border-radius: 12px; }
+  .package-card__pitch { grid-column: 1; font-size: 13px; }
+  .package-card__price { grid-column: 2; grid-row: 2 / span 2; justify-items: end; text-align: right; }
+  .package-card__price strong { font-size: 26px; }
+  .package-card__price span { font-size: 11.5px; max-width: 13ch; }
+  .package-card__toggle { position: absolute; inset: -14px -16px; display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; border: 0; background: transparent; color: #34735b; cursor: pointer; }
+  .package-card__toggle svg { transition: transform .25s; }
+  .package-card.is-open .package-card__toggle svg { transform: rotate(180deg); }
+  .package-card__body { margin-top: 12px; padding-top: 12px; }
+  .package-card__buy { min-height: 54px; }
+  .packages-foot { margin-top: 18px; }
+}
+@media (prefers-reduced-motion: reduce) { .package-card__buy, .package-card__sheet, .package-card__toggle svg { transition: none; } .package-card:target { animation: none; } }
 
-/* Hero: WhatsApp como acción principal. */
-.studio-wa { display: inline-flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 24px; border-radius: 6px; background: #25d366; color: #06301a; font-size: 15px; font-weight: 650; transition: background .2s, box-shadow .2s; }
+/* Hero: botón de acción principal. */
+.studio-wa { display: inline-flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 24px; border-radius: 6px; background: #25d366; color: #06301a; font-size: 15.5px; font-weight: 650; transition: background .2s, box-shadow .2s; }
 .studio-wa:hover { background: #3ee07a; box-shadow: 0 8px 30px -14px #25d366; }
 .studio-wa:focus-visible { outline: 2px solid #c3f5db; outline-offset: 3px; }
-.studio-hero__ad { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 8px 12px; border: 1px solid #25d36688; border-radius: 999px; background: #25d3661a; color: #d6f9e3; font-size: 12px; }
 /* Enlace en línea: el área de toque la da el padding vertical, sin agrandar la línea cuando el texto se parte. */
-.studio-hero .studio-start--link { display: inline; min-height: 0; padding: 10px 0; background: none; color: #b9cbbf; font-size: 12px; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
+.studio-hero .studio-start--link { display: inline; min-height: 0; padding: 10px 0; background: none; color: #d9fbe8; font-size: inherit; font-weight: 550; text-decoration: underline; text-underline-offset: 3px; }
 .studio-hero .studio-start--link:hover { background: none; box-shadow: none; color: #fff; }
-.packages-intro p { max-width: 46ch; font-size: 14px; line-height: 1.7; color: #4b5d52; }
-@media (min-width: 900px) { .packages-heading { grid-template-columns: 1.2fr .8fr; align-items: end; gap: 60px; } }

@@ -1,17 +1,20 @@
-import { useRef, useState } from 'react';
-import { motion, useInView, useReducedMotion } from 'framer-motion';
-import { ArrowUpRight, Pause, Play } from 'lucide-react';
+import { Fragment, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { ArrowUpRight } from 'lucide-react';
 import { EASE } from './links';
-import { t } from '../../i18n/locale';
+import { bootScrolled } from '../../boot';
 import '../../styles/navigation.css';
 
 const _MOTION = motion;
 
-export const Reveal = ({ children, delay = 0, y = 24, className = '', as = 'div' }) => {
+// `still`: sin animación de entrada. Lo usa la primera pantalla cuando la página ya venía pintada (boot.js).
+// Si en ese primer montaje la visita ya había bajado, tampoco se anima lo que tiene a la vista.
+export const Reveal = ({ children, delay = 0, y = 24, className = '', as = 'div', still = false, ...rest }) => {
   const reduce = useReducedMotion();
+  const [instant] = useState(() => still || bootScrolled());
   const Tag = motion[as] ?? motion.div;
   return (
-    <Tag initial={reduce ? false : { opacity: 0, y }} whileInView={{ opacity: 1, y: 0 }}
+    <Tag {...rest} initial={reduce || instant ? false : { opacity: 0, y }} whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-32px' }}
       transition={reduce ? { duration: 0 } : { duration: 0.8, delay, ease: EASE }} className={className}>
       {children}
@@ -23,19 +26,25 @@ export const Reveal = ({ children, delay = 0, y = 24, className = '', as = 'div'
 // the clipping wrapper, not on the moving line: a line that wraps to two rows
 // starts fully outside its clip, and an observer placed on it would never fire,
 // leaving the line hidden for good.
-export const MaskLines = ({ lines, className = '', delay = 0, lineClassName = '' }) => {
+// Entre renglones va un espacio de texto: no se dibuja (cada renglón es un bloque), pero quien lee el HTML
+// sin estilos (buscadores, asistentes de IA, vistas previas) ya no encuentra «sistemascon» ni «Hecho,no».
+export const MaskLines = ({ lines, className = '', delay = 0, lineClassName = '', still = false }) => {
   const reduce = useReducedMotion();
+  const [instant] = useState(() => still || bootScrolled());
   return (
     <span className={className}>
       {lines.map((line, index) => (
-        <motion.span key={index} className="block overflow-hidden pb-[0.1em] -mb-[0.1em]"
-          initial={reduce ? 'shown' : 'hidden'} whileInView="shown" viewport={{ once: true, margin: '-24px' }}>
-          <motion.span className={`block ${lineClassName}`}
-            variants={{ hidden: { y: '108%', opacity: 0.25 }, shown: { y: '0%', opacity: 1 } }}
-            transition={reduce ? { duration: 0 } : { duration: 0.9, delay: delay + index * 0.085, ease: EASE }}>
-            {line}
+        <Fragment key={index}>
+          {index > 0 && ' '}
+          <motion.span className="block overflow-hidden pb-[0.1em] -mb-[0.1em]"
+            initial={reduce || instant ? 'shown' : 'hidden'} whileInView="shown" viewport={{ once: true, margin: '-24px' }}>
+            <motion.span className={`block ${lineClassName}`}
+              variants={{ hidden: { y: '108%', opacity: 0.25 }, shown: { y: '0%', opacity: 1 } }}
+              transition={reduce ? { duration: 0 } : { duration: 0.9, delay: delay + index * 0.085, ease: EASE }}>
+              {line}
+            </motion.span>
           </motion.span>
-        </motion.span>
+        </Fragment>
       ))}
     </span>
   );
@@ -58,23 +67,3 @@ export const CTA = ({ href, children, variant = 'ink', external, icon = true, si
 export const Label = ({ children, className = '' }) => (
   <span className={`font-mono text-[11px] uppercase tracking-[0.2em] ${className}`}>{children}</span>
 );
-
-export const Marquee = ({ children, className = '', duration = 40, reverse = false }) => {
-  const [paused, setPaused] = useState(false);
-  const reduce = useReducedMotion();
-  const ref = useRef(null);
-  const visible = useInView(ref, { margin: '120px' });
-  return (
-    <div ref={ref} className={`marquee-v3 jca-marquee ${className}`} data-reduced={reduce ? 'true' : undefined}>
-      <div className="marquee-v3__track jca-marquee__track flex w-max"
-        style={{ animationDuration: `${duration}s`, animationDirection: reverse ? 'reverse' : 'normal', animationPlayState: paused || !visible || reduce ? 'paused' : 'running' }}>
-        <div className="jca-marquee__original flex shrink-0 items-center">{children}</div>
-        <div className="jca-marquee__duplicate flex shrink-0 items-center" aria-hidden="true" inert>{children}</div>
-      </div>
-      {!reduce && <button type="button" className="jca-marquee__control" onClick={() => setPaused((value) => !value)}
-        aria-label={paused ? t('Reanudar cinta de servicios', 'Resume services ticker') : t('Pausar cinta de servicios', 'Pause services ticker')} aria-pressed={paused}>
-        {paused ? <Play size={12} fill="currentColor" aria-hidden="true" /> : <Pause size={12} fill="currentColor" aria-hidden="true" />}
-      </button>}
-    </div>
-  );
-};

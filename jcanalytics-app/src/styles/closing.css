@@ -30,13 +30,11 @@
 
 .process-section { padding-block: clamp(4rem, 8vw, 8rem) clamp(6rem, 9vw, 9rem); background: #edf3f7; color: #071a36; border-top: 1px solid #071a360a; }
 .process-heading__aside { padding-bottom: .4rem; }
-.process-heading__index { display: block; margin-bottom: .65rem; color: #70869a; font-size: 2.1rem; font-weight: 400; letter-spacing: -.07em; }
 .process-sequence { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .process-step { position: relative; }
 .process-step__content { padding: 0 3rem 2rem 0; }
 .process-step:not(:first-child) .process-step__content { padding-left: 2.8rem; }
 .process-step__top { display: flex; align-items: center; justify-content: space-between; padding-bottom: 2.4rem; }
-.process-step__number { font-size: clamp(4rem, 7vw, 6.8rem); font-weight: 400; line-height: 1; letter-spacing: -.07em; color: #9cafbf; transition: color 400ms; }
 .process-step__icon { display: grid; place-items: center; width: 3.3rem; height: 3.3rem; color: #07838c; background: #e0edf1; border: 1px solid #00a6b215; border-radius: 50%; transition: background 400ms, color 400ms; }
 .process-step__line { height: 1px; background: #071a3626; position: relative; margin-right: -3rem; margin-bottom: 2.5rem; }
 .process-step:last-child .process-step__line { margin-right: 0; }
@@ -108,7 +106,6 @@
   .team-member__link:hover { color: #0065df; }
   .team-member__link:hover svg { transform: translate(2px, -2px); }
   .process-step:hover .process-step__line span { transform: scaleX(1); }
-  .process-step:hover .process-step__number { color: #0065df; }
   .process-step:hover .process-step__icon { color: #f5f8fb; background: #07838c; }
   .contact-need:not(.contact-need--selected):hover { background: #ffffff0c; border-color: #9cdfe599; color: white; }
   .contact-submit:hover { background: #075cc5; box-shadow: 0 8px 30px #0065df20; }
@@ -150,13 +147,10 @@
   .team-member__link svg { width: 14px; flex-shrink: 0; }
   .team-signature { grid-template-columns: 1fr; gap: 1.2rem; margin-top: 3rem; padding-top: 2rem; }
   .team-signature p { font-size: 1.65rem; }
-  .process-heading { flex-direction: row; align-items: flex-end; }
   .process-heading__aside .closing-kicker { display: none; }
-  .process-heading__index { font-size: 1.3rem; white-space: nowrap; }
   .process-sequence { grid-template-columns: 1fr; }
   .process-step__content, .process-step:not(:first-child) .process-step__content { padding: 1.9rem 0 2rem 2rem; margin-left: .3rem; border-left: 1px solid #071a3620; }
   .process-step__top { padding-bottom: 1rem; }
-  .process-step__number { font-size: 3.6rem; }
   .process-step__icon { width: 3rem; height: 3rem; }
   .process-step__line, .process-step:last-child .process-step__line { margin: 0 0 1.5rem; }
   .process-step__line::before { inset: -3px auto auto -2.25rem; }
@@ -198,13 +192,42 @@
 }
 .contact-need__check--hidden { opacity: 0; }
 
-/* Cuatro compromisos (2 de noviembre de 2026): misma retícula del proceso, en cuatro columnas. */
+/* Cuatro compromisos (2 de noviembre de 2026): misma retícula del proceso, en cuatro columnas.
+   Auditoría de noviembre de 2026: cada compromiso va bajo la duda que responde (antes, un numeral
+   decorativo) y el encabezado explica cómo se cumple «a tiempo». */
 .process-sequence--promises { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .process-sequence--promises .process-step__content { padding-right: 2rem; }
+.process-sequence--promises .process-step__top { align-items: flex-start; gap: 1rem; min-height: 4.8rem; padding-bottom: 1.4rem; }
+.process-step__question { max-width: 14ch; font-size: clamp(1.35rem, 1.9vw, 1.75rem); font-style: italic; font-weight: 400; line-height: 1.12; letter-spacing: -.02em; color: #446348; }
 .process-sequence--promises .process-step h3 { font-size: clamp(1.35rem, 1.75vw, 1.7rem); line-height: 1.15; }
 .process-sequence--promises .process-step p { font-size: .95rem; line-height: 1.6; }
-.process-action__portal { display: inline-flex; align-items: center; gap: .5rem; min-height: 2.75rem; color: #07838c; font-size: .9rem; font-weight: 500; }
-.process-action__portal svg { transition: transform 400ms cubic-bezier(.22, 1, .36, 1); }
-.process-action__portal:hover svg { transform: translate(3px, -3px); }
+.process-step__portal { display: inline-flex; align-items: center; gap: .45rem; min-height: 2.75rem; margin-top: .5rem; color: #1f5a3c; font-size: .88rem; font-weight: 600; text-decoration: underline; text-decoration-color: #1f5a3c55; text-underline-offset: 4px; }
+.process-step__portal svg { transition: transform 400ms cubic-bezier(.22, 1, .36, 1); }
+.process-step__portal:hover svg { transform: translate(3px, -3px); }
+.process-heading__aside { max-width: 24rem; }
+.process-heading__how { margin-bottom: .9rem; font-size: 1rem; line-height: 1.6; color: #2f4a37; }
+.process-action { flex-wrap: wrap; }
+.process-action__people { max-width: 34rem; font-size: .95rem; line-height: 1.6; color: #2f4a37; }
+.process-action__people a { display: inline-flex; align-items: center; gap: .35rem; min-height: 2.75rem; font-weight: 600; color: #15372a; text-decoration: underline; text-decoration-color: #34735b66; text-underline-offset: 4px; white-space: nowrap; }
 @media (max-width: 1099px) { .process-sequence--promises { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 1.5rem; } .process-sequence--promises .process-step:nth-child(3) .process-step__content { padding-left: 0; } }
-@media (max-width: 767px) { .process-sequence--promises { grid-template-columns: 1fr; } .process-sequence--promises .process-step .process-step__content { padding-left: 0; } .process-action { flex-direction: column; align-items: flex-start; gap: 1rem; } }
+@media (max-width: 767px) {
+  .process-heading { flex-direction: column; align-items: flex-start; gap: 1.2rem; }
+  .process-sequence--promises { grid-template-columns: 1fr; row-gap: 0; }
+  .process-sequence--promises .process-step .process-step__content { padding: 1.5rem 0 1.4rem; margin-left: 0; border-left: 0; border-top: 1px solid #071a3620; }
+  .process-sequence--promises .process-step__top { align-items: center; min-height: 0; padding-bottom: .7rem; }
+  .process-sequence--promises .process-step__line { display: none; }
+  .process-step__question { max-width: none; font-size: 1.45rem; }
+  .process-sequence--promises .process-step h3 { margin-top: 0; font-size: 1.3rem; }
+  .process-action { flex-direction: column; align-items: stretch; gap: 1rem; }
+}
+
+/* Pie (auditoría de noviembre de 2026): los cuatro compromisos en la primera línea y enlaces fáciles de tocar. */
+.footer-promises { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .35rem 1.4rem; margin: 0; padding: 0; list-style: none; color: #ccd9e6; }
+.footer-promises li { display: inline-flex; align-items: center; gap: .55rem; }
+.footer-promises li::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: #9cdfe5; }
+.footer-portals { margin-top: .6rem; }
+@media (max-width: 767px) {
+  .footer-promises { justify-content: flex-start; gap: .3rem 1rem; }
+  .footer-links-grid li + li { margin-top: 0; }
+  .footer-links-grid li a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+}

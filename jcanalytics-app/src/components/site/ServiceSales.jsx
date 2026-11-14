@@ -13,6 +13,13 @@
 //    · ServiceLeadForm #contacto-servicio WhatsApp o "que me contacten" (portal)
 //    · ServiceBar                         barra fija en celular / tarjeta en el índice
 //  Todo precio, plazo y alcance sale de portal/shared/service-pricing.js.
+//
+//  Segunda ronda de la auditoría (noviembre de 2026): la página quedó al nivel
+//  de la portada. El mensaje del paquete es el mismo de las tarjetas (antes
+//  citaba el titular de la página: «estoy en “Desarrollo web en Costa Rica…”»),
+//  el formulario avisa qué campo corregir y confirma con los tres pasos que
+//  siguen, y el paquete viaja con su clave (pagina_web…) a la medición, igual
+//  que en la portada; al portal llega siempre el nombre del tarifario en español.
 // ============================================================================
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, ArrowUpRight, Check, Clock3, LockKeyhole, MessageCircle, PhoneCall, Plus, ShieldCheck } from 'lucide-react';
@@ -20,34 +27,67 @@ import { locale, t } from '../../i18n/locale';
 import { SERVICE_PRICING } from '../../../../portal/shared/service-pricing.js';
 import { EXTRA_LABELS_EN, SERVICE_OFFERS, WORK_PROMISES } from '../../content/service-offers';
 import { PROJECTS, PROJECT_KINDS, screenImage, shotSrcSet } from '../../data/projects';
-import { CURRENCIES } from '../../data/currencies';
+import { PACKAGES, adPackage, caseLine, colones, money, packageMessage, thousands as integer } from '../../data/packages';
 import { homePath } from '../../seo/routes';
-import { PORTAL_URL, wa } from './links';
+import { PORTAL_URL, wa, waMessage } from './links';
+import { NEXT_STEPS } from './messages';
+import { useCase } from './case';
+import { scrollToNode } from './scroll';
+import ContactIcon from './ContactIcon';
 import { emailOk, phoneOk } from './contact-rules';
 import { sendLead } from '../../seo/site-tracker';
 import { trackLeadCaptured } from '../../seo/analytics';
 import { useDesktop } from '../../hooks/useDesktop';
 import '../../styles/service-offer.css';
 
+const MESSAGE_MAX = 600; // límite del portal (LEAD_LIMITS.message)
 const numberLocale = locale === 'es' ? 'es-CR' : 'en-US';
-const money = (usd) => `$${Math.round(usd).toLocaleString(numberLocale)}`;
-const colones = (usd) => `₡${(Math.round((usd * CURRENCIES.CRC.rateFromUSD) / 1000) * 1000).toLocaleString('es-CR')}`;
-const integer = (value) => Math.round(value).toLocaleString(numberLocale);
 const oneDecimal = (value) => value.toLocaleString(numberLocale, { maximumFractionDigits: value < 10 ? 1 : 0 });
 const timeLabel = (p) => (p.days_min
   ? t(`${p.days_min}–${p.days_max} días hábiles`, `${p.days_min}–${p.days_max} business days`)
   : t(`${p.weeks_min}–${p.weeks_max} semanas`, `${p.weeks_min}–${p.weeks_max} weeks`));
 const label = (p) => (locale === 'es' ? p.label : p.label_en);
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+// «1, 2 y 4» · “1, 2 and 4”.
+const listOf = (items) => (items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} ${t('y', 'and')} ${items.at(-1)}`);
+
+// Avisos del formulario: los mismos de la portada y del formulario corto (dicen qué campo corregir).
+const PROBLEMS = {
+  missing: t('Falta un dato para poder responderte: escribí tu WhatsApp o tu correo.', 'One detail is missing so we can reply: enter your WhatsApp or your email.'),
+  phone: t('Revisá el número: necesita entre 8 y 15 dígitos (ejemplo: 8888 8888).', 'Check the number: it needs 8 to 15 digits (example: 8888 8888).'),
+  email: t('Revisá el correo: le falta algo (ejemplo: nombre@empresa.com).', 'Check the email: something is missing (example: name@company.com).'),
+};
+const AFTER_SENDING = [
+  t('Una persona del equipo te escribe al WhatsApp o correo que dejaste.', 'Someone from the team will message you at the WhatsApp or email you left.'),
+  ...NEXT_STEPS.slice(1),
+];
 
 const SalesContext = createContext(null);
 const useSales = () => useContext(SalesContext);
 
+// Paquete que la página desarrolla: el primero de la categoría o, si la URL trae ?p=<clave o alias> y ese
+// paquete se ofrece en esta página, ese. Así el enlace de una tarjeta de la portada (o de un anuncio)
+// aterriza en su propio paquete; antes seis de las diez tarjetas llegaban a una página que vendía otro
+// (auditoría de noviembre de 2026). El HTML estático no cambia: se genera sin parámetro.
+// Se resuelve igual que en la portada (data/packages.js → adPackage): ?p=, ?paquete= y `utm_content` cuando
+// es exactamente una clave o un alias. Antes esta página no leía `utm_content` y un anuncio que apuntaba
+// acá mostraba el primer paquete de la categoría en vez del anunciado.
+const requestedPackage = (offer) => (adPackage && offer.packages.includes(adPackage.key) ? adPackage.key : null);
+
 export function ServiceSalesProvider({ item, children }) {
   const offer = SERVICE_OFFERS[item.id];
   const copy = offer[locale];
-  const main = SERVICE_PRICING[offer.packages[0]];
-  const alt = offer.packages[1] ? SERVICE_PRICING[offer.packages[1]] : null;
+  const [mainKey, setMainKey] = useState(() => requestedPackage(offer) ?? offer.packages[0]);
+  const main = SERVICE_PRICING[mainKey];
+  const others = offer.packages.filter((key) => key !== mainKey).map((key) => ({ key, pkg: SERVICE_PRICING[key] }));
+  // Cambiar de paquete sin recargar: la dirección queda con ?p=<clave> para poder compartirla.
+  const choosePackage = (key) => {
+    setMainKey(key);
+    const params = new URLSearchParams(window.location.search);
+    params.set('p', key);
+    window.history.replaceState(null, '', `${window.location.pathname}?${params}#oferta`);
+    document.getElementById('oferta')?.scrollIntoView({ block: 'start' });
+  };
   const [picked, setPicked] = useState([]);
   const [values, setValues] = useState(() => Object.fromEntries(offer.calculator.fields.map((field) => [field.id, String(field.value)])));
   const [touched, setTouched] = useState(false);
@@ -68,34 +108,69 @@ export function ServiceSalesProvider({ item, children }) {
     if (touched) lines.push(t(`Calculé unas ${integer(calc.hours)} h al mes en esto (≈ US$${integer(calc.costYear)} al año).`, `I estimated about ${integer(calc.hours)} h a month on this (≈ US$${integer(calc.costYear)} a year).`));
     return lines;
   }, [picked, touched, calc, copy]);
+  // La misma información con las situaciones por número («Me pasan las situaciones 1, 2 y 4 de las 5 de esta
+  // página.»): la versión corta para cuando el texto entero no entra en los 600 caracteres del portal. El equipo
+  // lee las frases en la página del paquete pedido.
+  const shortSummary = useMemo(() => {
+    if (!picked.length) return summary;
+    const total = copy.signals.length;
+    const numbers = listOf(picked.map((index) => String(index + 1)));
+    const numbered = picked.length === total
+      ? t(`Me pasan las ${total} situaciones de esta página.`, `All ${total} situations on this page happen to me.`)
+      : picked.length === 1
+        ? t(`Me pasa la situación ${numbers} de las ${total} de esta página.`, `Situation ${numbers} of the ${total} on this page happens to me.`)
+        : t(`Me pasan las situaciones ${numbers} de las ${total} de esta página.`, `Situations ${numbers} of the ${total} on this page happen to me.`);
+    return [numbered, ...summary.slice(1)];
+  }, [picked, summary, copy]);
 
-  const whatsapp = (extraLines = []) => wa([
-    t(`Hola JC Analytics, estoy en «${item[locale].title}» y quiero cotizar el paquete ${label(main)} (US$${main.base_usd}).`, `Hi JC Analytics, I am reading “${item[locale].title}” and I want a quote for the ${label(main)} package (US$${main.base_usd}).`),
-    ...summary, ...extraLines,
-  ].filter(Boolean).join('\n\n'));
+  // Mismo mensaje que las tarjetas de la portada (data/packages.js), con lo marcado y lo calculado en esta
+  // página y, si la persona armó «Tu caso en una frase», con esa frase.
+  const visit = useCase();
+  const desktop = useDesktop();
+  const pack = PACKAGES.find((pkg) => pkg.key === mainKey);
+  const whatsapp = (extraLines = []) => {
+    const build = (lines) => packageMessage(pack, { lines: [...lines, ...extraLines], sentence: visit.packSentence });
+    const full = build(summary);
+    // El portal corta el mensaje en 600 caracteres. Con las cinco señales marcadas, la calculadora y la nota
+    // del anuncio se pasaba y el formulario corto cortaba el cierre a la mitad («Mi neg»): ahí las señales van
+    // por número, sin perder cuáles son. Se mide lo que de verdad sale (con la nota del anuncio). En computadora
+    // se deja además lugar para lo que la persona escriba en «¿Para qué negocio es?» (120 caracteres y su
+    // espacio), salvo que la frase del caso ya lo diga; en celular ese campo no existe y los 600 son los de la
+    // hoja «¿Pudiste enviar tu mensaje?» (antes la reserva corría también ahí y cambiaba por números pedidos que
+    // entraban enteros).
+    const room = desktop && !visit.packSentence ? 121 : 0;
+    if (waMessage(full).length + room <= MESSAGE_MAX || !picked.length) return wa(full);
+    return wa(build(shortSummary));
+  };
 
   const value = {
-    item, offer, copy, main, alt, picked, values, calc, touched, summary, whatsapp,
+    // `need`: la necesidad con la que el pedido llega al portal es la del paquete, la misma que usa su
+    // tarjeta de la portada (antes «Web con reservas» llegaba como «Página web» desde la portada y como
+    // «Sistema / backend» desde esta página). `sentence`: la frase de «Tu caso en una frase», para los
+    // envíos que van directo al portal.
+    item, offer, copy, main, mainKey, need: pack.need, sentence: visit.sentence, others, choosePackage, picked, values, calc, touched, summary, shortSummary, whatsapp,
     toggleSignal: (index) => setPicked((list) => (list.includes(index) ? list.filter((i) => i !== index) : [...list, index].sort())),
     setValue: (id, raw) => { setTouched(true); setValues((current) => ({ ...current, [id]: raw })); },
   };
   return <SalesContext.Provider value={value}>{children}</SalesContext.Provider>;
 }
 
-// En computadora este enlace abre el formulario corto (ui/LeadDialog.jsx): data-need y data-package-label
-// le dicen con qué necesidad y paquete llega la consulta al portal. `direct` lo deja abrir WhatsApp Web.
+// En computadora este enlace abre el formulario corto (ui/LeadDialog.jsx): data-need y data-package le dicen
+// con qué necesidad y paquete llega la consulta. `data-package` es la clave del tarifario, la misma que usa
+// la portada (antes acá viajaba el nombre en español y la medición recibía dos nombres para un paquete).
+// `direct` lo deja abrir WhatsApp Web.
 const WhatsAppLink = ({ href, pkg, children, className = '', trackLabel, direct = false }) => {
-  const { item } = useSales();
+  const { mainKey, need } = useSales();
   return (
-    <a className={`so-wa ${className}`} href={href} target="_blank" rel="noreferrer" data-package={pkg.label} data-value={pkg.base_usd} data-package-label={label(pkg)} data-need={item.need} data-track-label={trackLabel} {...(direct ? { 'data-wa-direct': '' } : {})}>
-      <MessageCircle size={18} aria-hidden="true" />{children}
+    <a className={`so-wa ${className}`} href={href} target="_blank" rel="noreferrer" data-package={mainKey} data-value={pkg.base_usd} data-package-label={label(pkg)} data-need={need} data-track-label={trackLabel} {...(direct ? { 'data-wa-direct': '' } : {})}>
+      {direct ? <MessageCircle size={18} aria-hidden="true" /> : <ContactIcon size={18} />}{children}
     </a>
   );
 };
 
 // ── Oferta ──────────────────────────────────────────────────────────────────
 export function OfferStrip() {
-  const { main, alt, whatsapp } = useSales();
+  const { main, others, choosePackage, whatsapp } = useSales();
   const desktop = useDesktop();
   return (
     <section id="oferta" className="so-offer" aria-labelledby="so-offer-title">
@@ -116,13 +191,21 @@ export function OfferStrip() {
           ? t('Tu consulta sale lista con el paquete; solo dejás tu WhatsApp o correo. Si marcás señales o usás la calculadora, también van.', 'Your inquiry is ready with the package; you only leave your WhatsApp or email. If you tick signals or use the calculator, they go too.')
           : t('El mensaje sale listo con el paquete. Si marcás señales o usás la calculadora, también van en el mensaje.', 'The message is ready with the package. If you tick signals or use the calculator, they go in the message too.')}</p>
       </div>
-      {alt && (
-        <aside className="so-offer__alt">
-          <span className="journal-eyebrow">{t('¿NECESITÁS OTRA ESCALA?', 'NEED ANOTHER SCALE?')}</span>
-          <h3>{label(alt)}</h3>
-          <p><strong>{money(alt.base_usd)}</strong> · {timeLabel(alt)}</p>
-          <p className="so-offer__alt-scope">{locale === 'es' ? alt.scope : alt.scope_en}</p>
-          <a className="so-text-link" href={`${homePath(locale)}#paquetes`}>{t('Ver todos los paquetes', 'See all packages')} <ArrowUpRight size={15} aria-hidden="true" /></a>
+      {others.length > 0 && (
+        <aside className="so-offer__alt" aria-label={t('Otros paquetes de esta categoría', 'Other packages in this category')}>
+          <span className="journal-eyebrow">{t('OTROS PAQUETES DE ESTA CATEGORÍA', 'OTHER PACKAGES IN THIS CATEGORY')}</span>
+          <ul className="so-offer__others">
+            {others.map(({ key, pkg }) => (
+              <li key={key}>
+                {/* Sin JavaScript el enlace recarga la página; con JavaScript cambia el paquete en el lugar. */}
+                <a href={`?p=${key}#oferta`} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); choosePackage(key); }} data-track-label={`Oferta · Ver paquete · ${key}`}>
+                  <span><strong>{label(pkg)}</strong><small>{money(pkg.base_usd)} · {timeLabel(pkg)}</small></span>
+                  <em>{t('Ver este paquete', 'See this package')}<ArrowRight size={14} aria-hidden="true" /></em>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <a className="so-text-link" href={`${homePath(locale)}#paquetes`}>{t('Comparar los 10 paquetes', 'Compare all 10 packages')} <ArrowUpRight size={15} aria-hidden="true" /></a>
         </aside>
       )}
     </section>
@@ -131,7 +214,7 @@ export function OfferStrip() {
 
 // ── Señales ─────────────────────────────────────────────────────────────────
 export function Signals() {
-  const { copy, picked, toggleSignal } = useSales();
+  const { item, copy, picked, toggleSignal } = useSales();
   const count = picked.length;
   const verdict = count === 0
     ? t('Marcá lo que te pase. Con una o dos ya vale la pena conversar.', 'Tick what happens to you. One or two is already worth a conversation.')
@@ -146,7 +229,8 @@ export function Signals() {
         {copy.signals.map((signal, index) => (
           <li key={signal}>
             <label className={picked.includes(index) ? 'is-on' : ''}>
-              <input type="checkbox" id={`senal-${index}`} checked={picked.includes(index)} onChange={() => toggleSignal(index)} data-track-label={`Señal ${index + 1}`} />
+              {/* La etiqueta dice de qué página es la señal: la número 1 es una frase distinta en cada servicio. */}
+              <input type="checkbox" id={`senal-${index}`} checked={picked.includes(index)} onChange={() => toggleSignal(index)} data-track-label={`Señal · ${item.id} · ${index + 1}`} />
               <span className="so-check" aria-hidden="true"><Check size={14} /></span>
               <span>{signal}</span>
             </label>
@@ -195,8 +279,7 @@ export function ImpactCalculator() {
 
 // ── Qué incluye ─────────────────────────────────────────────────────────────
 export function Includes() {
-  const { main, offer } = useSales();
-  const key = offer.packages[0];
+  const { main, mainKey: key } = useSales();
   const extraLabel = (extra) => (locale === 'es' ? extra.label : EXTRA_LABELS_EN[`${key}.${extra.key}`] ?? extra.label);
   return (
     <section id="incluye" className="so-block so-includes" aria-labelledby="so-includes-title">
@@ -270,7 +353,7 @@ export function RealExample() {
           <p>{project.tagline}</p>
           <ul>{project.features.slice(0, 2).map((feature) => <li key={feature}><Check size={13} aria-hidden="true" />{feature}</li>)}</ul>
           <div className="so-example__links">
-            <a className="so-text-link" href={`${homePath(locale)}?proyecto=${project.id}#trabajo`}>{t('Ver pantallas, código y cifras', 'See screens, code and figures')} <ArrowUpRight size={15} aria-hidden="true" /></a>
+            <a className="so-text-link" href={`${homePath(locale)}?proyecto=${project.id}#proyecto`}>{t('Ver pantallas, código y cifras', 'See screens, code and figures')} <ArrowUpRight size={15} aria-hidden="true" /></a>
             {project.url && <a className="so-text-link" href={project.url} target="_blank" rel="noreferrer">{t('Abrir el sitio', 'Open the site')} <ArrowUpRight size={15} aria-hidden="true" /></a>}
           </div>
         </div>
@@ -297,7 +380,7 @@ export function ServiceFaq() {
 
 // ── Formulario corto ────────────────────────────────────────────────────────
 export function ServiceLeadForm() {
-  const { item, main, summary, whatsapp } = useSales();
+  const { main, mainKey, need, sentence, summary, shortSummary, whatsapp } = useSales();
   // Computadora: «Enviar consulta» es el botón principal y WhatsApp Web queda como alternativa.
   const desktop = useDesktop();
   const [name, setName] = useState('');
@@ -305,23 +388,47 @@ export function ServiceLeadForm() {
   const [mail, setMail] = useState('');
   const [message, setMessage] = useState('');
   const [website, setWebsite] = useState(''); // trampa para bots: invisible para personas
-  const [status, setStatus] = useState('idle'); // idle · sending · sent · error · missing · invalid
+  const [status, setStatus] = useState('idle'); // idle · sending · sent · error
+  const [problem, setProblem] = useState(null); // missing · phone · email: dice qué campo corregir
   const startedAt = useRef(0);
+  const sentTitle = useRef(null);
   useEffect(() => { startedAt.current = performance.now(); }, []);
+  // Al enviar, el foco va al título de la confirmación: un lector de pantalla la anuncia.
+  useEffect(() => {
+    if (status !== 'sent') return;
+    // La confirmación es más corta que el formulario: se recoloca para que quede a la vista.
+    scrollToNode(sentTitle.current?.closest('.so-sent'), { instant: true });
+    sentTitle.current?.focus({ preventScroll: true });
+  }, [status]);
   const contact = { phone: phoneOk(phone) ? phone.trim() : '', email: emailOk(mail) ? mail.trim() : '' };
+  // Lo escrito, lo marcado, lo calculado y, si la armó en la portada, la frase de su caso (igual que en WhatsApp).
+  // El portal guarda 600 caracteres: lo que arma la página entra entero (con las situaciones por número si hace
+  // falta) y se recorta solo lo escrito por la persona, como en el formulario de contacto. Antes el recorte caía
+  // al final y se llevaba la frase del caso o dejaba un monto a medias («≈ US$1.»).
+  const portalMessage = () => {
+    const own = message.trim();
+    const tailOf = (lines) => [...lines, sentence ? caseLine(sentence) : ''].filter(Boolean).join('\n');
+    let tail = tailOf(summary);
+    if (own.length + 1 + tail.length > MESSAGE_MAX) tail = tailOf(shortSummary);
+    return [own.slice(0, Math.max(0, MESSAGE_MAX - tail.length - 1)), tail].filter(Boolean).join('\n').slice(0, MESSAGE_MAX);
+  };
   const lead = (channel) => sendLead({
-    channel, name: name.trim(), ...contact, need: item.need, packageName: main.label, website, startedAt: startedAt.current,
-    message: [message.trim(), ...summary].filter(Boolean).join('\n'), form: 'contacto-servicio', section: 'contacto-servicio',
+    channel, name: name.trim(), ...contact, need, packageName: main.label, website, startedAt: startedAt.current,
+    message: portalMessage(), form: 'contacto-servicio', section: 'contacto-servicio',
   });
   const requestCallback = async () => {
-    if ((phone.trim() && !contact.phone) || (mail.trim() && !contact.email)) { setStatus('invalid'); return; }
-    if (!contact.phone && !contact.email) { setStatus('missing'); return; }
+    if (status === 'sending') return;
+    // Un dato escrito pero mal formado se avisa con su campo: no se descarta en silencio.
+    const next = phone.trim() && !contact.phone ? 'phone' : mail.trim() && !contact.email ? 'email' : !contact.phone && !contact.email ? 'missing' : null;
+    if (next) { setProblem(next); document.getElementById(next === 'email' ? 'servicio-correo' : 'servicio-telefono')?.focus(); return; }
+    setProblem(null);
     setStatus('sending');
     const ok = await lead('devolucion').catch(() => false);
     // La consulta llegó al portal: cuenta como consulta captada en Google Ads, Meta y ChatGPT.
-    if (ok) trackLeadCaptured({ form: 'contacto-servicio', section: 'contacto-servicio', packageId: main.label, packageValue: main.base_usd });
+    if (ok) trackLeadCaptured({ form: 'contacto-servicio', section: 'contacto-servicio', packageId: mainKey, packageValue: main.base_usd });
     setStatus(ok ? 'sent' : 'error');
   };
+  const edit = (setter) => (event) => { setter(event.target.value); if (problem) setProblem(null); if (status === 'error') setStatus('idle'); };
   const href = whatsapp([
     name.trim() ? t(`Soy ${name.trim()}.`, `I am ${name.trim()}.`) : '',
     message.trim(),
@@ -336,6 +443,17 @@ export function ServiceLeadForm() {
           : t('Podés seguir por WhatsApp con el mensaje ya armado, o dejarnos tu contacto y te escribimos nosotros. Las dos opciones llegan al mismo equipo.', 'You can continue on WhatsApp with the message ready, or leave your contact and we write to you. Both options reach the same team.')}</p>
         {summary.length > 0 && <p className="so-form__summary"><Check size={14} aria-hidden="true" />{t('Tu mensaje incluye lo que marcaste y calculaste arriba.', 'Your message includes what you ticked and calculated above.')}</p>}
       </div>
+      {status === 'sent' ? (
+        // Misma confirmación que la portada: qué pasa ahora, en tres pasos, y una salida si es urgente.
+        <div className="so-sent">
+          <span className="journal-eyebrow">{t('CONSULTA RECIBIDA', 'INQUIRY RECEIVED')}</span>
+          <h3 ref={sentTitle} tabIndex={-1}>{t('¡Listo! Te escribimos en menos de 24 h.', 'Done! We’ll reach out within 24 hours.')}</h3>
+          <p>{t(`Tu consulta sobre ${label(main)} ya está con el equipo. Esto es lo que sigue:`, `Your inquiry about ${label(main)} is with the team. Here is what comes next:`)}</p>
+          <ol>{AFTER_SENDING.map((step, index) => <li key={step}><span aria-hidden="true">{index + 1}</span>{step}</li>)}</ol>
+          <WhatsAppLink href={href} pkg={main} className="so-wa--quiet" direct trackLabel={`Formulario · Urgente · ${main.label}`}>{desktop ? t('¿Es urgente? Abrir WhatsApp Web', 'Is it urgent? Open WhatsApp Web') : t('¿Es urgente? Escribinos por WhatsApp', 'Is it urgent? Message us on WhatsApp')}</WhatsAppLink>
+          <p className="so-form__status sr-only" role="status">{t('Consulta enviada. Te escribimos en menos de 24 h.', 'Inquiry sent. We’ll reach out within 24 hours.')}</p>
+        </div>
+      ) : (
       <form data-track="contacto-servicio" noValidate onSubmit={(event) => { event.preventDefault(); requestCallback(); }}>
         <div className="so-field">
           <label htmlFor="servicio-nombre">{t('Tu nombre', 'Your name')} <small>{t('(opcional)', '(optional)')}</small></label>
@@ -343,11 +461,11 @@ export function ServiceLeadForm() {
         </div>
         <div className="so-field">
           <label htmlFor="servicio-telefono">{t('WhatsApp o teléfono', 'WhatsApp or phone')}</label>
-          <input id="servicio-telefono" type="tel" inputMode="tel" autoComplete="tel" maxLength={30} value={phone} onChange={(event) => { setPhone(event.target.value); if (status !== 'sending') setStatus('idle'); }} aria-invalid={phone.trim() !== '' && !phoneOk(phone)} />
+          <input id="servicio-telefono" type="tel" inputMode="tel" autoComplete="tel" maxLength={30} placeholder={t('Ej.: 8888 8888', 'e.g. 8888 8888')} value={phone} onChange={edit(setPhone)} aria-invalid={problem === 'phone' || problem === 'missing'} aria-describedby="servicio-estado" />
         </div>
         <div className="so-field">
           <label htmlFor="servicio-correo">{t('o tu correo', 'or your email')}</label>
-          <input id="servicio-correo" type="email" inputMode="email" autoComplete="email" maxLength={160} value={mail} onChange={(event) => { setMail(event.target.value); if (status !== 'sending') setStatus('idle'); }} aria-invalid={mail.trim() !== '' && !emailOk(mail)} />
+          <input id="servicio-correo" type="email" inputMode="email" autoComplete="email" maxLength={160} placeholder={t('Ej.: nombre@empresa.com', 'e.g. name@company.com')} value={mail} onChange={edit(setMail)} aria-invalid={problem === 'email'} aria-describedby="servicio-estado" />
         </div>
         <div className="so-field so-field--wide">
           <label htmlFor="servicio-mensaje">{t('¿Qué querés resolver?', 'What would you like to solve?')} <small>{t('(opcional)', '(optional)')}</small></label>
@@ -360,7 +478,7 @@ export function ServiceLeadForm() {
         <div className="so-form__actions" data-mode={desktop ? 'form' : 'whatsapp'}>
           {desktop ? (
             <>
-              <button type="submit" className="so-callback so-callback--primary" disabled={status === 'sending' || status === 'sent'} data-track="contact" data-track-label="Formulario · Enviar consulta">
+              <button type="submit" className="so-callback so-callback--primary" disabled={status === 'sending'} data-track="contact" data-track-label="Formulario · Enviar consulta">
                 <PhoneCall size={17} aria-hidden="true" />{status === 'sending' ? t('Enviando…', 'Sending…') : t('Enviar consulta', 'Send inquiry')}
               </button>
               <WhatsAppLink href={href} pkg={main} className="so-wa--quiet" direct trackLabel={`Formulario · WhatsApp Web · ${main.label}`}>{t('Seguir en WhatsApp Web', 'Continue on WhatsApp Web')}</WhatsAppLink>
@@ -368,22 +486,21 @@ export function ServiceLeadForm() {
           ) : (
             <>
               <WhatsAppLink href={href} pkg={main} trackLabel={`Formulario · WhatsApp · ${main.label}`}>{t('Continuar en WhatsApp', 'Continue on WhatsApp')}</WhatsAppLink>
-              <button type="submit" className="so-callback" disabled={status === 'sending' || status === 'sent'} data-track="contact" data-track-label="Formulario · Que me contacten">
+              <button type="submit" className="so-callback" disabled={status === 'sending'} data-track="contact" data-track-label="Formulario · Que me contacten">
                 <PhoneCall size={17} aria-hidden="true" />{status === 'sending' ? t('Enviando…', 'Sending…') : t('Prefiero que me contacten', 'I’d rather you contact me')}
               </button>
             </>
           )}
         </div>
-        <p className="so-form__status" role="status">
-          {status === 'sent' && t('¡Listo! Tu consulta quedó en nuestro portal. Te escribimos en menos de 24 h.', 'Done! Your inquiry is in our portal. We’ll reach out within 24 hours.')}
-          {status === 'missing' && t('Dejanos tu WhatsApp o tu correo para poder contactarte.', 'Leave your WhatsApp or email so we can contact you.')}
-          {status === 'invalid' && t('Revisá el número (8 a 15 dígitos) o el correo.', 'Check the number (8 to 15 digits) or the email.')}
+        <p id="servicio-estado" className="so-form__status" role="status" data-tone={problem || status === 'error' ? 'bad' : undefined}>
+          {problem && PROBLEMS[problem]}
           {status === 'error' && (desktop
             ? t('No pudimos enviarlo. Probá de nuevo o seguí por WhatsApp Web.', 'We could not send it. Try again or continue on WhatsApp Web.')
             : t('No pudimos enviarlo. Seguí por WhatsApp con el botón verde.', 'We could not send it. Continue on WhatsApp with the green button.'))}
-          {status === 'idle' && t('Sin bots: te responde el mismo equipo que va a trabajar con vos.', 'No bots: the same team that will work with you replies.')}
+          {!problem && status !== 'error' && t('Sin bots: te responde el mismo equipo que va a trabajar con vos.', 'No bots: the same team that will work with you replies.')}
         </p>
       </form>
+      )}
     </section>
   );
 }

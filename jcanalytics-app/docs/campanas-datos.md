@@ -21,9 +21,13 @@
 | Webs y sistemas | `https://www.jcanalytic.com/servicios/desarrollo-web-costa-rica/` | `https://www.jcanalytic.com/en/services/web-development-costa-rica/` | Web con reservas · $570 | Software a medida · $540 |
 | Automatización | `https://www.jcanalytic.com/servicios/automatizacion-de-procesos/` | `https://www.jcanalytic.com/en/services/business-process-automation/` | Automatización de procesos · $165 | Excel y reportes · $60 |
 | Finanzas y dashboards | `https://www.jcanalytic.com/servicios/dashboards-power-bi-costa-rica/` | `https://www.jcanalytic.com/en/services/power-bi-dashboards-costa-rica/` | Dashboard inicial · $135 | Power BI de gestión · $240 |
-| IA y machine learning | `https://www.jcanalytic.com/servicios/integracion-ia-costa-rica/` | `https://www.jcanalytic.com/en/services/ai-integration-costa-rica/` | Asistente de IA documental · $420 | Chatbot de atención · $180 |
+| Inteligencia artificial | `https://www.jcanalytic.com/servicios/integracion-ia-costa-rica/` | `https://www.jcanalytic.com/en/services/ai-integration-costa-rica/` | Asistente de IA documental · $420 | Chatbot de atención · $180 |
 | Marketing | `https://www.jcanalytic.com/servicios/marketing-digital-costa-rica/` | `https://www.jcanalytic.com/en/services/digital-marketing-costa-rica/` | Sin paquete (botón a WhatsApp) | — |
 | Portada (genérica) | `https://www.jcanalytic.com/` | `https://www.jcanalytic.com/en/` | Seis destacados en `#paquetes` | — |
+
+Desde el 10 de noviembre de 2026 cada página acepta `?p=<paquete>` para abrir en un paquete que no sea el
+principal (por ejemplo `/servicios/desarrollo-web-costa-rica/?p=crm` para CRM comercial inicial, o `?p=inventario`).
+La tabla completa de paquetes por página está en [anuncios](anuncios.md).
 
 Precios en USD, pago único, IVA aparte. Las páginas de servicio disparan además `ViewContent` (Meta) y
 `contents_viewed` (ChatGPT); la portada no.
@@ -83,7 +87,9 @@ https://www.jcanalytic.com/servicios/desarrollo-web-costa-rica/?utm_source=meta&
 
 La fuente y la campaña se guardan 30 días en el navegador de la persona (`jc_attr`), sin datos personales.
 Por eso el WhatsApp termina con «(Vi el anuncio en Google · web-nov)» aunque la persona vuelva otro día sin
-pasar por el anuncio, y la consulta del portal trae fuente, campaña y dispositivo.
+pasar por el anuncio, y la consulta del portal trae fuente, campaña y dispositivo. Si vuelve por **otro**
+anuncio, esa llegada es otra visita también para el portal: sesión nueva y la fuente y campaña del anuncio
+nuevo (ver [anuncios](anuncios.md), «una conversión por visita»).
 
 ## 4. Identificadores y eventos de cada píxel
 
@@ -107,9 +113,23 @@ Qué recibe cada plataforma por acción (sin nombres, teléfonos, correos ni tex
 | Consulta aceptada por el portal (formulario corto, «Prefiero que me contacten», formularios de contacto y de servicio) | conversión «Envío de formulario» con el precio del paquete (o $10) + evento `lead_submit` | `Lead` (`content_name`, `value`) | `lead_created` |
 
 Parámetros de los eventos `contact_click` y `lead_submit` en Google: `contact_channel` (whatsapp, email,
-phone), `cta_mode` (form), `form_id`, `site_language` (es, en), `section_id` (sección de la página, por
-ejemplo `paquetes`, `oferta`, `contacto`), `traffic_source` (Google, Meta, ChatGPT o directo), `package_id`,
-`package_value` y `contact_line` (a o b). Sirven para segmentar en Google Ads o GA4 sin tocar el código.
+phone), `cta_mode` (form), `after_lead` y `repeat` (clic de alguien que ya dejó consulta o ya tocó WhatsApp en
+esta visita: se registra, no convierte; la visita termina cuando la persona llega por otro clic en un anuncio),
+`cta_id` (etiqueta estable del botón), `form_id`, `site_language`
+(es, en), `section_id` (sección de la página, por ejemplo `paquetes`, `oferta`, `contacto`), `traffic_source`
+(Google, Meta, ChatGPT o directo), `package_id` (la clave del tarifario: `pagina_web`, `dashboard_inicial`…,
+igual en la portada y en las páginas de servicio desde el 10 de noviembre de 2026), `package_value` y
+`contact_line` (a o b). Sirven para segmentar en Google Ads o GA4 sin tocar el código.
+
+En el portal (**Web → Tráfico del sitio**) también quedan, como clics con su etiqueta, las elecciones que no
+son un botón: las dos listas de «Tu caso en una frase» (`Caso · negocio · restaurante`, `Caso · meta ·
+vender`), las casillas del detalle del paquete (`Hoja · pagina_web · Con IA · sí`, `Hoja · pagina_web ·
+Agregado whatsapp · sí`), las señales de las páginas de servicio (`Señal · web-development · 2 · sí`) y cada
+vez que aparece la hoja «¿Pudiste enviar tu mensaje?» (`Retorno · Se mostró`). Son claves internas del sitio,
+nunca texto escrito por la persona. Cada etiqueta dice de qué paquete o de qué página es: el portal agrupa los
+clics por etiqueta y sección, sin la ruta, y `whatsapp` o `api` son agregados distintos según el paquete, igual
+que la señal 2 es una frase distinta en cada servicio. Ninguna etiqueta pasa de 60 caracteres (el rastreador
+corta ahí).
 
 ## 5. Líneas de WhatsApp y mensajes
 
@@ -122,7 +142,8 @@ Para probar una línea: `?wa_line=a` o `?wa_line=b` en cualquier URL del sitio. 
 dice cuál recibió cada contacto. Los mensajes van prearmados, por ejemplo:
 
 ```
-Hola JC Analytics, quiero el paquete Web con reservas ($570). ¿Qué necesitan para empezar?
+Hola JC Analytics, me interesa el paquete Web con reservas ($570 + IVA).
+¿Me confirman si calza con mi caso y qué necesitan para empezar?
 
 (Vi el anuncio en Google · web-nov)
 ```

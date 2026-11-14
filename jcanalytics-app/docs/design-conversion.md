@@ -113,3 +113,51 @@ Pendientes de la reunión: colores y redacción definitiva del eslogan.
 Pruebas: `check:site` ya no ejercita el cotizador y comprueba que `#cotizar` no exista en el HTML estático de la
 portada. La asistente se sincronizó con los textos nuevos (`sync:assistant`). Los datos para las campañas están
 en [campañas: datos exactos](campanas-datos.md).
+
+## Auditoría completa de la portada (10 de noviembre de 2026)
+
+Dieciocho revisiones independientes (negocio e ingeniería) y cinco capas de cambios: enrutamiento y verdad,
+claridad y jerarquía, compra, confianza y pulido técnico con medición. El detalle, lo que no se pudo verificar y
+las preguntas para el equipo están en [auditoría de la portada](auditoria-portada-2026-11.md).
+
+Lo que cambia respecto de las secciones anteriores de este documento:
+
+- **Los botones flotantes de celular sí se retiran** mientras hay un botón principal en pantalla o se escribe en
+  un formulario. La medición mostró que el botón del hero quedaba debajo del pliegue y que los flotantes tapaban
+  atajos y enlaces de paquetes.
+- **El formulario ofrece siete opciones**, con palabras de negocio, y nada viene marcado; las claves que recibe
+  el portal son las mismas nueve (`Finanzas` y `Machine learning` siguen siendo válidas cuando llegan desde un
+  enlace).
+- **Proyectos tiene un solo selector** con la miniatura de cada sistema; la galería de una pantalla por proyecto
+  salió. La prueba automática sigue exigiendo una captura real por proyecto en el HTML estático.
+- **Cada tarjeta de paquete abre su hoja** (`PackageSheet`) y, sin JavaScript, la página de su categoría con ese
+  paquete (`?p=<clave>#oferta`).
+- **Orden de la portada:** categorías → proyectos → compromisos → paquetes → preguntas → equipo → contacto →
+  ideas.
+- El hero rota una pantalla real por categoría (cinco), da una sola vuelta y se detiene.
+
+### Segunda ronda (10 de noviembre de 2026)
+
+- **Detalle del paquete** (`PackageSheet`; en los enlaces sigue siendo `#hoja-<clave>`): el total y el único
+  botón verde viven en una barra pegada al borde inferior; el cierre acompaña el desplazamiento; en pantallas
+  angostas las casillas van después de «Incluido». Lo marcado viaja en la dirección
+  (`#hoja-pagina_web.ia.whatsapp`), abrirlo agrega una entrada al historial («atrás» lo cierra) y el PDF sale en
+  una página con los cuatro compromisos.
+- **«Tu caso en una frase» dura toda la visita** (`components/site/case.js`, en `sessionStorage`): la respuesta
+  trae precio y plazo, cotizar es el botón verde, la tarjeta del paquete más cercano lleva «El más cercano a tu caso» y los
+  pedidos y «Cotizar» salen con la frase. Nada de eso llega a las plataformas de anuncios.
+- **Un solo mensaje de paquete** en portada, detalle y páginas de servicio (`packageMessage`): cierra con «¿Me
+  confirman si calza con mi caso?» y la línea abierta «Mi negocio:». En computadora el formulario corto ofrece
+  ese dato como campo opcional.
+- **Textos por dispositivo sin parpadeo:** el HTML estático trae las dos variantes («Cotizar por WhatsApp» /
+  «Pedir cotización») y `data-pointer`, puesto por un script en línea antes de pintar, decide cuál se ve
+  (`components/site/pointer.jsx`, `boot.js`). Con React montado se pinta una sola.
+- **Clic antes de tiempo:** el mismo script guarda el clic a WhatsApp hecho antes de que la página sea
+  interactiva; en computadora lo detiene y al montar se repite (abre el formulario corto), en celular se mide
+  (`components/ui/early-click.js`).
+- **Montos:** `money()` y `colones()` de `data/packages.js` separan miles con punto en español y coma en inglés;
+  no se usa `toLocaleString` para dinero.
+- **Desplazamiento a un elemento:** `components/site/scroll.js` (`scrollToNode`) respeta `scroll-margin-top`
+  también con el desplazamiento suave de computadora; lo usan las tarjetas de paquete, las confirmaciones de
+  los formularios y cualquier ancla que no sea una sección.
+

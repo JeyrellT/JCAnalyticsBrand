@@ -3,7 +3,8 @@
 Desde noviembre de 2026 cada anuncio debe aterrizar en la página de su categoría (por ejemplo `/servicios/desarrollo-web-costa-rica/`): ahí están el paquete con su precio, las señales «¿es para vos?», la calculadora y el botón "Lo quiero · WhatsApp". La portada con `?p=<paquete>` sigue funcionando para el tráfico que ya existe: muestra un aviso con el paquete del anuncio (sin precio en la primera pantalla, como acordó el equipo) y lo pone primero en la sección de paquetes, más abajo. El mensaje de WhatsApp ya va escrito y termina con la plataforma y campaña del anuncio, por ejemplo:
 
 ```
-Hola JC Analytics, quiero el paquete Dashboard inicial ($135). ¿Qué necesitan para empezar?
+Hola JC Analytics, me interesa el paquete Dashboard inicial ($135 + IVA).
+¿Me confirman si calza con mi caso y qué necesitan para empezar?
 
 (Vi el anuncio en Google · dashboards-oct)
 ```
@@ -16,7 +17,18 @@ Los datos exactos para cargar en cada plataforma están en [campañas: datos exa
 
 ## 1. URL de destino por anuncio
 
-Agregá `?p=<paquete>` para que ese paquete aparezca primero, marcado "El que viste en el anuncio", y el botón del hero ya pida ese paquete.
+Agregá `?p=<paquete>` para que ese paquete aparezca primero, marcado "El que viste en el anuncio", y el botón del hero ya pida ese paquete («Lo quiero: {paquete}»).
+
+Desde el 10 de noviembre de 2026 `?p=` también funciona en la página de la categoría: `/servicios/desarrollo-web-costa-rica/?p=software` muestra Software a medida (precio, «Qué incluye», calculadora y mensaje) en vez del primer paquete de la página. Si el paquete no pertenece a esa categoría, el parámetro se ignora. Cada paquete vive en esta página:
+
+| Página | Paquetes (`p=`) |
+| --- | --- |
+| `/servicios/desarrollo-web-costa-rica/` | `web`, `software`, `crm`, `inventario` |
+| `/servicios/automatizacion-de-procesos/` | `automatizacion`, `excel` |
+| `/servicios/dashboards-power-bi-costa-rica/` | `dashboard`, `powerbi` |
+| `/servicios/integracion-ia-costa-rica/` | `ia`, `chatbot` |
+
+`utm_content` solo activa un paquete cuando es **exactamente** su clave o un alias (por ejemplo `web`). Un anuncio llamado «IA-2» o «Web 1» ya no cambia la portada: para anunciar un paquete usá `p=`.
 
 | Paquete | `p=` |
 | --- | --- |
@@ -66,9 +78,32 @@ consultas. Detalle y criterios en [estrategia de conversión](estrategia-convers
 | "Lo quiero" de un paquete en celular | lo mismo + `package_id`, `package_value`, `traffic_source` | `Contact` con `content_name` = paquete, `value` = precio | `lead_created` |
 | Clic a WhatsApp en computadora (abre el formulario corto) | solo `contact_click` con `cta_mode: form` | `Contact` | — |
 | Consulta aceptada por el portal (formulario corto, "Prefiero que me contacten", formulario de contacto en computadora, formulario de la página de servicio) | conversión "Envío de formulario" con el precio del paquete (o $10) + evento `lead_submit` | `Lead` con `content_name` = paquete o formulario, `value` = precio | `lead_created` |
-| Formulario de contacto en celular con WhatsApp o correo escrito | "Clic WhatsApp" (abre WhatsApp); la consulta también queda en el portal | `Contact` + `Lead` | `lead_created` (una sola) |
+| «Prefiero que me contacten» en el formulario de contacto de celular | conversión "Envío de formulario" ($10) + `lead_submit` | `Lead` | `lead_created` |
+| Volver de WhatsApp y dejar el número en la hoja «¿Pudiste enviar tu mensaje?» (`whatsapp-retorno`) | solo `lead_submit` (el toque a WhatsApp ya contó) | `Lead` | — (el toque ya avisó) |
+| Clic a WhatsApp **después** de una consulta aceptada en la misma visita | solo `contact_click` con `after_lead: true` (no es otra persona) | — | — |
+| Segundo clic a WhatsApp en la misma visita (otro botón, o «Volver a WhatsApp» de la hoja de retorno) | solo `contact_click` con `repeat: true` | — | — |
+| Primer clic a WhatsApp después de **otro clic en un anuncio** (la dirección trae un `gclid`, `gbraid`, `wbraid` o `fbclid` que esta pestaña no había visto) | cuenta de nuevo: es otra visita | `Contact` | `lead_created` |
+| Clic a WhatsApp hecho antes de que la página termine de cargar | se guarda y se mide al montar. En computadora se retiene y abre el formulario corto (`cta_mode: form`); en celular, o con Ctrl+clic, ya siguió a WhatsApp y cuenta como clic directo, sin tope de tiempo, con el paquete del mensaje que se abrió (y recibe la hoja de retorno al volver) | igual que la fila que corresponda | igual |
 
-Nunca viajan nombres, teléfonos, correos ni texto libre: solo canal, sección, paquete, idioma y fuente.
+Nunca viajan nombres, teléfonos, correos ni texto libre: solo canal, sección, paquete, idioma, fuente y la
+etiqueta estable del botón (`cta_id`, por ejemplo `Paquetes · Lo quiero · pagina_web`). Desde el 10 de noviembre
+de 2026 el paquete viaja siempre con su **clave del tarifario** (`pagina_web`, `dashboard_inicial`…), en la
+portada y en las páginas de servicio, en los dos idiomas: `package_id` en Google y `content_name` en Meta.
+Antes las páginas de servicio enviaban el nombre en español («Web con reservas») y las etiquetas llevaban el
+nombre traducido, así que un mismo paquete aparecía en dos o tres filas; el historial anterior a esa fecha
+conserva los nombres viejos. También desde esa fecha se cuenta **una conversión de «Clic WhatsApp» por
+visita**. Una visita es la pestaña del navegador (`sessionStorage`) hasta que llega **otro clic en un anuncio**:
+en un celular la pestaña vive días, y quien vuelve por un anuncio nuevo tiene que contar para ese anuncio. Al
+llegar un identificador de clic que la pestaña no había visto se reinician las marcas de la visita (`jc_wa`,
+`jc_lead` y la de la hoja de retorno) y también la sesión y la fuente con que el portal registra la visita
+(`jc_sid`, `jc_visit`): la consulta que deja esa persona llega al portal con la campaña del anuncio nuevo, no
+con la de la visita anterior. Recargar, o volver atrás a la dirección de un anuncio ya visto, no reinicia nada.
+Lo hace `seo/attribution.js`, que corre antes que la medición. El identificador se guarda solo en ese
+navegador (`jc_click`). Meta agrega `fbclid` también a
+enlaces que no son anuncios (una publicación, un enlace compartido): cuenta igual, es una llegada nueva desde
+afuera. Las visitas de ChatGPT no traen identificador de clic: ahí la visita sigue siendo la pestaña. El píxel de Meta
+tiene apagada la configuración automática (`autoConfig`): no lee por su cuenta el texto ni el destino de los
+botones, que en los enlaces de contacto incluyen el nombre y el mensaje de la persona.
 
 ### Conversión "Envío de formulario" en Google Ads
 

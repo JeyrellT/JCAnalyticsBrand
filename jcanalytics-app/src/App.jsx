@@ -1,12 +1,12 @@
-// JC Analytics, portada corta (reunión del 31 de octubre de 2026): qué hacemos por categoría →
-// proyectos reales → cómo trabajamos → precios → equipo → ideas → preguntas → contacto.
+// JC Analytics, portada corta (reunión del 31 de octubre de 2026). Cada sección responde una pregunta de
+// quien compra, en el orden en que se la hace (auditoría de noviembre de 2026): ¿cuál es mi caso? → ¿ya lo
+// hicieron? → ¿qué arriesgo? → ¿cuánto cuesta? → ¿qué más debería saber? → ¿quién me atiende? → contacto.
+// El cuaderno de ideas va al final: es lectura para quien todavía no va a escribir.
 // Las demos de sistemas, finanzas, IA y marketing viven ahora en la página de cada servicio (ServiceDemo).
 // El cotizador en vivo salió de la portada el 3 de noviembre de 2026: los precios publicados viven en
 // Paquetes y en la página de cada categoría (con su calculadora); lo demás se cotiza conversando.
 import { useEffect } from 'react';
 import { useReducedMotion } from 'framer-motion';
-import Lenis from 'lenis';
-import gsap from 'gsap';
 
 import Nav from './components/site/Nav';
 import Hero from './components/site/Hero';
@@ -27,31 +27,57 @@ import './styles/discovery.css';
 import { t } from './i18n/locale';
 import { trackContactClicks } from './seo/analytics';
 import { useInitialFragment } from './components/useInitialFragment';
+import { afterLayout, registerSmoothScroll, scrollToNode } from './components/site/scroll';
+import { endBoot } from './boot';
 
 const App = () => {
   useInitialFragment();
   const reduce = useReducedMotion();
   useEffect(trackContactClicks, []);
+  useEffect(endBoot, []);
 
-  // Scroll suave (Lenis) solo en desktop con puntero fino: en táctil queda el
-  // scroll nativo del sistema. gsap.ticker conduce el rAF en un único loop.
+  // Scroll suave (Lenis) solo en computadora con puntero fino: en táctil queda el scroll nativo del sistema
+  // y la librería ni se descarga. Antes Lenis y GSAP completo (usado solo como reloj) bajaban para todos.
   useEffect(() => {
     const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     if (!fine || reduce) return undefined;
-    const lenis = new Lenis({ lerp: 0.09, smoothWheel: true, anchors: true });
-    const tick = (t) => lenis.raf(t * 1000);
-    const menuState = (event) => event.detail.open ? lenis.stop() : lenis.start();
+    let lenis = null;
+    let frame = 0;
+    let cancelled = false;
+    let unregister = () => {};
+    const onAnchor = (event) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const anchor = event.target.closest?.('a[href*="#"]');
+      if (!anchor || anchor.origin !== window.location.origin || anchor.pathname !== window.location.pathname || anchor.hash.length < 2) return;
+      let node = null;
+      try { node = document.getElementById(decodeURIComponent(anchor.hash.slice(1))); } catch { /* ancla mal formada */ }
+      if (node && node.tagName !== 'SECTION') afterLayout(() => scrollToNode(node));
+    };
+    const menuState = (event) => { if (lenis) { if (event.detail.open) lenis.stop(); else lenis.start(); } };
     window.addEventListener('jca:menu-state', menuState);
     window.addEventListener('jca:assistant-state', menuState);
     window.addEventListener('jca:lead-dialog-state', menuState);
-    gsap.ticker.add(tick);
-    gsap.ticker.lagSmoothing(0);
+    import('lenis').then(({ default: Lenis }) => {
+      if (cancelled) return;
+      lenis = new Lenis({ lerp: 0.09, smoothWheel: true, anchors: true });
+      // Quien necesita llegar a un elemento respetando la barra fija usa scroll.js, que pasa por acá.
+      unregister = registerSmoothScroll((top, { instant }) => lenis.scrollTo(top, { immediate: instant, force: true }));
+      // Lenis lleva cada ancla a y=0. A las secciones no les afecta (traen su propio aire arriba), pero una
+      // tarjeta de paquete o el explorador de proyectos quedaban debajo de la barra fija: esos destinos se
+      // recolocan respetando su `scroll-margin-top`.
+      document.addEventListener('click', onAnchor);
+      const loop = (time) => { lenis.raf(time); frame = window.requestAnimationFrame(loop); };
+      frame = window.requestAnimationFrame(loop);
+    }).catch(() => { /* sin scroll suave: queda el nativo */ });
     return () => {
-      gsap.ticker.remove(tick);
+      cancelled = true;
+      unregister();
+      document.removeEventListener('click', onAnchor);
+      window.cancelAnimationFrame(frame);
       window.removeEventListener('jca:menu-state', menuState);
       window.removeEventListener('jca:assistant-state', menuState);
       window.removeEventListener('jca:lead-dialog-state', menuState);
-      lenis.destroy();
+      lenis?.destroy();
     };
   }, [reduce]);
 
@@ -69,10 +95,10 @@ const App = () => {
         <Work />
         <Process />
         <Packages />
-        <Team />
-        <KnowledgePreview />
         <FAQ />
+        <Team />
         <Contact />
+        <KnowledgePreview />
       </main>
 
       <Footer />
