@@ -55,7 +55,7 @@ export function portalAdminRoutes(route, ctx) {
     const accountId = Number(lastInsertRowid);
     ctx.log(user.id, 'client_account', accountId, 'created', `${user.name} dio acceso al portal a ${name} (${client.name})`);
     db.prepare('INSERT INTO client_notifications (account_id, kind, title, body, link, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
-      accountId, 'cuenta', 'Bienvenida al portal de JC Analytics', 'Aquí ves tus proyectos, solicitudes, entregables y documentos.', '/cliente', ctx.nowIso(),
+      accountId, 'cuenta', 'Bienvenida al portal de JC Analytics', 'Aquí ves tus proyectos y avances, pedís actualizaciones y consultás tus pagos.', '/cliente', ctx.nowIso(),
     );
     return { account: portal.publicAccount(getAccount(accountId)), temporary_password: temp };
   });

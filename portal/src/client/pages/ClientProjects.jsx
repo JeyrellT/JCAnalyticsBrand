@@ -4,7 +4,7 @@ import { FolderKanban, Plus, Archive } from 'lucide-react';
 import { useResource } from '../../lib/session.jsx';
 import { Link } from '../../lib/router.jsx';
 import { PageHeader, PageLoader, EmptyState, Tabs, cx } from '../../components/ui.jsx';
-import { ProjectCard } from '../components.jsx';
+import { ProjectCard, BackLink } from '../components.jsx';
 
 const isClosed = (p) => p.archived || p.status === 'cerrado';
 
@@ -21,8 +21,8 @@ export default function ClientProjects() {
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="Tu servicio con JC Analytics" title="Proyectos" icon={FolderKanban} tone="blue"
-        subtitle="Cada proyecto avanza por etapas. Aquí ves en cuál va, qué sigue y quién lo lleva." />
+      <PageHeader back={<BackLink to="/cliente">Mis proyectos</BackLink>} eyebrow="Tu servicio con JC Analytics" title="Todos tus proyectos" icon={FolderKanban} tone="blue"
+        subtitle="Los que están en marcha y los que ya terminamos." />
 
       {closed.length > 0 && (
         <Tabs value={current} onChange={setTab} tabs={[
@@ -33,7 +33,7 @@ export default function ClientProjects() {
 
       {data.projects.length === 0 ? (
         <EmptyState icon={FolderKanban} title="Todavía no hay proyectos"
-          action={<Link to="/cliente/solicitudes/nueva" className="btn btn-primary"><Plus className="h-4 w-4" />Nueva solicitud</Link>}>
+          action={<Link to="/cliente/actualizaciones?nueva=1" className="btn btn-primary"><Plus className="h-4 w-4" />Pedir algo</Link>}>
           Cuando arranquemos un proyecto juntos, vas a ver aquí sus etapas, avances y entregables.
         </EmptyState>
       ) : list.length === 0 ? (

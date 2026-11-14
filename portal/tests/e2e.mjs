@@ -470,6 +470,66 @@ try {
     await c.context().close();
   });
 
+  // ── Portal simple: Proyectos, Actualizaciones (monto que pone JC) y Pagos ──
+  await check('portal simple: el cliente acepta un monto, pide otra actualización y lo ve en Pagos', async () => {
+    const c = await newPage({ width: 1440, height: 900 });
+    await c.goto(`${base}/cliente`);
+    await c.getByLabel('Correo').fill(CLIENT_EMAIL);
+    await c.getByLabel('Contraseña').fill(DEMO_PASSWORD);
+    await c.getByRole('button', { name: 'Entrar' }).click();
+    await c.getByRole('heading', { name: 'Tus proyectos' }).waitFor();
+    // Solo tres secciones en la navegación.
+    const nav = c.getByRole('navigation', { name: 'Secciones del portal' }).first();
+    assert.equal(await nav.getByRole('link').count(), 3);
+    for (const name of ['Proyectos', 'Actualizaciones', 'Pagos']) await nav.getByRole('link', { name: new RegExp(`^${name}`) }).waitFor();
+
+    await nav.getByRole('link', { name: /^Actualizaciones/ }).click();
+    await c.getByRole('heading', { name: 'Actualizaciones', level: 1 }).waitFor();
+    const combos = c.locator('li', { hasText: 'Sección de combos familiares' });
+    await combos.getByRole('button', { name: /^Aceptar/ }).click();
+    await c.getByRole('dialog').getByRole('button', { name: 'Sí, aceptar' }).click();
+    await combos.getByText('En proceso').first().waitFor();
+    await shot(c, '39a-cliente-actualizaciones');
+
+    await c.getByRole('button', { name: 'Pedir una actualización' }).first().click();
+    await c.getByLabel('¿Qué necesitás?').fill('Agregar el horario de feriados');
+    await c.getByRole('button', { name: 'Enviar pedido' }).click();
+    await c.locator('li', { hasText: 'Agregar el horario de feriados' }).getByText('Esperando cotización').waitFor();
+
+    await nav.getByRole('link', { name: /^Pagos/ }).click();
+    await c.getByRole('heading', { name: 'Pagos', level: 1 }).waitFor();
+    await c.getByText('Actualización: Sección de combos familiares').first().waitFor();
+    await c.getByRole('heading', { name: 'Cómo pagar' }).waitFor();
+    await shot(c, '39b-cliente-pagos');
+    await c.context().close();
+  });
+
+  await check('equipo: pone el monto a una actualización y registra el pago del cliente', async () => {
+    const t = await newPage({ width: 1440, height: 900 });
+    await login(t, 'jeyrell');
+    await t.goto(`${base}/clientes/1?portal=actualizaciones`);
+    await t.getByRole('heading', { name: 'Portal del cliente' }).waitFor();
+    const item = t.locator('li', { hasText: 'Agregar el horario de feriados' });
+    await item.getByRole('button', { name: 'Poner monto' }).click();
+    const quote = t.getByRole('dialog', { name: 'Poner monto' });
+    await quote.getByLabel('Monto', { exact: true }).fill('15000');
+    await quote.getByRole('button', { name: 'Enviar monto al cliente' }).click();
+    await quote.waitFor({ state: 'detached' });
+    await item.getByText('Cotizada').waitFor();
+    await shot(t, '39c-equipo-actualizaciones');
+
+    await t.getByRole('tab', { name: /^Pagos/ }).click();
+    const pay = t.locator('li', { hasText: 'Actualización: Sección de combos familiares' });
+    await pay.getByRole('button', { name: 'Registrar pago' }).click();
+    const dialog = t.getByRole('dialog', { name: 'Registrar pago' });
+    await dialog.getByLabel(/Referencia/).fill('SINPE 999');
+    await dialog.getByRole('button', { name: 'Registrar pago' }).click();
+    await dialog.waitFor({ state: 'detached' });
+    await t.getByText(/Ref\. SINPE 999/).first().waitFor();
+    await shot(t, '39d-equipo-pagos');
+    await t.context().close();
+  });
+
   await check('equipo: el brief del cliente llega a la bandeja y se aprueba con versión congelada', async () => {
     const t = await newPage({ width: 1440, height: 900 });
     await login(t, 'catalina');
@@ -503,13 +563,16 @@ try {
     await m2.getByRole('heading', { name: 'Requiere tu atención' }).waitFor();
     await noHorizontalScroll(m2, 'cliente inicio');
     await shot(m2, '37-movil-cliente-inicio');
-    for (const path of ['/cliente/proyectos', '/cliente/solicitudes', '/cliente/entregables', '/cliente/documentos', '/cliente/solicitudes/nueva']) {
+    for (const path of ['/cliente/actualizaciones', '/cliente/pagos', '/cliente/proyectos', '/cliente/solicitudes', '/cliente/entregables', '/cliente/documentos', '/cliente/actualizaciones?nueva=1']) {
       await m2.goto(base + path);
       await m2.locator('main h1').first().waitFor();
       await m2.waitForTimeout(300);
       await noHorizontalScroll(m2, path);
     }
-    await shot(m2, '38-movil-cliente-nueva-solicitud');
+    await shot(m2, '38-movil-cliente-nueva-actualizacion');
+    await m2.goto(`${base}/cliente/pagos`);
+    await m2.locator('main h1').first().waitFor();
+    await shot(m2, '38b-movil-cliente-pagos');
     await m2.context().close();
   });
 

@@ -1,6 +1,8 @@
 # v5 · Portal de clientes y brief creativo
 
 > Contrato entre backend y frontend. Lo implementado en `server/` y `shared/` es la fuente de verdad; este documento resume formas y reglas.
+>
+> **Actualización:** el portal del cliente ahora es simple (Proyectos, Actualizaciones y Pagos) y el cliente sí ve los montos de sus actualizaciones y su cuenta de pagos. Ver [portal-cliente-simple.md](portal-cliente-simple.md); lo de este documento sigue vigente para briefs, entregables y documentos.
 
 ## 1. Objetivo
 
