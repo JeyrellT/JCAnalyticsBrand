@@ -772,5 +772,116 @@ export const blogArticles = [
         { title: 'El Financiero — Todo lo que dijo el Banco Mundial sobre la IA', url: 'https://www.elfinancierocr.com/economia-y-politica/todo-lo-que-dijo-el-banco-mundial-sobre-la/THJI2GRDLBEJTCOPOOPAOG4OOA/story/' }
       ]
     }
+  },
+  {
+    id: 'ai-agents-long-tasks-nov-2026',
+    topic: 'intelligence',
+    image: '/projects/caviq/pulse-desktop.webp',
+    minutes: 5,
+    published: '2026-11-14',
+    en: {
+      slug: 'ai-agents-work-for-days-half-the-workflows',
+      title: 'AI in November 2026: agents that work for days, and still finish only half the workflows',
+      summary: 'Two official announcements from this week show where AI for process automation stands: models that coordinate hundreds of agents for days, and platforms sold with thousands of prebuilt agents. The vendor\'s own numbers also show why a person still has to review the result.',
+      takeaway: 'The models improved a lot in long, multi-step work. On a business workflow benchmark, the best published score is still about half. Plan your automation for the half that fails.',
+      sections: [
+        {
+          id: 'announced',
+          heading: 'What was announced',
+          paragraphs: [
+            'On November 9, 2026, Anthropic published Claude Fable 5.2 and Claude Mythos 5.2. According to the announcement, they produce output up to 30 % faster than the previous versions and cost USD 8 per million input tokens and USD 40 per million output tokens. Both are the same model with different safeguards: Fable is available to everyone, and Mythos is limited to vetted organizations.',
+            'On November 10, IBM and Microsoft announced Imagine Enterprise, a platform to build, run and govern AI agents. According to the joint press release, IBM Consulting contributes more than 6,000 prebuilt agents and assets, Microsoft provides the technology base, and the first industries are financial services, insurance and retail. We could not open the release from our environment, so these points come from the indexed text of the official IBM and Microsoft pages.'
+          ]
+        },
+        {
+          id: 'long-work',
+          heading: 'What changed: long work with many agents',
+          paragraphs: [
+            'The examples in Anthropic\'s announcement are not about answering a question. One describes an engineer who had the model design a prototype operating system, coordinating more than 1,000 subagents over eight days. A companion research post describes the model designing three electronic devices, with circuit boards that a manufacturer built directly from its files.',
+            'The same post is clear about the limits. People assembled and tested the boards, the model had no connection to test equipment, and the three devices are prototypes that have not gone through electrical validation, thermal testing or certification. That is a useful pattern for any company: the model does the long design work, and people keep the physical checks and the final approval.'
+          ]
+        },
+        {
+          id: 'half',
+          heading: 'The number that matters for processes',
+          paragraphs: [
+            'Among the results Anthropic reports is AutomationBench, which it describes as a test of business workflows. The new model scores 51.4 %, against 42.5 % for Claude Opus 5.5, the model the company recommends for daily work. That is a real improvement, and it also means that about half of the workflows in that test are not completed correctly.',
+            'These are figures reported by the vendor, not an independent audit, and a benchmark is not your process. Still, the order of magnitude is a good guide. If you automate an administrative flow with an agent today, expect a meaningful share of cases to need a person. Anthropic itself reserves the largest models for the hardest tasks.'
+          ]
+        },
+        {
+          id: 'sme',
+          heading: 'What a small company can do with this',
+          paragraphs: [
+            'A catalog of 6,000 agents does not solve the first question, which is which process you want to change and how you will know it improved. Start with one flow that has clear inputs and a clear definition of "done", such as classifying incoming requests or preparing a draft quote.',
+            'Then write the stop rules before turning the agent on: which cases go to a person, who that person is and how long they have to answer. Measure for a few weeks how many cases the agent finishes without correction. If that share is low, the problem is often in the data or in a step nobody documented, not in the model.',
+            'Synthetic example: a fictional accounting office tests an agent that reads supplier invoices and proposes the accounting entry. The rule is that any invoice without a purchase order, or above a set amount, goes to a person. After a month they count how many proposals were accepted without changes, and only then decide whether to extend the test to another type of document.'
+          ]
+        }
+      ],
+      discussion: [
+        'In which of your processes could an error rate of one in two be acceptable with human review, and in which could it not?',
+        'Who in your team would review the cases the agent cannot finish, and how much time would that take?',
+        'What would you measure in the first month to decide whether the automation stays?'
+      ],
+      sources: [
+        { title: 'Anthropic — Introducing Claude Fable 5.2 and Claude Mythos 5.2 (Nov 9, 2026)', url: 'https://www.anthropic.com/claude-fable-and-mythos-5-2' },
+        { title: 'Anthropic — Claude can design electronic prototypes from start to finish (Nov 9, 2026)', url: 'https://www.anthropic.com/research/claude-electronics-design' },
+        { title: 'IBM Newsroom — IBM and Microsoft Announce a New AI Agent Platform Designed for Industry-Specific Transformation (Nov 10, 2026)', url: 'https://newsroom.ibm.com/2026-11-10-ibm-and-microsoft-announce-a-new-ai-agent-platform-designed-for-industry-specific-transformation' },
+        { title: 'Microsoft Source — IBM and Microsoft announce a new AI agent platform designed for industry-specific transformation', url: 'https://news.microsoft.com/source/2026/11/10/ibm-and-microsoft-announce-a-new-ai-agent-platform-designed-for-industry-specific-transformation/' }
+      ]
+    },
+    es: {
+      slug: 'agentes-ia-trabajan-dias-la-mitad-de-los-flujos',
+      title: 'IA en noviembre 2026: agentes que trabajan días enteros y aún completan solo la mitad de los flujos',
+      summary: 'Dos anuncios oficiales de esta semana muestran en qué punto está la IA para automatizar procesos: modelos que coordinan cientos de agentes durante días y plataformas que se venden con miles de agentes prediseñados. Las cifras del propio proveedor también explican por qué una persona todavía debe revisar el resultado.',
+      takeaway: 'Los modelos mejoraron mucho en trabajo largo y de varios pasos. En una prueba de flujos de negocio, la mejor nota publicada sigue cerca de la mitad. Diseñe su automatización pensando en la mitad que falla.',
+      sections: [
+        {
+          id: 'announced',
+          heading: 'Qué se anunció',
+          paragraphs: [
+            'El 9 de noviembre de 2026 Anthropic publicó Claude Fable 5.2 y Claude Mythos 5.2. Según el anuncio, generan resultados hasta un 30 % más rápido que las versiones anteriores y cuestan USD 8 por millón de tokens de entrada y USD 40 por millón de tokens de salida. Los dos son el mismo modelo con salvaguardas distintas: Fable está disponible para todo el público y Mythos se limita a organizaciones verificadas.',
+            'El 10 de noviembre IBM y Microsoft anunciaron Imagine Enterprise, una plataforma para construir, operar y gobernar agentes de IA. Según el comunicado conjunto, IBM Consulting aporta más de 6.000 agentes y activos prediseñados, Microsoft pone la base tecnológica y las primeras industrias son servicios financieros, seguros y comercio minorista. No pudimos abrir el comunicado desde nuestro entorno, así que estos puntos vienen del texto indexado de las páginas oficiales de IBM y Microsoft.'
+          ]
+        },
+        {
+          id: 'long-work',
+          heading: 'Qué cambió: trabajo largo con muchos agentes',
+          paragraphs: [
+            'Los ejemplos del anuncio de Anthropic no tratan de responder una pregunta. Uno describe a un ingeniero que puso al modelo a diseñar un prototipo de sistema operativo, coordinando más de 1.000 subagentes durante ocho días. Una publicación de investigación que lo acompaña describe cómo el modelo diseñó tres dispositivos electrónicos, con tarjetas de circuito que un fabricante construyó directamente a partir de sus archivos.',
+            'La misma publicación es clara con los límites. Las tarjetas las ensamblaron y probaron personas, el modelo no tenía conexión con equipos de prueba, y los tres dispositivos son prototipos que no han pasado por validación eléctrica, pruebas térmicas ni certificación. Es un patrón útil para cualquier empresa: el modelo hace el trabajo largo de diseño y las personas conservan las pruebas físicas y la aprobación final.'
+          ]
+        },
+        {
+          id: 'half',
+          heading: 'La cifra que importa para los procesos',
+          paragraphs: [
+            'Entre los resultados que reporta Anthropic está AutomationBench, que la empresa describe como una prueba de flujos de trabajo de negocio. El modelo nuevo obtiene 51,4 %, frente a 42,5 % de Claude Opus 5.5, el modelo que la empresa recomienda para el trabajo diario. Es una mejora real, y también significa que cerca de la mitad de los flujos de esa prueba no se completan bien.',
+            'Son cifras reportadas por el proveedor, no una auditoría independiente, y una prueba no es su proceso. Aun así, el orden de magnitud sirve de guía. Si hoy automatiza un flujo administrativo con un agente, espere que una parte importante de los casos necesite a una persona. La propia Anthropic reserva los modelos más grandes para las tareas más difíciles.'
+          ]
+        },
+        {
+          id: 'sme',
+          heading: 'Qué puede hacer una empresa pequeña con esto',
+          paragraphs: [
+            'Un catálogo de 6.000 agentes no resuelve la primera pregunta, que es cuál proceso quiere cambiar y cómo va a saber que mejoró. Empiece con un flujo que tenga entradas claras y una definición clara de "terminado", como clasificar solicitudes entrantes o preparar el borrador de una cotización.',
+            'Después escriba las reglas de detención antes de encender el agente: qué casos pasan a una persona, quién es esa persona y cuánto tiempo tiene para responder. Mida durante unas semanas cuántos casos termina el agente sin corrección. Si esa proporción es baja, el problema suele estar en los datos o en un paso que nadie documentó, no en el modelo.',
+            'Ejemplo sintético: una oficina contable ficticia prueba un agente que lee facturas de proveedores y propone el asiento contable. La regla es que toda factura sin orden de compra, o por encima de un monto definido, pasa a una persona. Al mes cuentan cuántas propuestas se aceptaron sin cambios, y solo entonces deciden si amplían la prueba a otro tipo de documento.'
+          ]
+        }
+      ],
+      discussion: [
+        '¿En cuáles de sus procesos sería aceptable un error en uno de cada dos casos si hay revisión humana, y en cuáles no?',
+        '¿Quién de su equipo revisaría los casos que el agente no logra terminar, y cuánto tiempo le tomaría?',
+        '¿Qué medirían el primer mes para decidir si la automatización se queda?'
+      ],
+      sources: [
+        { title: 'Anthropic — Introducing Claude Fable 5.2 and Claude Mythos 5.2 (9 nov 2026)', url: 'https://www.anthropic.com/claude-fable-and-mythos-5-2' },
+        { title: 'Anthropic — Claude can design electronic prototypes from start to finish (9 nov 2026)', url: 'https://www.anthropic.com/research/claude-electronics-design' },
+        { title: 'IBM Newsroom — IBM and Microsoft Announce a New AI Agent Platform Designed for Industry-Specific Transformation (10 nov 2026)', url: 'https://newsroom.ibm.com/2026-11-10-ibm-and-microsoft-announce-a-new-ai-agent-platform-designed-for-industry-specific-transformation' },
+        { title: 'Microsoft Source LATAM — Microsoft e IBM lanzan plataforma de agentes de IA para empresas', url: 'https://news.microsoft.com/source/latam/noticias-de-microsoft/microsoft-ibm-plataforma-agentes-ia-empresas/' }
+      ]
+    }
   }
 ];
