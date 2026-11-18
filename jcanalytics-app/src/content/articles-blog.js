@@ -883,5 +883,116 @@ export const blogArticles = [
         { title: 'Microsoft Source LATAM — Microsoft e IBM lanzan plataforma de agentes de IA para empresas', url: 'https://news.microsoft.com/source/latam/noticias-de-microsoft/microsoft-ibm-plataforma-agentes-ia-empresas/' }
       ]
     }
+  },
+  {
+    id: 'agents-in-production-nov-2026',
+    topic: 'intelligence',
+    image: '/projects/caviq/crm-desktop.webp',
+    minutes: 5,
+    published: '2026-11-18',
+    en: {
+      slug: 'ai-agents-in-production-start-with-the-process',
+      title: 'AI agents in production: approved definitions, inherited permissions and earned autonomy',
+      summary: 'Two pieces of news from this month show what companies that already run AI agents at scale do before turning them on: they agree on what each business term means, they give agents the same permissions as the person behind them, and they keep a human reviewer until accuracy is proven. None of that requires a new tool to start.',
+      takeaway: 'The companies that get agents into production fix the process first and let autonomy be earned with measured accuracy. Before automating, agree on definitions, map the flow and remove the steps that add no value.',
+      sections: [
+        {
+          id: 'news',
+          heading: 'What happened this month',
+          paragraphs: [
+            'On November 3, 2026, Snowflake announced Business Ontology, a capability where teams approve official definitions of business terms, such as net revenue, link them to the underlying tables and serve only those approved definitions to AI agents. In the same announcement, the company said its Cortex AI Gateway applies existing access policies to agent tool calls, so agents inherit the controls already set for human users. According to Snowflake\'s documentation, the gateway\'s inference, observability and cost management reached general availability that day, while Business Ontology is described as coming to public preview.',
+            'On November 14, SiliconANGLE reported on a talk by Luke Corbin of AT&T: the company has nearly 500 agentic AI workflows in production and plans to triple that number next year. According to that coverage, every workflow starts with a person in the loop, and the human checkpoint is removed only when accuracy reaches the mid to high 90 % range within an acceptable risk profile. These figures come from press coverage of a single talk, not from an AT&T document, and we could not open the articles directly from our environment.'
+          ]
+        },
+        {
+          id: 'definitions',
+          heading: 'Lesson 1: agree on what the words mean',
+          paragraphs: [
+            'An agent that answers "how much did we sell last month?" will give a different number depending on whether it includes returns, taxes or discounts. Snowflake\'s own blog describes the case where Finance and Sales each have an approved "net revenue" definition, and the agent asks the user which one they mean instead of guessing. Changes to an approved definition go in as proposals, and agents keep using the approved version until a data steward accepts the change.',
+            'This is not new in continuous improvement. It is the operational definition: before measuring, the team writes down exactly what is counted and how. A small company can do it today with a one-page glossary of its ten most used indicators, with the owner of each one, long before it buys any platform.'
+          ]
+        },
+        {
+          id: 'autonomy',
+          heading: 'Lesson 2: autonomy is earned, not configured',
+          paragraphs: [
+            'AT&T\'s rule, as reported, is simple: a person reviews until the numbers show the agent can work alone. The same coverage says the company\'s platform maps existing workflows, identifies unnecessary steps and handoffs between areas, and removes them before introducing an agent, and that it monitors performance continuously to catch drift.',
+            'That order, first remove waste and then automate, is the basic advice of Lean: automating a bad process only makes the waste faster. It also matches what we wrote on November 14: on business workflow benchmarks, the best published scores are still around half of the cases. Planning for human review is not distrust, it is the way to collect the evidence that later justifies removing it.'
+          ]
+        },
+        {
+          id: 'sme',
+          heading: 'What a Costa Rican SME can do this week',
+          paragraphs: [
+            'Pick one flow, such as receiving and answering quote requests, and draw it on paper with the team: each step, who does it and how long it waits. Mark the steps that only move information from one place to another, and the ones nobody can explain. Remove or merge those first.',
+            'Then define in writing the three or four terms the flow depends on ("approved quote", "urgent client", "delivery date") and who owns each definition. Only after that, test the automation with a person reviewing every case, and record how many proposals are accepted without changes. Decide in advance what percentage you need before removing the review, and for which cases it will never be removed.',
+            'Synthetic example: a fictional hardware distributor in Heredia wants an agent to answer stock questions on WhatsApp. When mapping the flow, they discover that "available" means one thing for the warehouse and another for sales, because sales counts merchandise already reserved. They agree on a single definition, assign the warehouse lead as its owner, and only then start the test with daily review.'
+          ]
+        }
+      ],
+      discussion: [
+        'Which three terms in your business would two areas define differently today?',
+        'What accuracy would an automated step need in your company before you stopped reviewing it, and who would decide?',
+        'Which step in your most repetitive process exists only to move information from one place to another?'
+      ],
+      sources: [
+        { title: 'Snowflake — Snowflake Helps Enterprises Deploy AI Agents with Trusted Business Context and Built-In Controls (Nov 3, 2026)', url: 'https://www.snowflake.com/en/news/press-releases/expedition-2026-business-ontology-ai-gateway/' },
+        { title: 'Snowflake — Business Ontology: Governed Context for AI', url: 'https://www.snowflake.com/en/blog/business-ontology-context/' },
+        { title: 'Snowflake Documentation — Nov 3, 2026: Cortex AI Gateway inference, observability, and cost management (General availability)', url: 'https://docs.snowflake.com/en/release-notes/2026/other/2026-11-03-cortex-ai-gateway-ga' },
+        { title: 'SiliconANGLE — AT&T uses agentic AI to reinvent business processes from the ground up (Nov 14, 2026)', url: 'https://siliconangle.com/2026/11/14/att-uses-agentic-ai-to-reinvent-business-processes-from-the-ground-up/' }
+      ]
+    },
+    es: {
+      slug: 'agentes-ia-en-produccion-primero-el-proceso',
+      title: 'Agentes de IA en producción: definiciones aprobadas, permisos heredados y autonomía que se gana',
+      summary: 'Dos noticias de este mes muestran qué hacen antes de encender los agentes las empresas que ya los usan a gran escala: se ponen de acuerdo en qué significa cada término del negocio, les dan a los agentes los mismos permisos que a la persona detrás de ellos y mantienen a una persona revisando hasta comprobar la precisión. Nada de eso requiere una herramienta nueva para empezar.',
+      takeaway: 'Las empresas que llevan agentes a producción arreglan primero el proceso y dejan que la autonomía se gane con precisión medida. Antes de automatizar, acuerde las definiciones, dibuje el flujo y elimine los pasos que no agregan valor.',
+      sections: [
+        {
+          id: 'news',
+          heading: 'Qué pasó este mes',
+          paragraphs: [
+            'El 3 de noviembre de 2026 Snowflake anunció Business Ontology, una función en la que los equipos aprueban definiciones oficiales de términos del negocio, como el ingreso neto, las vinculan con las tablas de origen y entregan a los agentes de IA solo esas definiciones aprobadas. En el mismo anuncio la empresa indicó que su Cortex AI Gateway aplica las políticas de acceso existentes a las acciones de los agentes, de modo que los agentes heredan los controles ya definidos para las personas. Según la documentación de Snowflake, la inferencia, la observabilidad y el control de costos del gateway pasaron a disponibilidad general ese día, mientras que Business Ontology se describe como próxima a vista previa pública.',
+            'El 14 de noviembre SiliconANGLE publicó una nota sobre una charla de Luke Corbin, de AT&T: la empresa tiene cerca de 500 flujos con agentes de IA en producción y planea triplicar esa cantidad el próximo año. Según esa cobertura, todo flujo empieza con una persona revisando, y ese control humano se retira solo cuando la precisión llega a un rango de entre 95 % y 99 % aproximadamente, dentro de un perfil de riesgo aceptable. Son cifras de la cobertura de prensa de una sola charla, no de un documento de AT&T, y no pudimos abrir los artículos directamente desde nuestro entorno.'
+          ]
+        },
+        {
+          id: 'definitions',
+          heading: 'Lección 1: acordar qué significan las palabras',
+          paragraphs: [
+            'Un agente que responde "¿cuánto vendimos el mes pasado?" dará un número distinto según incluya o no devoluciones, impuestos o descuentos. El propio blog de Snowflake describe el caso en que Finanzas y Ventas tienen cada una su definición aprobada de "ingreso neto", y el agente le pregunta al usuario a cuál se refiere en lugar de adivinar. Los cambios a una definición aprobada entran como propuestas, y los agentes siguen usando la versión aprobada hasta que un responsable de datos acepta el cambio.',
+            'Esto no es nuevo en mejora continua. Es la definición operacional: antes de medir, el equipo escribe exactamente qué se cuenta y cómo. Una pyme puede hacerlo hoy con un glosario de una página de sus diez indicadores más usados, con el responsable de cada uno, mucho antes de comprar cualquier plataforma.'
+          ]
+        },
+        {
+          id: 'autonomy',
+          heading: 'Lección 2: la autonomía se gana, no se configura',
+          paragraphs: [
+            'La regla de AT&T, según lo reportado, es sencilla: una persona revisa hasta que los números muestran que el agente puede trabajar solo. La misma cobertura indica que la plataforma de la empresa dibuja los flujos existentes, identifica pasos innecesarios y traspasos entre áreas, y los elimina antes de introducir un agente, y que vigila el desempeño de forma continua para detectar desviaciones.',
+            'Ese orden, primero eliminar el desperdicio y después automatizar, es el consejo básico de Lean: automatizar un mal proceso solo hace más rápido el desperdicio. También coincide con lo que escribimos el 14 de noviembre: en pruebas de flujos de negocio, las mejores notas publicadas siguen cerca de la mitad de los casos. Planear la revisión humana no es desconfianza, es la forma de reunir la evidencia que después justifica retirarla.'
+          ]
+        },
+        {
+          id: 'sme',
+          heading: 'Qué puede hacer una pyme costarricense esta semana',
+          paragraphs: [
+            'Elija un flujo, como recibir y contestar solicitudes de cotización, y dibújelo en papel con el equipo: cada paso, quién lo hace y cuánto tiempo espera. Marque los pasos que solo pasan información de un lugar a otro y los que nadie sabe explicar. Elimine o junte esos primero.',
+            'Después defina por escrito los tres o cuatro términos de los que depende el flujo ("cotización aprobada", "cliente urgente", "fecha de entrega") y quién es responsable de cada definición. Solo entonces pruebe la automatización con una persona revisando cada caso, y anote cuántas propuestas se aceptan sin cambios. Decida de antemano qué porcentaje necesita para quitar la revisión, y en qué casos no se quitará nunca.',
+            'Ejemplo sintético: un distribuidor ficticio de ferretería en Heredia quiere que un agente conteste consultas de inventario por WhatsApp. Al dibujar el flujo descubren que "disponible" significa una cosa para bodega y otra para ventas, porque ventas cuenta mercadería ya apartada. Acuerdan una sola definición, nombran responsable al encargado de bodega y solo entonces empiezan la prueba con revisión diaria.'
+          ]
+        }
+      ],
+      discussion: [
+        '¿Cuáles tres términos de su negocio definirían hoy de forma distinta dos áreas?',
+        '¿Qué precisión necesitaría un paso automatizado en su empresa antes de dejar de revisarlo, y quién lo decidiría?',
+        '¿Qué paso de su proceso más repetitivo existe solo para mover información de un lugar a otro?'
+      ],
+      sources: [
+        { title: 'Snowflake — Snowflake Helps Enterprises Deploy AI Agents with Trusted Business Context and Built-In Controls (3 nov 2026)', url: 'https://www.snowflake.com/en/news/press-releases/expedition-2026-business-ontology-ai-gateway/' },
+        { title: 'Snowflake — Business Ontology: Governed Context for AI', url: 'https://www.snowflake.com/en/blog/business-ontology-context/' },
+        { title: 'Snowflake Documentation — Cortex AI Gateway, disponibilidad general (3 nov 2026)', url: 'https://docs.snowflake.com/en/release-notes/2026/other/2026-11-03-cortex-ai-gateway-ga' },
+        { title: 'SiliconANGLE — AT&T uses agentic AI to reinvent business processes from the ground up (14 nov 2026)', url: 'https://siliconangle.com/2026/11/14/att-uses-agentic-ai-to-reinvent-business-processes-from-the-ground-up/' }
+      ]
+    }
   }
 ];
