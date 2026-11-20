@@ -994,5 +994,106 @@ export const blogArticles = [
         { title: 'SiliconANGLE — AT&T uses agentic AI to reinvent business processes from the ground up (14 nov 2026)', url: 'https://siliconangle.com/2026/11/14/att-uses-agentic-ai-to-reinvent-business-processes-from-the-ground-up/' }
       ]
     }
+  },
+  {
+    id: 'cicr-excellence-awards-2026-results',
+    topic: 'operations',
+    image: '/projects/crimson/levantamientos-desktop.webp',
+    minutes: 5,
+    published: '2026-11-20',
+    en: {
+      slug: 'cicr-excellence-awards-2026-results',
+      title: 'CICR Excellence Awards 2026: root causes, full capacity and what a small team can copy',
+      summary: 'The Cámara de Industrias de Costa Rica gave out its XXIX Excellence Awards after the November 18 congress. The winning projects are about finding the cause of a problem, making room in a plant that was already full, and automating a manual data task. Here is what was published and how to use it without entering an award.',
+      takeaway: 'The awarded projects did not start with a tool: they started with a measured problem and its cause. A small team can follow the same order with paper, a meeting and a simple error-proofing device.',
+      sections: [
+        {
+          id: 'results',
+          heading: 'What the CICR announced',
+          paragraphs: [
+            'According to the CICR release of November 19, 2026, the XXIX Excellence Awards recognized 26 organizations, at an event the chamber says was attended by more than 650 people. The National Excellence Award went to Zollner Electronics Costa Rica, which won in four of the seven areas of the model: culture, leadership and strategy; human talent; processes; and customers and markets.',
+            'In Compromiso con la Excelencia, the improvement-project track, the CICR says 53 projects registered this year, the first time it reached that number, and 44 companies took part in the Excellence Program processes. The three best-rated projects presented live to the jury on November 18. Gold went to Abbott Medical Costa Rica, Electrophysiology Division, with a project to introduce a new product while all of its lines were running at full capacity. Silver went to Edwards Lifesciences Costa Rica, with a project that found the cause of manganese in the plant\'s water and installed a new filtration system.',
+            'We read these results in search excerpts of the CICR release; cicr.com does not open from our environment, and the excerpts we saw do not name the bronze winner. The same release mentions a project that automated SAP data extraction with Python, without saying which company presented it, so we do not attribute it here. The congress program also included talks by Dag Kroslid (Norway) and David Hutchins (United Kingdom).'
+          ]
+        },
+        {
+          id: 'lessons',
+          heading: 'Three patterns worth copying',
+          paragraphs: [
+            'Find the cause before buying the fix. The silver project did not start by buying a filter; it started by finding why manganese appeared in the water, and then chose the solution. That is the core of Six Sigma\'s DMAIC cycle: define, measure, analyze, and only then improve and control. In a small business the equivalent is to stop and ask "why" before replacing a supplier, a system or a person.',
+            'Capacity is created by removing waste, not only by buying machines. The gold project had to fit a new product into lines that were already full. Without the project details we cannot say how they did it, but the usual Lean route is to measure where time is lost (changeovers, waiting, rework) and recover it. An office team can do the same with its week: measure how many hours go to rework and searching for information before hiring.',
+            'Automation appears at the end, on a stable task. The Python project over SAP data is a reminder that automation is one more improvement tool, applied to a manual task that is already well defined. That is the order we have described in previous entries: map, simplify, then automate.'
+          ]
+        },
+        {
+          id: 'no-tech',
+          heading: 'A no-technology technique to start: error-proofing',
+          paragraphs: [
+            'The Lean Enterprise Institute glossary defines error-proofing (poka-yoke) as methods that prevent a person from choosing the wrong part, leaving one out or installing it backwards, and distinguishes devices that stop the process from those that only warn. Its resource guide adds that a good device is simple, cheap, reliable and designed for the actual workplace, and an LEI article warns that a device that burdens people ends up being bypassed.',
+            'In an office this can be as simple as a delivery tray with one slot per required document, so a missing document is visible; a quote template where the total is not filled in until the delivery date is written; or a dispatch checklist that must be signed before the invoice leaves. None of these needs software, and each one removes a known cause of rework.',
+            'Synthetic example: a fictional furniture workshop in Cartago kept sending invoices without the purchase order number, and two clients returned them every month. Instead of buying a system, the administrator printed a cover sheet with a box for the order number and the team agreed that no invoice goes out without it. Returns are counted every Friday on a sheet stuck to the wall.'
+          ]
+        }
+      ],
+      discussion: [
+        'Which recurring problem in your business are you about to fix with a purchase before knowing its cause?',
+        'Where does your team lose the most hours each week: waiting, rework or searching for information?',
+        'Which frequent mistake could you make impossible, or at least visible, with a sheet, a tray or a template?'
+      ],
+      sources: [
+        { title: 'Cámara de Industrias de Costa Rica — Zollner Electronics obtiene la distinción más alta de los Premios a la Excelencia 2026 (Nov 19, 2026)', url: 'https://cicr.com/zollner-electronics-obtiene-la-distincion-mas-alta-de-los-premios-a-la-excelencia-2026/' },
+        { title: 'Cámara de Industrias de Costa Rica — Congreso Excelencia 2026 (program)', url: 'https://cicr.com/congreso_excelencia_2026/' },
+        { title: 'Lean Enterprise Institute — Lexicon: Error-Proofing', url: 'https://www.lean.org/lexicon-terms/error-proofing/' },
+        { title: 'Lean Enterprise Institute — Poka Yoke: A Resource Guide', url: 'https://www.lean.org/lexicon-terms/poka-yoke/' },
+        { title: 'Lean Enterprise Institute — Why Create Poka-yokes, and Why Disconnect Them?', url: 'https://www.lean.org/the-lean-post/articles/why-create-poka-yokes-and-why-disconnect-them/' }
+      ]
+    },
+    es: {
+      slug: 'premios-excelencia-cicr-2026-resultados',
+      title: 'Premios a la Excelencia CICR 2026: causas raíz, plantas llenas y lo que un equipo pequeño puede copiar',
+      summary: 'La Cámara de Industrias de Costa Rica entregó sus XXIX Premios a la Excelencia después del congreso del 18 de noviembre. Los proyectos premiados tratan de encontrar la causa de un problema, hacer espacio en una planta que ya estaba llena y automatizar una tarea manual con datos. Esto es lo publicado y cómo aprovecharlo sin concursar.',
+      takeaway: 'Los proyectos premiados no empezaron por una herramienta: empezaron por un problema medido y su causa. Un equipo pequeño puede seguir el mismo orden con papel, una reunión y un dispositivo sencillo a prueba de errores.',
+      sections: [
+        {
+          id: 'results',
+          heading: 'Qué anunció la CICR',
+          paragraphs: [
+            'Según el comunicado de la CICR del 19 de noviembre de 2026, la XXIX Entrega de los Premios a la Excelencia reconoció a 26 organizaciones, en un acto al que, según la cámara, asistieron más de 650 personas. El Premio Nacional a la Excelencia fue para Zollner Electronics Costa Rica, que ganó en cuatro de las siete áreas del modelo: cultura, liderazgo y estrategia; talento humano; procesos, y clientes y mercados.',
+            'En Compromiso con la Excelencia, la categoría de proyectos de mejora, la CICR indica que este año se inscribieron 53 proyectos, la primera vez que se llega a esa cifra, y que 44 empresas participaron en los procesos del Programa a la Excelencia. Los tres proyectos mejor calificados se presentaron en vivo ante el jurado el 18 de noviembre. El Oro fue para Abbott Medical Costa Rica, División Electrofisiología, con un proyecto para introducir un producto nuevo cuando todas sus líneas trabajaban a plena capacidad. La Plata fue para Edwards Lifesciences Costa Rica, con un proyecto que encontró la causa de la presencia de manganeso en el agua de su planta e instaló un nuevo sistema de filtración.',
+            'Leímos estos resultados en extractos de búsqueda del comunicado de la CICR; cicr.com no abre desde nuestro entorno, y los extractos que vimos no nombran al ganador del Bronce. El mismo comunicado menciona un proyecto que automatizó en Python la extracción de datos de SAP, sin indicar qué empresa lo presentó, así que no lo atribuimos aquí. El programa del congreso incluyó además conferencias de Dag Kroslid (Noruega) y David Hutchins (Reino Unido).'
+          ]
+        },
+        {
+          id: 'lessons',
+          heading: 'Tres patrones que vale la pena copiar',
+          paragraphs: [
+            'Encontrar la causa antes de comprar la solución. El proyecto de Plata no empezó comprando un filtro; empezó averiguando por qué aparecía manganeso en el agua, y después eligió la solución. Ese es el centro del ciclo DMAIC de Six Sigma: definir, medir, analizar y solo entonces mejorar y controlar. En una pyme el equivalente es detenerse a preguntar "¿por qué?" antes de cambiar de proveedor, de sistema o de persona.',
+            'La capacidad se crea eliminando desperdicio, no solo comprando máquinas. El proyecto de Oro tuvo que meter un producto nuevo en líneas que ya estaban llenas. Sin el detalle del proyecto no podemos decir cómo lo hicieron, pero el camino habitual de Lean es medir dónde se pierde el tiempo (cambios de formato, esperas, reprocesos) y recuperarlo. Un equipo de oficina puede hacer lo mismo con su semana: medir cuántas horas se van en reprocesos y en buscar información antes de contratar.',
+            'La automatización aparece al final, sobre una tarea estable. El proyecto en Python sobre datos de SAP recuerda que automatizar es una herramienta más de mejora, aplicada a una tarea manual que ya está bien definida. Es el orden que hemos descrito en entradas anteriores: dibujar el proceso, simplificarlo y después automatizar.'
+          ]
+        },
+        {
+          id: 'no-tech',
+          heading: 'Una técnica sin tecnología para empezar: a prueba de errores',
+          paragraphs: [
+            'El glosario del Lean Enterprise Institute define el poka-yoke (a prueba de errores) como métodos que impiden que una persona elija la pieza equivocada, deje una por fuera o la instale al revés, y distingue los dispositivos que detienen el proceso de los que solo advierten. Su guía de recursos agrega que un buen dispositivo es simple, barato, confiable y pensado para el lugar de trabajo real, y un artículo del LEI advierte que un dispositivo que le complica la vida a la gente termina siendo esquivado.',
+            'En una oficina puede ser tan sencillo como una bandeja de entrega con un espacio por cada documento obligatorio, para que el faltante se vea; una plantilla de cotización donde el total no se llena hasta escribir la fecha de entrega; o una lista de despacho que se firma antes de que salga la factura. Nada de esto requiere software, y cada uno elimina una causa conocida de reproceso.',
+            'Ejemplo sintético: un taller ficticio de muebles en Cartago enviaba facturas sin el número de orden de compra, y dos clientes las devolvían cada mes. En lugar de comprar un sistema, la administradora imprimió una hoja de portada con una casilla para el número de orden y el equipo acordó que ninguna factura sale sin él. Las devoluciones se cuentan cada viernes en una hoja pegada en la pared.'
+          ]
+        }
+      ],
+      discussion: [
+        '¿Qué problema recurrente de su negocio está a punto de resolver con una compra antes de conocer su causa?',
+        '¿Dónde pierde más horas su equipo cada semana: esperas, reprocesos o buscando información?',
+        '¿Qué error frecuente podría volver imposible, o al menos visible, con una hoja, una bandeja o una plantilla?'
+      ],
+      sources: [
+        { title: 'Cámara de Industrias de Costa Rica — Zollner Electronics obtiene la distinción más alta de los Premios a la Excelencia 2026 (19 nov 2026)', url: 'https://cicr.com/zollner-electronics-obtiene-la-distincion-mas-alta-de-los-premios-a-la-excelencia-2026/' },
+        { title: 'Cámara de Industrias de Costa Rica — Congreso Excelencia 2026 (programa)', url: 'https://cicr.com/congreso_excelencia_2026/' },
+        { title: 'Lean Enterprise Institute — Lexicon: Error-Proofing', url: 'https://www.lean.org/lexicon-terms/error-proofing/' },
+        { title: 'Lean Enterprise Institute — Poka Yoke: A Resource Guide', url: 'https://www.lean.org/lexicon-terms/poka-yoke/' },
+        { title: 'Lean Enterprise Institute — Why Create Poka-yokes, and Why Disconnect Them?', url: 'https://www.lean.org/the-lean-post/articles/why-create-poka-yokes-and-why-disconnect-them/' }
+      ]
+    }
   }
 ];
