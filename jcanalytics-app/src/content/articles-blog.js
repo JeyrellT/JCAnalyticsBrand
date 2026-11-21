@@ -1095,5 +1095,108 @@ export const blogArticles = [
         { title: 'Lean Enterprise Institute — Why Create Poka-yokes, and Why Disconnect Them?', url: 'https://www.lean.org/the-lean-post/articles/why-create-poka-yokes-and-why-disconnect-them/' }
       ]
     }
+  },
+  {
+    id: 'verification-bottleneck-nov-2026',
+    topic: 'intelligence',
+    image: '/projects/caviq/reports-desktop.webp',
+    minutes: 5,
+    published: '2026-11-21',
+    en: {
+      slug: 'ai-moves-the-bottleneck-to-review',
+      title: 'When AI produces faster than you can review: the new bottleneck is verification',
+      summary: 'This month a data platform opened to the public an agent that diagnoses failures and proposes fixes, but never applies them without a person approving. In the lean community, a November article argues that AI agents move the bottleneck from doing the work to checking it. Both point to an old Lean rule: limit work in process.',
+      takeaway: 'The right number of tasks to hand an AI, or a new hire, is not as many as it can produce but as many as your team can review well. Limit what waits for review, make it visible and stop the line when the queue fills.',
+      sections: [
+        {
+          id: 'news',
+          heading: 'What was announced this month',
+          paragraphs: [
+            'On November 19, 2026, Databricks announced the public beta of Genie ZeroOps, an agent that watches data pipelines and jobs, finds the likely cause of a failure using lineage and quality metrics, and proposes a fix. According to Databricks, it does not change production data or code unless a user approves: it can push the fix to a new branch so it goes through the team\'s normal review. The beta adds shared inboxes, notifications and custom instructions so each team can filter what it considers a real problem.',
+            'Two figures from the vendor are worth noting, as reported by Databricks and not independently verified: during the private preview the agent observed more than 80,000 customer issues, and Databricks says more than half of them required organization-specific knowledge to triage and resolve. In other words, the agent can find and propose, but knowing what matters still depends on the people who know the business.',
+            'We read these details in search excerpts of the Databricks blog and documentation; databricks.com does not open from our environment.'
+          ]
+        },
+        {
+          id: 'lean',
+          heading: 'The lean reading: production is no longer the constraint',
+          paragraphs: [
+            'On November 9, 2026, the Lean Enterprise Institute listed an article by Remo H. Jansen that revisits the Toyota Production System in the age of coding agents. His argument, also published on DEV Community: if an agent can produce changes faster than people can establish that they are correct, the bottleneck has moved to verification. He proposes treating each verifiable rule as an andon cord and giving agents something like work-in-process limits; in his version, an agent that accumulates too many unverified changes must stop and verify before continuing. Those thresholds are the author\'s proposal, not an established standard.',
+            'The idea is not new for Lean. The LEI lexicon defines work in process as items waiting between processing steps, and an LEI article on personal kanban explains that a board does two things: it makes work visible and it limits how much can be in progress at once. In The Birth of Lean, Taiichi Ohno is quoted saying that reducing work in process is not the goal in itself; the goal is to expose problems.',
+            'Applied to automation: if a tool, an agent or a new assistant produces twenty quotes a day and the manager can review eight, the other twelve do not represent progress. They are inventory waiting, with errors that nobody has seen yet.'
+          ]
+        },
+        {
+          id: 'no-tech',
+          heading: 'A no-technology technique: the review tray with three slots',
+          paragraphs: [
+            'Before using an agent, any team can try the rule with paper. Put a tray, a column on a board or a folder labeled "to review" with a fixed number of slots, for example three. Whoever prepares a quote, an invoice or a report places it there. When the three slots are full, nobody prepares a fourth: they help review or fix what is waiting. That is a work-in-process limit, and it is the same rule that would later apply to an AI.',
+            'Synthetic example: a fictional accounting office in Heredia began using a tool that drafted client reconciliations in minutes. In two weeks it had more than forty drafts waiting and the accountant was finding the same error in several of them. The team set a limit of five drafts pending review on a whiteboard, wrote down the cause of each correction and fixed the most frequent one in the template before generating more. The pace looked slower, but finished, correct reconciliations went up.',
+            'Two counts are enough to start: how many items are waiting for review at the end of each day, and how many come back with corrections. If the first grows week after week, you are producing faster than you can verify, with or without AI.'
+          ]
+        }
+      ],
+      discussion: [
+        'How many items does your team leave waiting for review at the end of a normal day?',
+        'Who checks the work today, and how many items can that person review well in a day?',
+        'If you used an AI tomorrow to prepare quotes or reports, what limit would you put on drafts waiting for approval?'
+      ],
+      sources: [
+        { title: 'Databricks — Genie ZeroOps, now in public beta: an autonomous agent that fixes data pipelines, with lessons from 80,000 customer issues (Nov 19, 2026)', url: 'https://www.databricks.com/blog/genie-zeroops-now-public-beta-autonomous-agent-fixes-data-pipelines-lessons-80000-customer' },
+        { title: 'Databricks documentation — Genie ZeroOps', url: 'https://docs.databricks.com/gcp/en/zeroops/' },
+        { title: 'Remo H. Jansen — Revisiting the Toyota Production System (TPS) in the Age of Coding Agents (DEV Community; listed by LEI on Nov 9, 2026)', url: 'https://dev.to/remojansen/revisiting-the-toyota-production-system-tps-in-the-age-of-coding-agents-2bb5' },
+        { title: 'Lean Enterprise Institute — Lexicon: Work-in-Process', url: 'https://www.lean.org/lexicon-terms/work-in-process/' },
+        { title: 'Lean Enterprise Institute — Personal Kanban: You Can\'t Manage What You Can\'t See', url: 'https://www.lean.org/the-lean-post/articles/personal-kanban-you-cant-manage-what-you-cant-see/' },
+        { title: 'Lean Enterprise Institute — The Birth of Lean (PDF)', url: 'https://www.lean.org/downloads/320.pdf' }
+      ]
+    },
+    es: {
+      slug: 'ia-mueve-el-cuello-de-botella-a-la-revision',
+      title: 'Cuando la IA produce más rápido de lo que usted revisa: el nuevo cuello de botella es la verificación',
+      summary: 'Este mes una plataforma de datos abrió al público un agente que diagnostica fallas y propone soluciones, pero nunca las aplica sin que una persona apruebe. En la comunidad Lean, un artículo de noviembre sostiene que los agentes de IA mueven el cuello de botella de hacer el trabajo a revisarlo. Ambos apuntan a una regla vieja de Lean: limitar el trabajo en proceso.',
+      takeaway: 'La cantidad correcta de tareas para darle a una IA, o a una persona nueva, no es cuantas pueda producir sino cuantas su equipo pueda revisar bien. Limite lo que espera revisión, hágalo visible y detenga la línea cuando la cola se llena.',
+      sections: [
+        {
+          id: 'news',
+          heading: 'Qué se anunció este mes',
+          paragraphs: [
+            'El 19 de noviembre de 2026, Databricks anunció la beta pública de Genie ZeroOps, un agente que vigila flujos de datos y tareas programadas, busca la causa probable de una falla con el linaje y las métricas de calidad de los datos, y propone una corrección. Según Databricks, no cambia datos ni código en producción sin que un usuario lo apruebe: puede dejar la corrección en una rama nueva para que pase por la revisión normal del equipo. La beta agrega bandejas compartidas, notificaciones e instrucciones personalizadas para que cada equipo filtre lo que considera un problema real.',
+            'Hay dos cifras del proveedor que vale la pena anotar, reportadas por Databricks y no verificadas de forma independiente: durante la vista previa privada el agente observó más de 80.000 incidentes de clientes, y Databricks indica que más de la mitad requerían conocimiento propio de la organización para clasificarlos y resolverlos. Es decir, el agente puede encontrar y proponer, pero saber qué importa sigue dependiendo de quienes conocen el negocio.',
+            'Leímos estos detalles en extractos de búsqueda del blog y la documentación de Databricks; databricks.com no abre desde nuestro entorno.'
+          ]
+        },
+        {
+          id: 'lean',
+          heading: 'La lectura Lean: producir ya no es la restricción',
+          paragraphs: [
+            'El 9 de noviembre de 2026, el Lean Enterprise Institute listó un artículo de Remo H. Jansen que revisa el Sistema de Producción Toyota en la era de los agentes de programación. Su argumento, publicado también en DEV Community: si un agente produce cambios más rápido de lo que las personas pueden comprobar que son correctos, el cuello de botella pasó a la verificación. Propone tratar cada regla verificable como un cordón andon y darles a los agentes algo parecido a límites de trabajo en proceso; en su versión, un agente que acumula demasiados cambios sin verificar debe detenerse a verificar antes de seguir. Esos umbrales son una propuesta del autor, no un estándar establecido.',
+            'La idea no es nueva para Lean. El glosario del LEI define el trabajo en proceso como los elementos que esperan entre un paso y otro, y un artículo del LEI sobre kanban personal explica que un tablero hace dos cosas: vuelve visible el trabajo y limita cuánto puede estar en curso a la vez. En The Birth of Lean se cita a Taiichi Ohno diciendo que reducir el trabajo en proceso no es el objetivo en sí; el objetivo es sacar los problemas a la luz.',
+            'Aplicado a la automatización: si una herramienta, un agente o un asistente nuevo produce veinte cotizaciones al día y la gerencia puede revisar ocho, las otras doce no son avance. Son inventario esperando, con errores que nadie ha visto todavía.'
+          ]
+        },
+        {
+          id: 'no-tech',
+          heading: 'Una técnica sin tecnología: la bandeja de revisión con tres espacios',
+          paragraphs: [
+            'Antes de usar un agente, cualquier equipo puede probar la regla con papel. Ponga una bandeja, una columna en una pizarra o una carpeta rotulada "por revisar" con un número fijo de espacios, por ejemplo tres. Quien prepara una cotización, una factura o un informe la deja ahí. Cuando los tres espacios están llenos, nadie prepara una cuarta: se ayuda a revisar o a corregir lo que espera. Eso es un límite de trabajo en proceso, y es la misma regla que después aplicaría a una IA.',
+            'Ejemplo sintético: una oficina contable ficticia en Heredia empezó a usar una herramienta que preparaba borradores de conciliaciones de clientes en minutos. En dos semanas tenía más de cuarenta borradores esperando y la contadora encontraba el mismo error en varios. El equipo fijó un límite de cinco borradores pendientes de revisión en una pizarra, anotó la causa de cada corrección y arregló la más frecuente en la plantilla antes de generar más. El ritmo pareció más lento, pero subieron las conciliaciones terminadas y correctas.',
+            'Para empezar bastan dos conteos: cuántos elementos quedan esperando revisión al final de cada día y cuántos regresan con correcciones. Si el primero crece semana tras semana, está produciendo más rápido de lo que puede verificar, con o sin IA.'
+          ]
+        }
+      ],
+      discussion: [
+        '¿Cuántos elementos deja su equipo esperando revisión al final de un día normal?',
+        '¿Quién revisa el trabajo hoy, y cuántos elementos puede revisar bien esa persona en un día?',
+        'Si mañana usara una IA para preparar cotizaciones o informes, ¿qué límite le pondría a los borradores que esperan aprobación?'
+      ],
+      sources: [
+        { title: 'Databricks — Genie ZeroOps, now in public beta: an autonomous agent that fixes data pipelines, with lessons from 80,000 customer issues (19 nov 2026)', url: 'https://www.databricks.com/blog/genie-zeroops-now-public-beta-autonomous-agent-fixes-data-pipelines-lessons-80000-customer' },
+        { title: 'Documentación de Databricks — Genie ZeroOps', url: 'https://docs.databricks.com/gcp/en/zeroops/' },
+        { title: 'Remo H. Jansen — Revisiting the Toyota Production System (TPS) in the Age of Coding Agents (DEV Community; listado por el LEI el 9 nov 2026)', url: 'https://dev.to/remojansen/revisiting-the-toyota-production-system-tps-in-the-age-of-coding-agents-2bb5' },
+        { title: 'Lean Enterprise Institute — Lexicon: Work-in-Process', url: 'https://www.lean.org/lexicon-terms/work-in-process/' },
+        { title: 'Lean Enterprise Institute — Personal Kanban: You Can\'t Manage What You Can\'t See', url: 'https://www.lean.org/the-lean-post/articles/personal-kanban-you-cant-manage-what-you-cant-see/' },
+        { title: 'Lean Enterprise Institute — The Birth of Lean (PDF)', url: 'https://www.lean.org/downloads/320.pdf' }
+      ]
+    }
   }
 ];
