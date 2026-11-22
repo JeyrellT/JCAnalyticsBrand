@@ -1198,5 +1198,106 @@ export const blogArticles = [
         { title: 'Lean Enterprise Institute — The Birth of Lean (PDF)', url: 'https://www.lean.org/downloads/320.pdf' }
       ]
     }
+  },
+  {
+    id: 'terms-of-automation-nov-2026',
+    topic: 'operations',
+    image: '/projects/crimson/levantamientos-desktop.webp',
+    minutes: 5,
+    published: '2026-11-22',
+    en: {
+      slug: 'terms-of-automation-who-approves-who-benefits',
+      title: 'Automating on your own terms: who approves, who benefits and what your best people know',
+      summary: 'This month an agent platform launched a gateway that decides which tools an AI agent may call, with whose credentials and with what record. In the lean community, two November articles ask the questions that come before any tool: who benefits from the time saved, and how to turn what experienced people know into something the whole team can follow.',
+      takeaway: 'Before an agent touches a process, write down three things on one page: what it may do on its own, what needs a second person to approve, and where the time it saves will go. If you cannot write them, the process is not ready to automate.',
+      sections: [
+        {
+          id: 'news',
+          heading: 'What was announced this month',
+          paragraphs: [
+            'On November 19, 2026, LangChain released LangSmith Tool Gateway in public beta, a managed layer that sits between AI agents and the tools they call. According to its documentation, administrators can set policies that either block a tool call or require approval before it runs, and when several policies match, the block wins. Each call can be recorded with the tool, the server, the identity that acted and the outcome, and changes to servers, profiles and policies go to the organization\'s audit log. For agents that run with nobody signed in, an administrator connects shared credentials once in a profile; the agent cannot connect its own.',
+            'One detail is worth more than the rest. The documentation says the approval comes from the person using the client, not from a separate reviewer, and lists approval by a separate reviewer as not available. That is useful for stopping an accidental action, but it is not the classic control where one person prepares and another approves. For payments, discounts or changes to customer data, that second person still has to be designed into the process.',
+            'We read these details in search excerpts of the LangChain blog and documentation; langchain.com does not open from our environment. The product is in beta and its limits may change.'
+          ]
+        },
+        {
+          id: 'lean',
+          heading: 'The lean reading: the terms matter more than the tool',
+          paragraphs: [
+            'On November 16, 2026, Roberto Priolo published in the Lean Enterprise Institute\'s Lean Post an article titled "Yes, Lean Thinkers Are Luddites. The Original Kind." His point: today "Luddite" means someone who resists technology, but the original movement objected to the terms on which it arrived: who benefited, whose skill was erased and what happened to the quality of the work. Applied to AI, he argues the gains will show up as small time savings that get absorbed into more work unless someone decides where they go, and he cites a company that frames AI as talent development rather than cost cutting.',
+            'On November 3, Darril Wilburn, a former leader at Toyota Motor Manufacturing Kentucky, described in the same publication how Toyota turned the practical wisdom of its most experienced people into curriculum when it expanded abroad. In Kentucky, he writes, there had been too much dependence on Japanese coordinators and trainers. Part of the answer was interviewing a former executive over several Saturdays to write down how he solved problems, which led to a practical problem-solving course. His summary: curriculum raises the floor for the front line, and the expert, with more time, raises the ceiling.',
+            'Put together with the gateway: an agent can only follow rules that someone wrote down. If the way your best person decides which quotes to approve lives only in their head, neither a new hire nor an AI can follow it.'
+          ]
+        },
+        {
+          id: 'no-tech',
+          heading: 'A no-technology technique: the one-page terms sheet',
+          paragraphs: [
+            'Before automating, sit for an hour with the person who knows the process best and fill out one sheet with four blocks. First, the steps in order, as that person actually does them. Second, the key points: what they check that nobody else checks, and why. Third, the permissions: what may be done without asking, what needs a second person, and what is never done. Fourth, the time saved: if the task takes half as long, where those hours go, for example to calling customers with late payments or to training someone new.',
+            'Synthetic example: a fictional hardware distributor in Cartago wanted to use an assistant to prepare price quotes. When the sales manager filled out the sheet, it turned out she reviewed the delivery address against the customer\'s credit zone, a step that was not written anywhere. The team added it as a key point, set that any discount above a fixed limit needed the manager\'s initials, and agreed that the time saved would go to following up quotes not yet answered. Only then did they try the tool.',
+            'The sheet works the same on paper, with a new hire or with an agent. If a process cannot fit on one page with clear permissions, the first improvement is not automation: it is simplifying the process.'
+          ]
+        }
+      ],
+      discussion: [
+        'Which decision in your business depends on a single person, and is it written down anywhere?',
+        'If a tool saved your team five hours a week, who would decide where those hours go?',
+        'Which actions in your process should always need a second person to approve, even if an AI prepares them?'
+      ],
+      sources: [
+        { title: 'LangChain — LangSmith Tool Gateway: Secure, governed tool use for agents (Nov 19, 2026)', url: 'https://www.langchain.com/blog/langsmith-tool-gateway' },
+        { title: 'LangChain documentation — How Tool Gateway works', url: 'https://docs.langchain.com/langsmith/tool-gateway-how-it-works' },
+        { title: 'LangChain documentation — Tool Gateway traces and audit log', url: 'https://docs.langchain.com/langsmith/tool-gateway-traces' },
+        { title: 'Lean Enterprise Institute — Yes, Lean Thinkers Are Luddites. The Original Kind. (Roberto Priolo, Nov 16, 2026)', url: 'https://www.lean.org/the-lean-post/articles/yes-lean-thinkers-are-luddites-the-original-kind/' },
+        { title: 'Lean Enterprise Institute — Raising the Floor and the Ceiling: How Toyota Turned Practical Wisdom into Curriculum (Darril Wilburn, Nov 3, 2026)', url: 'https://www.lean.org/the-lean-post/articles/raising-the-floor-and-the-ceiling-how-toyota-turned-practical-wisdom-into-curriculum/' }
+      ]
+    },
+    es: {
+      slug: 'automatizar-en-sus-propios-terminos',
+      title: 'Automatizar en sus propios términos: quién aprueba, quién se beneficia y qué sabe su mejor gente',
+      summary: 'Este mes una plataforma de agentes lanzó una pasarela que decide qué herramientas puede usar un agente de IA, con qué credenciales y con qué registro. En la comunidad Lean, dos artículos de noviembre hacen las preguntas que van antes de cualquier herramienta: quién se queda con el tiempo ahorrado y cómo convertir lo que saben las personas con experiencia en algo que todo el equipo pueda seguir.',
+      takeaway: 'Antes de que un agente toque un proceso, escriba tres cosas en una hoja: qué puede hacer solo, qué necesita que otra persona apruebe y a dónde va el tiempo que ahorre. Si no puede escribirlas, el proceso todavía no está listo para automatizarse.',
+      sections: [
+        {
+          id: 'news',
+          heading: 'Qué se anunció este mes',
+          paragraphs: [
+            'El 19 de noviembre de 2026, LangChain lanzó en beta pública LangSmith Tool Gateway, una capa administrada que se ubica entre los agentes de IA y las herramientas que llaman. Según su documentación, los administradores pueden definir políticas que bloquean una llamada o exigen aprobación antes de ejecutarla, y cuando aplican varias, gana el bloqueo. Cada llamada puede quedar registrada con la herramienta, el servidor, la identidad que actuó y el resultado, y los cambios a servidores, perfiles y políticas van a la bitácora de auditoría de la organización. Para agentes que trabajan sin nadie conectado, un administrador conecta una sola vez credenciales compartidas en un perfil; el agente no puede conectar las suyas.',
+            'Hay un detalle que vale más que el resto. La documentación indica que la aprobación la da la misma persona que usa el cliente, no un revisor aparte, y señala que la aprobación por un revisor separado no está disponible. Eso sirve para frenar una acción accidental, pero no es el control clásico en que una persona prepara y otra aprueba. Para pagos, descuentos o cambios en datos de clientes, esa segunda persona todavía hay que diseñarla dentro del proceso.',
+            'Leímos estos detalles en extractos de búsqueda del blog y la documentación de LangChain; langchain.com no abre desde nuestro entorno. El producto está en beta y sus límites pueden cambiar.'
+          ]
+        },
+        {
+          id: 'lean',
+          heading: 'La lectura Lean: importan más los términos que la herramienta',
+          paragraphs: [
+            'El 16 de noviembre de 2026, Roberto Priolo publicó en el Lean Post del Lean Enterprise Institute un artículo titulado "Yes, Lean Thinkers Are Luddites. The Original Kind." Su punto: hoy "ludita" significa alguien que se resiste a la tecnología, pero el movimiento original objetaba los términos en que llegaba: quién se beneficiaba, qué destreza se borraba y qué pasaba con la calidad del trabajo. Aplicado a la IA, sostiene que las ganancias aparecerán como pequeños ahorros de tiempo que se absorben en más trabajo, salvo que alguien decida a dónde van, y cita a una empresa que plantea la IA como desarrollo de talento y no como recorte de costos.',
+            'El 3 de noviembre, Darril Wilburn, exlíder de Toyota Motor Manufacturing Kentucky, contó en la misma publicación cómo Toyota convirtió la sabiduría práctica de su gente con más experiencia en un currículo cuando se expandió fuera de Japón. En Kentucky, escribe, había demasiada dependencia de los coordinadores y entrenadores japoneses. Parte de la respuesta fue entrevistar durante varios sábados a un exejecutivo para poner por escrito cómo resolvía problemas, lo que dio origen a un curso de resolución práctica de problemas. Su resumen: el currículo sube el piso de la primera línea, y el experto, con más tiempo, sube el techo.',
+            'Unido a la pasarela: un agente solo puede seguir reglas que alguien escribió. Si la forma en que su mejor persona decide qué cotizaciones aprobar vive solo en su cabeza, ni una persona nueva ni una IA la pueden seguir.'
+          ]
+        },
+        {
+          id: 'no-tech',
+          heading: 'Una técnica sin tecnología: la hoja de términos de una página',
+          paragraphs: [
+            'Antes de automatizar, siéntese una hora con la persona que mejor conoce el proceso y llenen una hoja con cuatro bloques. Primero, los pasos en orden, como esa persona los hace de verdad. Segundo, los puntos clave: qué revisa que nadie más revisa, y por qué. Tercero, los permisos: qué se puede hacer sin preguntar, qué necesita una segunda persona y qué no se hace nunca. Cuarto, el tiempo ahorrado: si la tarea toma la mitad, a dónde van esas horas, por ejemplo a llamar a clientes con pagos atrasados o a entrenar a alguien nuevo.',
+            'Ejemplo sintético: una distribuidora ficticia de ferretería en Cartago quería usar un asistente para preparar cotizaciones. Al llenar la hoja con la gerente de ventas, apareció que ella revisaba la dirección de entrega contra la zona de crédito del cliente, un paso que no estaba escrito en ningún lado. El equipo lo agregó como punto clave, definió que todo descuento por encima de un límite fijo llevaba las iniciales de la gerente y acordó que el tiempo ahorrado iría a dar seguimiento a cotizaciones sin respuesta. Solo entonces probaron la herramienta.',
+            'La hoja funciona igual en papel, con una persona nueva o con un agente. Si un proceso no cabe en una página con permisos claros, la primera mejora no es automatizar: es simplificar el proceso.'
+          ]
+        }
+      ],
+      discussion: [
+        '¿Qué decisión de su negocio depende de una sola persona, y está escrita en algún lado?',
+        'Si una herramienta le ahorrara cinco horas por semana a su equipo, ¿quién decidiría a dónde van esas horas?',
+        '¿Qué acciones de su proceso deberían necesitar siempre la aprobación de una segunda persona, aunque las prepare una IA?'
+      ],
+      sources: [
+        { title: 'LangChain — LangSmith Tool Gateway: Secure, governed tool use for agents (19 nov 2026)', url: 'https://www.langchain.com/blog/langsmith-tool-gateway' },
+        { title: 'Documentación de LangChain — How Tool Gateway works', url: 'https://docs.langchain.com/langsmith/tool-gateway-how-it-works' },
+        { title: 'Documentación de LangChain — Tool Gateway traces and audit log', url: 'https://docs.langchain.com/langsmith/tool-gateway-traces' },
+        { title: 'Lean Enterprise Institute — Yes, Lean Thinkers Are Luddites. The Original Kind. (Roberto Priolo, 16 nov 2026)', url: 'https://www.lean.org/the-lean-post/articles/yes-lean-thinkers-are-luddites-the-original-kind/' },
+        { title: 'Lean Enterprise Institute — Raising the Floor and the Ceiling: How Toyota Turned Practical Wisdom into Curriculum (Darril Wilburn, 3 nov 2026)', url: 'https://www.lean.org/the-lean-post/articles/raising-the-floor-and-the-ceiling-how-toyota-turned-practical-wisdom-into-curriculum/' }
+      ]
+    }
   }
 ];
