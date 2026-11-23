@@ -1299,5 +1299,104 @@ export const blogArticles = [
         { title: 'Lean Enterprise Institute — Raising the Floor and the Ceiling: How Toyota Turned Practical Wisdom into Curriculum (Darril Wilburn, 3 nov 2026)', url: 'https://www.lean.org/the-lean-post/articles/raising-the-floor-and-the-ceiling-how-toyota-turned-practical-wisdom-into-curriculum/' }
       ]
     }
+  },
+  {
+    id: 'sop-is-the-ai-input-nov-2026',
+    topic: 'operations',
+    image: '/projects/caviq/rrhh-desktop.webp',
+    minutes: 5,
+    published: '2026-11-23',
+    en: {
+      slug: 'your-procedure-is-now-the-ai-input',
+      title: 'Your written procedure is now the AI\'s input: what is not written down, the agent does not know',
+      summary: 'This month a cloud provider launched a service that turns a standard operating procedure into a plan that AI agents execute, case by case, while people handle approvals and exceptions. The useful part is not the agent: it is that the tool forces you to write down the exceptions nobody had documented. A lean podcast from November adds the other half: when a company grows, its management system has to grow with it.',
+      takeaway: 'Before buying any agent, take your most repeated procedure and add a table of exceptions: if this happens, do this, and tell this person. If you cannot fill it, an AI will not be able to either.',
+      sections: [
+        {
+          id: 'news',
+          heading: 'What was announced this month',
+          paragraphs: [
+            'On November 19, 2026, Amazon Web Services announced the general availability of Resolutions in Amazon Connect, aimed at high-volume operational work such as refund requests, transaction disputes, fraud investigations and insurance claims. According to the announcement, a manager can describe a process in plain language or upload the standard operating procedures, and the service drafts a work plan. AI agents then gather information, apply the policy and act in business applications, while human specialists handle approvals and exceptions. Each action and decision is recorded.',
+            'The documentation has three details that matter more than the agent. First, while drafting the plan, the assistant asks follow-up questions about exceptions, decision rules and approval thresholds, and flags cases the procedure does not cover; its own example is what to do when a customer does not answer an email after two days. Second, a plan cannot be published until every open item is resolved. Third, a published version cannot be changed: to modify it, you copy it, edit the copy and publish it as a new version.',
+            'We read these details in search excerpts of the AWS announcement and documentation; aws.amazon.com does not open from our environment. Pricing is per case, in US dollars, and availability may vary by region.'
+          ]
+        },
+        {
+          id: 'lean',
+          heading: 'The lean reading: standard work and a management system that grows',
+          paragraphs: [
+            'Look at what the service does: it asks for the procedure, finds the gaps, does not let you publish with open items and keeps a locked version until someone approves a new one. That is the discipline of standard work in lean: the current best known way of doing a job, written down, followed by everyone and improved deliberately, not changed by whoever happens to be on shift. The tool did not invent it; it simply cannot work without it.',
+            'In a November 2026 episode of the Lean Enterprise Institute podcast, "Growing Fast? Your Management System Needs to Keep Up", LEI president Josh Howell and Roberto Priolo of the Lean Global Network interview Adam Rens, president and co-owner of Switchgear Power Systems, a Wisconsin engineer-to-order manufacturer. According to the episode summary, the company faces a sharp increase in demand and in the size of its workforce, and lean has become a way to support that growth; the conversation also covers what it takes to change leadership behaviors. We read the summary, not the full transcript.',
+            'The connection is direct: when a company adds people quickly, what lived in the heads of the founders stops being enough. Adding AI agents is the same as adding people very fast. If the procedure was not ready for a new hire, it is not ready for an agent.'
+          ]
+        },
+        {
+          id: 'no-tech',
+          heading: 'A no-technology technique: the exceptions table and the version box',
+          paragraphs: [
+            'Take the procedure your team repeats most and add two things on paper. At the end, a three-column table: "If this happens", "Do this", "Tell this person". Fill it during one week: every time someone asks "and what do I do now?", that question becomes a row. At the top, a small box with the version number, the date, who approved it and what changed. Whoever changes the procedure without updating the box is not following it.',
+            'Synthetic example: a fictional clinic in Heredia processed insurance refunds with a two-page procedure. In the first week, the exceptions table collected seven rows: an invoice with the wrong ID number, a patient who does not answer, an amount above the insurer\'s limit, among others. Three of those cases accounted for most of the delays. The team fixed two at the source, by checking the ID at reception, and set that refunds above a fixed amount need the administrator\'s initials. Version 2 of the procedure was a page shorter.',
+            'That sheet is useful today with people and tomorrow with any tool. And if an agent ever runs the process, the table already tells you which cases it should hand back to a person.'
+          ]
+        }
+      ],
+      discussion: [
+        'Which procedure in your business has exceptions that only one person knows how to handle?',
+        'If someone changed a procedure today, how would the rest of the team find out?',
+        'Which cases should an automated process always hand back to a person?'
+      ],
+      sources: [
+        { title: 'AWS — Amazon Connect launches Resolutions, an agentic solution for high-volume operational work (Nov 19, 2026)', url: 'https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-connect-resolutions/' },
+        { title: 'AWS documentation — Resolve operational work with Resolutions in Amazon Connect Customer', url: 'https://docs.aws.amazon.com/connect/latest/adminguide/resolutions.html' },
+        { title: 'Lean Enterprise Institute — Growing Fast? Your Management System Needs to Keep Up (podcast, Nov 2026)', url: 'https://www.lean.org/the-lean-post/articles/growing-fast-your-management-system-needs-to-keep-up/' },
+        { title: 'Lean Enterprise Institute — Standard Work for Lean Leaders: One of the Keys to Sustaining Performance Gains', url: 'https://www.lean.org/the-lean-post/articles/standard-work-for-lean-leaders-one-of-the-keys-to-sustaining-performance-gains/' }
+      ]
+    },
+    es: {
+      slug: 'su-procedimiento-es-el-insumo-de-la-ia',
+      title: 'Su procedimiento escrito ya es el insumo de la IA: lo que no está escrito, el agente no lo sabe',
+      summary: 'Este mes un proveedor de nube lanzó un servicio que convierte un procedimiento operativo en un plan que ejecutan agentes de IA, caso por caso, mientras las personas atienden aprobaciones y excepciones. Lo útil no es el agente: es que la herramienta obliga a escribir las excepciones que nadie había documentado. Un pódcast Lean de noviembre agrega la otra mitad: cuando una empresa crece, su sistema de gestión tiene que crecer con ella.',
+      takeaway: 'Antes de comprar cualquier agente, tome el procedimiento que más repite su equipo y agréguele una tabla de excepciones: si pasa esto, haga esto y avise a esta persona. Si no la puede llenar, una IA tampoco podrá.',
+      sections: [
+        {
+          id: 'news',
+          heading: 'Qué se anunció este mes',
+          paragraphs: [
+            'El 19 de noviembre de 2026, Amazon Web Services anunció la disponibilidad general de Resolutions en Amazon Connect, pensado para trabajo operativo de alto volumen como solicitudes de reembolso, disputas de transacciones, investigaciones de fraude y reclamos de seguros. Según el anuncio, un encargado puede describir un proceso en lenguaje común o subir los procedimientos operativos, y el servicio redacta un plan de trabajo. Luego, agentes de IA reúnen la información, aplican la política y actúan en las aplicaciones del negocio, mientras especialistas humanos atienden aprobaciones y excepciones. Cada acción y decisión queda registrada.',
+            'La documentación trae tres detalles que importan más que el agente. Primero, al redactar el plan, el asistente hace preguntas de seguimiento sobre excepciones, reglas de decisión y umbrales de aprobación, y señala casos que el procedimiento no cubre; su propio ejemplo es qué hacer cuando un cliente no responde un correo después de dos días. Segundo, un plan no se puede publicar hasta resolver todos los pendientes. Tercero, una versión publicada no se puede cambiar: para modificarla hay que copiarla, editar la copia y publicarla como versión nueva.',
+            'Leímos estos detalles en extractos de búsqueda del anuncio y la documentación de AWS; aws.amazon.com no abre desde nuestro entorno. El precio es por caso, en dólares, y la disponibilidad puede variar por región.'
+          ]
+        },
+        {
+          id: 'lean',
+          heading: 'La lectura Lean: trabajo estandarizado y un sistema de gestión que crece',
+          paragraphs: [
+            'Vea lo que hace el servicio: pide el procedimiento, encuentra los huecos, no deja publicar con pendientes y mantiene una versión fija hasta que alguien apruebe una nueva. Esa es la disciplina del trabajo estandarizado en Lean: la mejor forma conocida hoy de hacer una tarea, escrita, seguida por todos y mejorada de manera deliberada, no cambiada por quien esté de turno. La herramienta no lo inventó; simplemente no puede funcionar sin eso.',
+            'En un episodio de noviembre de 2026 del pódcast del Lean Enterprise Institute, "Growing Fast? Your Management System Needs to Keep Up", el presidente del LEI, Josh Howell, y Roberto Priolo, de Lean Global Network, entrevistan a Adam Rens, presidente y copropietario de Switchgear Power Systems, un fabricante de Wisconsin que diseña cada pedido a la medida. Según el resumen del episodio, la empresa enfrenta un aumento fuerte de la demanda y del tamaño de su planilla, y Lean se ha convertido en una forma de sostener ese crecimiento; la conversación también trata lo que cuesta cambiar los comportamientos de liderazgo. Leímos el resumen, no la transcripción completa.',
+            'La conexión es directa: cuando una empresa suma gente rápido, lo que vivía en la cabeza de los fundadores deja de alcanzar. Sumar agentes de IA es lo mismo que sumar personas muy rápido. Si el procedimiento no estaba listo para una persona nueva, tampoco está listo para un agente.'
+          ]
+        },
+        {
+          id: 'no-tech',
+          heading: 'Una técnica sin tecnología: la tabla de excepciones y el recuadro de versión',
+          paragraphs: [
+            'Tome el procedimiento que más repite su equipo y agréguele dos cosas en papel. Al final, una tabla de tres columnas: "Si pasa esto", "Haga esto", "Avise a". Llénela durante una semana: cada vez que alguien pregunte "¿y ahora qué hago?", esa pregunta se convierte en una fila. Arriba, un recuadro pequeño con el número de versión, la fecha, quién la aprobó y qué cambió. Quien cambia el procedimiento sin actualizar el recuadro no lo está siguiendo.',
+            'Ejemplo sintético: una clínica ficticia en Heredia tramitaba reintegros de seguros con un procedimiento de dos páginas. En la primera semana, la tabla de excepciones juntó siete filas: factura con la cédula equivocada, paciente que no contesta, monto por encima del tope de la aseguradora, entre otras. Tres de esos casos explicaban la mayoría de los atrasos. El equipo eliminó dos desde el origen, revisando la cédula en recepción, y definió que los reintegros por encima de un monto fijo llevan las iniciales de la administradora. La versión 2 del procedimiento quedó una página más corta.',
+            'Esa hoja sirve hoy con personas y mañana con cualquier herramienta. Y si algún día un agente ejecuta el proceso, la tabla ya le dice qué casos debe devolverle a una persona.'
+          ]
+        }
+      ],
+      discussion: [
+        '¿Qué procedimiento de su negocio tiene excepciones que solo una persona sabe resolver?',
+        'Si alguien cambiara hoy un procedimiento, ¿cómo se enteraría el resto del equipo?',
+        '¿Qué casos debería devolver siempre a una persona un proceso automatizado?'
+      ],
+      sources: [
+        { title: 'AWS — Amazon Connect launches Resolutions, an agentic solution for high-volume operational work (19 nov 2026)', url: 'https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-connect-resolutions/' },
+        { title: 'Documentación de AWS — Resolve operational work with Resolutions in Amazon Connect Customer', url: 'https://docs.aws.amazon.com/connect/latest/adminguide/resolutions.html' },
+        { title: 'Lean Enterprise Institute — Growing Fast? Your Management System Needs to Keep Up (pódcast, nov 2026)', url: 'https://www.lean.org/the-lean-post/articles/growing-fast-your-management-system-needs-to-keep-up/' },
+        { title: 'Lean Enterprise Institute — Standard Work for Lean Leaders: One of the Keys to Sustaining Performance Gains', url: 'https://www.lean.org/the-lean-post/articles/standard-work-for-lean-leaders-one-of-the-keys-to-sustaining-performance-gains/' }
+      ]
+    }
   }
 ];
