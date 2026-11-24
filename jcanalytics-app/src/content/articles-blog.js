@@ -1398,5 +1398,104 @@ export const blogArticles = [
         { title: 'Lean Enterprise Institute — Standard Work for Lean Leaders: One of the Keys to Sustaining Performance Gains', url: 'https://www.lean.org/the-lean-post/articles/standard-work-for-lean-leaders-one-of-the-keys-to-sustaining-performance-gains/' }
       ]
     }
+  },
+  {
+    id: 'rule-or-judgment-nov-2026',
+    topic: 'operations',
+    image: '/projects/crimson/facturas-desktop.webp',
+    minutes: 5,
+    published: '2026-11-24',
+    en: {
+      slug: 'rule-or-judgment-before-automating',
+      title: 'Rule or judgment? Sort each decision before you automate it',
+      summary: 'This month a cloud provider made it possible to build automations by describing a process in chat, with fixed steps and validations against rules you set. Its own guidance gives a simple test worth using with or without software: if you can write the rule down completely, it is a fixed step; if not, it needs judgment, and judgment needs a person or a measured review. A lean article from October adds how to tell whether the change actually worked.',
+      takeaway: 'List the decisions in one process and mark each one R (the rule fits on a line) or J (it needs judgment). Automate or standardize the Rs first; for the Js, count how often the reviewer changes the proposed answer before trusting anyone, or anything, to decide alone.',
+      sections: [
+        {
+          id: 'news',
+          heading: 'What was announced this month',
+          paragraphs: [
+            'On November 20, 2026, Amazon Web Services announced that Flows in AWS Quick can now be built, run and refined through conversation: a user describes a process in chat and the service builds the automation, without code. According to the announcement, flows can coordinate agents, skills and tools; new deterministic steps keep results consistent, and validations check the output of each step against rules the user defines. Flows run on desktop, web and mobile, and support longer workflows and larger volumes of data. A day later, AWS added plugins that bundle agents, skills, connectors and flows for a specific role or task so teammates can find and reuse them.',
+            'The useful part is in an AWS best-practices post for Quick Automate, a related product. Its rule of thumb: if you can write the rule down completely, use a deterministic step; leave agents for work that requires reading unstructured content or weighing context. It recommends one responsibility per agent (in its invoice example, reading the invoice, checking it against the purchase order and choosing an approval path are separate pieces), blocking human approval for high-stakes actions such as releasing a large payment, and a timeout or escalation path so a pending approval does not stall the whole process. It also suggests starting conservative and measuring how often reviewers change the proposed action before raising what is handled automatically.',
+            'We read these details in search excerpts of the AWS announcement and blog; aws.amazon.com does not open from our environment. Figures and capabilities are as described by the provider.'
+          ]
+        },
+        {
+          id: 'lean',
+          heading: 'The lean and Six Sigma reading: a change is an experiment',
+          paragraphs: [
+            'Separating rules from judgment is not new. In lean, whatever can be fully specified becomes standard work or error-proofing, so people spend their attention where it is needed. In Six Sigma, a decision that depends on who is on shift is a source of variation, and the first step is to measure it before trying to reduce it.',
+            'In "Lean Was Always an Experiment" (October 19, 2026), Lean Enterprise Institute author Josh Howell argues that lean grew by trial and error, not as fixed doctrine, and gives a test for a real experiment: it starts from a standard, makes a prediction and checks both the process and the result. A change without those elements teaches nobody anything. We read the article in search excerpts; lean.org does not open from our environment.',
+            'Apply that to automation: "we will automate approvals" is not an experiment. "Invoices under a set amount that match the purchase order will be approved without review, and we predict reviewers would have changed fewer than one in fifty of those" is. Measuring how often a person corrects the proposal is the same check the AWS post recommends, and the same one a Six Sigma team would run with a check sheet.'
+          ]
+        },
+        {
+          id: 'no-tech',
+          heading: 'A no-technology technique: the R/J sheet and the correction tally',
+          paragraphs: [
+            'On one sheet, list every decision in a process: "approve?", "which supplier?", "is this urgent?". Next to each, write the rule in one line. If it fits completely, mark R. If you end up writing "it depends", mark J. The Rs become a checklist or a table anyone can apply, no system required. For every J, add two columns: who decides, and what happens if they have not answered within a set time (for example, after one business day it goes to the manager).',
+            'Then, for two weeks, keep a check sheet next to each J: every time the reviewer approves a proposal as it came, one tick under "unchanged"; every time they change it, one tick under "changed" and a word on why. Those reasons often turn into new rules, so a J becomes an R. If after two weeks the "changed" column is almost empty, the review may have become a rubber stamp and it is worth asking whether it still protects anything.',
+            'Synthetic example: a fictional distributor in Cartago listed nine decisions in its purchase process. Six were Rs, among them "if the supplier is on the approved list and the amount is under the limit, place the order". Of the three Js, the tally showed that the manager changed almost none of the price checks but did change a third of the "urgent" flags. The team wrote a definition of urgent, turned the price check into a rule and kept the review only where it was changing outcomes.'
+          ]
+        }
+      ],
+      discussion: [
+        'Which decision in your process do people describe with "it depends"?',
+        'Which approvals in your business have no deadline and no backup person?',
+        'If you counted how often a reviewer changes what reaches them, what would you expect to find?'
+      ],
+      sources: [
+        { title: 'AWS — Build more capable automations through chat with Flows in AWS Quick (Nov 20, 2026)', url: 'https://aws.amazon.com/about-aws/whats-new/2026/11/aws-quick-flows-automations-chat/' },
+        { title: 'AWS — AWS Quick now supports plugins to bundle agents, skills, connectors and flows (Nov 2026)', url: 'https://aws.amazon.com/about-aws/whats-new/2026/11/aws-quick-plugins-bundle-agents-skills-connectors-flows/' },
+        { title: 'AWS Machine Learning Blog — Best practices for building agentic automations with AWS Quick Automate', url: 'https://aws.amazon.com/blogs/machine-learning/best-practices-for-building-agentic-automations-with-amazon-quick-automate/' },
+        { title: 'Lean Enterprise Institute — Lean Was Always an Experiment (Josh Howell, Oct 19, 2026)', url: 'https://www.lean.org/the-lean-post/articles/lean-was-always-an-experiment/' }
+      ]
+    },
+    es: {
+      slug: 'regla-o-criterio-antes-de-automatizar',
+      title: '¿Regla o criterio? Clasifique cada decisión antes de automatizarla',
+      summary: 'Este mes un proveedor de nube permitió construir automatizaciones describiendo el proceso en un chat, con pasos fijos y validaciones contra reglas que define el usuario. Su propia guía trae una prueba sencilla que sirve con o sin software: si la regla se puede escribir completa, es un paso fijo; si no, necesita criterio, y el criterio necesita una persona o una revisión medida. Un artículo Lean de octubre agrega cómo saber si el cambio realmente funcionó.',
+      takeaway: 'Haga la lista de las decisiones de un proceso y marque cada una con R (la regla cabe en una línea) o C (necesita criterio). Estandarice o automatice primero las R; en las C, cuente cuántas veces quien revisa cambia la respuesta propuesta antes de confiar en que alguien, o algo, decida solo.',
+      sections: [
+        {
+          id: 'news',
+          heading: 'Qué se anunció este mes',
+          paragraphs: [
+            'El 20 de noviembre de 2026, Amazon Web Services anunció que los flujos (Flows) de AWS Quick ahora se pueden construir, ejecutar y ajustar conversando: el usuario describe un proceso en el chat y el servicio arma la automatización, sin programar. Según el anuncio, los flujos pueden coordinar agentes, habilidades y herramientas; nuevos pasos deterministas mantienen resultados consistentes, y las validaciones revisan la salida de cada paso contra reglas que define el usuario. Funcionan en escritorio, web y móvil, y admiten procesos más largos y más volumen de datos. Un día después, AWS sumó complementos (plugins) que agrupan agentes, habilidades, conectores y flujos para un puesto o tarea, de modo que el resto del equipo los encuentre y reutilice.',
+            'Lo útil está en una guía de buenas prácticas de AWS para Quick Automate, un producto relacionado. Su regla práctica: si la regla se puede escribir completa, use un paso determinista; deje los agentes para el trabajo que exige leer contenido no estructurado o sopesar el contexto. Recomienda una sola responsabilidad por agente (en su ejemplo de facturas, leer la factura, compararla con la orden de compra y elegir la ruta de aprobación son piezas separadas), aprobación humana que detenga el proceso en acciones de alto riesgo como liberar un pago grande, y un plazo o una ruta de escalamiento para que una aprobación pendiente no frene todo. También sugiere empezar de forma conservadora y medir con qué frecuencia quien revisa cambia la acción propuesta antes de ampliar lo que se resuelve en automático.',
+            'Leímos estos detalles en extractos de búsqueda del anuncio y del blog de AWS; aws.amazon.com no abre desde nuestro entorno. Las cifras y capacidades son las que describe el proveedor.'
+          ]
+        },
+        {
+          id: 'lean',
+          heading: 'La lectura Lean y Six Sigma: un cambio es un experimento',
+          paragraphs: [
+            'Separar reglas de criterio no es nuevo. En Lean, lo que se puede especificar por completo se convierte en trabajo estandarizado o en un poka-yoke, para que las personas pongan su atención donde hace falta. En Six Sigma, una decisión que depende de quién esté de turno es una fuente de variación, y el primer paso es medirla antes de intentar reducirla.',
+            'En "Lean Was Always an Experiment" (19 de octubre de 2026), Josh Howell, del Lean Enterprise Institute, sostiene que Lean creció a prueba y error, no como doctrina fija, y propone una prueba para un experimento real: parte de un estándar, hace una predicción y verifica tanto el proceso como el resultado. Un cambio sin esos elementos no le enseña nada a nadie. Leímos el artículo en extractos de búsqueda; lean.org no abre desde nuestro entorno.',
+            'Llévelo a la automatización: "vamos a automatizar las aprobaciones" no es un experimento. "Las facturas por debajo de un monto fijo que coinciden con la orden de compra se aprueban sin revisión, y predecimos que quien revisa habría cambiado menos de una de cada cincuenta" sí lo es. Medir cuántas veces una persona corrige la propuesta es el mismo control que recomienda la guía de AWS, y el mismo que haría un equipo Six Sigma con una hoja de verificación.'
+          ]
+        },
+        {
+          id: 'no-tech',
+          heading: 'Una técnica sin tecnología: la hoja R/C y el conteo de correcciones',
+          paragraphs: [
+            'En una hoja, anote cada decisión del proceso: "¿se aprueba?", "¿a qué proveedor?", "¿es urgente?". Al lado de cada una, escriba la regla en una línea. Si cabe completa, marque R. Si termina escribiendo "depende", marque C. Las R se convierten en una lista de verificación o una tabla que cualquiera puede aplicar, sin sistema. A cada C agréguele dos columnas: quién decide y qué pasa si no ha respondido en un plazo fijo (por ejemplo, después de un día hábil pasa a la gerencia).',
+            'Luego, durante dos semanas, mantenga una hoja de verificación junto a cada C: cada vez que quien revisa aprueba la propuesta tal como llegó, una marca en "sin cambio"; cada vez que la cambia, una marca en "cambiada" y una palabra sobre el motivo. Esos motivos muchas veces se convierten en reglas nuevas, y una C pasa a ser R. Si después de dos semanas la columna "cambiada" está casi vacía, la revisión quizá se volvió un sello automático y vale la pena preguntarse si todavía protege algo.',
+            'Ejemplo sintético: una distribuidora ficticia en Cartago anotó nueve decisiones en su proceso de compras. Seis eran R, entre ellas "si el proveedor está en la lista aprobada y el monto es menor al límite, se hace el pedido". De las tres C, el conteo mostró que la gerencia casi nunca cambiaba la revisión de precios, pero sí cambiaba una de cada tres marcas de "urgente". El equipo escribió una definición de urgente, convirtió la revisión de precios en regla y dejó la revisión solo donde estaba cambiando resultados.'
+          ]
+        }
+      ],
+      discussion: [
+        '¿Qué decisión de su proceso describe la gente con un "depende"?',
+        '¿Qué aprobaciones de su negocio no tienen plazo ni persona de respaldo?',
+        'Si contara cuántas veces quien revisa cambia lo que le llega, ¿qué esperaría encontrar?'
+      ],
+      sources: [
+        { title: 'AWS — Build more capable automations through chat with Flows in AWS Quick (20 nov 2026)', url: 'https://aws.amazon.com/about-aws/whats-new/2026/11/aws-quick-flows-automations-chat/' },
+        { title: 'AWS — AWS Quick now supports plugins to bundle agents, skills, connectors and flows (nov 2026)', url: 'https://aws.amazon.com/about-aws/whats-new/2026/11/aws-quick-plugins-bundle-agents-skills-connectors-flows/' },
+        { title: 'Blog de Machine Learning de AWS — Best practices for building agentic automations with AWS Quick Automate', url: 'https://aws.amazon.com/blogs/machine-learning/best-practices-for-building-agentic-automations-with-amazon-quick-automate/' },
+        { title: 'Lean Enterprise Institute — Lean Was Always an Experiment (Josh Howell, 19 oct 2026)', url: 'https://www.lean.org/the-lean-post/articles/lean-was-always-an-experiment/' }
+      ]
+    }
   }
 ];
