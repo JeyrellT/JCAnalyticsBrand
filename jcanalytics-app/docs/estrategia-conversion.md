@@ -21,8 +21,11 @@ aceptada por el portal (persona con WhatsApp o correo), además del clic a Whats
 ## Qué ve la persona
 
 **Celular y tableta (puntero táctil).** Igual que antes: «Lo quiero · WhatsApp», «Cotizar por WhatsApp» y
-el botón flotante abren WhatsApp con el mensaje armado. «Prefiero que me contacten» sigue dejando la consulta
-en el portal y, novedad, ahora cuenta como consulta captada en las tres plataformas.
+el botón flotante abren WhatsApp con el mensaje armado. «Prefiero que me contacten» muestra recién ahí los campos de WhatsApp
+y correo, deja la consulta en el portal y cuenta como consulta
+captada en las tres plataformas. Desde el 10 de noviembre de 2026, quien vuelve de WhatsApp sin haber dejado
+una consulta ve una sola vez la hoja «¿Pudiste enviar tu mensaje?» y puede dejar su número
+(`ui/WhatsAppReturn.jsx`, medido como `whatsapp-retorno`).
 
 **Computadora (mouse).** Los mismos botones cambian de texto («Lo quiero», «Pedir cotización», «Escribinos»)
 y, al hacer clic, abren el formulario corto en lugar de WhatsApp Web:
@@ -98,9 +101,11 @@ ninguna consulta queda fuera del aprendizaje de la campaña. Para separarlas:
 
 **Portal → Web → Tráfico del sitio** (periodo de 7 días):
 
-- Formularios: `contacto-rapido` empezados contra enviados. Objetivo: al menos la mitad de quienes lo abren lo
-  envían. Si es menos, el mensaje prellenado o el pedido de contacto está asustando: probar con el campo de
-  mensaje plegado.
+- Formularios: `contacto-rapido` empezados contra enviados. Objetivo: al menos la mitad de quienes lo empiezan
+  lo envían. Desde el 10 de noviembre de 2026 «empezado» significa que la persona escribió algo (antes contaba
+  cada apertura, porque el formulario enfoca el teléfono al abrirse), el mensaje va plegado en los pedidos de
+  paquete y las aperturas se ven como clics a WhatsApp de escritorio, con su etiqueta y sección.
+- `whatsapp-retorno` enviados: consultas rescatadas de quienes abrieron WhatsApp en celular y no escribieron.
 - Dispositivos: tasa de CTA y consultas de escritorio contra celular. Antes, escritorio no dejaba consultas
   medibles; en dos semanas debería dejar al menos tantas por visita como celular.
 - ¿Qué CTA convierte?: las secciones `paquetes`, `oferta`, `indice-cta` y `contacto` deberían aparecer con

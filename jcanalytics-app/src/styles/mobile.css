@@ -19,9 +19,9 @@
   .jca-menu__top { position: sticky; top: -22px; z-index: 2; min-height: 44px; padding-block: 3px; background: #101c18; }
   .studio-v4 .jca-menu .jca-brand__caption { display: none; }
   .studio-v4 .jca-menu-button--close { border-radius: 50%; background: #c3f5db0b; }
-  .jca-menu__eyebrow { margin: 24px 0 12px; font: 9px var(--font-mono); color: #b2c9bb; letter-spacing: .07em; }
-  .jca-menu__title { display: block; font: 400 clamp(28px, 8vw, 42px)/1.05 var(--font-display); letter-spacing: -.04em; margin-bottom: 24px; }
-  .jca-menu__title em { font-family: var(--font-serif); color: #c3f5db; font-weight: 400; }
+  /* El titular decorativo («Elegí tu próximo paso.») ocupaba 107 px y dejaba el botón de contacto fuera de
+     la hoja: ahora el menú abre con las siete tarjetas y la acción a la vista (auditoría, nov. 2026). */
+  .jca-menu__eyebrow { margin: 14px 0 10px; font: 10.5px var(--font-mono); color: #b2c9bb; letter-spacing: .07em; }
   .jca-menu__links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
   .studio-v4 .jca-menu__links > a { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 13px 8px; padding: 14px; min-height: 110px; border: 1px solid #c3f5db22; border-radius: 14px; background: #b7d9bc07; font-size: 18px; line-height: 1.1; letter-spacing: -.035em; }
   .studio-v4 .jca-menu__links > a[aria-current] { background: #c3f5db; color: #173a28; border-color: #c3f5db; }
@@ -33,7 +33,7 @@
   .studio-v4 .jca-menu__links > a > svg { display: none; }
   .jca-menu__shortcuts { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; }
   .jca-menu__shortcuts a { display: flex; align-items: center; gap: 10px; min-height: 44px; color: #d5e5d9; font-size: 12px; }
-  .jca-menu__bottom { margin-top: 0; padding-top: 13px; }
+  .jca-menu__bottom { position: sticky; bottom: calc(-1 * max(24px, env(safe-area-inset-bottom))); z-index: 2; margin-top: 0; padding: 13px 0 10px; background: #101c18; box-shadow: 0 -14px 18px #101c18; }
   .studio-v4 .jca-menu__contact { border-radius: 12px; min-height: 54px; }
   .jca-menu__details { margin-top: 8px; }
   .jca-menu__details a { min-height: 44px; }
@@ -59,26 +59,34 @@
   .studio-v4 .jca-navigation .jca-menu-button { border: 0; border-radius: 50%; background: #c3f5db0b; }
   .jca-navigation__chapter { display: block; margin-left: auto; max-width: 95px; color: #b6c8bc; font: 9px/1.5 var(--font-mono); text-align: right; }
 
-  /* Dos círculos en la esquina (WhatsApp y asistente): nada flota "en el aire" sobre el contenido. */
-  .mobile-wa { position: fixed; z-index: 65; right: max(16px, env(safe-area-inset-right)); bottom: calc(16px + env(safe-area-inset-bottom)); display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: #25d366; color: #06301a; box-shadow: 0 10px 28px #03170b66, inset 0 1px #fff5; transition: opacity .18s, transform .18s; }
-  .mobile-wa:active { transform: scale(.94); }
-  .mobile-wa[aria-hidden=true] { visibility: hidden; opacity: 0; pointer-events: none; }
+  /* En la esquina: WhatsApp con nombre («Cotizar») y, a su lado, la asistente. Un círculo sin rótulo obligaba
+     a adivinar qué hacía. Los dos se retiran mientras hay un botón principal en pantalla (Nav.jsx marca
+     body.cta-in-view): así no tapan los chips del hero, el enlace de un paquete ni el botón de enviar. */
+  .mobile-wa { position: fixed; z-index: 65; right: max(16px, env(safe-area-inset-right)); bottom: calc(16px + env(safe-area-inset-bottom)); display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 112px; height: 50px; padding: 0 18px 0 15px; border-radius: 999px; background: #25d366; color: #06301a; font: 650 14.5px/1 var(--font-sans); box-shadow: 0 10px 28px #03170b66, inset 0 1px #fff5; transition: opacity .2s, transform .2s, visibility .2s; }
+  .mobile-wa:active { transform: scale(.96); }
+  .mobile-wa[aria-hidden=true], body.cta-in-view .mobile-wa { visibility: hidden; opacity: 0; pointer-events: none; transform: translateY(8px); }
+  body.cta-in-view .assistant-launcher, body.mobile-input-active .assistant-launcher { visibility: hidden; opacity: 0; pointer-events: none; transform: translateY(8px); }
 
   /* Title, sculptural object and invitation read as one opening composition. */
   .studio-hero { padding: 91px var(--mobile-edge) 0; }
-  .studio-hero__main { display: flex; flex-direction: column; }
+  .studio-hero__main { display: flex; flex-direction: column; gap: 0; }
   .studio-hero__copy { display: contents; }
-  .studio-hero__lead { order: 0; padding-top: 26px; }
-  .studio-hero__eyebrow { margin-bottom: 0; font-size: 11px; }
-  .studio-hero h1 { order: 1; padding-top: 12px; font-size: clamp(50px, 16.8vw, 100px); line-height: .89; }
-  .studio-hero h1 em { font-size: clamp(34px, 12.6vw, 72px); } /* «con entrega a tiempo.» entra completa en celular (nov. 2026) */
-  .studio-hero .studio-object { order: 6; width: 100%; margin: 6px 0 2px; height: auto; transform: none !important; }
+  /* Orden de la primera pantalla en celular (auditoría, nov. 2026): para quién, titular, una frase, el botón
+     de WhatsApp con lo que pasa después, los atajos por categoría y recién entonces el teléfono con
+     pantallas reales. El titular baja de tamaño para que el botón y los atajos entren sin deslizar. */
+  .studio-hero__lead { order: 0; padding-top: 14px; }
+  .studio-hero__eyebrow { margin-bottom: 0; font-size: 11.5px; line-height: 1.5; }
+  .studio-hero h1 { order: 1; padding-top: 12px; font-size: clamp(40px, 12.4vw, 64px); line-height: .94; }
+  .studio-hero h1 em { font-size: clamp(34px, 10.6vw, 56px); } /* «con entrega a tiempo.» entra completa en una línea */
+  .studio-hero .studio-object { order: 7; width: 100%; margin: 30px 0 2px; height: auto; transform: none !important; }
   .studio-hero__intro { order: 2; }
-  .studio-hero__description { margin-top: 8px; max-width: 100%; font-size: 14px; line-height: 1.7; }
-  .studio-hero__actions { order: 4; display: grid; grid-template-columns: 1fr; gap: 7px; margin-top: 20px; }
+  .studio-hero__description { margin-top: 14px; max-width: 100%; font-size: 15px; line-height: 1.55; }
+  .studio-hero__actions { order: 3; display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 18px; }
+  .studio-hero__actions .studio-wa { justify-content: center; width: 100%; }
   .studio-start { width: 100%; justify-content: space-between; border-radius: 14px; font-size: 13px; padding: 8px 8px 8px 19px; min-height: 56px; }
   .studio-start > span { width: 40px; }
-  .studio-hero__invitation { order: 5; text-align: center; font-size: 11px; margin: 2px 0 20px; }
+  .studio-hero__paths-wrap { order: 5; }
+  .studio-hero__invitation { order: 6; max-width: none; font-size: 13px; margin: 16px 0 0; }
   .studio-v4 .capabilities-ribbon { padding-block: 16px; }
   .studio-v4 .jca-marquee__control { width: 44px; height: 44px; }
 
@@ -186,6 +194,9 @@
   .mobile-rail__controls > div { display: flex; gap: 6px; }
   .mobile-rail__controls button { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 1px solid #759e8044; color: #254a32; background: #dce7d655; cursor: pointer; }
   .mobile-rail__controls button:disabled { opacity: .35; cursor: default; }
+  /* Flechas a la izquierda: a la derecha quedaban debajo de los botones flotantes y el toque abría WhatsApp. */
+  .studio-v4 .mobile-rail__controls { flex-direction: row-reverse; }
+  .studio-v4 .mobile-rail__controls > span { align-items: flex-end; text-align: right; }
   .case-feature { display: flex; flex-direction: column; border-radius: 18px; }
   .case-feature__top { order: 0; }
   .case-feature__selector { order: 1; }

@@ -30,6 +30,16 @@ Las apps se levantan según el README de cada repositorio (Postgres local para l
 
 Se copian tal cual del repositorio, con la ruta del archivo. Al elegirlos: que expliquen una decisión de ingeniería en pocas líneas, que no incluyan secretos, datos personales ni algoritmos que el cliente considere reservados, y que sigan existiendo (si el archivo cambia, actualizar el fragmento).
 
-## 4. Verificación
+## 4. Cómo se muestran (noviembre de 2026)
+
+- El primer proyecto de `PROJECTS` es el que abre el explorador: conviene que tenga sitio público. Su primera
+  pantalla es la que se ve al llegar y la miniatura de la lista.
+- El resumen muestra `problem` («El problema») y `built` («Lo que construimos»); `features` pasa a la pestaña
+  «Cómo está hecho» como decisiones técnicas.
+- Las cifras de la sección (proyectos, sitios públicos, giros, pruebas) se cuentan desde los datos.
+- Otros componentes abren un proyecto y una pantalla concretos con el evento `jca:show-project` y el ancla
+  `#proyecto`; desde otra página, con `/?proyecto=<id>&pantalla=<id>#proyecto`.
+
+## 5. Verificación
 
 `npm run check:site` comprueba que la portada nombra los proyectos en HTML estático, que cada proyecto trae su captura, que el explorador cambia de proyecto, de vista (pantalla, código, anatomía) y que los enlaces abren sitios reales por HTTPS.

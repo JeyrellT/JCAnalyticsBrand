@@ -52,6 +52,48 @@ export const PROJECT_KINDS = {
 };
 
 export const PROJECTS = [
+  // Orden de la lista: primero un proyecto con sitio público que cualquiera puede abrir (auditoría de
+  // noviembre de 2026); el explorador de la portada arranca en el primero.
+  {
+    id: 'laburrada',
+    name: 'La Burrada Street Food',
+    client: 'La Burrada · Santa Bárbara de Heredia',
+    kind: 'commerce',
+    sector: t('Restaurante · pedidos en línea', 'Restaurant · online ordering'),
+    status: t('En producción', 'In production'),
+    accent: '#ff5a00',
+    tagline: t('Del menú a la cocina sin perder un pedido.', 'From menu to kitchen without losing an order.'),
+    problem: t(
+      'Un restaurante de burritos que vende por WhatsApp los fines de semana necesitaba recibir pedidos sin cuenta obligatoria, cobrar por SINPE sin revisar comprobantes a mano y que la cocina viera cada pedido al instante.',
+      'A weekend burrito restaurant selling through WhatsApp needed to take orders without mandatory accounts, charge by SINPE without checking receipts by hand and let the kitchen see every order instantly.',
+    ),
+    built: t(
+      'Un menú en línea donde el cliente arma su pedido desde el celular y paga por SINPE: el sistema empareja cada pago con su pedido y, si hay duda, lo revisa una persona. La cocina ve cada pedido al instante en una tablet, el inventario se lleva por receta y proyecta cuánto preparar de viernes a domingo, hay un programa de puntos para clientes frecuentes y el dueño ve sus ventas en un panel.',
+      'An online menu where customers build their order on their phone and pay by SINPE: the system matches each payment to its order and, when in doubt, a person reviews it. The kitchen sees every order instantly on a tablet, stock is tracked by recipe and projects how much to prep from Friday to Sunday, there is a points program for regulars and the owner sees sales on a panel.',
+    ),
+    features: t(
+      ['Cotización y pedido autoritativos en la API: el navegador nunca decide precios ni disponibilidad', 'Tablet de cocina con eventos en vivo (SSE), estaciones, alertas de audio y retrocesos permitidos', 'SINPE por ONVO Pay con emparejamiento por código, monto y teléfono; si hay duda, lo revisa una persona', 'Modo degradado: el menú sigue abierto aunque la API no responda'],
+      ['Authoritative quotes and orders in the API: the browser never decides prices or availability', 'Kitchen tablet with live events (SSE), stations, audio alerts and allowed rollbacks', 'SINPE through ONVO Pay matched by code, amount and phone; when in doubt a person reviews it', 'Degraded mode: the menu stays open even when the API is down'],
+    ),
+    stack: {
+      front: ['Next.js 16', 'React 19', 'Tailwind 4', 'GSAP', 'Zustand', 'PWA + push'],
+      back: ['Fastify 5', 'Prisma 6', 'Zod 4', 'JWT con rotación'],
+      data: ['PostgreSQL'],
+      integrations: ['ONVO Pay', 'OpenAI / DeepSeek', 'Resend', 'WhatsApp'],
+      infra: ['Railway (3 servicios)', 'GitHub Actions'],
+    },
+    screens: [
+      // La portada pública va primero: es la pantalla con la que arranca el explorador de la portada.
+      { id: 'home', caption: t('Menú público: la gente arma su pedido desde el celular, sin crear una cuenta.', 'Public menu: people build their order from their phone, with no account needed.'), mobile: 'home' },
+      { id: 'cocina', caption: t('Tablet de cocina: pendientes de aprobación, cola, preparación y listos, en vivo.', 'Kitchen tablet: pending approval, queue, preparing and ready, live.'), mobile: 'producto', mobileCaption: t('Ficha de producto en el celular.', 'Product page on a phone.') },
+      { id: 'admin', caption: t('Centro operativo: estado del turno, pulso del servicio y siguiente movimiento.', 'Operations centre: shift status, service pulse and next move.'), mobile: 'admin' },
+      { id: 'analitica', caption: t('Analítica de ventas, productos, clientes, descuentos y embudo.', 'Analytics for sales, products, customers, discounts and funnel.'), mobile: null },
+      { id: 'inventario', caption: t('Bodega y recetas: proyección de viernes a domingo por producto.', 'Stock and recipes: Friday-to-Sunday projection per product.'), mobile: null },
+      { id: 'promociones', caption: t('Ruleta de premios, cupones y campañas con costo visible.', 'Prize roulette, coupons and campaigns with visible cost.'), mobile: null },
+    ],
+    url: 'https://www.laburradacr.com/',
+    need: 'Sistema / backend',
+  },
   {
     id: 'transportesluna',
     name: 'Transporte Luz de Luna',
@@ -89,45 +131,6 @@ export const PROJECTS = [
       { id: 'landing', caption: t('Sitio público del transportista, con flota y formulario de cotización.', 'The operator’s public site, with fleet and quote form.'), mobile: 'landing' },
     ],
     url: null,
-    need: 'Sistema / backend',
-  },
-  {
-    id: 'laburrada',
-    name: 'La Burrada Street Food',
-    client: 'La Burrada · Santa Bárbara de Heredia',
-    kind: 'commerce',
-    sector: t('Restaurante · pedidos en línea', 'Restaurant · online ordering'),
-    status: t('En producción', 'In production'),
-    accent: '#ff5a00',
-    tagline: t('Del menú a la cocina sin perder un pedido.', 'From menu to kitchen without losing an order.'),
-    problem: t(
-      'Un restaurante de burritos que vende por WhatsApp los fines de semana necesitaba recibir pedidos sin cuenta obligatoria, cobrar por SINPE sin revisar comprobantes a mano y que la cocina viera cada pedido al instante.',
-      'A weekend burrito restaurant selling through WhatsApp needed to take orders without mandatory accounts, charge by SINPE without checking receipts by hand and let the kitchen see every order instantly.',
-    ),
-    built: t(
-      'Menú público con carrito y checkout donde el precio siempre lo calcula el servidor, una tablet de cocina en tiempo real, pagos con ONVO Pay, inventario por receta, lealtad con BurroCoins y ruleta, y un panel administrativo con analítica.',
-      'A public menu with cart and checkout where the server always computes the price, a real-time kitchen tablet, ONVO Pay payments, recipe-based inventory, loyalty with BurroCoins and a roulette, and an admin panel with analytics.',
-    ),
-    features: t(
-      ['Cotización y pedido autoritativos en la API: el navegador nunca decide precios ni disponibilidad', 'Tablet de cocina con eventos en vivo (SSE), estaciones, alertas de audio y retrocesos permitidos', 'SINPE por ONVO Pay con emparejamiento por código, monto y teléfono; si hay duda, lo revisa una persona', 'Modo degradado: el menú sigue abierto aunque la API no responda'],
-      ['Authoritative quotes and orders in the API: the browser never decides prices or availability', 'Kitchen tablet with live events (SSE), stations, audio alerts and allowed rollbacks', 'SINPE through ONVO Pay matched by code, amount and phone; when in doubt a person reviews it', 'Degraded mode: the menu stays open even when the API is down'],
-    ),
-    stack: {
-      front: ['Next.js 16', 'React 19', 'Tailwind 4', 'GSAP', 'Zustand', 'PWA + push'],
-      back: ['Fastify 5', 'Prisma 6', 'Zod 4', 'JWT con rotación'],
-      data: ['PostgreSQL'],
-      integrations: ['ONVO Pay', 'OpenAI / DeepSeek', 'Resend', 'WhatsApp'],
-      infra: ['Railway (3 servicios)', 'GitHub Actions'],
-    },
-    screens: [
-      { id: 'cocina', caption: t('Tablet de cocina: pendientes de aprobación, cola, preparación y listos, en vivo.', 'Kitchen tablet: pending approval, queue, preparing and ready, live.'), mobile: 'producto', mobileCaption: t('Ficha de producto en el celular.', 'Product page on a phone.') },
-      { id: 'admin', caption: t('Centro operativo: estado del turno, pulso del servicio y siguiente movimiento.', 'Operations centre: shift status, service pulse and next move.'), mobile: 'admin' },
-      { id: 'analitica', caption: t('Analítica de ventas, productos, clientes, descuentos y embudo.', 'Analytics for sales, products, customers, discounts and funnel.'), mobile: null },
-      { id: 'inventario', caption: t('Bodega y recetas: proyección de viernes a domingo por producto.', 'Stock and recipes: Friday-to-Sunday projection per product.'), mobile: null },
-      { id: 'promociones', caption: t('Ruleta de premios, cupones y campañas con costo visible.', 'Prize roulette, coupons and campaigns with visible cost.'), mobile: null },
-      { id: 'home', caption: t('Portada pública con banner de la app y menú de combos.', 'Public home page with the app banner and combo menu.'), mobile: 'home' },
-    ],
-    url: 'https://www.laburradacr.com/',
     need: 'Sistema / backend',
   },
   {

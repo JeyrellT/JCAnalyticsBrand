@@ -68,7 +68,9 @@ function post(path, body, { beacon = true } = {}) {
   if (beacon && navigator.sendBeacon) {
     try { if (navigator.sendBeacon(`${INGEST}/${path}`, new Blob([payload], { type: 'text/plain' }))) return Promise.resolve(true); } catch { /* sigue con fetch */ }
   }
-  return fetch(`${INGEST}/${path}`, { method: 'POST', body: payload, headers: { 'Content-Type': 'text/plain' }, credentials: 'omit', keepalive: true, mode: 'cors' })
+  // Con el portal sin responder, el formulario no debe quedar en «Enviando…» para siempre: a los 12 s se
+  // corta y la persona ve el aviso de error con la alternativa.
+  return fetch(`${INGEST}/${path}`, { method: 'POST', body: payload, headers: { 'Content-Type': 'text/plain' }, credentials: 'omit', keepalive: true, mode: 'cors', signal: AbortSignal.timeout?.(12000) })
     .then((res) => res.ok, () => false);
 }
 
@@ -102,7 +104,7 @@ function resumeSection() {
 function flush() {
   if (!active) return;
   settleSection(document.visibilityState === 'visible');
-  for (const [s, ms] of sectionMs) if (ms >= SECTION_MIN_MS) queue.push({ t: 'section', s, v: Math.round(ms) });
+  for (const [s, ms] of sectionMs) if (ms >= SECTION_MIN_MS) queue.push({ t: 'section', p: window.location.pathname, s, v: Math.round(ms) });
   sectionMs.clear();
   if (!queue.length) return;
   const events = queue.splice(0, MAX_QUEUE);
@@ -118,10 +120,11 @@ function classify(el) {
   if (href.startsWith('https://wa.me/')) return 'whatsapp';
   if (href.startsWith('tel:')) return 'phone';
   if (href.startsWith('mailto:')) return 'email';
-  // Cualquier formulario medido (portada o página de servicio) y los botones marcados como contacto.
-  if (el.closest('form[data-track]') || el.dataset.track === 'contact') return 'contact';
+  // El botón que envía un formulario medido (portada o página de servicio) y los botones marcados como
+  // contacto. Las opciones de necesidad o la X de cerrar ya no cuentan como clic de contacto.
+  if (el.dataset.track === 'contact' || (el.type === 'submit' && el.closest('form[data-track]'))) return 'contact';
   if (el.closest('header, nav, #menu-movil')) return 'nav';
-  if (el.closest('.works-list, .works-gallery, .package-card__example')) return 'project';
+  if (el.closest('.works-list, .works-screen__strip')) return 'project';
   return el.tagName === 'A' ? 'link' : 'button';
 }
 
@@ -131,15 +134,32 @@ function label(el) {
 }
 
 function onClick(event) {
-  const el = event.target.closest?.('a[href], button');
+  // `summary`: qué pregunta frecuente abre la gente antes de escribir (o de irse).
+  const el = event.target.closest?.('a[href], button, summary');
   if (!el || el.closest('.assistant-dialog')) return;
   // Un elemento fijo (la barra de CTA) no está dentro de ninguna sección: declara la suya con data-track-section.
   const section = el.closest('[data-track-section]')?.dataset.trackSection ?? el.closest('section[id]')?.id;
   push({ t: 'click', p: window.location.pathname, k: classify(el), l: label(el), s: section });
 }
 
+// Elecciones que no son un clic en un enlace o botón: las dos listas de «Tu caso en una frase», las casillas del
+// detalle del paquete y las señales de las páginas de servicio. Antes no dejaban rastro: no se sabía si alguien
+// usaba el selector ni qué agregados se marcaban (segunda ronda de la auditoría). Llegan al portal como un
+// clic más, con la clave elegida en la etiqueta («Caso · meta · numeros», «Hoja · pagina_web · Agregado whatsapp ·
+// sí»): son claves internas del sitio, nunca texto escrito por la persona. La etiqueta dice de qué paquete o página
+// es la elección, porque el portal agrupa los clics por etiqueta y sección, sin la ruta.
+function onChange(event) {
+  const el = event.target.closest?.('select[data-track-label], input[type="checkbox"][data-track-label]');
+  if (!el || el.closest('.assistant-dialog')) return;
+  const section = el.closest('[data-track-section]')?.dataset.trackSection ?? el.closest('section[id]')?.id;
+  const choice = el.tagName === 'SELECT' ? el.value || 'ninguno' : el.checked ? 'sí' : 'no';
+  push({ t: 'click', p: window.location.pathname, k: 'button', l: `${el.dataset.trackLabel} · ${choice}`.slice(0, 60), s: section });
+}
+
+// Un formulario «empezado» es uno donde la persona escribió algo. Antes bastaba enfocar un campo, y el
+// formulario corto enfoca el teléfono al abrirse: cada apertura contaba como empezada.
 const startedForms = new Set();
-function onFocus(event) {
+function onInput(event) {
   const field = event.target.closest?.('input, textarea, select');
   const form = field?.closest('form');
   if (!form || field.type === 'hidden') return;
@@ -194,7 +214,8 @@ export function startSiteTracking() {
   const onPageShow = (event) => { if (event.persisted) resumeSection(); };
   const timer = window.setInterval(flush, FLUSH_MS);
   document.addEventListener('click', onClick, true);
-  document.addEventListener('focusin', onFocus);
+  document.addEventListener('input', onInput);
+  document.addEventListener('change', onChange);
   window.addEventListener('scroll', onScroll, { passive: true });
   document.addEventListener('visibilitychange', onVisibility);
   window.addEventListener('pagehide', flush);
@@ -207,7 +228,8 @@ export function startSiteTracking() {
     window.clearTimeout(late);
     window.clearInterval(timer);
     document.removeEventListener('click', onClick, true);
-    document.removeEventListener('focusin', onFocus);
+    document.removeEventListener('input', onInput);
+    document.removeEventListener('change', onChange);
     window.removeEventListener('scroll', onScroll);
     document.removeEventListener('visibilitychange', onVisibility);
     window.removeEventListener('pagehide', flush);

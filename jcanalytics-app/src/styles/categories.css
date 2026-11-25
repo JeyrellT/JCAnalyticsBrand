@@ -1,31 +1,95 @@
-/* Qué hacemos, por categoría: una tarjeta por página de servicio (portada corta, noviembre de 2026). */
+/* ¿Cuál es mi caso?: una tarjeta por categoría y el selector «tu caso en una frase» (noviembre de 2026). */
 .categories-section { background: #eff1e9; color: #15261a; padding: 88px 0 76px; scroll-margin-top: 85px; }
 .categories-container { width: min(100% - 64px, 1336px); margin-inline: auto; }
 .categories-heading { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); align-items: end; gap: 40px; margin-bottom: 40px; }
-.categories-heading .font-mono { color: #657866; font-size: 10px; }
+.categories-heading .font-mono { color: #55695c; font-size: 11px; letter-spacing: .12em; }
 .categories-heading h2 { font: 500 clamp(40px, 5.4vw, 76px)/.98 var(--font-display); letter-spacing: -.05em; margin-top: 20px; }
 .categories-heading h2 em { color: #52765f; font: italic 400 1.02em/1 var(--font-serif); }
-.categories-intro p { max-width: 46ch; font-size: 14px; line-height: 1.7; color: #4b5d52; }
+.categories-intro p { max-width: 46ch; font-size: 15px; line-height: 1.65; color: #3d5546; }
 .categories-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; list-style: none; margin: 0; padding: 0; }
 .category-card { display: flex; }
-.category-card > a { display: flex; flex: 1; flex-direction: column; gap: 10px; padding: 12px 14px 18px; border: 1px solid #c9d4c6; border-radius: 16px; background: #f6f8f2; color: inherit; text-decoration: none; transition: border-color .25s, transform .25s, box-shadow .25s; }
+.category-card > a { display: flex; flex: 1; flex-direction: column; gap: 12px; padding: 12px 14px 18px; border: 1px solid #c9d4c6; border-radius: 16px; background: #f6f8f2; color: inherit; text-decoration: none; transition: border-color .25s, transform .25s, box-shadow .25s; }
 .category-card > a:hover, .category-card > a:focus-visible { border-color: #34735b; transform: translateY(-3px); box-shadow: 0 18px 40px -28px #11201a99; }
+/* La categoría que le corresponde al caso armado en el selector queda marcada. */
+.category-card--match > a { border-color: #34735b; background: #e6f1e7; box-shadow: 0 0 0 3px #34735b2e; }
 .category-card__image { display: block; aspect-ratio: 1.5; overflow: hidden; border-radius: 10px; background: #dfe6da; }
-.category-card__image img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.category-card__image img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 /* Pieza vertical de marketing: el recorte muestra la foto completa en vez de cortar el titular. */
 .category-card__image--portrait img { object-position: 50% 72%; }
-.category-card__kicker { margin-top: 4px; font: 500 10px/1.4 var(--font-mono); letter-spacing: .16em; text-transform: uppercase; color: #52765f; }
+.category-card__body { display: flex; flex: 1; flex-direction: column; gap: 9px; }
+.category-card__kicker { font: 600 11.5px/1.4 var(--font-sans); letter-spacing: .07em; text-transform: uppercase; color: #3f6650; }
 .category-card h3 { font: 500 clamp(19px, 1.45vw, 22px)/1.14 var(--font-display); letter-spacing: -.03em; }
-.category-card__who { flex: 1; font-size: 13px; line-height: 1.55; color: #4b5d52; }
-.category-card__link { display: inline-flex; align-items: center; gap: 7px; min-height: 32px; font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: #15261a; }
+.category-card__who { flex: 1; font-size: 13.5px; line-height: 1.55; color: #3d5546; }
+.category-card__link { display: inline-flex; align-items: center; gap: 7px; min-height: 32px; font: 600 14px/1.2 var(--font-sans); color: #15372a; text-decoration: underline; text-decoration-color: #34735b66; text-underline-offset: 4px; }
 .category-card__link svg { transition: transform .25s; }
-.category-card > a:hover .category-card__link svg { transform: translate(3px, -3px); }
-.categories-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 22px; margin-top: 26px; padding-top: 20px; border-top: 1px solid #c9d4c6; }
+.category-card > a:hover .category-card__link svg { transform: translateX(3px); }
+
+.categories-foot { display: grid; gap: 16px; margin-top: 26px; padding-top: 22px; border-top: 1px solid #c9d4c6; }
+.categories-foot__links { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 22px; }
 .categories-foot a { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; font-size: 14px; color: #15261a; text-decoration: none; }
+.categories-foot__next { font-weight: 550; text-decoration: underline !important; text-decoration-color: #34735b66 !important; text-underline-offset: 4px; }
 .categories-foot__next svg { transition: transform .3s; }
 .categories-foot__next:hover svg { transform: translateY(3px); }
-.categories-foot__wa { padding: 0 16px; border-radius: 999px; border: 1px solid #25d36699; background: #25d3661f; color: #0b3b22; }
+.categories-foot__wa { padding: 0 16px; border-radius: 999px; border: 1px solid #25d36699; background: #25d3661f; color: #0b3b22 !important; font-weight: 550; }
 .categories-foot__wa:hover { background: #25d36638; }
+
+/* Tu caso en una frase. */
+.case-matcher { display: grid; gap: 10px; padding: 20px 22px; border: 1px solid #c9d4c6; border-radius: 16px; background: #f6f8f2; }
+.case-matcher__lead { font-size: 14px; font-weight: 550; color: #3d5546; }
+.case-matcher__sentence { font: 500 clamp(20px, 2.1vw, 28px)/1.5 var(--font-display); letter-spacing: -.02em; color: #15261a; }
+.case-matcher__sentence select { max-width: 100%; min-height: 44px; margin: 2px 0; padding: 4px 36px 4px 12px; border: 0; border-bottom: 2px solid #34735b; border-radius: 8px 8px 0 0; background: #e3eddf url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2334735b' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center; color: #15372a; font: inherit; font-style: italic; appearance: none; cursor: pointer; }
+.case-matcher__sentence select:focus-visible { outline: 2px solid #34735b; outline-offset: 2px; }
+.case-matcher__result:empty { display: none; }
+.case-matcher__hint { margin-top: 2px; font-size: 14.5px; line-height: 1.5; color: #3d5546; }
+.case-matcher__answer { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 22px; align-items: center; margin-top: 4px; padding-top: 16px; border-top: 1px solid #c9d4c6; }
+.case-matcher__answer:has(.case-matcher__shot) { grid-template-columns: minmax(0, 1fr) 260px; }
+.case-matcher__answer:not(:has(.case-matcher__shot)) { grid-template-columns: 1fr; }
+.case-matcher__text { display: grid; gap: 8px; }
+.case-matcher__verdict { font-size: 16px; line-height: 1.55; color: #15261a; }
+.case-matcher__verdict a { display: inline; min-height: 0; font-size: inherit; font-weight: 600; color: #15372a; text-decoration: underline; text-underline-offset: 3px; }
+.case-matcher__proof { font-size: 14.5px; line-height: 1.55; color: #3d5546; }
+.case-matcher__proof span { color: #55695c; }
+/* Segunda ronda: cotizar con la frase es el botón verde sólido (el mismo de las tarjetas de paquete); ver qué
+   incluye el paquete va con borde, y lo demás son enlaces de texto. Antes el más fuerte sacaba de la portada. */
+.case-matcher__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 6px; }
+.case-matcher__wa { min-height: 50px !important; padding: 0 20px; border-radius: 8px; background: #25d366; color: #06301a !important; font-size: 15px !important; font-weight: 650; }
+.case-matcher__wa:hover { background: #3ee07a; }
+.case-matcher__go { min-height: 50px !important; padding: 0 18px; border: 1px solid #9fb6a5; border-radius: 8px; color: #15372a !important; font-weight: 600; }
+.case-matcher__go:hover { background: #e2ebdf; border-color: #34735b; }
+.case-matcher__more { display: flex; flex-wrap: wrap; gap: 4px 20px; }
+.case-matcher__link { font-weight: 550; text-decoration: underline !important; text-underline-offset: 4px; }
+.case-matcher__shot { display: block !important; min-height: 0 !important; overflow: hidden; border: 1px solid #c9d4c6; border-top: 3px solid var(--project-color, #34735b); border-radius: 10px; aspect-ratio: 1.6; }
+.case-matcher__shot img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+
 @media (max-width: 1199px) { .categories-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; } .category-card > a { padding: 16px 18px 22px; } }
 @media (max-width: 1023px) { .categories-heading { grid-template-columns: 1fr; gap: 18px; margin-bottom: 30px; } }
-@media (max-width: 767px) { .categories-section { padding: 60px 0 52px; } .categories-container { width: calc(100% - 40px); } .categories-grid { grid-template-columns: 1fr; gap: 12px; } .category-card__image { aspect-ratio: 2.1; } .category-card h3 { font-size: 21px; } .categories-foot { margin-top: 22px; } .categories-foot a { font-size: 13px; } }
+@media (max-width: 767px) {
+  /* En celular cada categoría es una fila compacta (miniatura, resultado, para quién): las cinco caben en
+     pantalla y media en vez de casi cuatro. */
+  .categories-section { padding: 56px 0 48px; }
+  .categories-container { width: calc(100% - 40px); }
+  .categories-heading { margin-bottom: 22px; }
+  .categories-heading h2 { font-size: clamp(34px, 10vw, 48px); }
+  .categories-intro { display: none; }
+  .categories-grid { grid-template-columns: 1fr; gap: 10px; }
+  .category-card > a { flex-direction: row; align-items: center; gap: 14px; padding: 12px; }
+  .category-card__image { flex: 0 0 84px; aspect-ratio: 1; border-radius: 10px; }
+  .category-card__body { gap: 4px; }
+  .category-card__kicker { font-size: 11px; }
+  .category-card h3 { font-size: 17px; line-height: 1.2; }
+  .category-card__who { font-size: 13px; line-height: 1.45; }
+  .category-card__link { min-height: 0; margin-top: 2px; font-size: 13px; }
+  .categories-foot { margin-top: 18px; padding-top: 18px; }
+  .categories-foot__links { flex-direction: column; align-items: stretch; }
+  .categories-foot__wa { justify-content: center; }
+  .case-matcher { padding: 16px; }
+  .case-matcher__sentence { font-size: 20px; }
+  .case-matcher__sentence select { width: 100%; }
+  .case-matcher__answer, .case-matcher__answer:has(.case-matcher__shot) { grid-template-columns: 1fr; }
+  .case-matcher__shot { order: -1; }
+  .case-matcher__actions { flex-direction: column; align-items: stretch; }
+  .case-matcher__actions a { justify-content: center; }
+  /* Las listas ocupan todo el ancho: el punto final quedaba solo en una línea. */
+  .case-matcher__dot { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .category-card > a, .category-card__link svg { transition: none; } }

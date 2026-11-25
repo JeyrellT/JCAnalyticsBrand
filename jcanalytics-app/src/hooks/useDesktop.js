@@ -20,9 +20,13 @@ export const isDesktopPointer = () => typeof window !== 'undefined'
   && window.navigator.webdriver !== true
   && Boolean(window.matchMedia?.(QUERY).matches);
 
-/** true en computadora con mouse; false en el primer render, en táctil y en navegadores automatizados. */
+/**
+ * true en computadora con mouse; false en táctil y en navegadores automatizados.
+ * Se calcula ya en el primer render (no hay hidratación que cuidar: React vuelve a crear los nodos), así el
+ * botón no aparece un instante con el texto de celular y luego cambia.
+ */
 export function useDesktop() {
-  const [desktop, setDesktop] = useState(false);
+  const [desktop, setDesktop] = useState(isDesktopPointer);
   useEffect(() => {
     const query = window.matchMedia(QUERY);
     const sync = () => setDesktop(isDesktopPointer());

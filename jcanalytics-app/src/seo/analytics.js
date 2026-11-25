@@ -28,6 +28,23 @@ const CONVERSION_DEDUPE_MS = 3000;
 let lastConversion = 0;
 let lastLead = 0; // ChatGPT Ads: una sola `lead_created` por persona y acción
 
+// Una consulta ya captada en esta pestaña. Si después la misma persona abre WhatsApp (por ejemplo desde la
+// confirmación del formulario), ese clic se sigue registrando como intención pero no vuelve a contar como
+// conversión: antes una sola persona sumaba «Envío de formulario» y «Clic WhatsApp» (auditoría, nov. 2026).
+const LEAD_KEY = 'jc_lead';
+const leadCaptured = () => { try { return window.sessionStorage.getItem(LEAD_KEY) === '1'; } catch { return false; } };
+const rememberLead = () => { try { window.sessionStorage.setItem(LEAD_KEY, '1'); } catch { /* sin almacenamiento: vale la ventana de 3 s */ } };
+
+// Una conversión de «Clic WhatsApp» por visita: quien toca dos botones de WhatsApp, o vuelve al chat desde la
+// hoja «¿Pudiste enviar tu mensaje?», es la misma persona con la misma intención. Los clics siguientes se
+// siguen registrando (`contact_click` con `repeat: true`), sin otra conversión ni otro `Contact`.
+const WA_KEY = 'jc_wa';
+const whatsappCounted = () => { try { return window.sessionStorage.getItem(WA_KEY) === '1'; } catch { return false; } };
+const rememberWhatsapp = () => { try { window.sessionStorage.setItem(WA_KEY, '1'); } catch { /* sin almacenamiento: queda la ventana de 3 s */ } };
+
+// Cuando la persona llega por otro clic en un anuncio, seo/attribution.js borra estas marcas (`jc_wa`, `jc_lead`):
+// empieza otra visita y su primer toque vuelve a contar para ese anuncio.
+
 const trafficSource = () => ATTRIBUTION?.source ?? 'directo';
 const eventId = (prefix) => `${prefix}_${window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
 
@@ -56,14 +73,20 @@ const packageParams = (packageId, packageValue) => (packageId ? { package_id: pa
  * `mode: 'form'` = en computadora el botón de WhatsApp abrió el formulario corto en vez de WhatsApp Web.
  * Se registra la intención, pero la conversión de Google Ads y ChatGPT se mide al enviar ese formulario.
  */
-export function trackContactIntent({ channel, section = 'navigation', packageId, packageValue, mode = 'direct' }) {
-  const direct = channel === 'whatsapp' && mode === 'direct';
-  metaEvent('Contact', { packageId, fallbackName: channel, packageValue });
-  if (direct) chatgptLead('wa');
+export function trackContactIntent({ channel, section = 'navigation', packageId, packageValue, mode = 'direct', cta }) {
+  const afterLead = leadCaptured();
+  const repeat = channel === 'whatsapp' && mode === 'direct' && whatsappCounted();
+  const direct = channel === 'whatsapp' && mode === 'direct' && !afterLead && !repeat;
+  if (!afterLead && !repeat) metaEvent('Contact', { packageId, fallbackName: channel, packageValue });
+  if (direct) { chatgptLead('wa'); rememberWhatsapp(); }
   if (typeof window.gtag !== 'function') return;
   window.gtag('event', 'contact_click', {
     contact_channel: channel,
     ...(mode === 'form' ? { cta_mode: 'form' } : {}),
+    ...(afterLead ? { after_lead: true } : {}),
+    ...(repeat ? { repeat: true } : {}),
+    // Etiqueta estable del botón (data-track-label): no cambia con el idioma ni con el texto visible.
+    ...(cta ? { cta_id: cta } : {}),
     site_language: locale,
     section_id: section,
     traffic_source: trafficSource(),
@@ -80,8 +103,10 @@ export function trackContactIntent({ channel, section = 'navigation', packageId,
  * `ads: false` cuando la misma acción ya contó como "Clic WhatsApp" (celular: abrió WhatsApp y además dejó su contacto).
  */
 export function trackLeadCaptured({ form, section, packageId, packageValue, ads = true }) {
+  rememberLead();
   metaEvent('Lead', { packageId, fallbackName: form, packageValue });
-  chatgptLead('form');
+  // `ads: false`: el toque a WhatsApp ya avisó a ChatGPT; antes la hoja de retorno le sumaba una segunda consulta.
+  if (ads) chatgptLead('form');
   if (typeof window.gtag !== 'function') return;
   window.gtag('event', 'lead_submit', {
     form_id: form,
@@ -99,22 +124,27 @@ export function trackLeadCaptured({ form, section, packageId, packageValue, ads 
  * Un enlace a WhatsApp cuyo clic fue interceptado (preventDefault: en computadora abrió el
  * formulario corto) se mide como intención, no como conversión.
  */
+/** Mide un enlace de contacto. `prevented`: el clic fue interceptado (abrió el formulario corto). */
+export function trackContactLink(link, { prevented = false } = {}) {
+  const href = link.getAttribute('href') ?? '';
+  const channel = href.startsWith('https://wa.me/') ? 'whatsapp' : href.startsWith('mailto:') ? 'email' : href.startsWith('tel:') ? 'phone' : null;
+  if (!channel) return;
+  trackContactIntent({
+    channel,
+    // Un elemento fijo (barra de CTA) no está dentro de ninguna sección: declara la suya con data-track-section.
+    section: link.closest('[data-track-section]')?.dataset.trackSection ?? link.closest('section[id]')?.id ?? 'navigation',
+    // Paquete elegido (botones "Lo quiero"): clave y precio para medir qué se pide.
+    packageId: link.dataset.package,
+    packageValue: Number(link.dataset.value) || undefined,
+    mode: channel === 'whatsapp' && prevented ? 'form' : 'direct',
+    cta: link.dataset.trackLabel,
+  });
+}
+
 export function trackContactClicks() {
   const track = (event) => {
     const link = event.target.closest?.('a[href]');
-    if (!link) return;
-    const href = link.getAttribute('href') ?? '';
-    const channel = href.startsWith('https://wa.me/') ? 'whatsapp' : href.startsWith('mailto:') ? 'email' : href.startsWith('tel:') ? 'phone' : null;
-    if (!channel) return;
-    trackContactIntent({
-      channel,
-      // Un elemento fijo (barra de CTA) no está dentro de ninguna sección: declara la suya con data-track-section.
-      section: link.closest('[data-track-section]')?.dataset.trackSection ?? link.closest('section[id]')?.id ?? 'navigation',
-      // Paquete elegido (botones "Lo quiero"): nombre y precio para medir qué se pide.
-      packageId: link.dataset.package,
-      packageValue: Number(link.dataset.value) || undefined,
-      mode: channel === 'whatsapp' && event.defaultPrevented ? 'form' : 'direct',
-    });
+    if (link) trackContactLink(link, { prevented: event.defaultPrevented });
   };
   document.addEventListener('click', track);
   return () => document.removeEventListener('click', track);

@@ -1,42 +1,58 @@
 import { t, locale } from '../../i18n/locale';
 import { ArrowUpRight } from 'lucide-react';
-import { servicePages } from '../../content/services';
-import { homePath, journalPath, servicePath } from '../../seo/routes';
-import { wa, EMAIL, PHONE, PHONE_DISPLAY, NAV_LINKS, PORTAL_URL } from './links';
+import { homePath, journalPath } from '../../seo/routes';
+import { wa, EMAIL, PHONE, PHONE_DISPLAY, CATEGORY_LINKS, PORTAL_URL } from './links';
+import { MESSAGES } from './messages';
 
-const SERVICE_LABELS = {
-  'web-development': t('Desarrollo web', 'Web development'),
-  'business-intelligence': t('Dashboards y datos', 'Dashboards and data'),
-  'process-automation': t('Automatización', 'Automation'),
-  'ai-integration': t('Integración de IA', 'AI integration'),
-  'digital-marketing': t('Marketing digital', 'Digital marketing'),
-};
+// Enlaces de la portada que no son categorías. Las cinco categorías van en su propia columna, con el mismo
+// nombre que en el menú (antes el pie las listaba dos veces y con nombres distintos).
+// Auditoría de noviembre de 2026: la flecha ↗ queda solo en lo que abre otra pestaña; el WhatsApp ya no abre
+// un chat vacío; el portal distingue a quien es cliente de quien es del equipo, y la primera línea repite
+// los cuatro compromisos, que es lo último que conviene recordar antes de irse.
+const HOME_LINKS = [
+  ['#trabajo', t('Proyectos reales', 'Real projects')],
+  ['#proceso', t('Compromisos', 'Commitments')],
+  ['#paquetes', t('Paquetes y precios', 'Packages and pricing')],
+  ['#preguntas', t('Preguntas frecuentes', 'Frequently asked questions')],
+  ['#equipo', t('El equipo', 'The team')],
+];
+const PROMISES = t(
+  ['30 minutos sin costo', 'Alcance y precio fijo por escrito', 'Avances cada 72 horas', '30 días de soporte'],
+  ['Free 30 minutes', 'Scope and fixed price in writing', 'Progress every 72 hours', '30 days of support'],
+);
 const topHref = `${homePath(locale)}#top`;
+const External = () => <span aria-hidden="true">↗</span>;
 const Footer = () => (
-  <footer className="studio-footer">
+  <footer className="studio-footer" data-track-section="pie">
     <div className="closing-container">
-      <div className="footer-topline"><span>{t('Sistemas bien diseñados. Negocios con más posibilidades.', 'Thoughtfully designed systems. More possibilities for your business.')}</span><span>Heredia, Costa Rica <span aria-hidden="true">↗</span></span></div>
+      <div className="footer-topline">
+        <span>{t('Sistemas bien diseñados. Negocios con más posibilidades.', 'Thoughtfully designed systems. More possibilities for your business.')}</span>
+        <ul className="footer-promises" aria-label={t('Compromisos de JC Analytics', 'JC Analytics commitments')}>{PROMISES.map((promise) => <li key={promise}>{promise}</li>)}</ul>
+      </div>
       <div className="footer-links-grid">
         <nav aria-label={t('Menú del pie de página', 'Footer navigation')}>
           <p className="footer-label">{t('Explorá', 'Explore')}</p>
-          <ul>{NAV_LINKS.map((link) => <li key={link.href}><a href={link.href.startsWith('#') ? `${homePath(locale)}${link.href}` : link.href}>{link.label}</a></li>)}<li><a href={journalPath(locale)}>{t('Ideas y artículos', 'Insights and articles')}</a></li></ul>
+          <ul>{HOME_LINKS.map(([hash, label]) => <li key={hash}><a href={`${homePath(locale)}${hash}`}>{label}</a></li>)}<li><a href={journalPath(locale)}>{t('Ideas y artículos', 'Insights and articles')}</a></li></ul>
         </nav>
         <nav aria-label={t('Servicios de JC Analytics', 'JC Analytics services')}>
           <p className="footer-label">{t('Servicios', 'Services')}</p>
-          <ul>{servicePages.map((service) => <li key={service.id}><a href={servicePath(service, locale)}>{SERVICE_LABELS[service.id]} <span aria-hidden="true">↗</span></a></li>)}</ul>
+          <ul>{CATEGORY_LINKS.map((link) => <li key={link.id}><a href={link.href}>{link.label}</a></li>)}</ul>
         </nav>
         <div className="footer-contact">
           <p className="footer-label">{t('Contacto', 'Contact')}</p>
           <ul>
             {/* Dice "WhatsApp" a secas: abre WhatsApp también en computadora (sin formulario corto). */}
-            <li><a href={wa()} target="_blank" rel="noreferrer" data-wa-direct="">WhatsApp <span aria-hidden="true">↗</span></a></li>
-            <li><a href={`mailto:${EMAIL}`}>{EMAIL}</a></li>
-            <li><a href={`tel:+${PHONE}`}>{PHONE_DISPLAY}</a></li>
-            <li><a href={`${PORTAL_URL}/cliente`} target="_blank" rel="noreferrer">{t('Portal de clientes', 'Client portal')} <span aria-hidden="true">↗</span></a></li>
+            <li><a href={wa(MESSAGES.footer)} target="_blank" rel="noreferrer" data-wa-direct="" data-track-label="Pie · WhatsApp">WhatsApp <External /></a></li>
+            <li><a href={`mailto:${EMAIL}`} data-track-label="Pie · Correo">{EMAIL}</a></li>
+            <li><a href={`tel:+${PHONE}`} data-track-label="Pie · Teléfono">{PHONE_DISPLAY}</a></li>
           </ul>
         </div>
         <div>
           <p className="footer-label">{t('Estudio', 'Studio')}</p><p className="footer-location">Heredia, Costa Rica</p>
+          <ul className="footer-portals">
+            <li><a href={`${PORTAL_URL}/cliente`} target="_blank" rel="noreferrer" data-track-label="Pie · Portal de clientes">{t('Portal de clientes', 'Client portal')} <External /></a></li>
+            <li><a href={PORTAL_URL} target="_blank" rel="noreferrer" data-track-label="Pie · Ingreso del equipo">{t('Ingreso del equipo', 'Team sign-in')} <External /></a></li>
+          </ul>
           <a href={topHref} className="footer-back-top">{t('Volver arriba', 'Back to top')} <ArrowUpRight size={17} aria-hidden="true" /></a>
         </div>
       </div>

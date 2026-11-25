@@ -5,13 +5,13 @@
 .studio-hero__grain { position: absolute; z-index: -1; inset: 0; pointer-events: none; opacity: .065; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23fff' filter='url(%23n)' opacity='.5' d='M0 0h180v180H0z'/%3E%3C/svg%3E"); }
 .studio-hero__main { position: relative; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 48px; align-items: center; min-height: 560px; padding-bottom: 64px; }
 .studio-hero__copy { z-index: 2; position: relative; padding: 40px 0 24px; }
-.studio-hero__eyebrow { color: #99aaa7; font-size: 12px; margin-bottom: 24px; }
+.studio-hero__eyebrow { color: #a9bab5; font-size: 12.5px; letter-spacing: .01em; margin-bottom: 24px; }
 /* El tope (5.4rem = 6vw a 1440 px) sigue a la columna, que deja de crecer en 1336 px: con 6.6rem la línea en
    cursiva se cortaba desde 1600 px (corrección del 3 de noviembre de 2026). */
 .studio-hero h1 { font: 500 clamp(3.9rem,6vw,5.4rem)/.9 var(--font-display); letter-spacing: -.06em; }
 .studio-hero h1 em { color: #c3f5db; font: italic 400 1.06em/.95 var(--font-serif); letter-spacing: -.04em; }
-.studio-hero__description { max-width: 420px; font-size: 14.5px; line-height: 1.8; color: #a4b0b0; margin-top: 28px; }
-.studio-hero__actions { margin-top: 26px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.studio-hero__description { max-width: 500px; font-size: 16.5px; line-height: 1.6; color: #c2cdc9; margin-top: 26px; }
+.studio-hero__actions { margin-top: 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
 .studio-start { display: inline-flex; gap: 20px; align-items: center; min-height: 55px; padding: 7px 7px 7px 21px; background: #c3f5db; border-radius: 3px; color: #10291e; font-size: 12px; font-weight: 650; transition: background .25s,box-shadow .25s; }
 .studio-start > span { width: 39px; height: 39px; display: grid; place-items: center; border-left: 1px solid #10291e33; }
 .studio-start svg { transition: transform .3s; }
@@ -19,21 +19,24 @@
 .studio-start:hover svg { transform: translate(3px,-3px); }
 .studio-hero :focus-visible { outline-color: #c3f5db; }
 
-/* Selector de categoría (2 de noviembre de 2026): la acción principal del hero. Cada chip abre la página de su categoría. */
-.studio-hero__paths-wrap { margin-top: 26px; }
+/* Atajo por categoría: cada chip abre la página de su categoría. Va después del botón (auditoría, nov. 2026):
+   la acción principal es pedir cotización; los chips son para quien ya sabe su caso. */
+.studio-hero__paths-wrap { margin-top: 30px; padding-top: 22px; border-top: 1px solid #c3f5db1f; max-width: 560px; }
 .studio-hero__paths { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; max-width: 560px; }
-.studio-hero__paths-label { width: 100%; margin-bottom: 4px; color: #9fb3ab; font: 500 11px/1.5 var(--font-sans); }
-.studio-hero__paths a { display: inline-flex; align-items: center; gap: 7px; min-height: 42px; padding: 0 15px; border: 1px solid #c3f5db40; border-radius: 999px; background: #ffffff09; color: #e6ede6; font-size: 12.5px; font-weight: 550; transition: border-color .25s, background .25s, color .25s, transform .25s; }
+.studio-hero__paths-label { width: 100%; margin-bottom: 4px; color: #b4c6bc; font: 500 12.5px/1.5 var(--font-sans); }
+.studio-hero__paths a { display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 17px; border: 1px solid #c3f5db73; border-radius: 999px; background: #c3f5db12; color: #eef4ee; font-size: 14px; font-weight: 600; transition: border-color .25s, background .25s, color .25s, transform .25s; }
 .studio-hero__paths a svg { color: #9fcdb6; transition: transform .25s; }
-.studio-hero__paths a:hover, .studio-hero__paths a:focus-visible { border-color: #c3f5db; background: #c3f5db16; color: #d9fbe8; transform: translateY(-1px); }
-.studio-hero__paths a:hover svg { transform: translate(2px, -2px); }
+.studio-hero__paths a:hover, .studio-hero__paths a:focus-visible, .studio-hero__paths a.is-shown { border-color: #c3f5db; background: #c3f5db24; color: #fff; }
+.studio-hero__paths a:hover, .studio-hero__paths a:focus-visible { transform: translateY(-1px); }
+.studio-hero__paths a:hover svg { transform: translateX(3px); }
 
 /* Dispositivo con pantallas reales. */
 .studio-object { position: relative; z-index: 1; min-width: 0; }
 .studio-object__halo { position: absolute; inset: -14% -18%; border-radius: 50%; background: radial-gradient(ellipse at 50% 45%, #2c6d5d38, transparent 62%); pointer-events: none; }
 .hero-device { position: relative; display: grid; gap: 18px; }
-.hero-device__frame { position: relative; transform: perspective(1800px) rotateY(-7deg) rotateX(1.5deg); transform-origin: 50% 60%; transition: transform .9s cubic-bezier(.19,1,.22,1); }
+.hero-device__frame { position: relative; display: block; color: inherit; text-decoration: none; cursor: pointer; transform: perspective(1800px) rotateY(-7deg) rotateX(1.5deg); transform-origin: 50% 60%; transition: transform .9s cubic-bezier(.19,1,.22,1); }
 .hero-device:hover .hero-device__frame { transform: perspective(1800px) rotateY(-3deg) rotateX(.5deg); }
+.hero-device__frame:focus-visible { outline: 2px solid #c3f5db; outline-offset: 10px; border-radius: 14px; }
 .hero-device__screen { position: relative; aspect-ratio: 16 / 10; border-radius: 14px 14px 5px 5px; background: linear-gradient(180deg, #1c2522, #0d1215); box-shadow: inset 0 1px 0 #ffffff14, 0 0 0 1px #ffffff12, 0 50px 90px -40px #000, 0 24px 44px -30px #000a; }
 .hero-device__screen::before { content: ''; position: absolute; top: 3px; left: calc(50% - 2px); z-index: 2; width: 4px; height: 4px; border-radius: 50%; background: #2f3d39; box-shadow: 0 0 0 1px #0a0f12; }
 .hero-device__display { position: absolute; inset: 9px 9px 11px; display: flex; flex-direction: column; overflow: hidden; border-radius: 7px; background: #0b100e; }
@@ -45,20 +48,20 @@
 .hero-device__shots picture { position: absolute; inset: 0; opacity: 0; transition: opacity .7s; }
 .hero-device__shots picture.is-on { opacity: 1; }
 .hero-device__shots img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
-.hero-device__bars { position: absolute; left: 10px; right: 10px; bottom: 7px; z-index: 2; display: flex; gap: 4px; }
-.hero-device__bars i { position: relative; flex: 1; height: 2px; border-radius: 2px; background: #ffffff45; overflow: hidden; }
-.hero-device__bars i::after { content: ''; position: absolute; inset: 0; background: #fff; transform: scaleX(0); transform-origin: left; }
-.hero-device__bars i.is-done::after { transform: scaleX(1); }
-.hero-device__bars i.is-on::after { animation: hero-bar var(--ms, 3600ms) linear forwards; }
-@keyframes hero-bar { to { transform: scaleX(1); } }
+.hero-device__shots picture.is-whole { background: #0b100e; }
+.hero-device__shots picture.is-whole img { object-fit: contain; object-position: center; }
 .hero-device__base { position: relative; height: 13px; margin: 0 -4.5%; border-radius: 0 0 14px 14px / 0 0 9px 9px; background: linear-gradient(180deg, #2b3431, #151c19 65%, #0a0f12); box-shadow: 0 36px 50px -30px #000; }
 .hero-device__base::before { content: ''; position: absolute; top: 0; left: calc(50% - 8%); width: 16%; height: 4px; border-radius: 0 0 6px 6px; background: #0a0f12; }
 .hero-device__caption { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 20px; align-items: end; padding: 0 4px; }
-.hero-device__caption small { grid-column: 1; font: 8px var(--font-mono); letter-spacing: .14em; color: #8ea89f; }
+.hero-device__caption { min-height: 78px; }
+.hero-device__caption small { grid-column: 1; font: 500 11.5px/1.4 var(--font-sans); color: #a9bdb3; }
 .hero-device__caption strong { grid-column: 1; font: 500 18px/1.1 var(--font-display); letter-spacing: -.03em; color: #f1f5ef; }
-.hero-device__caption span { grid-column: 1; font-size: 12px; line-height: 1.5; color: #b6c8bf; }
-.hero-device__controls { grid-column: 2; grid-row: 1 / span 3; display: flex; gap: 6px; }
-.hero-device__controls button { display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 0 12px; border: 1px solid #c3f5db3a; border-radius: 999px; background: #080c10a0; font: 600 11px var(--font-sans); color: #c3f5db; cursor: pointer; transition: border-color .25s, background .25s; }
+.hero-device__caption span { grid-column: 1; font-size: 13px; line-height: 1.5; color: #c2d0c8; }
+.hero-device__dots { grid-column: 1; display: flex; gap: 6px; margin-top: 6px; }
+.hero-device__dots i { width: 6px; height: 6px; border-radius: 50%; background: #c3f5db40; transition: background .3s, transform .3s; }
+.hero-device__dots i.is-on { background: #c3f5db; transform: scale(1.25); }
+.hero-device__controls { grid-column: 2; grid-row: 1 / span 4; display: flex; gap: 6px; }
+.hero-device__controls button { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 0 14px; border: 1px solid #c3f5db3a; border-radius: 999px; background: #080c10a0; font: 600 11px var(--font-sans); color: #c3f5db; cursor: pointer; transition: border-color .25s, background .25s; }
 .hero-device__controls button:hover, .hero-device__controls button:focus-visible { border-color: #c3f5db; background: #c3f5db16; }
 .hero-device__controls button[aria-pressed=true] { background: #c3f5db22; }
 
@@ -67,7 +70,7 @@
   .studio-hero { padding-inline: 28px; padding-top: 112px; }
   .studio-hero__main { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 32px; min-height: 0; padding-bottom: 48px; }
   .studio-hero h1 { font-size: clamp(3rem,6vw,5rem); }
-  .studio-hero__description { max-width: 360px; font-size: 14px; }
+  .studio-hero__description { max-width: 400px; font-size: 15px; }
   .studio-hero__actions { gap: 12px; }
   .hero-device__caption { grid-template-columns: 1fr; }
   .hero-device__controls { grid-column: 1; grid-row: auto; margin-top: 6px; }
@@ -77,16 +80,13 @@
   .studio-hero__main { display: flex; flex-direction: column; align-items: stretch; min-height: 0; padding-bottom: 0; }
   .studio-hero__copy { padding: 42px 0 0; }
   .studio-hero__eyebrow { font-size: 11px; margin-bottom: 23px; }
-  .studio-hero h1 { font-size: clamp(4.8rem,15vw,7.5rem); }
-  .studio-hero h1 em { font-size: .96em; }
-  .studio-hero__description { font-size: 13px; max-width: 370px; margin-top: 28px; }
   .studio-hero__actions { gap: 15px; margin-top: 24px; }
   .studio-start { font-size: 11px; padding-left: 15px; gap: 10px; }
   .studio-start > span { width: 31px; }
-  .studio-hero__paths-wrap { order: 3; margin-top: 18px; }
+  .studio-hero__paths-wrap { margin-top: 18px; padding-top: 14px; max-width: none; }
   .studio-hero__paths { gap: 6px; max-width: none; }
-  .studio-hero__paths-label { font-size: 11px; }
-  .studio-hero__paths a { min-height: 38px; padding: 0 12px; font-size: 11.5px; }
+  .studio-hero__paths-label { font-size: 12.5px; }
+  .studio-hero__paths a { min-height: 44px; padding: 0 13px; font-size: 13px; }
   /* Teléfono: misma pantalla, captura móvil (la elige <picture>). */
   .studio-object__halo { display: none; }
   .hero-device { grid-template-columns: minmax(0, 46%) minmax(0, 1fr); align-items: center; gap: 16px; }
@@ -96,15 +96,35 @@
   .hero-device__display { inset: 7px; border-radius: 24px; }
   .hero-device__display::before { content: ''; position: absolute; top: 7px; left: calc(50% - 17%); z-index: 3; width: 34%; height: 13px; border-radius: 999px; background: #0a0f12; }
   .hero-device__chrome, .hero-device__base { display: none; }
-  .hero-device__bars { top: 27px; bottom: auto; left: 12px; right: 12px; }
   .hero-device__caption { grid-template-columns: 1fr; gap: 6px; padding: 0; }
   .hero-device__caption strong { font-size: 19px; }
   .hero-device__controls { grid-column: 1; grid-row: auto; flex-wrap: wrap; margin-top: 6px; }
 }
-@media (max-width:380px) { .studio-hero { padding-inline: 19px; } .studio-hero h1 { font-size: 17vw; } .studio-hero__actions { gap: 10px; } .studio-start { font-size: 10px; padding-left: 12px; } .studio-hero__description { font-size: 12px; } }
+@media (max-width:380px) { .studio-hero { padding-inline: 19px; } .studio-hero__actions { gap: 10px; } .studio-start { font-size: 10px; padding-left: 12px; } }
 @media (prefers-reduced-motion:reduce) {
   .studio-hero * { transition: none !important; }
   .hero-device__frame, .hero-device:hover .hero-device__frame { transform: perspective(1800px) rotateY(-7deg) rotateX(1.5deg); }
   .hero-device__shots picture { transition: none; }
-  .hero-device__bars i.is-on::after { animation: none; transform: scaleX(1); }
+}
+
+/* Visita que llega de un anuncio (?p=<paquete>): el botón pide ese paquete y lo dice. */
+.studio-hero__ad { width: 100%; margin: 0 0 -2px; color: #d6f9e3; font-size: 13px; }
+.studio-hero__ad strong { font-weight: 650; color: #fff; }
+.studio-hero__more { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; color: #d9fbe8; font-size: 13.5px; font-weight: 550; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: #c3f5db66; }
+.studio-hero__more:hover { color: #fff; text-decoration-color: #fff; }
+.studio-hero__alt { color: #d9fbe8; font-weight: 550; text-decoration: underline; text-underline-offset: 3px; }
+.studio-hero__alt:hover { color: #fff; }
+
+/* Tres hechos pegados al botón: qué pasa después del clic (antes eran cuatro promesas en una línea de 11 px). */
+.studio-hero__assurances { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 16px 0 0; padding: 0; list-style: none; max-width: 560px; }
+.studio-hero__assurances li { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; line-height: 1.4; color: #d3dfd8; }
+.studio-hero__assurances svg { flex: none; color: #7fe0a8; }
+.studio-wa span { text-align: left; }
+@media (max-width:767px) {
+  /* La segunda frase repite lo que dicen las tres líneas bajo el botón: en celular cede el espacio a la acción. */
+  .studio-hero__description-more { display: none; }
+  .studio-hero__assurances { order: 4; flex-direction: column; gap: 5px; margin-top: 12px; }
+  .studio-hero__assurances li { font-size: 13px; }
+  .hero-device__caption { min-height: 0; }
+  .hero-device__dots { margin-top: 2px; }
 }

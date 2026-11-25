@@ -27,7 +27,7 @@ export const servicePages = [
     },
   },
   {
-    id: 'business-intelligence', topic: 'data', image: '/projects/laburrada/analitica-desktop.webp', need: 'Dashboard',
+    id: 'business-intelligence', topic: 'data', image: '/projects/transportesluna/admin-desktop.webp', need: 'Dashboard',
     en: {
       slug: 'power-bi-dashboards-costa-rica', title: 'Power BI dashboards for decisions that cannot wait.',
       summary: 'Turn scattered business information into a shared view of performance, with clear definitions and ownership.',

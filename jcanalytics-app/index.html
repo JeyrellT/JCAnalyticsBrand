@@ -11,6 +11,56 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Serif:ital@0;1&family=Inter:wght@400..700&family=JetBrains+Mono:wght@400..600&display=swap" rel="stylesheet" />
+    <!-- Dispositivo antes de pintar. El HTML estático trae los textos de celular («Cotizar por WhatsApp») y los
+         de computadora («Pedir cotización»): este atributo decide cuál se ve desde el primer cuadro, sin
+         esperar a React (antes el botón cambiaba de texto y la primera pantalla saltaba 35 px al montar).
+         Además guarda el clic a WhatsApp hecho antes de que la página sea interactiva: en computadora no deja
+         que se vaya a WhatsApp Web y, al montar, ui/LeadDialog.jsx lo repite para abrir el formulario y medirlo.
+         Misma regla que src/hooks/useDesktop.js: mouse = computadora; táctil y navegadores automatizados = celular. -->
+    <script>
+      (function () {
+        var fine = navigator.webdriver !== true && !!window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+        document.documentElement.setAttribute('data-pointer', fine ? 'fine' : 'coarse');
+        // Si el JavaScript de la página no llega a cargar, no se retiene ningún clic (los errores de carga de un
+        // recurso no burbujean: se escuchan en captura).
+        window.addEventListener('error', function (event) {
+          var node = event.target;
+          if (node && node.tagName === 'SCRIPT' && /\/assets\/|\/src\/main/.test(node.src || '')) window.__jcFailed = true;
+        }, true);
+        document.addEventListener('click', function (event) {
+          // Solo mientras la página termina de cargar. Si el JavaScript falla o tarda demasiado, los enlaces
+          // vuelven a ser enlaces comunes a WhatsApp: el HTML estático tiene que seguir sirviendo solo.
+          if (window.__jcMounted || window.__jcFailed || performance.now() > 12000) return;
+          var link = event.target && event.target.closest && event.target.closest('a[href^="https://wa.me/"]');
+          if (!link) return;
+          // `held`: el clic quedó retenido (computadora, clic simple en un enlace que abre el formulario corto).
+          // El que siguió su curso (celular, enlace directo, Ctrl+clic) ya abrió WhatsApp: al montar solo se mide.
+          var held = fine && !link.hasAttribute('data-wa-direct') && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+          // También lo que tenía el enlace tocado: al montar, ese lugar puede tener otro botón (con ?p= cambia el
+          // paquete). El toque que siguió su curso se mide con esto y la hoja de retorno lo usa al volver.
+          var get = function (name) { return link.getAttribute(name) || ''; };
+          var tagged = link.closest('[data-track-section]');
+          var area = link.closest('section[id]');
+          var prev = window.__jcEarly;
+          window.__jcEarly = {
+            label: get('data-track-label'), text: get('href').split('text=')[1] || '', cls: link.className || '', held: held, at: Date.now(),
+            href: link.href, pkg: get('data-package'), pkgLabel: get('data-package-label'), value: get('data-value'), need: get('data-need'),
+            section: tagged ? tagged.getAttribute('data-track-section') : area ? area.id : 'navigation'
+          };
+          // Un toque anterior que ya siguió a WhatsApp no se pisa: queda encadenado para medirlo al montar.
+          if (prev && !prev.held) window.__jcEarly.prev = prev;
+          if (held) event.preventDefault();
+        }, true);
+        // Cuándo salió a WhatsApp y cuándo volvió quien tocó antes de que la página montara: en un celular la
+        // pestaña puede quedar congelada hasta la vuelta, y la hoja «¿Pudiste enviar tu mensaje?» necesita los dos.
+        document.addEventListener('visibilitychange', function () {
+          var early = window.__jcEarly;
+          if (window.__jcMounted || !early || early.held) return;
+          if (document.visibilityState === 'hidden') early.leftAt = Date.now();
+          else if (early.leftAt) early.backAt = Date.now();
+        });
+      })();
+    </script>
     <!-- Existing Google tag. Contact events never include form contents. -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18237462818"></script>
     <script>
@@ -28,6 +78,9 @@
       n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
       t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
       document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      // Sin eventos automáticos: el píxel no lee el texto ni el destino de los botones (los enlaces de contacto
+      // llevan el nombre y el mensaje de la persona). Solo salen PageView, ViewContent, Contact y Lead, a mano.
+      fbq('set', 'autoConfig', false, '2307996859950052');
       fbq('init', '2307996859950052');
       fbq('track', 'PageView');
       if (/\/(services|servicios)\//.test(location.pathname)) fbq('track', 'ViewContent', { content_category: 'service' });

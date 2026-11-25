@@ -57,6 +57,13 @@ html {
   text-size-adjust: 100%;
 }
 
+/* El HTML estático trae las dos variantes de los textos que dependen del dispositivo (ver index.html y
+   components/site/pointer.jsx): `data-pointer` decide cuál se ve antes de que cargue React. */
+/* Sin JavaScript no hay atributo: se ve la variante de celular (los enlaces a WhatsApp funcionan sin scripts).
+   `display: contents`: el envoltorio no genera caja, así el botón mide igual antes y después de montar React. */
+.only-coarse, .only-fine { display: contents; }
+html[data-pointer="fine"] :is(.only-coarse, .only-coarse-block), html:not([data-pointer="fine"]) .only-fine { display: none !important; }
+
 /* En táctil no hay Lenis: los saltos de ancla usan el scroll nativo del SO.
    Solo se suaviza si el usuario no pidió reducir movimiento. */
 @media (prefers-reduced-motion: no-preference) {

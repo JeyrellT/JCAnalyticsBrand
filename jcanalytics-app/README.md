@@ -11,6 +11,8 @@ Antes de publicar: `npm run lint`, `npm run build`, `npm run check:tools` y `npm
 
 Contacto por dispositivo: en celular los botones abren WhatsApp; en computadora abren un formulario corto que deja la consulta en el portal, y la conversión de anuncios se mide al aceptarla. Regla, medición y pasos en Google Ads en [estrategia de conversión](docs/estrategia-conversion.md) y [anuncios](docs/anuncios.md).
 
+Recorrido de compra de la portada (qué responde cada sección, hoja del paquete, formularios y los candados de `check:site`): [auditoría de la portada, noviembre de 2026](docs/auditoria-portada-2026-11.md).
+
 El botón flotante de la asistente está disponible en todas las páginas. Consulta DeepSeek mediante una API privada en Railway y deriva al WhatsApp +506 7033-0596 cuando falta información o se solicita al equipo. Ejecutar también `npm run check:assistant` después del build. La configuración y el mantenimiento están en [la documentación de la API](../assistant-api/README.md). Al actualizar servicios o preguntas frecuentes, ejecutar `npm run sync:assistant` y publicar el backend actualizado.
 
 ## Base técnica: React + Vite
