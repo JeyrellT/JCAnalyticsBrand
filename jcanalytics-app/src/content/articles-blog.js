@@ -1497,5 +1497,106 @@ export const blogArticles = [
         { title: 'Lean Enterprise Institute — Lean Was Always an Experiment (Josh Howell, 19 oct 2026)', url: 'https://www.lean.org/the-lean-post/articles/lean-was-always-an-experiment/' }
       ]
     }
+  },
+  {
+    id: 'acting-on-behalf-of-nov-2026',
+    topic: 'operations',
+    image: '/projects/caviq/rrhh-desktop.webp',
+    minutes: 5,
+    published: '2026-11-25',
+    en: {
+      slug: 'who-did-it-and-on-whose-behalf',
+      title: 'Who did it, and on whose behalf? Records that still work when AI acts for your team',
+      summary: 'This month a cloud provider gave AI agents their own identity when they work inside a desktop on behalf of a person, so the record shows both the agent and the user. The idea applies to any business, with or without agents: if your log only says who signed, you cannot tell whether the work was done by that person, by someone covering for them or by a tool. Quality tools have a name for separating those sources: stratification.',
+      takeaway: 'Add two columns to the records that matter: "done by" and "on behalf of / authorized by". Then, before looking for a root cause, split your errors by who actually did the work. A problem that looks random often belongs to one source.',
+      sections: [
+        {
+          id: 'news',
+          heading: 'What was announced this month',
+          paragraphs: [
+            'In November 2026, Amazon Web Services announced new capabilities in Amazon WorkSpaces for AI agents, the service that gives agents a managed Windows or Linux desktop where they can operate ordinary business applications. Two additions stand out: agents can now sign in through any identity provider that supports OIDC, and with "on-behalf-of" sign-in an agent can work as the signed-in user.',
+            'An AWS blog post from November 17 explains the design. Each agent has its own identity in the organization\'s identity provider, separate from any person. When a user signs in and asks the agent to act, the agent exchanges that sign-in for a token that represents "this agent, acting for this user", and both identities are signed by the provider rather than declared by the agent. According to the documentation, the access policy can reject any session that does not carry both identities, and AWS recommends giving each agent its own role so every recorded action points to a single agent. The documentation also warns that the agent\'s individual tool calls are only recorded if the organization turns on that type of logging, which is off by default.',
+            'We read these details in search excerpts of the AWS announcement, blog and documentation; aws.amazon.com does not open from our environment. Capabilities are as described by the provider.'
+          ]
+        },
+        {
+          id: 'lean',
+          heading: 'The lean and Six Sigma reading: you cannot improve what you cannot trace',
+          paragraphs: [
+            'Root-cause analysis starts with facts: what happened, where, and who or what did the work. If a record says "approved by Ana" but the approval was actually done by a colleague with her password, by an assistant covering her vacation or by a tool using her account, the five whys start from a false premise. The same problem existed long before AI: shared passwords, a single stamp everyone uses, a generic "admin" user.',
+            'The American Society for Quality (ASQ) describes stratification as separating data into groups or layers, and recommends it when data comes from several sources or conditions, such as shifts, days, suppliers or groups of people. Its example: results from a two-shift operation can look like one confusing distribution until each shift is plotted separately. When people and agents work through the same account, they are two sources mixed into one, and nobody can see which one is producing the errors.',
+            'This also connects with what speakers said at the Lean Enterprise Institute\'s Lean Summit in March 2026, as summarized by LEI: AI is a tool, people still need to do the thinking for it to lead to kaizen, and processes should be redesigned before adding AI. Knowing who did each step is part of that redesign. We read the LEI summary in search excerpts; lean.org does not open from our environment.'
+          ]
+        },
+        {
+          id: 'no-tech',
+          heading: 'A no-technology technique: the "by / for" columns and a one-page delegation sheet',
+          paragraphs: [
+            'In every log that matters (approvals, cash counts, goods received, discounts granted), add two columns next to the signature: "done by" and "on behalf of / authorized by". When someone covers for a colleague, both names go down. Paper forms have long used the "p.p." (per procurationem) convention for the same purpose; the point is to write it every time, not only when someone remembers.',
+            'Next, write a one-page delegation sheet: each permission (approve purchases up to a limit, issue credit notes, change prices) in a row, with who holds it, who may act on their behalf, until when, and up to what amount. When you later connect a tool or an agent, it becomes one more row with its own name, never a borrowed one. That sheet is also exactly what any system administrator will ask for when configuring access.',
+            'Finally, stratify. For two weeks, split each error on your check sheet by the "done by" column. Synthetic example: a fictional hardware store in Heredia found that most of its wrong discounts were not random: they were concentrated on Saturdays, when the cashier on duty used the manager\'s code to approve them. The fix was not a reprimand but a new row on the delegation sheet: a Saturday discount limit in the cashier\'s own name.'
+          ]
+        }
+      ],
+      discussion: [
+        'Which accounts, passwords or stamps in your business are used by more than one person?',
+        'If an error showed up tomorrow in an approval, could you tell who actually made it?',
+        'Which permission would you write down first on a delegation sheet?'
+      ],
+      sources: [
+        { title: 'AWS — Set up, connect, and govern AI agents faster with Amazon WorkSpaces (Nov 2026)', url: 'https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-workspaces-AI-agents-connect-govern/' },
+        { title: 'AWS Desktop and Application Streaming Blog — Agent identity for Amazon WorkSpaces for AI agents (Nov 17, 2026)', url: 'https://aws.amazon.com/blogs/desktop-and-application-streaming/agent-identity-for-amazon-workspaces-for-ai-agents/' },
+        { title: 'AWS documentation — Agent identity, Amazon WorkSpaces Applications', url: 'https://docs.aws.amazon.com/appstream2/latest/developerguide/agent-access-agent-identity.html' },
+        { title: 'ASQ — What is Stratification?', url: 'https://asq.org/quality-resources/stratification' },
+        { title: 'Lean Enterprise Institute — 10 Takeaways from the Lean Summit 2026 (Mar 2026)', url: 'https://www.lean.org/the-lean-post/articles/10-takeaways-from-the-lean-summit-2026/' }
+      ]
+    },
+    es: {
+      slug: 'quien-lo-hizo-y-a-nombre-de-quien',
+      title: '¿Quién lo hizo y a nombre de quién? Registros que siguen sirviendo cuando la IA trabaja por su equipo',
+      summary: 'Este mes un proveedor de nube le dio identidad propia a los agentes de IA que trabajan dentro de un escritorio a nombre de una persona, de modo que el registro muestre al agente y al usuario. La idea sirve para cualquier negocio, con o sin agentes: si su bitácora solo dice quién firmó, no puede saber si el trabajo lo hizo esa persona, alguien que la cubría o una herramienta. Las herramientas de calidad tienen un nombre para separar esas fuentes: estratificación.',
+      takeaway: 'Agregue dos columnas a los registros importantes: "hecho por" y "a nombre de / autorizado por". Luego, antes de buscar la causa raíz, separe los errores según quién hizo realmente el trabajo. Un problema que parece aleatorio muchas veces pertenece a una sola fuente.',
+      sections: [
+        {
+          id: 'news',
+          heading: 'Qué se anunció este mes',
+          paragraphs: [
+            'En noviembre de 2026, Amazon Web Services anunció nuevas capacidades en Amazon WorkSpaces para agentes de IA, el servicio que les da a los agentes un escritorio administrado con Windows o Linux para operar aplicaciones de negocio comunes. Destacan dos novedades: los agentes ahora pueden iniciar sesión con cualquier proveedor de identidad compatible con OIDC, y con el inicio de sesión "en nombre de" (on-behalf-of) un agente puede trabajar como el usuario que inició sesión.',
+            'Una publicación del blog de AWS del 17 de noviembre explica el diseño. Cada agente tiene su propia identidad en el proveedor de identidad de la organización, separada de la de cualquier persona. Cuando un usuario inicia sesión y le pide al agente que actúe, el agente intercambia ese inicio de sesión por un token que representa "este agente, actuando por este usuario", y ambas identidades las firma el proveedor en lugar de declararlas el agente. Según la documentación, la política de acceso puede rechazar cualquier sesión que no traiga las dos identidades, y AWS recomienda darle a cada agente su propio rol para que cada acción registrada apunte a un solo agente. La documentación advierte además que las llamadas individuales del agente a sus herramientas solo quedan registradas si la organización activa ese tipo de registro, que viene apagado por defecto.',
+            'Leímos estos detalles en extractos de búsqueda del anuncio, el blog y la documentación de AWS; aws.amazon.com no abre desde nuestro entorno. Las capacidades son las que describe el proveedor.'
+          ]
+        },
+        {
+          id: 'lean',
+          heading: 'La lectura Lean y Six Sigma: no se mejora lo que no se puede rastrear',
+          paragraphs: [
+            'El análisis de causa raíz empieza por los hechos: qué pasó, dónde y quién o qué hizo el trabajo. Si un registro dice "aprobado por Ana", pero en realidad aprobó un compañero con su contraseña, una asistente que la cubría en vacaciones o una herramienta usando su cuenta, los cinco porqués arrancan de una premisa falsa. El problema existía mucho antes de la IA: contraseñas compartidas, un solo sello que usa todo el mundo, un usuario genérico "admin".',
+            'La American Society for Quality (ASQ) describe la estratificación como separar los datos en grupos o capas, y la recomienda cuando los datos vienen de varias fuentes o condiciones, como turnos, días, proveedores o grupos de personas. Su ejemplo: los resultados de una operación de dos turnos pueden verse como una sola distribución confusa hasta que se grafica cada turno por separado. Cuando personas y agentes trabajan con la misma cuenta, son dos fuentes mezcladas en una y nadie puede ver cuál está generando los errores.',
+            'Esto conecta con lo que se dijo en el Lean Summit del Lean Enterprise Institute en marzo de 2026, según el resumen del LEI: la IA es una herramienta, las personas siguen teniendo que pensar para que lleve a kaizen, y los procesos se deben rediseñar antes de agregar IA. Saber quién hizo cada paso es parte de ese rediseño. Leímos el resumen del LEI en extractos de búsqueda; lean.org no abre desde nuestro entorno.'
+          ]
+        },
+        {
+          id: 'no-tech',
+          heading: 'Una técnica sin tecnología: las columnas "por / para" y una hoja de delegación de una página',
+          paragraphs: [
+            'En cada bitácora importante (aprobaciones, arqueos de caja, recibo de mercadería, descuentos otorgados), agregue dos columnas junto a la firma: "hecho por" y "a nombre de / autorizado por". Cuando alguien cubre a un compañero, se anotan los dos nombres. Los documentos en papel usan desde hace mucho la convención "p.p." (por poder) con el mismo fin; lo importante es escribirlo siempre, no solo cuando alguien se acuerda.',
+            'Después, escriba una hoja de delegación de una página: cada permiso (aprobar compras hasta un límite, emitir notas de crédito, cambiar precios) en una fila, con quién lo tiene, quién puede actuar a su nombre, hasta cuándo y hasta qué monto. Cuando más adelante conecte una herramienta o un agente, será una fila más con su propio nombre, nunca uno prestado. Esa hoja es también justo lo que le va a pedir cualquier administrador de sistemas al configurar accesos.',
+            'Por último, estratifique. Durante dos semanas, separe cada error de su hoja de verificación según la columna "hecho por". Ejemplo sintético: una ferretería ficticia en Heredia descubrió que la mayoría de sus descuentos mal aplicados no eran aleatorios: se concentraban los sábados, cuando la cajera de turno usaba el código del gerente para aprobarlos. La solución no fue una llamada de atención, sino una fila nueva en la hoja de delegación: un límite de descuento para los sábados a nombre de la propia cajera.'
+          ]
+        }
+      ],
+      discussion: [
+        '¿Qué cuentas, contraseñas o sellos de su negocio usa más de una persona?',
+        'Si mañana apareciera un error en una aprobación, ¿podría saber quién la hizo realmente?',
+        '¿Qué permiso anotaría primero en una hoja de delegación?'
+      ],
+      sources: [
+        { title: 'AWS — Set up, connect, and govern AI agents faster with Amazon WorkSpaces (nov 2026)', url: 'https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-workspaces-AI-agents-connect-govern/' },
+        { title: 'Blog de AWS Desktop and Application Streaming — Agent identity for Amazon WorkSpaces for AI agents (17 nov 2026)', url: 'https://aws.amazon.com/blogs/desktop-and-application-streaming/agent-identity-for-amazon-workspaces-for-ai-agents/' },
+        { title: 'Documentación de AWS — Agent identity, Amazon WorkSpaces Applications', url: 'https://docs.aws.amazon.com/appstream2/latest/developerguide/agent-access-agent-identity.html' },
+        { title: 'ASQ — What is Stratification?', url: 'https://asq.org/quality-resources/stratification' },
+        { title: 'Lean Enterprise Institute — 10 Takeaways from the Lean Summit 2026 (mar 2026)', url: 'https://www.lean.org/the-lean-post/articles/10-takeaways-from-the-lean-summit-2026/' }
+      ]
+    }
   }
 ];
