@@ -1598,5 +1598,106 @@ export const blogArticles = [
         { title: 'Lean Enterprise Institute — 10 Takeaways from the Lean Summit 2026 (mar 2026)', url: 'https://www.lean.org/the-lean-post/articles/10-takeaways-from-the-lean-summit-2026/' }
       ]
     }
+  },
+  {
+    id: 'parallel-run-supplier-reconciliation-nov-2026',
+    topic: 'operations',
+    image: '/projects/crimson/facturas-desktop.webp',
+    minutes: 5,
+    published: '2026-11-26',
+    en: {
+      slug: 'run-ai-alongside-the-manual-process',
+      title: 'Run the AI alongside the manual process first: a hospital starts with supplier statement reconciliation',
+      summary: 'This week a children\'s hospital in London announced a 15-month programme to test AI agents in its administration. It did not start with diagnoses: it started with matching supplier statements to invoices, and the agents will run alongside the existing manual process with staff reviewing what they flag. That choice is a lesson for any business: pick a boring, frequent, measurable process, and compare before you replace.',
+      takeaway: 'Before trusting any automation, run it in parallel with the current process for a fixed period and record every difference on a simple sheet. You can rehearse the method today with no software: reconcile one supplier statement with a tick-and-flag sheet and count where the mismatches come from.',
+      sections: [
+        {
+          id: 'news',
+          heading: 'What was announced this week',
+          paragraphs: [
+            'On November 24, 2026, Great Ormond Street Hospital (GOSH), the children\'s hospital in London, announced what it describes as a first-of-its-kind agentic AI programme in an NHS hospital, in collaboration with Hyland and Amazon Web Services. The "Agentic Hospital" programme lasts 15 months, is supported by NHS England funding and runs until the end of October 2027; findings are to be shared across the NHS. Hyland designs and builds the platform and AWS provides cloud credits and technical guidance.',
+            'The first phase has two administrative use cases. The first is supplier statement reconciliation: agents match statements from suppliers to the hospital\'s invoices and flag discrepancies for staff. The second helps staff find the trust\'s policies. According to the announcement, the tools will not make clinical decisions, they will operate with human oversight and they will run alongside the existing manual processes. Any decision to keep using the technology afterwards will go through a competitive procurement process.',
+            'In the same month, GOSH and AWS also announced a broader collaboration framework through 2030 covering care, operations, research and education. We read these details in search excerpts of the announcements on press.aboutamazon.com and gosh.nhs.uk; those domains do not open from our environment. Descriptions are those of the organisations themselves.'
+          ]
+        },
+        {
+          id: 'lean',
+          heading: 'The lean and Six Sigma reading: baseline first, parallel run second',
+          paragraphs: [
+            'Three choices in this programme match what a good improvement project would do. First, scope: supplier reconciliation is high volume, rule-based and easy to measure (each statement either matches or it does not). It is the kind of process where an improvement can be proven quickly, unlike a vague goal such as "use AI in finance".',
+            'Second, the parallel run. In DMAIC terms, you cannot claim an improvement without a baseline: how many statements are reconciled per month, how long each takes, how many discrepancies are found and how many are missed. Running the agent alongside the manual process gives you both numbers on the same cases. Every case where the agent and the person disagree is a learning opportunity: either the agent missed something, or the manual process had been missing it for years.',
+            'Third, sharing what is learned. In a November 2, 2026 article, Lean Enterprise Institute president Josh Howell describes LEI\'s product development learning group returning to GE Appliances\' Appliance Park ten years after its first visit, with 42 leaders from partner companies and a stop at an obeya, the "big room" where a development programme\'s status is made visible. In the closing talk, Jim Morgan argued that in the best lean organisations learning and sharing are two sides of the same coin. GOSH committing to publish its findings follows the same logic. We read the LEI article in search excerpts; lean.org does not open from our environment.'
+          ]
+        },
+        {
+          id: 'no-tech',
+          heading: 'A no-technology technique: the tick-and-flag sheet and a small wall',
+          paragraphs: [
+            'Take this month\'s statement from your largest supplier and your own list of invoices and payments. On paper, tick every line that matches in both, and write every line that does not on a flag sheet with four columns: line, amount, type of difference (missing invoice, duplicate, wrong amount, payment not applied, timing) and who resolves it. This is the same work the hospital\'s agents will do; doing it by hand first tells you how long it takes and what kind of mistakes appear.',
+            'Then make it visible. A small obeya does not need a room: a whiteboard or a wall with three things is enough. A tally of discrepancies by type for each month, the open flags with an owner and a date, and one line with the improvement you are testing. The Lean Enterprise Institute warns that obeyas fail when the walls fill with every metric from existing procedures; keep only what helps decide.',
+            'Synthetic example: a fictional distributor in Cartago reconciled its three largest suppliers by hand for two months. Most discrepancies were not errors by the supplier but payments applied to the wrong invoice because the transfer did not carry the invoice number. The countermeasure was a rule, not software: every transfer reference starts with the invoice number. When it later tests an automatic reconciliation, it will already know its baseline and the type of difference to watch.'
+          ]
+        }
+      ],
+      discussion: [
+        'Which process in your business is frequent, rule-based and easy to check, like supplier reconciliation?',
+        'Do you know how long it takes today and how many differences it finds per month?',
+        'If you tested an automation, for how long would you run it alongside the current process before trusting it?'
+      ],
+      sources: [
+        { title: 'Amazon press center — Great Ormond Street Hospital announces first-of-its-kind agentic AI programme in an NHS hospital, in collaboration with Hyland and AWS (Nov 2026)', url: 'https://press.aboutamazon.com/2026/11/great-ormond-street-hospital-announces-first-of-its-kind-agentic-ai-programme-in-an-nhs-hospital-in-collaboration-with-hyland-and-amazon-web-services' },
+        { title: 'GOSH — GOSH and Amazon Web Services collaborate to drive digital innovation across care, research and education (Nov 2026)', url: 'https://www.gosh.nhs.uk/news/gosh-and-amazon-web-services-collaborate-to-drive-digital-innovation-across-care-research-and-education/' },
+        { title: 'Lean Enterprise Institute — Back at Appliance Park, Ten Years Later (Josh Howell, Nov 2, 2026)', url: 'https://www.lean.org/the-lean-post/articles/back-at-appliance-park-ten-years-later/' },
+        { title: 'Lean Enterprise Institute — Obeya (lexicon)', url: 'https://www.lean.org/lexicon-terms/obeya/' },
+        { title: 'Lean Enterprise Institute — How Do I Tell Good Obeya Rooms From Bad?', url: 'https://www.lean.org/the-lean-post/articles/how-do-i-tell-good-obeya-rooms-from-bad/' }
+      ]
+    },
+    es: {
+      slug: 'ia-en-paralelo-con-el-proceso-manual',
+      title: 'Primero en paralelo con el proceso manual: un hospital empieza su IA por la conciliación de proveedores',
+      summary: 'Esta semana un hospital infantil de Londres anunció un programa de 15 meses para probar agentes de IA en su administración. No empezó por diagnósticos: empezó por conciliar estados de cuenta de proveedores contra facturas, y los agentes trabajarán en paralelo con el proceso manual, con personal revisando lo que señalen. Esa decisión es una lección para cualquier negocio: elija un proceso aburrido, frecuente y medible, y compare antes de reemplazar.',
+      takeaway: 'Antes de confiar en cualquier automatización, córrala en paralelo con el proceso actual durante un periodo fijo y anote cada diferencia en una hoja sencilla. Puede ensayar el método hoy, sin software: concilie un estado de cuenta de proveedor con una hoja de "visto y señalado" y cuente de dónde vienen las diferencias.',
+      sections: [
+        {
+          id: 'news',
+          heading: 'Qué se anunció esta semana',
+          paragraphs: [
+            'El 24 de noviembre de 2026, el Great Ormond Street Hospital (GOSH), el hospital infantil de Londres, anunció lo que describe como un programa de IA agéntica sin precedentes en un hospital del NHS, en colaboración con Hyland y Amazon Web Services. El programa "Agentic Hospital" dura 15 meses, cuenta con financiamiento de NHS England y va hasta finales de octubre de 2027; los hallazgos se compartirán con el resto del sistema de salud británico. Hyland diseña y construye la plataforma y AWS aporta créditos de nube y orientación técnica.',
+            'La primera fase tiene dos casos administrativos. El primero es la conciliación de estados de cuenta de proveedores: los agentes comparan los estados que envían los proveedores con las facturas del hospital y señalan las diferencias al personal. El segundo ayuda al personal a encontrar las políticas internas. Según el anuncio, las herramientas no tomarán decisiones clínicas, operarán con supervisión humana y correrán en paralelo con los procesos manuales existentes. Si después se decide seguir usando la tecnología, pasará por un proceso de compra competitivo.',
+            'Ese mismo mes, GOSH y AWS anunciaron además un marco de colaboración más amplio hasta 2030 en atención, operaciones, investigación y educación. Leímos estos detalles en extractos de búsqueda de los anuncios en press.aboutamazon.com y gosh.nhs.uk; esos dominios no abren desde nuestro entorno. Las descripciones son las de las propias organizaciones.'
+          ]
+        },
+        {
+          id: 'lean',
+          heading: 'La lectura Lean y Six Sigma: primero la línea base, después la corrida en paralelo',
+          paragraphs: [
+            'Tres decisiones de este programa coinciden con lo que haría un buen proyecto de mejora. Primero, el alcance: la conciliación de proveedores es de alto volumen, se rige por reglas y es fácil de medir (cada estado de cuenta cuadra o no cuadra). Es el tipo de proceso donde una mejora se puede demostrar rápido, a diferencia de una meta vaga como "usar IA en finanzas".',
+            'Segundo, la corrida en paralelo. En términos de DMAIC, no se puede afirmar una mejora sin línea base: cuántos estados se concilian al mes, cuánto tarda cada uno, cuántas diferencias se encuentran y cuántas se escapan. Correr el agente junto al proceso manual da las dos cifras sobre los mismos casos. Cada caso en que el agente y la persona no coinciden es una oportunidad de aprender: o el agente se equivocó, o el proceso manual llevaba años sin verlo.',
+            'Tercero, compartir lo aprendido. En un artículo del 2 de noviembre de 2026, Josh Howell, presidente del Lean Enterprise Institute, cuenta el regreso del grupo de aprendizaje de desarrollo de producto del LEI a Appliance Park, de GE Appliances, diez años después de su primera visita: 42 líderes de empresas socias y una parada en un obeya, el "cuarto grande" donde se hace visible el estado de un programa de desarrollo. En la charla de cierre, Jim Morgan sostuvo que en las mejores organizaciones lean aprender y compartir son dos caras de la misma moneda. Que GOSH se comprometa a publicar sus hallazgos sigue la misma lógica. Leímos el artículo del LEI en extractos de búsqueda; lean.org no abre desde nuestro entorno.'
+          ]
+        },
+        {
+          id: 'no-tech',
+          heading: 'Una técnica sin tecnología: la hoja de "visto y señalado" y una pared pequeña',
+          paragraphs: [
+            'Tome el estado de cuenta de este mes de su proveedor más grande y su propia lista de facturas y pagos. En papel, marque con un visto cada línea que coincide en ambos, y anote cada línea que no coincide en una hoja de señalados con cuatro columnas: línea, monto, tipo de diferencia (factura faltante, duplicada, monto distinto, pago no aplicado, desfase de fecha) y quién la resuelve. Es el mismo trabajo que harán los agentes del hospital; hacerlo primero a mano le dice cuánto tarda y qué tipo de errores aparecen.',
+            'Después, hágalo visible. Un obeya pequeño no necesita un cuarto: basta una pizarra o una pared con tres cosas. Un conteo de diferencias por tipo para cada mes, los señalados abiertos con responsable y fecha, y una línea con la mejora que está probando. El Lean Enterprise Institute advierte que los obeyas fracasan cuando las paredes se llenan con todos los indicadores de los procedimientos existentes; deje solo lo que ayude a decidir.',
+            'Ejemplo sintético: una distribuidora ficticia en Cartago concilió a mano a sus tres proveedores más grandes durante dos meses. La mayoría de las diferencias no eran errores del proveedor, sino pagos aplicados a la factura equivocada porque la transferencia no llevaba el número de factura. La contramedida fue una regla, no un software: toda referencia de transferencia empieza con el número de factura. Cuando más adelante pruebe una conciliación automática, ya conocerá su línea base y el tipo de diferencia que debe vigilar.'
+          ]
+        }
+      ],
+      discussion: [
+        '¿Qué proceso de su negocio es frecuente, se rige por reglas y es fácil de verificar, como la conciliación de proveedores?',
+        '¿Sabe cuánto tarda hoy y cuántas diferencias encuentra al mes?',
+        'Si probara una automatización, ¿cuánto tiempo la correría en paralelo con el proceso actual antes de confiar en ella?'
+      ],
+      sources: [
+        { title: 'Sala de prensa de Amazon — Great Ormond Street Hospital announces first-of-its-kind agentic AI programme in an NHS hospital, in collaboration with Hyland and AWS (nov 2026)', url: 'https://press.aboutamazon.com/2026/11/great-ormond-street-hospital-announces-first-of-its-kind-agentic-ai-programme-in-an-nhs-hospital-in-collaboration-with-hyland-and-amazon-web-services' },
+        { title: 'GOSH — GOSH and Amazon Web Services collaborate to drive digital innovation across care, research and education (nov 2026)', url: 'https://www.gosh.nhs.uk/news/gosh-and-amazon-web-services-collaborate-to-drive-digital-innovation-across-care-research-and-education/' },
+        { title: 'Lean Enterprise Institute — Back at Appliance Park, Ten Years Later (Josh Howell, 2 nov 2026)', url: 'https://www.lean.org/the-lean-post/articles/back-at-appliance-park-ten-years-later/' },
+        { title: 'Lean Enterprise Institute — Obeya (léxico)', url: 'https://www.lean.org/lexicon-terms/obeya/' },
+        { title: 'Lean Enterprise Institute — How Do I Tell Good Obeya Rooms From Bad?', url: 'https://www.lean.org/the-lean-post/articles/how-do-i-tell-good-obeya-rooms-from-bad/' }
+      ]
+    }
   }
 ];
