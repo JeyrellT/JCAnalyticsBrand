@@ -1699,5 +1699,104 @@ export const blogArticles = [
         { title: 'Lean Enterprise Institute — How Do I Tell Good Obeya Rooms From Bad?', url: 'https://www.lean.org/the-lean-post/articles/how-do-i-tell-good-obeya-rooms-from-bad/' }
       ]
     }
+  },
+  {
+    id: 'flowchart-and-standard-before-ai-nov-2026',
+    topic: 'operations',
+    image: '/projects/maison/operacion-desktop.webp',
+    minutes: 5,
+    published: '2026-11-27',
+    en: {
+      slug: 'the-assistant-leaves-the-flowchart-stays',
+      title: 'The assistant leaves, the flowchart stays: what Microsoft\'s Power Automate changes teach about standard work',
+      summary: 'On November 30, 2026, Microsoft ends support for the Copilot that designed flows from a description inside Power Automate. In the same weeks it added a flowchart canvas and reusable templates to its desktop automation tool. The AI helpers come and go; what lasts is a drawn process and a written standard. That is good news for any team that maps and standardizes its work before automating it.',
+      takeaway: 'Treat AI design assistants as temporary and your process map and standard as permanent. Before your next automation, draw the process on a wall with sticky notes, agree on one master standard, and keep a list of every copy of it in use.',
+      sections: [
+        {
+          id: 'news',
+          heading: 'What changes in Power Automate this month',
+          paragraphs: [
+            'Microsoft announced in its Message Center (MC1537406, November 3, 2026, and MC1540258, November 5, 2026) that two Copilot features in Power Automate reach end of support on November 30, 2026: "Describe it to design it", which created cloud flows from a text description, and Copilot inside the designer for cloud flows and agent flows. Existing flows are not deleted, moved or changed, including those created with Copilot, and makers can keep editing them in the visual designer or start from templates. For natural-language building, Microsoft points to its Power Automate plugin in an organization-approved AI coding assistant, or to connecting through Copilot Studio with MCP.',
+            'In its October/November 2026 feature update (published November 10), Microsoft also described three additions to Power Automate for desktop: reusable desktop flow templates "that help teams standardize automation logic", scheduled triggers in public preview, and a flowchart mode in public preview that shows actions as nodes on a visual canvas and highlights executed and failed steps when debugging. One detail matters: flows created from a template are independent copies, and later changes to the template apply only to new flows.',
+            'We read the Power Platform blog post directly. The Message Center notices were seen in search excerpts that reproduce Microsoft\'s text; learn.microsoft.com does not open from our environment. Feature descriptions are Microsoft\'s own.'
+          ]
+        },
+        {
+          id: 'lean',
+          heading: 'The lean reading: the standard is the asset, not the tool',
+          paragraphs: [
+            'The Lean Enterprise Institute defines standardized work as precise procedures for each person\'s work, and adds the part that is often forgotten: once established, the standard becomes the object of continuous improvement through kaizen. Without a standard there is nothing to improve against, and without a drawn process there is nothing to standardize. A tool that generates a flow from a sentence skips both steps; when that tool is retired, the team that never drew its process is left with automations nobody fully understands.',
+            'The template detail is a classic quality lesson. If copies do not update when the master changes, an improvement made in one place does not reach the others, and over time each copy drifts. Paper procedures have the same problem: the photocopy taped to the wall in one branch is three versions behind. Knowing where every copy lives is part of the standard, not an administrative extra.',
+            'Finally, the change itself is a reminder about dependency. AI features in business software are being launched, renamed and retired within months. Choose automations whose logic you can read and explain without the assistant that helped write them.'
+          ]
+        },
+        {
+          id: 'no-tech',
+          heading: 'A no-technology technique: the sticky-note flowchart and the copy register',
+          paragraphs: [
+            'Pick one process you are thinking of automating, such as issuing a quote. Walk it where it happens and put one sticky note per step on a wall, using three colours: one for actions, one for decisions (yes or no) and one for waits (waiting for approval, for a document, for a reply). Count the wait notes. They are usually more than the actions, and no automation removes a wait that nobody has seen.',
+            'With the team, remove or merge what does not add value and write the result as a one-page standard: steps, key points and who decides at each decision note. That page is your master. Then keep a copy register: a short list of every place the standard is used (branch, person, spreadsheet, automated flow) and the version each one follows. When the master changes, the register tells you which copies to update.',
+            'Synthetic example: a fictional hardware store in Heredia drew its quoting process and found nine wait notes against six actions, most of them waiting for a price confirmation from one person. The countermeasure was a weekly price list with a clear owner, not software. When it later automated quotes, the flow followed the one-page standard, and the copy register showed that two salespeople were still using an old spreadsheet.'
+          ]
+        }
+      ],
+      discussion: [
+        'Could someone on your team explain, step by step, what each of your automations does without opening the tool?',
+        'Where does your process wait the most, and has anyone counted it?',
+        'If you improved a procedure tomorrow, how would you know which copies still follow the old version?'
+      ],
+      sources: [
+        { title: 'Microsoft Power Platform Blog — What\'s new in Power Platform: October/November 2026 feature update (Nov 10, 2026)', url: 'https://www.microsoft.com/en-us/power-platform/blog/power-apps/whats-new-in-power-platform-october-2026-feature-update/' },
+        { title: 'Microsoft Learn — Important changes (deprecations) coming in Power Platform', url: 'https://learn.microsoft.com/en-us/power-platform/important-changes-coming' },
+        { title: 'Lean Enterprise Institute — Standardized Work (lexicon)', url: 'https://www.lean.org/lexicon-terms/standardized-work/' },
+        { title: 'Lean Enterprise Institute — Standardized Work for People and Process', url: 'https://www.lean.org/the-lean-post/articles/how-standardized-work-integrates-people-with-process/' }
+      ]
+    },
+    es: {
+      slug: 'el-asistente-se-va-el-diagrama-se-queda',
+      title: 'El asistente se va, el diagrama se queda: lo que los cambios de Power Automate enseñan sobre el trabajo estandarizado',
+      summary: 'El 30 de noviembre de 2026, Microsoft deja de dar soporte al Copilot que diseñaba flujos a partir de una descripción dentro de Power Automate. En las mismas semanas agregó un lienzo de diagrama de flujo y plantillas reutilizables a su herramienta de automatización de escritorio. Los asistentes de IA llegan y se van; lo que dura es un proceso dibujado y un estándar escrito. Es una buena noticia para cualquier equipo que mapea y estandariza su trabajo antes de automatizarlo.',
+      takeaway: 'Trate los asistentes de diseño con IA como algo temporal y su mapa de proceso y su estándar como algo permanente. Antes de su próxima automatización, dibuje el proceso en una pared con notas adhesivas, acuerde un solo estándar maestro y lleve una lista de cada copia que está en uso.',
+      sections: [
+        {
+          id: 'news',
+          heading: 'Qué cambia en Power Automate este mes',
+          paragraphs: [
+            'Microsoft anunció en su Centro de Mensajes (MC1537406, 3 de noviembre de 2026, y MC1540258, 5 de noviembre de 2026) que dos funciones de Copilot en Power Automate llegan al fin de soporte el 30 de noviembre de 2026: "Describe it to design it", que creaba flujos de nube a partir de una descripción en texto, y Copilot dentro del diseñador de flujos de nube y flujos de agente. Los flujos existentes no se borran, no se mueven ni cambian, incluidos los creados con Copilot, y se pueden seguir editando en el diseñador visual o crear desde plantillas. Para construir con lenguaje natural, Microsoft remite a su complemento de Power Automate en un asistente de programación con IA aprobado por la organización, o a conectarse por medio de Copilot Studio con MCP.',
+            'En su actualización de funciones de octubre y noviembre de 2026 (publicada el 10 de noviembre), Microsoft describió además tres novedades en Power Automate para escritorio: plantillas reutilizables de flujos de escritorio "que ayudan a los equipos a estandarizar la lógica de automatización", disparadores programados en vista previa pública, y un modo de diagrama de flujo, también en vista previa, que muestra las acciones como nodos en un lienzo visual y resalta los pasos ejecutados y los fallidos al depurar. Un detalle importa: los flujos creados desde una plantilla son copias independientes, y los cambios posteriores a la plantilla solo se aplican a los flujos nuevos.',
+            'Leímos directamente la publicación del blog de Power Platform. Los avisos del Centro de Mensajes los vimos en extractos de búsqueda que reproducen el texto de Microsoft; learn.microsoft.com no abre desde nuestro entorno. Las descripciones de las funciones son las de Microsoft.'
+          ]
+        },
+        {
+          id: 'lean',
+          heading: 'La lectura Lean: el activo es el estándar, no la herramienta',
+          paragraphs: [
+            'El Lean Enterprise Institute define el trabajo estandarizado como procedimientos precisos para el trabajo de cada persona, y agrega la parte que suele olvidarse: una vez establecido, el estándar se convierte en el objeto de la mejora continua por medio del kaizen. Sin estándar no hay contra qué mejorar, y sin un proceso dibujado no hay nada que estandarizar. Una herramienta que genera un flujo a partir de una frase se salta ambos pasos; cuando esa herramienta se retira, el equipo que nunca dibujó su proceso queda con automatizaciones que nadie entiende del todo.',
+            'El detalle de las plantillas es una lección clásica de calidad. Si las copias no se actualizan cuando cambia el maestro, una mejora hecha en un lugar no llega a los demás y, con el tiempo, cada copia se desvía. Los procedimientos en papel tienen el mismo problema: la fotocopia pegada en la pared de una sucursal va tres versiones atrás. Saber dónde vive cada copia es parte del estándar, no un trámite adicional.',
+            'Por último, el cambio en sí recuerda el tema de la dependencia. Las funciones de IA en el software de negocio se lanzan, se renombran y se retiran en cuestión de meses. Elija automatizaciones cuya lógica usted pueda leer y explicar sin el asistente que ayudó a escribirlas.'
+          ]
+        },
+        {
+          id: 'no-tech',
+          heading: 'Una técnica sin tecnología: el diagrama con notas adhesivas y el registro de copias',
+          paragraphs: [
+            'Elija un proceso que esté pensando automatizar, por ejemplo emitir una cotización. Recórralo donde ocurre y ponga una nota adhesiva por paso en una pared, con tres colores: uno para acciones, otro para decisiones (sí o no) y otro para esperas (esperar una aprobación, un documento, una respuesta). Cuente las notas de espera. Suelen ser más que las acciones, y ninguna automatización elimina una espera que nadie ha visto.',
+            'Con el equipo, elimine o junte lo que no agrega valor y escriba el resultado como un estándar de una página: pasos, puntos clave y quién decide en cada nota de decisión. Esa página es su maestro. Después lleve un registro de copias: una lista corta de cada lugar donde se usa el estándar (sucursal, persona, hoja de cálculo, flujo automatizado) y la versión que sigue cada uno. Cuando el maestro cambia, el registro le dice qué copias actualizar.',
+            'Ejemplo sintético: una ferretería ficticia en Heredia dibujó su proceso de cotización y encontró nueve notas de espera frente a seis acciones, la mayoría esperando que una sola persona confirmara precios. La contramedida fue una lista de precios semanal con un responsable claro, no un software. Cuando más adelante automatizó las cotizaciones, el flujo siguió el estándar de una página, y el registro de copias mostró que dos vendedores todavía usaban una hoja de cálculo vieja.'
+          ]
+        }
+      ],
+      discussion: [
+        '¿Alguien de su equipo podría explicar, paso a paso, qué hace cada una de sus automatizaciones sin abrir la herramienta?',
+        '¿Dónde espera más su proceso, y alguien lo ha contado?',
+        'Si mañana mejorara un procedimiento, ¿cómo sabría qué copias siguen la versión anterior?'
+      ],
+      sources: [
+        { title: 'Blog de Microsoft Power Platform — What\'s new in Power Platform: October/November 2026 feature update (10 nov 2026)', url: 'https://www.microsoft.com/en-us/power-platform/blog/power-apps/whats-new-in-power-platform-october-2026-feature-update/' },
+        { title: 'Microsoft Learn — Important changes (deprecations) coming in Power Platform', url: 'https://learn.microsoft.com/en-us/power-platform/important-changes-coming' },
+        { title: 'Lean Enterprise Institute — Standardized Work (léxico)', url: 'https://www.lean.org/lexicon-terms/standardized-work/' },
+        { title: 'Lean Enterprise Institute — Standardized Work for People and Process', url: 'https://www.lean.org/the-lean-post/articles/how-standardized-work-integrates-people-with-process/' }
+      ]
+    }
   }
 ];
